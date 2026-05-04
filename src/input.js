@@ -94,11 +94,39 @@ const inputPresets = {
   gamepad: { move:'Left Stick', jump:'A', dash:'RB', attack:'X', pause:'Start', restart:'Back' }
 };
 
+const inputHintLabels = {
+  keyboard: {
+    accept: { key: 'Enter', label: 'Accept' },
+    back: { key: 'Esc', label: 'Back' },
+    settings: { key: 'Tab', label: 'Settings' },
+    restart: { key: 'R', label: 'Restart' }
+  },
+  gamepad: {
+    accept: { key: 'A', label: 'Accept' },
+    back: { key: 'B', label: 'Back' },
+    settings: { key: 'Y', label: 'Settings' },
+    restart: { key: 'View', label: 'Restart' }
+  }
+};
+
+const platformForScheme = scheme => scheme === 'gamepad' ? 'gamepad' : 'keyboard';
+
 export function setInputScheme(game, scheme) {
   const input = game.input;
   if (input.inputScheme === scheme) return;
   input.inputScheme = scheme;
   game.ui.controlsEl.textContent = controlsText(input);
+  renderInputHints(input);
+}
+
+export function renderInputHints(input, root = document) {
+  const platform = platformForScheme(input.inputScheme);
+  root.querySelectorAll('[data-input-hint]').forEach(el => {
+    const hint = inputHintLabels[platform][el.dataset.inputHint] || inputHintLabels.keyboard[el.dataset.inputHint];
+    if (!hint) return;
+    el.dataset.inputPlatform = platform;
+    el.innerHTML = `<kbd class="ds-keycap">${hint.key}</kbd><span class="input-hint__label">${hint.label}</span>`;
+  });
 }
 
 export function controlsText(input) {

@@ -1,4 +1,4 @@
-import { bindKey, bindLabels, bindText, clearExtraBinds, controllerBindText, defaultBinds, menuButtons, resetControllerInput, resetDefaultGamepadBinds, resetDefaultKeyBinds, setBindStatus, setControllerStatus } from './input.js';
+import { bindKey, bindLabels, bindText, clearExtraBinds, controllerBindText, defaultBinds, menuButtons, renderInputHints, resetControllerInput, resetDefaultGamepadBinds, resetDefaultKeyBinds, setBindStatus, setControllerStatus } from './input.js';
 import { syncSettingsFromInput, replaceSettings, saveSettings, serializeSettings } from './settings.js';
 import { setPausedFlag } from './state.js';
 import { applyMotionPreference, runDOMTransition, shouldReduceMotion, setupMotionPreference } from './transitions.js';
@@ -152,8 +152,13 @@ export function renderBinds(game) {
   }
 }
 
+function commitMenuPageChange(game, change, after) {
+  change();
+  requestAnimationFrame(() => after?.());
+}
+
 export function setMenuPage(game, page, direction = 'forward') {
-  runDOMTransition(game, () => {
+  commitMenuPageChange(game, () => {
     game.menu.page = page;
     game.menu.direction = direction;
     updateMenuChrome(game);
@@ -162,11 +167,10 @@ export function setMenuPage(game, page, direction = 'forward') {
 }
 
 export function openSettings(game, origin) {
-  runDOMTransition(game, () => {
+  commitMenuPageChange(game, () => {
     game.menu.origin = origin;
     game.menu.page = 'settings';
     game.menu.direction = 'forward';
-    document.body.dataset.menuOrigin = origin;
     game.input.bindEditorDevice = game.input.inputScheme === 'gamepad' ? 'controller' : 'keyboard';
     updateMenuChrome(game);
     renderBinds(game);
@@ -175,12 +179,11 @@ export function openSettings(game, origin) {
 
 export function closeSettings(game) {
   const origin = game.menu.origin;
-  runDOMTransition(game, () => {
+  commitMenuPageChange(game, () => {
     cancelBindListening(game);
     game.menu.page = 'main';
     game.menu.direction = 'back';
-    if (origin === 'start') document.body.dataset.menuOrigin = 'none';
-    else document.body.dataset.menuOrigin = 'pause';
+    game.menu.origin = origin === 'start' ? 'none' : 'pause';
     updateMenuChrome(game);
   }, () => focusAndReveal(game, origin === 'start' ? game.ui.startSettingsButton : game.ui.settingsButton));
 }
@@ -263,6 +266,7 @@ export function setupMenu(game) {
   const { ui, input } = game;
   setupMotionPreference(game);
   updateMenuChrome(game);
+  renderInputHints(game.input);
   renderBinds(game);
 
   for (let i = 0; i < 5; i++) {
