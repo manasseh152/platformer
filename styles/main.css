@@ -1,0 +1,139 @@
+    :root {
+      --bg: #10110f;
+      --ink: #f1eee5;
+      --muted: #a6a094;
+      --panel: rgba(24, 25, 22, .94);
+      --line: rgba(241, 238, 229, .13);
+      --accent: #8fc7a8;
+      --accent-soft: #26352d;
+      --primary: #8fc7a8;
+      --primary-ink: #07110c;
+      --shadow: 0 18px 52px rgba(0, 0, 0, .38);
+      --display: Georgia, "Times New Roman", serif;
+      --ui: "Aptos", "Segoe UI", sans-serif;
+      --mono: "Cascadia Mono", Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font-family: var(--ui); }
+    body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 20; opacity: .32; background-image: radial-gradient(rgba(241,238,229,.08) .7px, transparent .7px); background-size: 18px 18px; }
+    #gameShell { position: fixed; inset: 0; background: #10131a; }
+    canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; background: #10131a; opacity: 0; transition: opacity .16s ease, filter .16s ease; }
+    body.playing canvas { opacity: 1; }
+    body.playing canvas.resizing { opacity: .72; filter: blur(.7px) saturate(.85); }
+    body.paused canvas { filter: saturate(.65) brightness(.75); }
+    #hud, #controls, #message { position: absolute; z-index: 2; color: #fffdf6; font-family: var(--ui); text-shadow: 0 2px 5px #000; pointer-events: none; opacity: 0; transition: opacity .16s ease; }
+    body.playing #hud, body.playing #controls, body.playing #message:not([hidden]) { opacity: 1; }
+    #hud { top: 0; left: 0; width: 280px; padding: 18px 20px; background: rgba(14,15,18,.42); border-left: 2px solid rgba(255,255,255,.5); }
+    #hud .title { margin-bottom: 10px; font: 700 15px var(--ui); letter-spacing: .08em; text-transform: uppercase; }
+    #hearts { display: flex; gap: 7px; margin-bottom: 10px; }
+    .heart { width: 16px; height: 16px; border-radius: 50%; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.34); }
+    .heart.full { background: #e56b5f; border-color: #ffd6d1; }
+    #objective, #dashStatus { color: rgba(255,253,246,.72); font-size: 13px; }
+    #dashStatus.ready { color: #d8ffd9; }
+    #controls { left: 14px; bottom: 8px; width: min(760px, calc(100vw - 32px)); padding: 9px 12px; font-size: 13px; color: rgba(255,253,246,.82); background: rgba(14,15,18,.45); border-radius: 10px; }
+    #message { top: 50%; left: 50%; width: min(520px, calc(100vw - 32px)); padding: 28px 32px; text-align: center; background: rgba(14,15,18,.78); border: 1px solid rgba(255,255,255,.18); border-radius: 16px; transform: translate(-50%, -50%); }
+    #message .big { margin-bottom: 8px; font: 700 42px/1 var(--display); }
+    #message .small { color: rgba(255,253,246,.70); }
+    #startScreen, #pauseScreen { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 24px; overflow: auto; overscroll-behavior: contain; background: linear-gradient(180deg, rgba(16,17,15,.98), rgba(16,17,15,.92)), radial-gradient(circle at 50% 0%, rgba(143,199,168,.10), transparent 34%); transition: opacity .16s ease; }
+    #pauseScreen { z-index: 9; opacity: 0; pointer-events: none; background: rgba(16,17,15,.88); backdrop-filter: blur(6px); }
+    body.start-settings #pauseScreen { opacity: 1; pointer-events: auto; z-index: 11; }
+    body.playing #startScreen { opacity: 0; pointer-events: none; }
+    body.paused #pauseScreen { opacity: 1; pointer-events: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .16s; animation-timing-function: ease; }
+    #startScreen { view-transition-name: start-screen; }
+    #pauseScreen { view-transition-name: pause-screen; }
+    #startScreen .menu-card { view-transition-name: start-card; }
+    #pauseScreen .menu-card { view-transition-name: menu-card; }
+    #settingsPanel { view-transition-name: settings-panel; }
+    .menu-card { width: min(620px, 100%); max-height: calc(100vh - 48px); overflow: auto; padding: clamp(24px, 5vw, 48px); background: var(--panel); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); }
+    .eyebrow { margin-bottom: 14px; color: var(--accent); font: 700 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+    .menu-card h1, .menu-card h2 { margin: 0 0 12px; font: 700 clamp(42px, 8vw, 72px)/.95 var(--display); letter-spacing: -.04em; }
+    .menu-card h2 { font-size: clamp(36px, 7vw, 56px); }
+    .menu-card p { margin: 0 0 24px; max-width: 48ch; color: var(--muted); font-size: 16px; line-height: 1.55; }
+    .menu-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 26px; padding: 0; list-style: none; }
+    .menu-meta li { padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 13px; background: rgba(255,255,255,.04); }
+    .menu-actions { display: grid; gap: 10px; width: min(340px, 100%); margin-top: 22px; }
+    button { min-height: 46px; border: 1px solid var(--line); border-radius: 12px; background: #1d1f1b; color: var(--ink); padding: 12px 16px; font: 700 14px var(--ui); cursor: pointer; text-align: left; transition: transform .12s ease, border-color .12s ease, background .12s ease, box-shadow .12s ease; }
+    button:hover { transform: translateY(-1px); border-color: rgba(143,199,168,.48); background: #262922; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+    button:focus { outline: 0; }
+    input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    button:focus-visible,
+    .controller-focus {
+      outline: 0 !important;
+      transform: none !important;
+      border-color: rgba(143,199,168,.72) !important;
+      background: #262922 !important;
+      color: var(--ink) !important;
+      box-shadow: inset 0 0 0 2px rgba(143,199,168,.72) !important;
+    }
+    .menu-actions button:first-child, #startButton, #resumeButton, #backButton { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
+    .menu-actions button:first-child:hover, #startButton:hover, #resumeButton:hover, #backButton:hover,
+    .menu-actions button:first-child:focus-visible:not(.secondary), #startButton:focus-visible, #resumeButton:focus-visible, #backButton:focus-visible,
+    .menu-actions button:first-child.controller-focus:not(.secondary), #startButton.controller-focus, #resumeButton.controller-focus, #backButton.controller-focus {
+      background: var(--primary) !important;
+      color: var(--primary-ink) !important;
+      border-color: var(--primary) !important;
+      box-shadow: inset 0 0 0 2px rgba(16,17,15,.74), inset 0 0 0 4px rgba(241,238,229,.50) !important;
+    }
+    button.secondary { background: transparent; color: var(--ink); }
+    button.secondary:focus-visible, button.secondary.controller-focus { background: #262922 !important; color: var(--ink) !important; border-color: rgba(143,199,168,.72) !important; }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .menu-pages { position: relative; overflow: hidden; box-sizing: content-box; padding: 4px; margin: -4px; transition: height .20s ease; }
+    .menu-page { width: 100%; transition: transform .20s ease, opacity .16s ease; }
+    .pause-main { position: relative; transform: translateX(0); opacity: 1; }
+    #settingsPanel { display: block; margin-top: 0; text-align: left; position: absolute; inset: 0 auto auto 0; transform: translateX(104%); opacity: 0; visibility: hidden; pointer-events: none; }
+    #pauseScreen.settings-open .pause-main { position: absolute; inset: 0 auto auto 0; transform: translateX(-104%); opacity: 0; pointer-events: none; }
+    #pauseScreen.settings-open #settingsPanel { position: relative; transform: translateX(0); opacity: 1; visibility: visible; pointer-events: auto; }
+    body.start-settings .menu-page, body.no-nested-menu-transition .menu-page { transition: none; }
+    body.start-settings #pauseScreen.settings-open .pause-main, body.no-nested-menu-transition #pauseScreen .pause-main { display: none; }
+    body.start-settings #pauseScreen.settings-open #settingsPanel, body.no-nested-menu-transition #pauseScreen #settingsPanel { transform: none; opacity: 1; visibility: visible; }
+    #pauseScreen.settings-open .menu-card { width: min(940px, calc(100vw - 32px)); padding: clamp(22px, 3.6vw, 36px); }
+    #pauseScreen.settings-open .eyebrow { margin-bottom: 8px; }
+    #pauseScreen.settings-open .menu-card h2 { margin-bottom: 8px; font-size: clamp(38px, 6vw, 58px); }
+    #settingsPanel > p.settings-title { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 12px; color: var(--ink); font-weight: 900; }
+    .settings-title span { max-width: 42ch; color: var(--muted); font: 12px/1.35 var(--mono); text-align: right; }
+    .bind-device-toggle { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border: 1px solid rgba(241,238,229,.12); border-radius: 999px; background: rgba(16,17,15,.72); box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+    .bind-device-toggle button { min-height: 34px; padding: 8px 16px; border-radius: 999px; border-color: transparent; background: transparent; color: var(--muted); text-align: center; }
+    .bind-device-toggle button.active { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); box-shadow: 0 8px 22px rgba(143,199,168,.16); }
+    #bindList { display: grid; gap: 8px; margin-top: 14px; }
+    .bind-row { position: relative; display: grid; grid-template-columns: 150px minmax(0,1fr); gap: 12px; align-items: stretch; padding: 10px; border: 1px solid rgba(241,238,229,.10); border-radius: 18px; background: linear-gradient(135deg, rgba(255,255,255,.045), rgba(255,255,255,.018)); box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+    .bind-row::before { content: ""; position: absolute; left: 150px; top: 14px; bottom: 14px; width: 1px; background: linear-gradient(transparent, rgba(143,199,168,.22), transparent); }
+    .bind-row.listening { border-color: rgba(143,199,168,.58); background: linear-gradient(135deg, rgba(143,199,168,.13), rgba(255,255,255,.025)); box-shadow: inset 0 0 0 1px rgba(143,199,168,.24), 0 10px 28px rgba(0,0,0,.22); }
+    .bind-action { align-self: center; padding-left: 8px; color: var(--ink); font-size: 16px; font-weight: 900; letter-spacing: -.01em; }
+    .bind-editor { display: grid; grid-template-columns: 120px minmax(0,1fr) minmax(240px,.9fr); gap: 12px; align-items: center; min-width: 0; padding: 11px; border: 1px solid rgba(241,238,229,.11); border-radius: 14px; background: rgba(16,17,15,.58); }
+    .bind-type { color: rgba(241,238,229,.58); font: 900 10px var(--mono); letter-spacing: .16em; text-transform: uppercase; }
+    .bind-value { min-height: 0; color: var(--ink); font: 800 15px/1.3 var(--mono); word-break: break-word; text-wrap: balance; }
+    .bind-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .bind-row button { min-width: 0; min-height: 34px; padding: 7px 9px; border-radius: 10px; font: 900 11px/1.15 var(--ui); text-transform: none; text-align: center; background: rgba(16,17,15,.54); }
+    .bind-row button.mini:hover { transform: translateY(-1px); }
+    .bind-row .cancel-bind { grid-column: 2 / -1; justify-self: end; min-width: 118px; background: rgba(143,199,168,.12); }
+    .advanced-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 12px 0; color: var(--muted); font-size: 14px; border-bottom: 1px solid var(--line); }
+    .advanced-toggle input { accent-color: var(--accent); }
+    .advanced-tools { display: none; }
+    #settingsPanel.advanced .advanced-tools { display: block; }
+    .bind-json { width: 100%; min-height: 108px; margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #1d1f1b; color: var(--ink); font: 12px var(--mono); resize: vertical; }
+    #bindStatus, #controllerStatus { min-height: 18px; margin-top: 8px; color: var(--accent); font: 12px var(--mono); text-align: left; }
+    .settings-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start; margin-top: 18px; }
+    .settings-actions button { text-align: center; min-width: 120px; }
+    .controller-debug { margin-top: 18px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.035); }
+    .controller-debug p { margin-bottom: 10px; color: var(--ink); font-weight: 700; }
+    .controller-debug code { display: block; min-height: 24px; margin: 6px 0 10px; color: var(--muted); font: 12px var(--mono); word-break: break-word; }
+    .controller-debug select { width: 100%; margin-top: 10px; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: #1d1f1b; color: var(--ink); font: 13px var(--ui); }
+    @media (max-width: 620px), (max-height: 680px) {
+      #startScreen, #pauseScreen { place-items: start center; padding: 12px; }
+      .menu-card { max-height: none; padding: 24px 18px; }
+      .menu-card h1, .menu-card h2 { font-size: 42px; }
+      #pauseScreen.settings-open .menu-card { width: 100%; }
+      #settingsPanel > p.settings-title { display: block; }
+      .settings-title span { display: block; margin-top: 6px; text-align: left; }
+      .bind-device-toggle { width: 100%; }
+      .bind-row { grid-template-columns: 1fr; text-align: left; }
+      .bind-row::before { display: none; }
+      .bind-editor { grid-template-columns: 1fr; }
+      .bind-buttons { grid-template-columns: 1fr; }
+      .bind-row .cancel-bind { grid-column: auto; width: 100%; }
+      .bind-row button { width: 100%; text-align: center; }
+      .settings-actions { justify-content: stretch; }
+      .settings-actions button { flex: 1 1 140px; }
+    }
+  

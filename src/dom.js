@@ -1,0 +1,41 @@
+export function getUI() {
+  const byId = id => document.getElementById(id);
+  const pauseScreen = byId('pauseScreen');
+  return {
+    canvas: byId('game'),
+    hudEl: byId('hud'),
+    heartsEl: byId('hearts'),
+    dashStatusEl: byId('dashStatus'),
+    controlsEl: byId('controls'),
+    messageEl: byId('message'),
+    messageTitleEl: byId('messageTitle'),
+    startScreen: byId('startScreen'),
+    startButton: byId('startButton'),
+    startSettingsButton: byId('startSettingsButton'),
+    resumeButton: byId('resumeButton'),
+    restartButton: byId('restartButton'),
+    mainMenuButton: byId('mainMenuButton'),
+    settingsButton: byId('settingsButton'),
+    pauseScreen,
+    menuPages: byId('menuPages'),
+    pauseMain: pauseScreen.querySelector('.pause-main'),
+    bindList: byId('bindList'),
+    editKeyboardButton: byId('editKeyboardButton'),
+    editControllerButton: byId('editControllerButton'),
+    settingsPanel: byId('settingsPanel'),
+    controllerEnabled: byId('controllerEnabled'),
+    advancedMode: byId('advancedMode'),
+    bindJson: byId('bindJson'),
+    bindStatus: byId('bindStatus'),
+    exportBindsButton: byId('exportBindsButton'),
+    importBindsButton: byId('importBindsButton'),
+    controllerName: byId('controllerName'),
+    controllerInputs: byId('controllerInputs'),
+    controllerAction: byId('controllerAction'),
+    bindControllerButton: byId('bindControllerButton'),
+    resetControllerButton: byId('resetControllerButton'),
+    controllerStatus: byId('controllerStatus'),
+    resetBindsButton: byId('resetBindsButton'),
+    backButton: byId('backButton')
+  };
+}
