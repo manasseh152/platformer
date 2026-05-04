@@ -1,18 +1,19 @@
 import { hasDown, hasPressed } from './input.js';
+import { getGoalRect, solidTileRectsOverlapping, spikeHazardRectsOverlapping } from './level.js';
 
 export const rectsOverlap = (a,b) => a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
 
 export function collideWithLevel(entity, level, dt) {
   entity.wallDir = 0;
   entity.x += entity.vx * dt;
-  for (const p of level.platforms) if (rectsOverlap(entity, p)) {
+  for (const p of solidTileRectsOverlapping(level, entity)) if (rectsOverlap(entity, p)) {
     if (entity.vx > 0) { entity.x = p.x - entity.w; entity.wallDir = 1; }
     if (entity.vx < 0) { entity.x = p.x + p.w; entity.wallDir = -1; }
     entity.vx = 0;
   }
   entity.y += entity.vy * dt;
   entity.grounded = false;
-  for (const p of level.platforms) if (rectsOverlap(entity, p)) {
+  for (const p of solidTileRectsOverlapping(level, entity)) if (rectsOverlap(entity, p)) {
     if (entity.vy > 0) { entity.y = p.y - entity.h; entity.grounded = true; entity.coyote = .09; }
     if (entity.vy < 0) entity.y = p.y + p.h;
     entity.vy = 0;
@@ -41,7 +42,7 @@ export function updateEnemy(game, enemy, dt) {
   let turnAround = false;
   enemy.x += moveVx * dt;
 
-  for (const p of level.platforms) if (rectsOverlap(enemy, p)) {
+  for (const p of solidTileRectsOverlapping(level, enemy)) if (rectsOverlap(enemy, p)) {
     if (moveVx > 0) enemy.x = p.x - enemy.w;
     else if (moveVx < 0) enemy.x = p.x + p.w;
     turnAround = true;
@@ -58,7 +59,7 @@ export function updateEnemy(game, enemy, dt) {
   if (turnAround && moveVx !== 0) enemy.vx = -moveVx;
 
   enemy.y += enemy.vy * dt;
-  for (const p of level.platforms) if (rectsOverlap(enemy, p)) {
+  for (const p of solidTileRectsOverlapping(level, enemy)) if (rectsOverlap(enemy, p)) {
     if (enemy.vy > 0) enemy.y = p.y - enemy.h;
     if (enemy.vy < 0) enemy.y = p.y + p.h;
     enemy.vy = 0;
@@ -121,11 +122,11 @@ export function updateGame(game, dt) {
   player.wallSlide = !player.grounded && player.wallDir !== 0 && pushingWall && player.vy >= 0 && player.dash <= 0;
   if (player.wallSlide) player.vy = Math.min(player.vy, 95);
 
-  for (const s of level.spikes) if (rectsOverlap(player, s)) hurtPlayer(game, 1, player.x < s.x ? -1 : 1);
+  for (const s of spikeHazardRectsOverlapping(level, player)) if (rectsOverlap(player, s)) hurtPlayer(game, 1, player.x < s.x ? -1 : 1);
 
   for (const e of enemies) if (e.hp > 0) updateEnemy(game, e, dt);
 
-  if (rectsOverlap(player, level.goal)) game.flags.won = true;
+  if (rectsOverlap(player, getGoalRect(level))) game.flags.won = true;
 
   for (let i=game.particles.length-1;i>=0;i--) {
     const p = game.particles[i]; p.life -= dt; p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 500*dt;

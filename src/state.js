@@ -1,6 +1,6 @@
 import { CAMERA_HEIGHT, CAMERA_WIDTH } from './constants.js';
 import { centerCameraOnPlayer, createCamera } from './camera.js';
-import { createEnemies, createPlayer, level } from './level.js';
+import { createEnemies, createPlayer, getSpawnPoint, level } from './level.js';
 import { createInputState } from './input.js';
 import { applySettingsToGame, loadSettings } from './settings.js';
 
@@ -29,7 +29,7 @@ export function createGame(ui) {
       won: false
     },
     level,
-    player: createPlayer(level.spawn),
+    player: createPlayer(getSpawnPoint(level)),
     enemies: createEnemies(level),
     dust: [],
     particles: [],
@@ -46,7 +46,7 @@ export function createGame(ui) {
 
 export function resetGame(game) {
   setPausedFlag(game, false);
-  Object.assign(game.player, createPlayer(game.level.spawn));
+  Object.assign(game.player, createPlayer(getSpawnPoint(game.level)));
   game.enemies.length = 0;
   game.enemies.push(...createEnemies(game.level));
   game.particles.length = 0;

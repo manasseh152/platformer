@@ -2,6 +2,19 @@ import { TILE_SIZE } from './constants.js';
 
 const T = TILE_SIZE;
 
+const EMPTY = '.';
+const SOLID_TILES = new Set(['#', '=', 'B']);
+const TERRAIN_CHARS = new Set([EMPTY, '#', '=', 'B', '^']);
+const OBJECT_CHARS = new Set([EMPTY, 'P', 'E', 'G', '<', '>']);
+const DECOR_CHARS = new Set([EMPTY, 'r', 'g', 't', 'f']);
+
+export const DECOR_TYPES = {
+  r: 'bannerRed',
+  g: 'bannerGreen',
+  t: 'torch',
+  f: 'flag'
+};
+
 export function tileToWorld(col, row, tileSize = T) {
   return { x: col * tileSize, y: row * tileSize };
 }
@@ -12,23 +25,11 @@ export function worldToTile(x, y, tileSize = T) {
 
 export function tileRect(col, row, cols = 1, rows = 1, kind = 'stone', tileSize = T) {
   const { x, y } = tileToWorld(col, row, tileSize);
-  return { x, y, w: cols * tileSize, h: rows * tileSize, kind };
+  return { x, y, w: cols * tileSize, h: rows * tileSize, kind, col, row, cols, rows };
 }
 
 function spawnAt(col, floorRow, tileSize = T) {
   return { x: col * tileSize + 18, y: floorRow * tileSize - 50 };
-}
-
-function hazardAt(col, row, cols = 1, tileSize = T) {
-  return {
-    x: col * tileSize,
-    y: row * tileSize + 46,
-    w: cols * tileSize,
-    h: 24,
-    visualX: col * tileSize,
-    visualY: row * tileSize,
-    cols
-  };
 }
 
 function enemyAt(col, floorRow, minCol, maxExclusiveCol, dir = 1, hp = 3, tileSize = T) {
@@ -45,55 +46,48 @@ function enemyAt(col, floorRow, minCol, maxExclusiveCol, dir = 1, hp = 3, tileSi
   };
 }
 
-const EMPTY = '.';
-const SOLID_TILES = new Set(['#', '=']);
-const TERRAIN_CHARS = new Set([EMPTY, '#', '=', '^']);
-const OBJECT_CHARS = new Set([EMPTY, 'P', 'E', 'G']);
-const DECOR_CHARS = new Set([EMPTY, 'r', 'g', 't', 'f']);
-
-const DECOR_TYPES = {
-  r: 'bannerRed',
-  g: 'bannerGreen',
-  t: 'torch',
-  f: 'flag'
-};
-
 export const levelDefinition = {
   terrainRows: [
-    '##################',
-    '#................#',
-    '#................#',
-    '#................#',
-    '#............==..#',
-    '#..........==....#',
-    '#.......==.......#',
-    '#....==..........#',
-    '#.==...^^...^^...#',
-    '##################'
+    '########################',
+    '#......................#',
+    '#......................#',
+    '#..................BBB.#',
+    '#..............===.....#',
+    '#...........===........#',
+    '#.......===............#',
+    '#....===...............#',
+    '#............^^^.......#',
+    '#..===....===.....===..#',
+    '#.....^^^..............#',
+    '########################'
   ],
   objectRows: [
-    '..................',
-    '..................',
-    '..................',
-    '..................',
-    '...........E......',
-    '...............G..',
-    '..................',
-    '..................',
-    '.P..E.............',
-    '..................'
+    '........................',
+    '........................',
+    '..................<G>...',
+    '........................',
+    '........................',
+    '........................',
+    '........................',
+    '........................',
+    '....E......E.......E....',
+    '........................',
+    '.P......................',
+    '........................'
   ],
   decorRows: [
-    '..................',
-    '..r...........gf..',
-    '..................',
-    '..................',
-    '..................',
-    '..................',
-    '..................',
-    '..................',
-    '.......t...t......',
-    '..................'
+    '........................',
+    '..r...............g..f..',
+    '........................',
+    '..................t.....',
+    '........................',
+    '...........t............',
+    '........................',
+    '........................',
+    '............t...........',
+    '.....t..................',
+    '........................',
+    '........................'
   ]
 };
 
@@ -112,94 +106,127 @@ function validateLayer(name, rows, width, height, allowedChars) {
   });
 }
 
-function tileAt(rows, col, row) {
-  return rows[row]?.[col] ?? EMPTY;
-}
-
-function isSolidAt(rows, col, row) {
-  return SOLID_TILES.has(tileAt(rows, col, row));
-}
-
-function assertSingleMarker(objectRows, marker, label) {
-  const positions = [];
-  objectRows.forEach((line, row) => {
-    [...line].forEach((ch, col) => {
-      if (ch === marker) positions.push({ col, row });
-    });
-  });
+function assertSingleMarker(rows, marker, label) {
+  const positions = findMarkersInRows(rows, marker);
   if (positions.length !== 1) throw new Error(`tilemap must contain exactly one ${label}`);
   return positions[0];
 }
 
-export function mergeSolidTiles(terrainRows, tileSize = T) {
-  const platforms = [];
-
-  terrainRows.forEach((line, row) => {
-    let col = 0;
-    while (col < line.length) {
-      if (!SOLID_TILES.has(line[col])) {
-        col++;
-        continue;
-      }
-
-      const start = col;
-      const kindChar = line[col];
-      while (col < line.length && line[col] === kindChar) col++;
-      const cols = col - start;
-      const kind = kindChar === '#' ? 'stone-boundary' : 'stone-ledge';
-      platforms.push(tileRect(start, row, cols, 1, kind, tileSize));
-    }
-  });
-
-  return platforms;
-}
-
-function collectSpikeHazards(terrainRows, tileSize = T) {
-  const spikes = [];
-
-  terrainRows.forEach((line, row) => {
-    let col = 0;
-    while (col < line.length) {
-      if (line[col] !== '^') {
-        col++;
-        continue;
-      }
-      const start = col;
-      while (col < line.length && line[col] === '^') col++;
-      spikes.push(hazardAt(start, row, col - start, tileSize));
-    }
-  });
-
-  return spikes;
-}
-
-function collectDecor(decorRows) {
-  const decor = [];
-  decorRows.forEach((line, row) => {
+function findMarkersInRows(rows, marker) {
+  const positions = [];
+  rows.forEach((line, row) => {
     [...line].forEach((ch, col) => {
-      const type = DECOR_TYPES[ch];
-      if (type) decor.push({ type, col, row });
+      if (ch === marker) positions.push({ col, row });
     });
   });
-  return decor;
+  return positions;
 }
 
-function deriveEnemyPatrol(terrainRows, col, row) {
+function layerRows(level, layer) {
+  return level.tiles?.[`${layer}Rows`] ?? level.tiles?.[layer] ?? [];
+}
+
+export function getTile(level, layer, col, row) {
+  return layerRows(level, layer)[row]?.[col] ?? EMPTY;
+}
+
+export function isSolidTile(tile) {
+  return SOLID_TILES.has(tile);
+}
+
+export function isSolidTileAt(level, col, row) {
+  return isSolidTile(getTile(level, 'terrain', col, row));
+}
+
+export function isSpikeTileAt(level, col, row) {
+  return getTile(level, 'terrain', col, row) === '^';
+}
+
+export function forEachLayerTile(level, layer, callback) {
+  layerRows(level, layer).forEach((line, row) => {
+    [...line].forEach((tile, col) => callback(tile, col, row));
+  });
+}
+
+export function findObjectMarkers(level, marker) {
+  return findMarkersInRows(layerRows(level, 'object'), marker);
+}
+
+export function getGoalRect(level) {
+  const [goal] = findObjectMarkers(level, 'G');
+  let startCol = goal.col;
+  let endCol = goal.col;
+  while (getTile(level, 'object', startCol - 1, goal.row) === '<') startCol--;
+  while (getTile(level, 'object', endCol + 1, goal.row) === '>') endCol++;
+  return tileRect(startCol, goal.row, endCol - startCol + 1, 1, 'gate', level.tileSize);
+}
+
+export function getSpawnPoint(level) {
+  const [spawn] = findObjectMarkers(level, 'P');
+  return spawnAt(spawn.col, spawn.row + 1, level.tileSize);
+}
+
+export function getDecorType(tile) {
+  return DECOR_TYPES[tile];
+}
+
+export function getTileRangeForRect(level, rect) {
+  const tileSize = level.tileSize;
+  return {
+    startCol: Math.floor(rect.x / tileSize),
+    endCol: Math.floor((rect.x + rect.w - 0.001) / tileSize),
+    startRow: Math.floor(rect.y / tileSize),
+    endRow: Math.floor((rect.y + rect.h - 0.001) / tileSize)
+  };
+}
+
+export function solidTileRectsOverlapping(level, rect) {
+  const range = getTileRangeForRect(level, rect);
+  const hits = [];
+  for (let row = range.startRow; row <= range.endRow; row++) {
+    for (let col = range.startCol; col <= range.endCol; col++) {
+      if (isSolidTileAt(level, col, row)) hits.push(tileRect(col, row, 1, 1, 'solid', level.tileSize));
+    }
+  }
+  return hits;
+}
+
+export function spikeHazardRectsOverlapping(level, rect) {
+  const range = getTileRangeForRect(level, rect);
+  const hits = [];
+  for (let row = range.startRow; row <= range.endRow; row++) {
+    for (let col = range.startCol; col <= range.endCol; col++) {
+      if (!isSpikeTileAt(level, col, row)) continue;
+      const tileSize = level.tileSize;
+      hits.push({
+        x: col * tileSize,
+        y: row * tileSize + 46,
+        w: tileSize,
+        h: 24,
+        col,
+        row
+      });
+    }
+  }
+  return hits;
+}
+
+function deriveEnemyPatrol(level, col, row) {
   const floorRow = row + 1;
-  if (!isSolidAt(terrainRows, col, floorRow)) {
+  if (!isSolidTileAt(level, col, floorRow)) {
     throw new Error(`enemy at ${col},${row} must stand above a solid tile`);
   }
 
   let minCol = col;
-  while (minCol > 0 && !isSolidAt(terrainRows, minCol - 1, row) && isSolidAt(terrainRows, minCol - 1, floorRow)) {
+  while (minCol > 0 && !isSolidTileAt(level, minCol - 1, row) && isSolidTileAt(level, minCol - 1, floorRow)) {
     minCol--;
   }
 
   let maxExclusiveCol = col + 1;
   while (
-    maxExclusiveCol < terrainRows[0].length &&
-    !isSolidAt(terrainRows, maxExclusiveCol, row) &&
-    isSolidAt(terrainRows, maxExclusiveCol, floorRow)
+    maxExclusiveCol < level.cols &&
+    !isSolidTileAt(level, maxExclusiveCol, row) &&
+    isSolidTileAt(level, maxExclusiveCol, floorRow)
   ) {
     maxExclusiveCol++;
   }
@@ -207,18 +234,13 @@ function deriveEnemyPatrol(terrainRows, col, row) {
   return { floorRow, minCol, maxExclusiveCol };
 }
 
-function collectEnemies(objectRows, terrainRows, tileSize = T) {
-  const enemies = [];
-  objectRows.forEach((line, row) => {
-    [...line].forEach((ch, col) => {
-      if (ch !== 'E') return;
-      const patrol = deriveEnemyPatrol(terrainRows, col, row);
-      const dir = enemies.length % 2 === 0 ? 1 : -1;
-      const hp = enemies.length === 0 ? 2 : 3;
-      enemies.push(enemyAt(col, patrol.floorRow, patrol.minCol, patrol.maxExclusiveCol, dir, hp, tileSize));
-    });
+export function createEnemySpawns(sourceLevel = level) {
+  return findObjectMarkers(sourceLevel, 'E').map((marker, index) => {
+    const patrol = deriveEnemyPatrol(sourceLevel, marker.col, marker.row);
+    const dir = index % 2 === 0 ? 1 : -1;
+    const hp = index === 0 ? 2 : 3;
+    return enemyAt(marker.col, patrol.floorRow, patrol.minCol, patrol.maxExclusiveCol, dir, hp, sourceLevel.tileSize);
   });
-  return enemies;
 }
 
 export function parseTilemap(definition, tileSize = T) {
@@ -232,13 +254,9 @@ export function parseTilemap(definition, tileSize = T) {
   validateLayer('decorRows', decorRows, cols, rows, DECOR_CHARS);
 
   const spawnMarker = assertSingleMarker(objectRows, 'P', 'player spawn');
-  const goalMarker = assertSingleMarker(objectRows, 'G', 'goal');
-  const spawnFloorRow = spawnMarker.row + 1;
-  if (!isSolidAt(terrainRows, spawnMarker.col, spawnFloorRow)) {
-    throw new Error(`player spawn at ${spawnMarker.col},${spawnMarker.row} must stand above a solid tile`);
-  }
+  assertSingleMarker(objectRows, 'G', 'goal');
 
-  return {
+  const parsedLevel = {
     tileSize,
     cols,
     rows,
@@ -248,19 +266,20 @@ export function parseTilemap(definition, tileSize = T) {
       terrainRows: [...terrainRows],
       objectRows: [...objectRows],
       decorRows: [...decorRows]
-    },
-    spawn: spawnAt(spawnMarker.col, spawnFloorRow, tileSize),
-    platforms: mergeSolidTiles(terrainRows, tileSize),
-    spikes: collectSpikeHazards(terrainRows, tileSize),
-    goal: tileRect(goalMarker.col, goalMarker.row, 1, 1, 'gate', tileSize),
-    decor: collectDecor(decorRows),
-    enemySpawns: collectEnemies(objectRows, terrainRows, tileSize)
+    }
   };
+
+  if (!isSolidTileAt(parsedLevel, spawnMarker.col, spawnMarker.row + 1)) {
+    throw new Error(`player spawn at ${spawnMarker.col},${spawnMarker.row} must stand above a solid tile`);
+  }
+
+  createEnemySpawns(parsedLevel);
+  return parsedLevel;
 }
 
 export const level = parseTilemap(levelDefinition);
 
-export function createPlayer(spawn = level.spawn) {
+export function createPlayer(spawn = getSpawnPoint(level)) {
   return {
     x: spawn.x, y: spawn.y, w: 34, h: 50,
     vx: 0, vy: 0, dir: 1, grounded: false,
@@ -271,5 +290,5 @@ export function createPlayer(spawn = level.spawn) {
 }
 
 export function createEnemies(sourceLevel = level) {
-  return (sourceLevel.enemySpawns || []).map(enemy => ({ ...enemy }));
+  return createEnemySpawns(sourceLevel).map(enemy => ({ ...enemy }));
 }

@@ -1,6 +1,7 @@
 import { assets, isLoaded } from './assets.js';
 import { DEBUG_CAMERA, TILE_SIZE } from './constants.js';
 import { controlsText } from './input.js';
+import { forEachLayerTile, getDecorType, getGoalRect } from './level.js';
 
 function roundedRect(ctx, x,y,w,h,r) {
   ctx.beginPath(); ctx.roundRect(x,y,w,h,r); ctx.fill();
@@ -22,26 +23,31 @@ function drawStoneTile(ctx, x, y, asset) {
 }
 
 function drawTilemap(ctx, level) {
-  const terrainRows = level.tiles?.terrainRows;
-  if (!terrainRows) {
-    for (const p of level.platforms) {
-      for (let y = p.y; y < p.y + p.h; y += TILE_SIZE) {
-        for (let x = p.x; x < p.x + p.w; x += TILE_SIZE) {
-          const topRow = y === p.y;
-          drawStoneTile(ctx, x, y, topRow ? assets.stoneTop : assets.stoneFill);
-        }
-      }
-    }
-    return;
-  }
+  forEachLayerTile(level, 'terrain', (ch, col, row) => {
+    if (ch !== '#' && ch !== '=' && ch !== 'B') return;
+    const x = col * TILE_SIZE;
+    const y = row * TILE_SIZE;
+    const asset = ch === '=' ? assets.stoneTop : ch === 'B' ? assets.stoneBlock : assets.stoneFill;
+    drawStoneTile(ctx, x, y, asset);
+  });
+}
 
-  terrainRows.forEach((line, row) => {
-    [...line].forEach((ch, col) => {
-      if (ch !== '#' && ch !== '=') return;
-      const x = col * TILE_SIZE;
-      const y = row * TILE_SIZE;
-      drawStoneTile(ctx, x, y, ch === '=' ? assets.stoneTop : assets.stoneFill);
-    });
+function drawDecorLayer(ctx, level) {
+  forEachLayerTile(level, 'decor', (ch, col, row) => {
+    const type = getDecorType(ch);
+    if (type) drawAsset(ctx, assets[type], col * TILE_SIZE, row * TILE_SIZE);
+  });
+}
+
+function drawSpikeLayer(ctx, level) {
+  forEachLayerTile(level, 'terrain', (ch, col, row) => {
+    if (ch !== '^') return;
+    const x = col * TILE_SIZE;
+    const y = row * TILE_SIZE;
+    if (!drawFloorSpike(ctx, assets.spikes, x, y)) {
+      ctx.fillStyle = '#6c7472';
+      ctx.beginPath(); ctx.moveTo(x, y + TILE_SIZE); ctx.lineTo(x + TILE_SIZE/2, y + 24); ctx.lineTo(x + TILE_SIZE, y + TILE_SIZE); ctx.fill();
+    }
   });
 }
 
@@ -51,10 +57,22 @@ function drawGoal(ctx, goal) {
   ctx.save();
   ctx.shadowColor = 'rgba(227,185,79,.62)';
   ctx.shadowBlur = 18;
-  if (!drawAsset(ctx, assets.gate, x, y, goal.w, goal.h)) {
-    ctx.fillStyle = '#2d3838'; roundedRect(ctx, x, y, goal.w, goal.h, 18);
-    ctx.strokeStyle = '#d7b15a'; ctx.lineWidth = 3; ctx.strokeRect(x + 12, y + 14, goal.w - 24, goal.h - 28);
+
+  if (goal.cols >= 3) {
+    const leftLoaded = drawAsset(ctx, assets.gateLeft, x, y);
+    const centerLoaded = drawAsset(ctx, assets.gateCenter, x + TILE_SIZE, y);
+    const rightLoaded = drawAsset(ctx, assets.gateRight, x + TILE_SIZE * 2, y);
+    if (leftLoaded && centerLoaded && rightLoaded) {
+      ctx.restore();
+      return;
+    }
+  } else if (drawAsset(ctx, assets.gate, x, y, goal.w, goal.h)) {
+    ctx.restore();
+    return;
   }
+
+  ctx.fillStyle = '#2d3838'; roundedRect(ctx, x, y, goal.w, goal.h, 18);
+  ctx.strokeStyle = '#d7b15a'; ctx.lineWidth = 3; ctx.strokeRect(x + 12, y + 14, goal.w - 24, goal.h - 28);
   ctx.restore();
 }
 
@@ -210,25 +228,13 @@ export function drawGame(game) {
   ctx.save();
   ctx.translate(-cameraX + sx, -cameraY + sy);
 
-  for (const d of level.decor || []) {
-    const asset = assets[d.type];
-    drawAsset(ctx, asset, d.col * TILE_SIZE, d.row * TILE_SIZE);
-  }
+  drawDecorLayer(ctx, level);
 
   drawTilemap(ctx, level);
 
-  drawGoal(ctx, level.goal);
+  drawGoal(ctx, getGoalRect(level));
 
-  for (const s of level.spikes) {
-    for (let i = 0; i < (s.cols || Math.ceil(s.w / TILE_SIZE)); i++) {
-      const x = (s.visualX ?? s.x) + i * TILE_SIZE;
-      const y = s.visualY ?? (s.y - 46);
-      if (!drawFloorSpike(ctx, assets.spikes, x, y)) {
-        ctx.fillStyle = '#6c7472';
-        ctx.beginPath(); ctx.moveTo(x, y + TILE_SIZE); ctx.lineTo(x + TILE_SIZE/2, y + 24); ctx.lineTo(x + TILE_SIZE, y + TILE_SIZE); ctx.fill();
-      }
-    }
-  }
+  drawSpikeLayer(ctx, level);
 
   for (const d of game.dust) { ctx.globalAlpha = Math.max(0,d.life*3); ctx.fillStyle = '#bfffff'; ctx.beginPath(); ctx.arc(d.x,d.y,5,0,Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; }
   for (const e of game.enemies) drawEnemy(game, e);
