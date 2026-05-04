@@ -49,6 +49,8 @@ export function centerCameraOnPlayer(camera, player, view, worldWidth = WORLD_WI
 
 export function updateFollowCamera(game, dt) {
   const { camera, player, view } = game;
+  const worldWidth = game.level?.worldWidth ?? WORLD_WIDTH;
+  const worldHeight = game.level?.worldHeight ?? WORLD_HEIGHT;
   const deadzone = camera.deadzone;
   const playerX = player.x + player.w / 2 + player.dir * camera.lookAheadX;
   const playerY = player.y + player.h / 2;
@@ -62,14 +64,14 @@ export function updateFollowCamera(game, dt) {
   if (playerY < camera.y + deadzone.top) targetY = playerY - deadzone.top;
   else if (playerY > camera.y + deadzone.bottom) targetY = playerY - deadzone.bottom;
 
-  const maxX = Math.max(0, WORLD_WIDTH - view.width);
-  const maxY = Math.max(0, WORLD_HEIGHT - view.height);
+  const maxX = Math.max(0, worldWidth - view.width);
+  const maxY = Math.max(0, worldHeight - view.height);
   camera.targetX = clamp(targetX, 0, maxX);
   camera.targetY = clamp(targetY, 0, maxY);
 
   camera.x = approachExp(camera.x, camera.targetX, camera.smoothingX, dt);
   camera.y = approachExp(camera.y, camera.targetY, camera.smoothingY, dt);
-  clampCameraToWorld(camera, view);
+  clampCameraToWorld(camera, view, worldWidth, worldHeight);
 }
 
 export function updateCamera(game, dt) {

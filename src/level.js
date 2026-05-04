@@ -2,8 +2,17 @@ import { TILE_SIZE, WORLD_COLS, WORLD_ROWS } from './constants.js';
 
 const T = TILE_SIZE;
 
-export function tileRect(col, row, cols = 1, rows = 1, kind = 'stone') {
-  return { x: col * T, y: row * T, w: cols * T, h: rows * T, kind };
+export function tileToWorld(col, row, tileSize = T) {
+  return { x: col * tileSize, y: row * tileSize };
+}
+
+export function worldToTile(x, y, tileSize = T) {
+  return { col: Math.floor(x / tileSize), row: Math.floor(y / tileSize) };
+}
+
+export function tileRect(col, row, cols = 1, rows = 1, kind = 'stone', tileSize = T) {
+  const { x, y } = tileToWorld(col, row, tileSize);
+  return { x, y, w: cols * tileSize, h: rows * tileSize, kind };
 }
 
 function spawnAt(col, floorRow) {
@@ -40,6 +49,8 @@ export const level = {
   tileSize: T,
   cols: WORLD_COLS,
   rows: WORLD_ROWS,
+  worldWidth: WORLD_COLS * T,
+  worldHeight: WORLD_ROWS * T,
   spawn: spawnAt(1, 9),
   platforms: [
     tileRect(0, 0, 18, 1, 'stone-boundary'),
@@ -60,6 +71,10 @@ export const level = {
     { type: 'torch', col: 7, row: 8 },
     { type: 'torch', col: 11, row: 8 },
     { type: 'flag', col: 15, row: 1 }
+  ],
+  enemySpawns: [
+    enemyAt(4, 9, 2, 6, 1, 2),
+    enemyAt(11, 5, 11, 12, -1, 3)
   ]
 };
 
@@ -73,9 +88,6 @@ export function createPlayer(spawn = level.spawn) {
   };
 }
 
-export function createEnemies() {
-  return [
-    enemyAt(4, 9, 2, 6, 1, 2),
-    enemyAt(11, 5, 11, 12, -1, 3)
-  ];
+export function createEnemies(sourceLevel = level) {
+  return (sourceLevel.enemySpawns || []).map(enemy => ({ ...enemy }));
 }

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { approachExp, clampCameraToWorld, createCamera } from '../src/camera.js';
+import { approachExp, clampCameraToWorld, createCamera, updateFollowCamera } from '../src/camera.js';
 import { calculateViewport } from '../src/viewport.js';
 
 test('default viewport fills the available canvas with fractional scale', () => {
@@ -29,4 +29,21 @@ test('exponential approach is frame-rate independent style smoothing toward targ
   expect(next).toBeGreaterThan(0);
   expect(next).toBeLessThan(100);
   expect(approachExp(0, 100, 8, 1)).toBeCloseTo(99.966, 2);
+});
+
+test('follow camera clamps against the active level bounds', () => {
+  const camera = createCamera({ x: 0, y: 0, targetX: 0, targetY: 0, smoothingX: 1000, smoothingY: 1000 });
+  const game = {
+    camera,
+    view: { width: 100, height: 80 },
+    level: { worldWidth: 220, worldHeight: 140 },
+    player: { x: 1000, y: 1000, w: 20, h: 20, dir: 1 }
+  };
+
+  updateFollowCamera(game, 1);
+
+  expect(camera.x).toBe(120);
+  expect(camera.y).toBe(60);
+  expect(camera.targetX).toBe(120);
+  expect(camera.targetY).toBe(60);
 });

@@ -30,7 +30,7 @@ export function createGame(ui) {
     },
     level,
     player: createPlayer(level.spawn),
-    enemies: createEnemies(),
+    enemies: createEnemies(level),
     dust: [],
     particles: [],
     camera: createCamera(),
@@ -48,7 +48,7 @@ export function resetGame(game) {
   setPausedFlag(game, false);
   Object.assign(game.player, createPlayer(game.level.spawn));
   game.enemies.length = 0;
-  game.enemies.push(...createEnemies());
+  game.enemies.push(...createEnemies(game.level));
   game.particles.length = 0;
   game.dust.length = 0;
   game.flags.won = false;
