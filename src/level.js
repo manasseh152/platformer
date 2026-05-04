@@ -520,26 +520,29 @@ export const level = withLevelMeta(parseTilemap(mainLevelDefinition), {
 
 export const gymLevel = withLevelMeta(parseTilemap(movementGymDefinition), {
   id: 'gym',
-  name: 'Movement Gym',
-  kind: 'gym',
+  name: 'Legacy Movement Lab',
+  kind: 'legacy-test-map',
   developerOnly: true,
-  description: 'Jump arcs, dash spacing, ledges, and safe traversal measurements.'
+  deprecated: true,
+  description: 'Deprecated tilemap-only test map. Prefer executable gyms for movement validation.'
 });
 
 export const hazardGymLevel = withLevelMeta(parseTilemap(hazardGymDefinition), {
   id: 'hazard-gym',
-  name: 'Hazard Gym',
-  kind: 'gym',
+  name: 'Legacy Hazard Lab',
+  kind: 'legacy-test-map',
   developerOnly: true,
-  description: 'Spike floors, recovery landings, and hazard collision tuning.'
+  deprecated: true,
+  description: 'Deprecated tilemap-only test map. Prefer executable gyms for hazard validation.'
 });
 
 export const enemyZooLevel = withLevelMeta(parseTilemap(enemyZooDefinition), {
   id: 'enemy-zoo',
-  name: 'Enemy Zoo',
-  kind: 'zoo',
+  name: 'Legacy Enemy Zoo',
+  kind: 'legacy-test-map',
   developerOnly: true,
-  description: 'Patrol lanes, enemy spacing, combat timing, and crowd behavior.'
+  deprecated: true,
+  description: 'Deprecated tilemap-only zoo. Prefer executable gyms for enemy behavior validation.'
 });
 
 export const gateLabLevel = withLevelMeta(parseTilemap(gateLabDefinition), {

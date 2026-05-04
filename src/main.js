@@ -7,7 +7,7 @@ import { createGame, resetGame } from './state.js';
 import { syncGymApi } from './gym.js';
 import { createRuntime } from './runtime.js';
 import { createSceneHost } from './scene-host.js';
-import { createLegacyAppScene } from './scenes/legacy-app-scene.js';
+import { createLevelScene } from './scenes/level-scene.js';
 
 const runtime = createRuntime();
 const ui = getUI();
@@ -18,8 +18,8 @@ game.controlsText = () => controlsText(game.input);
 game.resetGame = () => resetGame(game, runtime);
 
 setupMenu(game, runtime);
-scenes.register(createLegacyAppScene(game));
-scenes.switchScene('legacy-app');
+scenes.register(createLevelScene(game));
+scenes.switchScene('level');
 syncGymApi(game, runtime);
 setupResize(game);
 

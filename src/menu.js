@@ -11,11 +11,10 @@ const backablePages = ['level-select', 'settings', 'settings-category'];
 
 const levelKindLabels = {
   campaign: 'Campaign',
-  gym: 'Gyms',
-  zoo: 'Zoos',
+  'legacy-test-map': 'Deprecated Test Maps',
   sandbox: 'Sandboxes'
 };
-const levelKindOrder = ['campaign', 'gym', 'zoo', 'sandbox'];
+const levelKindOrder = ['campaign', 'legacy-test-map', 'sandbox'];
 const motionOrder = ['system', 'on', 'off'];
 
 export function visibleFocusables(root) {
@@ -115,7 +114,7 @@ function renderLevelSelect(game, message = '') {
         ${grouped.get(kind).map(level => `<button type="button" class="ds-setting-row level-select-row${level.id === current.id ? ' is-current' : ''}" data-level-id="${level.id}">
           <span class="ds-setting-row__copy">
             <span class="ds-setting-row__label">${level.name}</span>
-            <span class="ds-setting-row__description">${level.description || ''}${level.developerOnly ? ' // Developer' : ''}</span>
+            <span class="ds-setting-row__description">${level.description || ''}${level.deprecated ? ' // Deprecated' : ''}${level.developerOnly ? ' // Developer' : ''}</span>
           </span>
           <span class="ds-setting-row__value">${level.id === current.id ? 'Selected' : 'Load'}</span>
         </button>`).join('')}

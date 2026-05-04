@@ -129,8 +129,8 @@ test('developer maps are only available in the normal Level Select when Develope
   await page.locator('#startLevelSelectButton').click();
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'level-select');
   await expect(page.getByRole('button', { name: /Main Level/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Movement Gym/ })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /Enemy Zoo/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Legacy Movement Lab/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Legacy Enemy Zoo/ })).toHaveCount(0);
   await page.locator('[data-level-select-back]').click();
 
   await openStartSettings(page);
@@ -143,13 +143,13 @@ test('developer maps are only available in the normal Level Select when Develope
 
   await page.locator('#startLevelSelectButton').click();
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'level-select');
-  await expect(page.getByRole('button', { name: /Movement Gym/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Hazard Gym/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Enemy Zoo/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Legacy Movement Lab/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Legacy Hazard Lab/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Legacy Enemy Zoo/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Gate Lab/ })).toBeVisible();
-  await page.getByRole('button', { name: /Enemy Zoo/ }).click();
+  await page.getByRole('button', { name: /Legacy Enemy Zoo/ }).click();
   await expect(page.locator('body')).toHaveAttribute('data-level-id', 'enemy-zoo');
-  await expect(page.locator('#selectedLevelSummary')).toContainText('Enemy Zoo');
+  await expect(page.locator('#selectedLevelSummary')).toContainText('Legacy Enemy Zoo');
 
   await openStartSettings(page);
   await openCategory(page, 'advanced', 'Advanced');
@@ -183,7 +183,7 @@ test('controller can navigate and choose levels in Level Select', async ({ page 
 
   await pressPadButtonFrom(page, 0, 'button[data-level-id="gym"]');
   await expect(page.locator('body')).toHaveAttribute('data-level-id', 'gym');
-  await expect(page.locator('#selectedLevelSummary')).toContainText('Movement Gym');
+  await expect(page.locator('#selectedLevelSummary')).toContainText('Legacy Movement Lab');
 });
 
 test('controller diagonal menu directions navigate horizontal button groups', async ({ page }) => {

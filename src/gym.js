@@ -16,8 +16,8 @@ function round(value) {
 export function snapshotGame(game) {
   return {
     scene: game.runtime?.scenes?.snapshot?.() ?? {
-      id: 'legacy-app',
-      kind: 'legacy'
+      id: 'level',
+      kind: 'level'
     },
     level: game.level ? {
       id: game.level.id,

@@ -89,15 +89,15 @@ test('initial level resolution uses the same developer-only gate as the level ma
   expect(resolveInitialLevel({ developerMode: true }, '?level=missing')).toBe(level);
 });
 
-test('developer showcase levels are split into focused gyms, zoos, and labs', () => {
+test('developer showcase levels are deprecated tilemap labs while gyms move to executable scenarios', () => {
   expect(getLevelById('gym')).toBe(gymLevel);
   expect(getLevelById('hazard-gym')).toBe(hazardGymLevel);
   expect(getLevelById('enemy-zoo')).toBe(enemyZooLevel);
   expect(getLevelById('gate-lab')).toBe(gateLabLevel);
 
-  expect(gymLevel).toMatchObject({ id: 'gym', name: 'Movement Gym', kind: 'gym', developerOnly: true });
-  expect(hazardGymLevel).toMatchObject({ id: 'hazard-gym', kind: 'gym', developerOnly: true });
-  expect(enemyZooLevel).toMatchObject({ id: 'enemy-zoo', kind: 'zoo', developerOnly: true });
+  expect(gymLevel).toMatchObject({ id: 'gym', name: 'Legacy Movement Lab', kind: 'legacy-test-map', developerOnly: true, deprecated: true });
+  expect(hazardGymLevel).toMatchObject({ id: 'hazard-gym', name: 'Legacy Hazard Lab', kind: 'legacy-test-map', developerOnly: true, deprecated: true });
+  expect(enemyZooLevel).toMatchObject({ id: 'enemy-zoo', name: 'Legacy Enemy Zoo', kind: 'legacy-test-map', developerOnly: true, deprecated: true });
   expect(gateLabLevel).toMatchObject({ id: 'gate-lab', kind: 'sandbox', developerOnly: true });
   expect(createEnemies(gymLevel)).toHaveLength(0);
   expect(createEnemies(enemyZooLevel)).toHaveLength(6);

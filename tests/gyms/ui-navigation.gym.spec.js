@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
+import { getGymById } from '../../src/gyms/registry.js';
 
 async function writeSnapshot(testInfo, name, snapshot) {
   await writeFile(testInfo.outputPath(`${name}.json`), `${JSON.stringify(snapshot, null, 2)}\n`);
@@ -12,7 +13,9 @@ async function captureCheckpoint(page, testInfo, name) {
   return snapshot;
 }
 
-test('UI Navigation Gym: developer mode exposes gyms and loads Movement Gym', async ({ page }, testInfo) => {
+const gym = getGymById('ui-navigation');
+
+test(`${gym.name}: developer mode exposes deprecated test maps and loads Legacy Movement Lab`, async ({ page }, testInfo) => {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
@@ -33,7 +36,7 @@ test('UI Navigation Gym: developer mode exposes gyms and loads Movement Gym', as
 
   const developerSnapshot = await captureCheckpoint(page, testInfo, '01-developer-mode-enabled');
   expect(developerSnapshot).toMatchObject({
-    scene: { id: 'legacy-app', kind: 'legacy' },
+    scene: { id: 'level', kind: 'level', levelId: 'main' },
     level: { id: 'main', name: 'Main Level', kind: 'campaign', developerOnly: false },
     ui: { started: false, paused: false, menuPage: 'settings-category', menuOrigin: 'start' },
     settings: { developerMode: true }
@@ -48,8 +51,8 @@ test('UI Navigation Gym: developer mode exposes gyms and loads Movement Gym', as
   await page.locator('#startLevelSelectButton').click();
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'level-select');
   await expect(page.getByRole('button', { name: /Main Level/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Movement Gym/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Hazard Gym/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Legacy Movement Lab/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Legacy Hazard Lab/ })).toBeVisible();
 
   const levelSelectSnapshot = await captureCheckpoint(page, testInfo, '02-level-select-with-gyms');
   expect(levelSelectSnapshot).toMatchObject({
@@ -58,13 +61,13 @@ test('UI Navigation Gym: developer mode exposes gyms and loads Movement Gym', as
     settings: { developerMode: true }
   });
 
-  await page.getByRole('button', { name: /Movement Gym/ }).click();
+  await page.getByRole('button', { name: /Legacy Movement Lab/ }).click();
   await expect(page.locator('body')).toHaveAttribute('data-level-id', 'gym');
-  await expect(page.locator('#selectedLevelSummary')).toContainText('Movement Gym');
+  await expect(page.locator('#selectedLevelSummary')).toContainText('Legacy Movement Lab');
 
   const movementGymSnapshot = await captureCheckpoint(page, testInfo, '03-movement-gym-selected');
   expect(movementGymSnapshot).toMatchObject({
-    level: { id: 'gym', name: 'Movement Gym', kind: 'gym', developerOnly: true },
+    level: { id: 'gym', name: 'Legacy Movement Lab', kind: 'legacy-test-map', developerOnly: true },
     ui: { started: false, paused: false, menuPage: 'main' },
     settings: { developerMode: true }
   });
