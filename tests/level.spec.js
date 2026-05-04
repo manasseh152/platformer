@@ -6,9 +6,11 @@ import {
   getDecorType,
   getGoalRect,
   getGoalTriggerRect,
+  getLevelById,
   getTile,
   getSpawnPoint,
   isSolidTileAt,
+  gymLevel,
   level,
   parseTilemap,
   solidTileRectsOverlapping,
@@ -75,6 +77,17 @@ test('tilemap parser exposes layered tiles and direct query helpers derive gamep
     expect.objectContaining({ x: 70, y: 210, w: 70, h: 70 }),
     expect.objectContaining({ x: 140, y: 210, w: 70, h: 70 })
   ]));
+});
+
+test('developer gym is a named developer-only map with core platformer fixtures', () => {
+  expect(getLevelById('gym')).toBe(gymLevel);
+  expect(gymLevel).toMatchObject({ id: 'gym', name: 'Developer Gym', developerOnly: true });
+  expect(getSpawnPoint(gymLevel)).toEqual(expect.objectContaining({ x: expect.any(Number), y: expect.any(Number) }));
+  expect(createEnemies(gymLevel)).toHaveLength(2);
+  const goal = getGoalRect(gymLevel);
+  for (let col = goal.col; col < goal.col + goal.cols; col++) {
+    expect(isSolidTileAt(gymLevel, col, goal.row + 1)).toBe(true);
+  }
 });
 
 test('default gate is completable from solid support blocks', () => {

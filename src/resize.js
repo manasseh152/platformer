@@ -6,10 +6,14 @@ export function applyResize(game) {
   game.view.dpr = window.devicePixelRatio || 1;
   game.canvas.width = Math.max(1, Math.round(rect.width * game.view.dpr));
   game.canvas.height = Math.max(1, Math.round(rect.height * game.view.dpr));
-  const viewport = calculateViewport(game.canvas.width, game.canvas.height, game.view.width, game.view.height);
-  game.view.scale = viewport.scale;
-  game.view.offsetX = viewport.offsetX;
-  game.view.offsetY = viewport.offsetY;
+  const viewport = calculateViewport(game.canvas.width, game.canvas.height, game.view.bufferWidth, game.view.bufferHeight);
+  game.view.scale = 1;
+  game.view.offsetX = 0;
+  game.view.offsetY = 0;
+  game.view.displayScale = viewport.scale;
+  game.view.displayOffsetX = viewport.offsetX;
+  game.view.displayOffsetY = viewport.offsetY;
+  game.presenter.resize(game.canvas.width, game.canvas.height);
   game.ctx.imageSmoothingEnabled = false;
   game.canvas.classList.remove('resizing');
   game.view.firstResizeDone = true;

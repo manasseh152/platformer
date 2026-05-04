@@ -75,6 +75,32 @@ test('settings hub, accessibility motion, advanced JSON, and start flow', async 
   await expect(pauseScreen).toHaveAttribute('data-menu-page', 'main');
 });
 
+test('developer maps are only available when Developer Mode is enabled', async ({ page }) => {
+  await page.goto('/?level=gym');
+  await expect(page.locator('body')).toHaveAttribute('data-level-id', 'main');
+
+  await openStartSettings(page);
+  await openCategory(page, 'advanced', 'Advanced');
+  await expect(page.locator('#developerTools')).toBeHidden();
+
+  await page.locator('[data-setting-row="developer-mode"]').click();
+  await expect(page.locator('#developerTools')).toBeVisible();
+  await expect(page.locator('#developerTools')).toContainText('Current map: Main Level');
+  await page.getByRole('button', { name: 'Open Gym Level' }).click();
+  await expect(page.locator('body')).toHaveAttribute('data-level-id', 'gym');
+  await expect(page.locator('#settingsJsonStatus')).toContainText('Loaded Developer Gym');
+
+  await page.locator('[data-setting-row="developer-mode"]').click();
+  await expect(page.locator('body')).toHaveAttribute('data-level-id', 'main');
+  await expect(page.locator('#developerTools')).toBeHidden();
+
+  const settings = await page.evaluate(() => JSON.parse(localStorage.getItem('chibi.settings')));
+  settings.developerMode = true;
+  await page.evaluate(value => localStorage.setItem('chibi.settings', JSON.stringify(value)), settings);
+  await page.goto('/?level=gym');
+  await expect(page.locator('body')).toHaveAttribute('data-level-id', 'gym');
+});
+
 test('keyboard and controller settings rows, binds, diagnostics, and pause flow', async ({ page }) => {
   const body = page.locator('body');
   const pauseScreen = page.locator('#pauseScreen');

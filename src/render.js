@@ -271,11 +271,21 @@ export function syncHtmlHud(game) {
   document.body.classList.toggle('game-won', game.flags.won);
 }
 
+function snapRenderX(game, x) {
+  const snap = game.renderSnap;
+  return snap ? snap.cameraX + Math.round((x - snap.cameraX) * snap.scaleX) / snap.scaleX : x;
+}
+
+function snapRenderY(game, y) {
+  const snap = game.renderSnap;
+  return snap ? snap.cameraY + Math.round((y - snap.cameraY) * snap.scaleY) / snap.scaleY : y;
+}
+
 function drawPlayer(game) {
   const { ctx, player } = game;
   const flicker = player.inv > 0 && Math.floor(performance.now()/70)%2 === 0;
   if (flicker) return;
-  const x = player.x, y = player.y, d = player.dir;
+  const x = snapRenderX(game, player.x), y = snapRenderY(game, player.y), d = player.dir;
   ctx.save();
   ctx.translate(x + player.w/2, y + player.h/2);
   ctx.scale(d, 1);
@@ -306,7 +316,7 @@ function drawEnemy(game, e) {
   if (e.hp <= 0) return;
   const { ctx } = game;
   ctx.save();
-  ctx.translate(e.x, e.y);
+  ctx.translate(snapRenderX(game, e.x), snapRenderY(game, e.y));
   ctx.fillStyle = e.hurt > 0 ? '#ffffff' : '#4a183f'; roundedRect(ctx, 0, 8, e.w, e.h-4, 13);
   ctx.fillStyle = '#ff7bd5'; ctx.fillRect(10, 20, 5, 5); ctx.fillRect(27, 20, 5, 5);
   ctx.strokeStyle = '#8e497b'; ctx.lineWidth = 3;
@@ -316,21 +326,28 @@ function drawEnemy(game, e) {
 }
 
 export function drawGame(game) {
-  const { ctx, canvas, view, level, ui } = game;
+  const { ctx, renderCanvas, view, level, ui } = game;
   ctx.imageSmoothingEnabled = false;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawCanvasBackdrop(ctx, canvas);
-  ctx.setTransform(view.scale, 0, 0, view.scale, view.offsetX, view.offsetY);
+  ctx.clearRect(0, 0, renderCanvas.width, renderCanvas.height);
+  ctx.fillStyle = '#080b11';
+  ctx.fillRect(0, 0, renderCanvas.width, renderCanvas.height);
+  ctx.setTransform(renderCanvas.width / view.width, 0, 0, renderCanvas.height / view.height, 0, 0);
 
   const sx = Math.round((Math.random()-.5)*game.camera.shake*24);
   const sy = Math.round((Math.random()-.5)*game.camera.shake*24);
-  const cameraX = Math.round(game.camera.x);
-  const cameraY = Math.round(game.camera.y);
-  drawDungeonBackdrop(ctx, view, { x: cameraX - sx, y: cameraY - sy });
+  const cameraScaleX = renderCanvas.width / view.width;
+  const cameraScaleY = renderCanvas.height / view.height;
+  const desiredCameraX = game.camera.x - sx;
+  const desiredCameraY = game.camera.y - sy;
+  const cameraX = Math.round(desiredCameraX * cameraScaleX) / cameraScaleX;
+  const cameraY = Math.round(desiredCameraY * cameraScaleY) / cameraScaleY;
+  const subpixelOffsetX = (cameraX - desiredCameraX) * cameraScaleX;
+  const subpixelOffsetY = (cameraY - desiredCameraY) * cameraScaleY;
+  game.renderSnap = { cameraX, cameraY, scaleX: cameraScaleX, scaleY: cameraScaleY };
 
   ctx.save();
-  ctx.translate(-cameraX + sx, -cameraY + sy);
+  ctx.translate(-cameraX, -cameraY);
 
   drawBackdropLayer(ctx, level);
 
@@ -342,10 +359,10 @@ export function drawGame(game) {
 
   drawSpikeLayer(ctx, level);
 
-  for (const d of game.dust) { ctx.globalAlpha = Math.max(0,d.life*3); ctx.fillStyle = '#bfffff'; ctx.beginPath(); ctx.arc(d.x,d.y,5,0,Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; }
+  for (const d of game.dust) { ctx.globalAlpha = Math.max(0,d.life*3); ctx.fillStyle = '#bfffff'; ctx.beginPath(); ctx.arc(snapRenderX(game,d.x),snapRenderY(game,d.y),5,0,Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; }
   for (const e of game.enemies) drawEnemy(game, e);
   drawPlayer(game);
-  for (const p of game.particles) { ctx.globalAlpha = Math.max(0,p.life*2); ctx.fillStyle = p.color; ctx.fillRect(p.x,p.y,4,4); ctx.globalAlpha = 1; }
+  for (const p of game.particles) { ctx.globalAlpha = Math.max(0,p.life*2); ctx.fillStyle = p.color; ctx.fillRect(snapRenderX(game,p.x),snapRenderY(game,p.y),4,4); ctx.globalAlpha = 1; }
 
   if (DEBUG_CAMERA) {
     ctx.strokeStyle = 'rgba(255,255,0,.8)';
@@ -362,6 +379,8 @@ export function drawGame(game) {
 
   ctx.restore();
 
+  game.renderSnap = null;
   syncHtmlHud(game);
   ui.controlsEl.textContent = controlsText(game.input);
+  game.presenter.present(subpixelOffsetX, subpixelOffsetY);
 }

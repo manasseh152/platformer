@@ -9,6 +9,10 @@ const OBJECT_CHARS = new Set([EMPTY, 'P', 'E', 'G', '<', '>']);
 const DECOR_CHARS = new Set([EMPTY, 'r', 'g', 't', 'f']);
 const BACKDROP_CHARS = new Set([EMPTY, 'a', 'k', 'c', 'd']);
 
+function withLevelMeta(parsedLevel, meta) {
+  return Object.assign(parsedLevel, meta);
+}
+
 export const DECOR_TYPES = {
   r: 'bannerRed',
   g: 'bannerGreen',
@@ -47,7 +51,7 @@ function enemyAt(col, floorRow, minCol, maxExclusiveCol, dir = 1, hp = 3, tileSi
   };
 }
 
-export const levelDefinition = {
+export const mainLevelDefinition = {
   terrainRows: [
     '########################',
     '#......................#',
@@ -87,6 +91,65 @@ export const levelDefinition = {
     '........................',
     '.....t.........t........',
     '........................',
+    '........................',
+    '........................'
+  ],
+  backdropRows: [
+    '........................',
+    '.a..k.....a.....k..a....',
+    '....d..........c........',
+    '........a.........d.....',
+    '..k.........d...........',
+    '...............a....k...',
+    '....c.....k.............',
+    '............d...........',
+    '..d.............k.......',
+    '........a...............',
+    '...k.........c.....d....',
+    '........................'
+  ]
+};
+
+export const gymLevelDefinition = {
+  terrainRows: [
+    '########################',
+    '#......................#',
+    '#......................#',
+    '#...............===....#',
+    '#...........===........#',
+    '#.......===............#',
+    '#......................#',
+    '#...==.....==....==....#',
+    '#........^^^...........#',
+    '#..===......===.....=..#',
+    '#......................#',
+    '########################'
+  ],
+  objectRows: [
+    '........................',
+    '........................',
+    '................<G>.....',
+    '........................',
+    '........................',
+    '........................',
+    '....E...................',
+    '........................',
+    '...E....................',
+    '........................',
+    '..P.....................',
+    '........................'
+  ],
+  decorRows: [
+    '........................',
+    '..g......t.....t.....r..',
+    '........................',
+    '................f.......',
+    '...........t............',
+    '.......f................',
+    '........................',
+    '...t.......t......t.....',
+    '........................',
+    '..f...........f.....f...',
     '........................',
     '........................'
   ],
@@ -307,7 +370,27 @@ export function parseTilemap(definition, tileSize = T) {
   return parsedLevel;
 }
 
-export const level = parseTilemap(levelDefinition);
+export const level = withLevelMeta(parseTilemap(mainLevelDefinition), {
+  id: 'main',
+  name: 'Main Level',
+  developerOnly: false
+});
+
+export const gymLevel = withLevelMeta(parseTilemap(gymLevelDefinition), {
+  id: 'gym',
+  name: 'Developer Gym',
+  developerOnly: true,
+  description: 'Metrics map for jump spacing, hazards, enemies, and gate validation.'
+});
+
+export const levels = {
+  main: level,
+  gym: gymLevel
+};
+
+export function getLevelById(id) {
+  return levels[id] ?? null;
+}
 
 export function createPlayer(spawn = getSpawnPoint(level)) {
   return {

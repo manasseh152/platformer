@@ -26,14 +26,14 @@ export function createCamera(overrides = {}) {
     targetY: 0,
     shake: 0,
     mode: 'follow',
-    lookAheadX: 70,
+    lookAheadX: 83,
     smoothingX: 8,
     smoothingY: 4,
     deadzone: {
-      left: 220,
-      right: 360,
-      top: 120,
-      bottom: 230
+      left: 258,
+      right: 422,
+      top: 138,
+      bottom: 266
     },
     ...overrides
   };

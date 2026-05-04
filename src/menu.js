@@ -1,6 +1,6 @@
 import { bindKey, bindLabels, findBindConflict, menuButtons, renderInputHints, resetControllerInput, resetDefaultGamepadBinds, resetDefaultKeyBinds, setBindStatus, setControllerStatus } from './input.js';
 import { syncSettingsFromInput, replaceSettings, saveSettings, serializeSettings } from './settings.js';
-import { setPausedFlag } from './state.js';
+import { setActiveLevel, setPausedFlag } from './state.js';
 import { applyMotionPreference, runDOMTransition, shouldReduceMotion, setupMotionPreference } from './transitions.js';
 import { renderSettings, renderSettingsCategory, refreshDynamicRefs, selectedCategory } from './settings-ui.js';
 
@@ -219,7 +219,12 @@ function handleReplaceSettings(game) {
       renderSettings(game);
       updateMenuChrome(game);
     };
-    const after = () => { ui.settingsJson.value = serializeSettings(game); ui.settingsJsonStatus.textContent = 'Replaced app settings.'; focusFirstMenuItem(game); };
+    const after = () => {
+      if (!game.settings.developerMode && game.level?.developerOnly) setActiveLevel(game, 'main');
+      ui.settingsJson.value = serializeSettings(game);
+      ui.settingsJsonStatus.textContent = 'Replaced app settings.';
+      focusFirstMenuItem(game);
+    };
     const developerChangesLayout = developerWasVisible !== game.settings.developerMode || normalized.developerMode !== game.settings.developerMode;
     if (developerChangesLayout) runDOMTransition(game, apply, after); else { apply(); after(); }
   } catch (err) { ui.settingsJsonStatus.textContent = `Replace failed: ${err.message}`; }
@@ -247,9 +252,20 @@ function toggleDeveloperMode(game) {
   runDOMTransition(game, () => {
     game.settings.developerMode = !game.settings.developerMode;
     game.settings = saveSettings(game.settings);
+    if (!game.settings.developerMode && game.level?.developerOnly) setActiveLevel(game, 'main');
     renderSettingsCategory(game);
     updateMenuChrome(game);
   }, () => focusFirstMenuItem(game));
+}
+
+function loadDeveloperLevel(game, levelId) {
+  if (levelId !== 'main' && !game.settings.developerMode) {
+    if (game.ui.settingsJsonStatus) game.ui.settingsJsonStatus.textContent = 'Enable Developer Mode to load developer maps.';
+    return;
+  }
+  const loaded = setActiveLevel(game, levelId);
+  renderSettingsCategory(game);
+  if (game.ui.settingsJsonStatus) game.ui.settingsJsonStatus.textContent = loaded ? `Loaded ${game.level.name}.` : 'Map not found.';
 }
 
 function resetBinds(game, device) {
@@ -283,6 +299,8 @@ function handleSettingsClick(game, e) {
   if (action === 'reset-controller') return resetBinds(game, 'controller');
   if (action === 'dump-settings') return dumpSettings(game);
   if (action === 'replace-settings') return handleReplaceSettings(game);
+  if (action === 'load-main-level') return loadDeveloperLevel(game, 'main');
+  if (action === 'load-gym-level') return loadDeveloperLevel(game, 'gym');
 }
 
 export function setupMenu(game) {

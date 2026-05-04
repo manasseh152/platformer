@@ -569,20 +569,6 @@ kbd.ds-keycap {
 
 /* === Game shell and HUD =================================================== */
 #gameShell { position: fixed; inset: 0; background: #0a0d12; }
-#gameShell::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0;
-  background:
-    linear-gradient(180deg, rgba(5,8,13,.42), transparent 28%, transparent 72%, rgba(5,8,13,.54)),
-    radial-gradient(circle at 12% 10%, rgba(var(--color-accent-rgb), .13), transparent 24%),
-    radial-gradient(circle at 88% 92%, rgba(89,217,231,.10), transparent 28%);
-  transition: opacity .16s ease;
-}
-body.playing #gameShell::before { opacity: 1; }
 body.game-over #gameShell::after,
 body.game-won #gameShell::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: rgba(0,0,0,.40); }
 canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; background: #0a0d12; opacity: 0; transition: opacity .16s ease, filter .16s ease; }

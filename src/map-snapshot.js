@@ -1,6 +1,6 @@
 import { assets } from './assets.js';
 import { createEnemies, createPlayer, getGoalRect, getSpawnPoint, level as defaultLevel } from './level.js';
-import { drawDecorLayer, drawDungeonBackdrop, drawGoal, drawSpikeLayer, drawTilemap } from './render.js';
+import { drawBackdropLayer, drawDecorLayer, drawGoal, drawSpikeLayer, drawTilemap } from './render.js';
 
 function waitForAsset(asset) {
   if (!asset || typeof asset.addEventListener !== 'function' || asset.complete) return Promise.resolve();
@@ -56,8 +56,9 @@ export async function renderMapToCanvas(sourceLevel = defaultLevel) {
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
 
-  const view = { width: canvas.width, height: canvas.height };
-  drawDungeonBackdrop(ctx, view, { x: 0, y: 0 });
+  ctx.fillStyle = '#080b11';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawBackdropLayer(ctx, sourceLevel);
   drawDecorLayer(ctx, sourceLevel);
   drawTilemap(ctx, sourceLevel);
   drawGoal(ctx, getGoalRect(sourceLevel));
