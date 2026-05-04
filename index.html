@@ -1,0 +1,1390 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chibi Hollow Platformer</title>
+  <style>
+    :root {
+      --void: #05070a;
+      --panel: rgba(14, 18, 22, .82);
+      --panel-solid: #11171c;
+      --line: rgba(174, 231, 255, .16);
+      --line-hot: rgba(174, 231, 255, .62);
+      --text: #edf8fb;
+      --muted: #8fa3aa;
+      --accent: #9ee7ff;
+      --accent-2: #f0ff6a;
+      --shadow: 0 28px 90px rgba(0,0,0,.62);
+      --mono: "Cascadia Mono", "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+      --display: "Bahnschrift", "Aptos Display", "Segoe UI Variable Display", "Trebuchet MS", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--void); color: var(--text); font-family: var(--display); scroll-behavior: smooth; }
+    body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 20; opacity: .38; background: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px) 0 0 / 100% 4px, radial-gradient(circle at 18% 16%, rgba(158,231,255,.20), transparent 28%), radial-gradient(circle at 84% 76%, rgba(240,255,106,.10), transparent 24%); mix-blend-mode: screen; }
+    canvas { width: 100vw; height: 100vh; display: block; image-rendering: pixelated; background: radial-gradient(circle at 50% 35%, #20213c 0%, #090912 70%); opacity: 0; transition: opacity .18s ease, filter .18s ease; }
+    body.playing canvas { opacity: 1; }
+    body.playing canvas.resizing { opacity: .72; filter: blur(.8px) saturate(.8); }
+    canvas > .canvas-html { color: var(--text); font-family: var(--display); text-shadow: 0 2px 4px #000; pointer-events: none; }
+    #hud { width: 330px; padding: 20px 24px; border-left: 3px solid rgba(158,231,255,.7); background: linear-gradient(90deg, rgba(5,7,10,.55), transparent); }
+    #hud .title { font-weight: 900; font-size: 18px; letter-spacing: .18em; text-transform: uppercase; margin-bottom: 12px; }
+    #hearts { display: flex; gap: 8px; margin-bottom: 12px; }
+    .heart { width: 18px; height: 18px; border-radius: 6px 6px 50% 50%; transform: rotate(45deg); background: #2c353b; border: 1px solid rgba(158,231,255,.42); box-shadow: inset 0 0 0 2px rgba(0,0,0,.15); }
+    .heart.full { background: var(--accent); box-shadow: 0 0 18px rgba(158,231,255,.45); }
+    #objective, #dashStatus { color: var(--muted); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+    #dashStatus.ready { color: var(--accent-2); }
+    #controls { width: min(1020px, calc(100vw - 32px)); padding: 10px 14px; opacity: .92; font-size: 13px; line-height: 1.35; letter-spacing: .06em; text-transform: uppercase; color: #c6d5da; background: rgba(5, 7, 10, .62); border: 1px solid rgba(255,255,255,.08); border-radius: 999px; }
+    #message { width: 620px; padding: 34px 42px; text-align: center; background: rgba(5,7,10,.78); border: 1px solid var(--line-hot); border-radius: 28px; box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.08); }
+    #message .big { font-size: 54px; font-weight: 900; margin-bottom: 12px; letter-spacing: -.04em; }
+    #message .small { font-size: 18px; color: var(--muted); }
+
+    #startScreen, #pauseScreen { position: fixed; inset: 0; display: grid; place-items: center; z-index: 10; padding: 28px; overflow: auto; overscroll-behavior: contain; color: var(--text); text-align: left; transition: opacity .18s ease; background: linear-gradient(110deg, rgba(5,7,10,.95) 0 32%, rgba(5,7,10,.64) 58%, rgba(5,7,10,.88) 100%), radial-gradient(circle at 70% 28%, rgba(158,231,255,.18), transparent 34%), radial-gradient(circle at 18% 78%, rgba(240,255,106,.10), transparent 30%); }
+    #startScreen::after, #pauseScreen::after { content: ""; position: fixed; inset: 24px; pointer-events: none; border: 1px solid rgba(255,255,255,.06); border-radius: 30px; box-shadow: inset 0 0 80px rgba(158,231,255,.045); }
+    #pauseScreen { z-index: 9; opacity: 0; pointer-events: none; background: linear-gradient(110deg, rgba(5,7,10,.88), rgba(5,7,10,.74)), radial-gradient(circle at 74% 22%, rgba(158,231,255,.13), transparent 35%); }
+    body.start-settings #pauseScreen { opacity: 1; pointer-events: auto; z-index: 11; }
+    body.playing #startScreen { opacity: 0; pointer-events: none; }
+    body.paused #pauseScreen { opacity: 1; pointer-events: auto; }
+    body.paused canvas { filter: saturate(.75) brightness(.72); }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; animation-timing-function: ease; }
+    #startScreen { view-transition-name: start-screen; }
+    #pauseScreen { view-transition-name: pause-screen; }
+    #startScreen .menu-card { view-transition-name: start-card; }
+    #pauseScreen .menu-card { view-transition-name: menu-card; }
+    #settingsPanel { view-transition-name: settings-panel; }
+
+    #startScreen button:focus, #pauseScreen button:focus, #startScreen input:focus, #pauseScreen input:focus, #startScreen textarea:focus, #pauseScreen textarea:focus, .controller-focus { outline: 0 !important; border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(158,231,255,.18), 0 0 38px rgba(158,231,255,.38), inset 0 1px 0 rgba(255,255,255,.14) !important; }
+    button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 0; box-shadow: 0 0 0 3px rgba(158,231,255,.18), 0 0 38px rgba(158,231,255,.38); }
+
+    .menu-card { width: min(860px, 100%); max-height: calc(100vh - 56px); overflow: auto; padding: 34px; border: 1px solid var(--line); border-radius: 34px; background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.018)), var(--panel); box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.10); }
+    .menu-card::before { content: "GAME MENU"; display: inline-flex; margin-bottom: 24px; padding: 6px 10px; border: 1px solid rgba(158,231,255,.22); border-radius: 999px; color: var(--accent); font: 700 11px var(--mono); letter-spacing: .16em; }
+    #startScreen .menu-card::before { content: "LOCAL SESSION"; }
+    #settingsPanel::before { content: "OPTIONS"; display: block; color: var(--accent-2); font: 800 11px var(--mono); letter-spacing: .18em; margin-bottom: 10px; }
+    #pauseScreen.settings-open #pauseTitle::before { content: "Settings"; }
+    #pauseScreen.settings-open #pauseTitle { font-size: 0; }
+    #pauseScreen.settings-open #pauseTitle::before { font-size: clamp(38px, 6vw, 70px); line-height: .88; letter-spacing: -.075em; }
+    .menu-card h1, .menu-card h2 { margin: 0 0 10px; font-size: clamp(44px, 7vw, 86px); line-height: .88; letter-spacing: -.075em; font-weight: 900; }
+    .menu-card h2 { font-size: clamp(38px, 6vw, 70px); }
+    .menu-card p { margin: 0 0 22px; color: var(--muted); max-width: 58ch; line-height: 1.55; font-size: 15px; }
+    .menu-actions { display: grid; grid-template-columns: 1fr; gap: 10px; width: min(360px, 100%); margin: 26px 0 0; }
+    .menu-actions button, .settings-actions button, .bind-row button, #startButton, #startSettingsButton { border: 1px solid rgba(255,255,255,.10); border-radius: 18px; background: rgba(255,255,255,.045); color: var(--text); padding: 14px 18px; font: 850 14px var(--display); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; text-align: left; transition: transform .14s ease, border-color .14s ease, background .14s ease, color .14s ease, box-shadow .14s ease; }
+    .menu-actions button:hover, .settings-actions button:hover, .bind-row button:hover { transform: translateX(4px); border-color: rgba(158,231,255,.46); background: rgba(158,231,255,.08); }
+    .menu-actions button:first-child, #startButton, #resumeButton { background: linear-gradient(90deg, rgba(158,231,255,.95), rgba(240,255,106,.80)); color: #071014; border-color: transparent; }
+    .menu-actions button.secondary, .settings-actions button.secondary { background: rgba(255,255,255,.035); color: var(--text); }
+    .menu-actions button:disabled, .settings-actions button:disabled { opacity: .45; cursor: not-allowed; }
+
+    .menu-pages { position: relative; overflow: hidden; transition: height .24s cubic-bezier(.2,.8,.2,1); }
+    .menu-page { width: 100%; transition: transform .24s cubic-bezier(.2,.8,.2,1), opacity .18s ease; }
+    .pause-main { position: relative; transform: translateX(0); opacity: 1; }
+    #settingsPanel { display: block; margin-top: 0; text-align: left; position: absolute; inset: 0 auto auto 0; transform: translateX(108%); opacity: 0; visibility: hidden; pointer-events: none; }
+    #pauseScreen.settings-open .pause-main { position: absolute; inset: 0 auto auto 0; transform: translateX(-108%); opacity: 0; pointer-events: none; }
+    #pauseScreen.settings-open #settingsPanel { position: relative; transform: translateX(0); opacity: 1; visibility: visible; pointer-events: auto; }
+    body.start-settings .menu-page, body.no-nested-menu-transition .menu-page { transition: none; }
+    body.start-settings #pauseScreen.settings-open .pause-main { display: none; }
+    body.start-settings #pauseScreen.settings-open #settingsPanel { transform: none; opacity: 1; visibility: visible; }
+    body.no-nested-menu-transition #pauseScreen .pause-main { display: none; }
+    body.no-nested-menu-transition #pauseScreen #settingsPanel { transform: none; opacity: 1; visibility: visible; }
+    #settingsPanel > p { color: var(--text); font-weight: 850; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 14px; }
+    .bind-row { display: grid; grid-template-columns: minmax(130px, 1fr) minmax(170px, 1.4fr) 46px; gap: 8px; align-items: center; padding: 8px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,.055); border-radius: 18px; background: rgba(255,255,255,.025); }
+    .bind-row span { padding-left: 10px; color: #c5d6dc; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+    .bind-row button { min-width: 0; padding: 11px 12px; border-radius: 14px; background: rgba(0,0,0,.18); color: var(--text); font-size: 12px; font-family: var(--mono); text-transform: none; letter-spacing: 0; }
+    .bind-row button.add-bind { width: 42px; min-width: 42px; padding: 10px 0; text-align: center; border-radius: 14px; background: rgba(158,231,255,.12); color: var(--accent); font-size: 19px; line-height: 1; }
+    .bind-row button.listening { background: var(--accent); color: #071014; }
+    .advanced-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 12px 14px; color: #c5d6dc; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; border: 1px solid rgba(255,255,255,.07); border-radius: 16px; background: rgba(255,255,255,.025); }
+    .advanced-toggle input { accent-color: var(--accent); transform: scale(1.15); }
+    .advanced-tools { display: none; }
+    #settingsPanel.advanced .advanced-tools { display: block; }
+    .bind-json { width: 100%; min-height: 108px; margin-top: 14px; padding: 12px; border: 1px solid rgba(158,231,255,.22); border-radius: 16px; background: rgba(0,0,0,.28); color: var(--text); font: 12px var(--mono); resize: vertical; }
+    #bindStatus, #controllerStatus { min-height: 18px; margin-top: 8px; color: var(--accent); font: 12px var(--mono); text-align: center; }
+    .settings-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start; margin-top: 18px; }
+    .settings-actions button { text-align: center; min-width: 138px; padding: 12px 16px; border-radius: 16px; }
+    .controller-debug { margin-top: 18px; padding: 16px; border: 1px solid rgba(255,255,255,.07); border-radius: 20px; background: rgba(0,0,0,.16); }
+    .controller-debug p { margin-bottom: 10px; color: var(--text); font-weight: 850; }
+    .controller-debug code { display: block; min-height: 24px; margin: 6px 0 10px; color: var(--accent-2); font: 12px var(--mono); word-break: break-word; }
+    .controller-debug select { width: 100%; margin-top: 10px; padding: 11px; border-radius: 14px; border: 1px solid rgba(158,231,255,.22); background: var(--panel-solid); color: var(--text); font: 13px var(--display); }
+
+    /* Big-picture game shell: chunky, controller-first, tactical-fantasy rather than website card UI. */
+    :root {
+      --void: #020304;
+      --panel: rgba(6, 10, 12, .72);
+      --panel-solid: #080d0f;
+      --line: rgba(151, 245, 255, .20);
+      --line-hot: rgba(151, 245, 255, .72);
+      --text: #eafff7;
+      --muted: #7f9695;
+      --accent: #76f7ff;
+      --accent-2: #ffd15a;
+      --danger: #ff5d62;
+      --shadow: 0 34px 120px rgba(0,0,0,.82);
+      --display: "Bahnschrift Condensed", "Agency FB", "Aptos Display", "Segoe UI Variable Display", sans-serif;
+    }
+    body { cursor: crosshair; }
+    body::before {
+      opacity: .62;
+      background:
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px) 0 0 / 100% 3px,
+        repeating-linear-gradient(90deg, rgba(118,247,255,.035) 0 1px, transparent 1px 72px),
+        radial-gradient(circle at 74% 20%, rgba(118,247,255,.22), transparent 27%),
+        radial-gradient(circle at 18% 76%, rgba(255,209,90,.13), transparent 24%);
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 19;
+      pointer-events: none;
+      opacity: .48;
+      background:
+        linear-gradient(120deg, transparent 0 46%, rgba(118,247,255,.07) 46.2% 46.6%, transparent 46.8%),
+        radial-gradient(ellipse at 50% 115%, rgba(0,0,0,.8), transparent 52%);
+    }
+    #startScreen, #pauseScreen {
+      place-items: stretch;
+      align-items: center;
+      padding: clamp(18px, 3vw, 44px);
+      background:
+        linear-gradient(90deg, rgba(2,3,4,.96) 0 28%, rgba(2,3,4,.55) 54%, rgba(2,3,4,.94) 100%),
+        radial-gradient(circle at 74% 34%, rgba(118,247,255,.18), transparent 30%),
+        radial-gradient(circle at 18% 72%, rgba(255,209,90,.10), transparent 26%),
+        linear-gradient(145deg, #070b0c, #050707 38%, #11130d);
+    }
+    #startScreen::before, #pauseScreen::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(160deg, transparent 0 53%, rgba(0,0,0,.55) 53.2%),
+        repeating-linear-gradient(-35deg, transparent 0 18px, rgba(255,255,255,.025) 18px 19px),
+        radial-gradient(ellipse at 80% 50%, rgba(118,247,255,.10), transparent 40%);
+      clip-path: polygon(38% 0, 100% 0, 100% 100%, 58% 100%);
+    }
+    #startScreen::after, #pauseScreen::after {
+      inset: clamp(10px, 2vw, 26px);
+      border-radius: 0;
+      border: 1px solid rgba(118,247,255,.18);
+      clip-path: polygon(0 0, calc(100% - 42px) 0, 100% 42px, 100% 100%, 42px 100%, 0 calc(100% - 42px));
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.035), inset 0 0 90px rgba(118,247,255,.045);
+    }
+    .menu-card {
+      position: relative;
+      width: min(1060px, 100%);
+      max-height: calc(100vh - 56px);
+      margin-left: clamp(0px, 5vw, 82px);
+      padding: clamp(22px, 4vw, 54px);
+      border-radius: 0;
+      border: 1px solid rgba(118,247,255,.26);
+      background:
+        linear-gradient(90deg, rgba(118,247,255,.11) 0 4px, transparent 4px),
+        linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.012)),
+        rgba(4, 7, 8, .72);
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.12), 0 0 0 1px rgba(0,0,0,.5);
+      clip-path: polygon(0 0, calc(100% - 34px) 0, 100% 34px, 100% 100%, 34px 100%, 0 calc(100% - 34px));
+      backdrop-filter: blur(16px) saturate(1.25);
+    }
+    .menu-card::before {
+      content: "OPERATION // HOLLOW";
+      margin-bottom: 18px;
+      border-radius: 0;
+      border-color: rgba(118,247,255,.42);
+      background: rgba(118,247,255,.08);
+      color: var(--accent);
+      clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+    }
+    .menu-card::after {
+      content: "01";
+      position: absolute;
+      right: clamp(20px, 4vw, 54px);
+      top: clamp(18px, 3vw, 42px);
+      color: rgba(118,247,255,.16);
+      font: 900 clamp(76px, 12vw, 160px)/.8 var(--display);
+      letter-spacing: -.06em;
+      pointer-events: none;
+    }
+    #pauseScreen .menu-card::before { content: "SYSTEM // SUSPENDED"; }
+    #pauseScreen.settings-open .menu-card::before { content: "LOADOUT // INPUT"; }
+    #settingsPanel::before { color: var(--accent-2); }
+    .menu-card h1, .menu-card h2 {
+      max-width: 10ch;
+      margin-bottom: 14px;
+      font-size: clamp(64px, 12vw, 154px);
+      line-height: .74;
+      letter-spacing: -.06em;
+      text-transform: uppercase;
+      text-shadow: 0 0 26px rgba(118,247,255,.18), 3px 0 0 rgba(255,93,98,.30);
+    }
+    .menu-card h2 { font-size: clamp(58px, 9vw, 122px); }
+    .menu-card p {
+      max-width: 44ch;
+      color: #a9bbb7;
+      font: 650 16px/1.45 var(--display);
+      letter-spacing: .055em;
+      text-transform: uppercase;
+    }
+    .menu-actions {
+      width: min(520px, 100%);
+      gap: 8px;
+      margin-top: 34px;
+      counter-reset: menu;
+    }
+    .menu-actions button, .settings-actions button, .bind-row button, #startButton, #startSettingsButton {
+      position: relative;
+      min-height: 58px;
+      padding: 16px 22px 16px 64px;
+      border-radius: 0;
+      border: 1px solid rgba(118,247,255,.20);
+      background: linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,.018));
+      color: var(--text);
+      font: 900 18px var(--display);
+      letter-spacing: .13em;
+      clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+    }
+    .menu-actions button { counter-increment: menu; }
+    .menu-actions button::before {
+      content: "0" counter(menu);
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(118,247,255,.72);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    .menu-actions button:hover, .settings-actions button:hover, .bind-row button:hover, .controller-focus {
+      transform: translateX(12px) scale(1.018) !important;
+      border-color: var(--line-hot) !important;
+      background: linear-gradient(90deg, rgba(118,247,255,.22), rgba(118,247,255,.045)) !important;
+      box-shadow: 0 0 0 1px rgba(118,247,255,.16), 0 18px 48px rgba(0,0,0,.42), inset 0 0 38px rgba(118,247,255,.06) !important;
+    }
+    .menu-actions button:first-child, #startButton, #resumeButton {
+      color: #06100f;
+      background: linear-gradient(90deg, #76f7ff, #ffd15a 72%, #fff2a6) !important;
+      border-color: transparent;
+      box-shadow: 0 0 42px rgba(118,247,255,.22), inset 0 -3px 0 rgba(0,0,0,.18);
+    }
+    .menu-actions button.secondary, .settings-actions button.secondary { color: #dcece8; }
+    .bind-row, .advanced-toggle, .controller-debug, .bind-json {
+      border-radius: 0;
+      clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+      background: rgba(255,255,255,.035);
+    }
+    .bind-row span { color: #dbe9e5; font-weight: 900; }
+    #controls, #hud, #message { border-radius: 0; clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%); }
+
+    /* ARC Raiders-inspired menu pass: utilitarian extraction UI, warm industrial palette, dense information cards. */
+    :root {
+      --arc-ink: #080907;
+      --arc-metal: rgba(24, 27, 23, .84);
+      --arc-metal-2: rgba(44, 48, 40, .72);
+      --arc-paper: #e8e1cf;
+      --arc-dim: #a9a08b;
+      --arc-yellow: #f2bd3c;
+      --arc-orange: #d96f2c;
+      --arc-green: #7f9a68;
+      --arc-line: rgba(232, 225, 207, .18);
+      --arc-line-hot: rgba(242, 189, 60, .74);
+      --display: "Bahnschrift SemiCondensed", "DIN Condensed", "Aptos Display", sans-serif;
+      --mono: "Cascadia Mono", "IBM Plex Mono", Consolas, monospace;
+    }
+    .arc-menu {
+      display: block !important;
+      padding: clamp(18px, 3vw, 38px) !important;
+      background:
+        linear-gradient(90deg, rgba(8,9,7,.98) 0 18%, rgba(8,9,7,.72) 45%, rgba(8,9,7,.95) 100%),
+        radial-gradient(circle at 72% 38%, rgba(242,189,60,.18), transparent 26%),
+        radial-gradient(circle at 18% 74%, rgba(127,154,104,.16), transparent 22%),
+        repeating-linear-gradient(90deg, rgba(232,225,207,.045) 0 1px, transparent 1px 96px),
+        linear-gradient(145deg, #1a1d16, #080907 48%, #272316) !important;
+      color: var(--arc-paper);
+    }
+    .arc-menu::before {
+      clip-path: none !important;
+      opacity: .72;
+      background:
+        linear-gradient(24deg, transparent 0 53%, rgba(242,189,60,.08) 53.1% 53.8%, transparent 54%),
+        repeating-linear-gradient(0deg, transparent 0 34px, rgba(232,225,207,.035) 35px 36px),
+        radial-gradient(ellipse at 78% 64%, rgba(0,0,0,.50), transparent 42%) !important;
+    }
+    .arc-menu::after { border-color: rgba(232,225,207,.16) !important; box-shadow: inset 0 0 0 1px rgba(0,0,0,.55), inset 0 0 90px rgba(242,189,60,.035) !important; }
+    .arc-topbar {
+      position: relative;
+      z-index: 12;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 54px;
+      padding: 0 10px 18px;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-size: 12px;
+      color: var(--arc-dim);
+    }
+    .brand { margin-right: clamp(20px, 5vw, 88px); color: var(--arc-paper); font: 950 23px/.8 var(--display); letter-spacing: .02em; }
+    .brand span { color: var(--arc-yellow); }
+    .tab { padding: 11px 15px; border-bottom: 2px solid transparent; }
+    .tab.active { color: var(--arc-paper); border-color: var(--arc-yellow); background: rgba(242,189,60,.07); }
+    .season { margin-left: auto; padding-right: 8px; color: var(--arc-yellow); }
+    .arc-grid {
+      position: relative;
+      z-index: 12;
+      display: grid;
+      grid-template-columns: minmax(190px, 250px) minmax(460px, 850px) minmax(190px, 280px);
+      gap: clamp(14px, 2vw, 24px);
+      align-items: end;
+      min-height: calc(100vh - 130px);
+    }
+    .arc-card.menu-card {
+      width: 100% !important;
+      margin: 0 !important;
+      align-self: end;
+      padding: clamp(26px, 4vw, 58px) !important;
+      border: 1px solid var(--arc-line) !important;
+      border-top: 3px solid rgba(242,189,60,.72) !important;
+      background:
+        linear-gradient(90deg, rgba(242,189,60,.12) 0 5px, transparent 5px),
+        linear-gradient(180deg, rgba(232,225,207,.105), rgba(232,225,207,.026)),
+        var(--arc-metal) !important;
+      box-shadow: 0 32px 110px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.10) !important;
+      backdrop-filter: blur(18px) saturate(1.05);
+      clip-path: polygon(0 0, calc(100% - 26px) 0, 100% 26px, 100% 100%, 0 100%) !important;
+    }
+    .arc-card.menu-card::before { content: "Raid terminal" !important; color: var(--arc-yellow) !important; border-color: rgba(242,189,60,.50) !important; background: rgba(242,189,60,.075) !important; }
+    .arc-card.menu-card::after { content: "A"; color: rgba(232,225,207,.08); }
+    .arc-card h1, .arc-card h2 {
+      color: var(--arc-paper);
+      max-width: 9ch;
+      font-size: clamp(72px, 12vw, 150px) !important;
+      line-height: .78 !important;
+      letter-spacing: -.045em !important;
+      text-shadow: 2px 0 0 rgba(217,111,44,.35), 0 22px 60px rgba(0,0,0,.55) !important;
+    }
+    .arc-card p { color: var(--arc-dim) !important; max-width: 48ch; font: 750 16px/1.5 var(--display) !important; letter-spacing: .08em !important; }
+    .arc-location { margin-bottom: 12px; color: var(--arc-yellow); font: 800 12px var(--mono); letter-spacing: .18em; text-transform: uppercase; }
+    .arc-mission-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      margin: 28px 0 8px;
+      border: 1px solid var(--arc-line);
+      background: rgba(0,0,0,.22);
+    }
+    .arc-mission-strip span { padding: 14px; color: var(--arc-paper); font: 800 13px var(--display); letter-spacing: .05em; text-transform: uppercase; background: rgba(232,225,207,.045); }
+    .arc-mission-strip b { display: block; margin-bottom: 4px; color: var(--arc-yellow); font: 700 10px var(--mono); letter-spacing: .16em; }
+    .arc-status, .arc-contracts { align-self: end; padding: 18px; border: 1px solid var(--arc-line); background: var(--arc-metal-2); box-shadow: 0 20px 70px rgba(0,0,0,.46); backdrop-filter: blur(12px); }
+    .portrait { width: 92px; height: 112px; margin-bottom: 18px; display: grid; place-items: end start; padding: 10px; background: linear-gradient(145deg, rgba(242,189,60,.22), rgba(127,154,104,.10)), #191b16; border: 1px solid rgba(242,189,60,.28); }
+    .portrait span { color: var(--arc-yellow); font: 950 30px var(--display); }
+    .status-kicker, .contract b { color: var(--arc-yellow); font: 800 10px var(--mono); letter-spacing: .18em; text-transform: uppercase; }
+    .arc-status strong { display: block; margin: 5px 0 14px; font: 900 28px/.9 var(--display); text-transform: uppercase; }
+    .status-bars { display: flex; gap: 5px; margin-bottom: 16px; }
+    .status-bars i { height: 7px; flex: 1; background: var(--arc-green); box-shadow: 0 0 18px rgba(127,154,104,.35); }
+    .arc-status dl { margin: 0; display: grid; gap: 8px; }
+    .arc-status div { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid rgba(232,225,207,.12); padding-top: 8px; }
+    .arc-status dt { color: var(--arc-dim); font: 800 11px var(--mono); text-transform: uppercase; }
+    .arc-status dd { margin: 0; color: var(--arc-paper); font-weight: 900; text-transform: uppercase; }
+    .arc-contracts { display: grid; gap: 10px; }
+    .contract { padding: 14px; border: 1px solid rgba(232,225,207,.12); background: rgba(8,9,7,.35); }
+    .contract.active { border-color: rgba(242,189,60,.42); background: rgba(242,189,60,.08); }
+    .contract span { display: block; margin-top: 8px; color: var(--arc-paper); font: 900 21px var(--display); text-transform: uppercase; }
+    .contract em { display: block; margin-top: 3px; color: var(--arc-dim); font-style: normal; font: 700 12px var(--mono); text-transform: uppercase; }
+    .arc-card .menu-actions { width: min(560px, 100%) !important; gap: 10px !important; }
+    .arc-card .menu-actions button, .arc-card .settings-actions button, .arc-card .bind-row button {
+      min-height: 58px;
+      border-color: rgba(232,225,207,.18) !important;
+      background: linear-gradient(90deg, rgba(232,225,207,.08), rgba(232,225,207,.025)) !important;
+      color: var(--arc-paper) !important;
+      clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%) !important;
+    }
+    .arc-card .menu-actions button:first-child, .arc-card #resumeButton, .arc-card #backButton {
+      background: linear-gradient(90deg, var(--arc-yellow), #f5d782 72%, #fff0b9) !important;
+      color: #17130a !important;
+      border-color: transparent !important;
+      box-shadow: 0 0 44px rgba(242,189,60,.20), inset 0 -3px 0 rgba(0,0,0,.18) !important;
+    }
+    .arc-card .menu-actions button:hover, .arc-card .settings-actions button:hover, .arc-card .bind-row button:hover, .arc-card .controller-focus {
+      transform: translateX(10px) !important;
+      border-color: var(--arc-line-hot) !important;
+      background: linear-gradient(90deg, rgba(242,189,60,.22), rgba(242,189,60,.045)) !important;
+      box-shadow: 0 18px 46px rgba(0,0,0,.38), inset 0 0 34px rgba(242,189,60,.055) !important;
+    }
+    .pause-card { max-width: 760px; margin-left: clamp(0px, 8vw, 120px) !important; }
+    #pauseScreen .arc-topbar { margin-bottom: 10px; }
+
+    @media (min-width: 780px) { #startScreen .menu-card, #pauseScreen .menu-card { margin-left: min(8vw, 110px); justify-self: start; } #startScreen .menu-card { width: min(1060px, 100%); } }
+    @media (max-width: 620px), (max-height: 680px) {
+      #startScreen, #pauseScreen { place-items: start center; padding: 12px; }
+      .arc-menu { overflow: auto; }
+      .arc-topbar { gap: 4px; padding-bottom: 10px; overflow: hidden; }
+      .brand { margin-right: 8px; font-size: 18px; }
+      .tab { display: none; }
+      .season { margin-left: auto; font-size: 10px; }
+      .arc-grid { display: block; min-height: auto; }
+      .arc-status, .arc-contracts { display: none; }
+      .arc-mission-strip { grid-template-columns: 1fr; margin-top: 18px; }
+      .arc-card.menu-card { max-height: none; padding: 24px 18px !important; }
+      .arc-card h1, .arc-card h2 { font-size: clamp(46px, 18vw, 76px) !important; }
+      #startScreen::after, #pauseScreen::after { inset: 10px; border-radius: 22px; }
+      .menu-card { max-height: calc(100vh - 24px); padding: 24px 18px; border-radius: 24px; }
+      .menu-card h1, .menu-card h2 { font-size: 40px; letter-spacing: -.055em; }
+      .bind-row { grid-template-columns: 1fr; text-align: center; }
+      .bind-row span { padding-left: 0; }
+      .bind-row button { width: 100%; min-width: 0; text-align: center; }
+      .bind-row button.add-bind { width: 100%; border-radius: 14px; }
+      .settings-actions { justify-content: stretch; }
+      .settings-actions button { flex: 1 1 140px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="1280" height="720" layoutsubtree>
+    <section id="hud" class="canvas-html">
+      <div class="title">Chibi Knight</div>
+      <div id="hearts" aria-label="Health"></div>
+      <div id="objective">Reach the glowing gate →</div>
+      <div id="dashStatus">Dash</div>
+    </section>
+    <section id="controls" class="canvas-html"></section>
+    <section id="message" class="canvas-html" hidden>
+      <div id="messageTitle" class="big"></div>
+      <div class="small">Press R to restart</div>
+    </section>
+  </canvas>
+  <div id="startScreen" class="arc-menu">
+    <div class="arc-topbar" aria-hidden="true">
+      <span class="brand">CHIBI<span>RAID</span></span>
+      <span class="tab active">Play</span>
+      <span class="tab">Raider</span>
+      <span class="tab">Stash</span>
+      <span class="tab">Workshop</span>
+      <span class="season">Cycle 01 // Hollow Line</span>
+    </div>
+    <div class="arc-grid">
+      <aside class="arc-status" aria-hidden="true">
+        <div class="portrait"><span>CK</span></div>
+        <div class="status-kicker">Raider status</div>
+        <strong>Fit for sortie</strong>
+        <div class="status-bars"><i></i><i></i><i></i></div>
+        <dl>
+          <div><dt>Squad</dt><dd>Solo</dd></div>
+          <div><dt>Risk</dt><dd>Low</dd></div>
+          <div><dt>Intel</dt><dd>Gate signal</dd></div>
+        </dl>
+      </aside>
+      <main class="menu-card arc-card">
+        <div class="arc-location">Buried hollow / dusk window</div>
+        <h1>Chibi Knight</h1>
+        <p>Drop into the hollow. Controller, keyboard, and arrows are scanned automatically before deployment.</p>
+        <div class="arc-mission-strip" aria-hidden="true">
+          <span><b>Objective</b>Reach the glowing gate</span>
+          <span><b>Threat</b>Spikes + cave fauna</span>
+          <span><b>Reward</b>Clean extract</span>
+        </div>
+        <div class="menu-actions">
+          <button id="startButton">Deploy</button>
+          <button id="startSettingsButton" class="secondary">Input Loadout</button>
+        </div>
+      </main>
+      <aside class="arc-contracts" aria-hidden="true">
+        <div class="contract active"><b>Active Contract</b><span>Hollow Sweep</span><em>Reach extraction gate</em></div>
+        <div class="contract"><b>Loadout</b><span>Blade / Dash kit</span><em>Auto mapped</em></div>
+      </aside>
+    </div>
+  </div>
+  <div id="pauseScreen" class="arc-menu">
+    <div class="arc-topbar" aria-hidden="true">
+      <span class="brand">CHIBI<span>RAID</span></span>
+      <span class="tab active">System</span>
+      <span class="tab">Input</span>
+      <span class="season">Run suspended</span>
+    </div>
+    <div class="menu-card arc-card pause-card">
+      <h2 id="pauseTitle">Paused</h2>
+      <div id="menuPages" class="menu-pages">
+        <div class="pause-main menu-page">
+          <p>Run suspended. Pick a system action with controller focus, keyboard, or mouse.</p>
+          <div class="menu-actions">
+            <button id="resumeButton">Continue Run</button>
+            <button id="settingsButton" class="secondary">Input Loadout</button>
+            <button id="restartButton" class="secondary">Redeploy</button>
+            <button id="mainMenuButton" class="secondary">Extract to Menu</button>
+          </div>
+        </div>
+        <div id="settingsPanel" class="menu-page">
+          <p>Input Loadout</p>
+          <div id="bindList"></div>
+          <label class="advanced-toggle"><input id="controllerEnabled" type="checkbox" checked> Controller enabled</label>
+          <label class="advanced-toggle"><input id="advancedMode" type="checkbox"> Advanced mode</label>
+          <div class="advanced-tools">
+            <textarea id="bindJson" class="bind-json" spellcheck="false" placeholder="Exported key bind JSON appears here. Paste JSON here, then Import."></textarea>
+            <div id="bindStatus"></div>
+            <div class="settings-actions">
+              <button id="exportBindsButton" class="secondary">Export JSON</button>
+              <button id="importBindsButton" class="secondary">Import JSON</button>
+            </div>
+            <div class="controller-debug">
+              <p>Controller debug / mapper</p>
+              <div>Controller: <code id="controllerName">None detected</code></div>
+              <div>Pressed inputs: <code id="controllerInputs">None</code></div>
+              <select id="controllerAction"></select>
+              <div class="settings-actions">
+                <button id="bindControllerButton" class="secondary">Bind Next Controller Input</button>
+                <button id="resetControllerButton" class="secondary">Controller Defaults</button>
+              </div>
+              <div id="controllerStatus"></div>
+            </div>
+          </div>
+          <div class="settings-actions">
+            <button id="resetBindsButton" class="secondary">Defaults</button>
+            <button id="backButton">Back</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const W = 1280, H = 720;
+  let dpr = 1, viewScale = 1, viewOffsetX = 0, viewOffsetY = 0;
+  let resizeDebounce = 0;
+  let firstResizeDone = false;
+  let gameStarted = false;
+  let paused = false;
+  const RESIZE_DEBOUNCE_MS = 280;
+  const htmlInCanvas = 'drawElementImage' in ctx && 'requestPaint' in canvas;
+  const hudEl = document.getElementById('hud');
+  const heartsEl = document.getElementById('hearts');
+  const dashStatusEl = document.getElementById('dashStatus');
+  const controlsEl = document.getElementById('controls');
+  const messageEl = document.getElementById('message');
+  const messageTitleEl = document.getElementById('messageTitle');
+  const startButton = document.getElementById('startButton');
+  const startSettingsButton = document.getElementById('startSettingsButton');
+  const resumeButton = document.getElementById('resumeButton');
+  const restartButton = document.getElementById('restartButton');
+  const mainMenuButton = document.getElementById('mainMenuButton');
+  const settingsButton = document.getElementById('settingsButton');
+  const pauseScreen = document.getElementById('pauseScreen');
+  const menuPages = document.getElementById('menuPages');
+  const pauseMain = pauseScreen.querySelector('.pause-main');
+  const bindList = document.getElementById('bindList');
+  const settingsPanel = document.getElementById('settingsPanel');
+  const controllerEnabled = document.getElementById('controllerEnabled');
+  const advancedMode = document.getElementById('advancedMode');
+  const bindJson = document.getElementById('bindJson');
+  const bindStatus = document.getElementById('bindStatus');
+  const exportBindsButton = document.getElementById('exportBindsButton');
+  const importBindsButton = document.getElementById('importBindsButton');
+  const controllerName = document.getElementById('controllerName');
+  const controllerInputs = document.getElementById('controllerInputs');
+  const controllerAction = document.getElementById('controllerAction');
+  const bindControllerButton = document.getElementById('bindControllerButton');
+  const resetControllerButton = document.getElementById('resetControllerButton');
+  const controllerStatus = document.getElementById('controllerStatus');
+  const resetBindsButton = document.getElementById('resetBindsButton');
+  const backButton = document.getElementById('backButton');
+
+  const defaultBinds = {
+    left: ['KeyA', 'ArrowLeft'],
+    right: ['KeyD', 'ArrowRight'],
+    jump: ['KeyW', 'Space', 'ArrowUp'],
+    dash: ['ShiftLeft', 'ShiftRight', 'KeyK'],
+    attack: ['KeyJ', 'KeyX'],
+    pause: ['Escape', 'KeyP'],
+    restart: ['KeyR']
+  };
+  const bindLabels = { left:'Move Left', right:'Move Right', jump:'Jump', dash:'Dash', attack:'Attack', pause:'Pause', restart:'Restart' };
+  let binds = JSON.parse(JSON.stringify(defaultBinds));
+  let listeningFor = null;
+  let bindMode = 'replace';
+  let inputScheme = 'wasd';
+  let useController = true;
+
+  const gamepadDown = new Set();
+  const gamepadPressed = new Set();
+  const previousGamepadDown = new Set();
+  const defaultGamepadBinds = {
+    left: ['PadAxis0-', 'PadButton14'],
+    right: ['PadAxis0+', 'PadButton15'],
+    jump: ['PadButton0'],
+    dash: ['PadButton5', 'PadButton7'],
+    attack: ['PadButton2'],
+    pause: ['PadButton9'],
+    restart: ['PadButton8']
+  };
+  let gamepadBinds = JSON.parse(JSON.stringify(defaultGamepadBinds));
+  let controllerBindAction = null;
+  let latestRawGamepadPressed = [];
+  const menuButtons = {
+    up: 'PadUp',
+    down: 'PadDown',
+    left: 'PadLeft',
+    right: 'PadRight',
+    accept: 'PadA',
+    back: 'PadB'
+  };
+
+  const hasDown = action => binds[action].some(code => keys.has(code)) || (useController && gamepadBinds[action].some(code => gamepadDown.has(code)));
+  const hasPressed = action => binds[action].some(code => pressed.has(code)) || (useController && gamepadBinds[action].some(code => gamepadPressed.has(code)));
+  const keyName = code => ({Space:'Space', ArrowLeft:'←', ArrowRight:'→', ArrowUp:'↑', ArrowDown:'↓', ShiftLeft:'Left Shift', ShiftRight:'Right Shift', Escape:'Esc'}[code] || code.replace(/^Key/, '').replace(/^Digit/, ''));
+  const bindText = action => binds[action].map(keyName).join(' / ');
+  const inputPresets = {
+    wasd: { move:'A/D', jump:'Space', dash:'Shift', attack:'J', pause:'Esc', restart:'R' },
+    arrows: { move:'←/→', jump:'↑', dash:'Shift', attack:'X', pause:'Esc', restart:'R' },
+    gamepad: { move:'Left Stick', jump:'A', dash:'RB', attack:'X', pause:'Start', restart:'Back' }
+  };
+
+  function setInputScheme(scheme) {
+    if (inputScheme === scheme) return;
+    inputScheme = scheme;
+    controlsEl.textContent = controlsText();
+  }
+
+  function controlsText() {
+    const p = inputPresets[inputScheme] || inputPresets.wasd;
+    return `Move: ${p.move} · Jump: ${p.jump} · Dash: ${p.dash} · Attack: ${p.attack} · Pause: ${p.pause} · Restart: ${p.restart}`;
+  }
+
+  function pollGamepads() {
+    gamepadPressed.clear();
+    gamepadDown.clear();
+    latestRawGamepadPressed = [];
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    let firstPad = null;
+    for (const pad of pads) {
+      if (!pad) continue;
+      firstPad ??= pad;
+      const b = pad.buttons;
+      const ax = pad.axes;
+
+      for (let i = 0; i < b.length; i++) if (b[i]?.pressed) gamepadDown.add(`PadButton${i}`);
+      for (let i = 0; i < ax.length; i++) {
+        const value = ax[i] ?? 0;
+        if (value < -.35) gamepadDown.add(`PadAxis${i}-`);
+        if (value > .35) gamepadDown.add(`PadAxis${i}+`);
+      }
+
+      if ((ax[0] ?? 0) < -.35 || b[14]?.pressed) gamepadDown.add('PadLeft');
+      if ((ax[0] ?? 0) > .35 || b[15]?.pressed) gamepadDown.add('PadRight');
+      if ((ax[1] ?? 0) < -.35 || b[12]?.pressed) gamepadDown.add('PadUp');
+      if ((ax[1] ?? 0) > .35 || b[13]?.pressed) gamepadDown.add('PadDown');
+      if (b[0]?.pressed) gamepadDown.add('PadA');
+      if (b[1]?.pressed) gamepadDown.add('PadB');
+      if (b[2]?.pressed) gamepadDown.add('PadX');
+      if (b[5]?.pressed || b[7]?.pressed) gamepadDown.add('PadRB');
+      if (b[9]?.pressed) gamepadDown.add('PadStart');
+      if (b[8]?.pressed) gamepadDown.add('PadBack');
+    }
+    for (const code of gamepadDown) if (!previousGamepadDown.has(code)) gamepadPressed.add(code);
+    latestRawGamepadPressed = [...gamepadPressed].filter(code => code.startsWith('PadButton') || code.startsWith('PadAxis'));
+    if (gamepadPressed.size) setInputScheme('gamepad');
+    previousGamepadDown.clear();
+    for (const code of gamepadDown) previousGamepadDown.add(code);
+    updateControllerDebug(firstPad);
+  }
+
+  function renderBinds() {
+    controlsEl.textContent = controlsText();
+    bindList.innerHTML = '';
+    controllerAction.innerHTML = Object.keys(defaultBinds).map(action => `<option value="${action}">${bindLabels[action]}</option>`).join('');
+    for (const action of Object.keys(defaultBinds)) {
+      const row = document.createElement('div');
+      row.className = 'bind-row';
+      const prompt = bindMode === 'add' ? 'Press key to add…' : 'Press key…';
+      row.innerHTML = `<span>${bindLabels[action]}</span><button data-action="${action}" data-mode="replace">${listeningFor === action ? prompt : bindText(action)}</button><button class="add-bind" data-action="${action}" data-mode="add" title="Add another key">+</button>`;
+      row.querySelector('[data-mode="replace"]').classList.toggle('listening', listeningFor === action);
+      bindList.appendChild(row);
+    }
+  }
+
+  function bindKey(action, code) {
+    if (bindMode === 'add') {
+      if (!binds[action].includes(code)) binds[action].push(code);
+    } else {
+      binds[action] = [code];
+    }
+    listeningFor = null;
+    bindMode = 'replace';
+    renderBinds();
+  }
+
+  function validBinds(candidate) {
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return false;
+    return Object.keys(defaultBinds).every(action =>
+      Array.isArray(candidate[action]) && candidate[action].length > 0 && candidate[action].every(code => typeof code === 'string')
+    );
+  }
+
+  function setBindStatus(message, error = false) {
+    bindStatus.textContent = message;
+    bindStatus.style.color = error ? '#ff9ebc' : '#9ef7ff';
+  }
+
+  function setControllerStatus(message, error = false) {
+    controllerStatus.textContent = message;
+    controllerStatus.style.color = error ? '#ff9ebc' : '#9ef7ff';
+  }
+
+  function updateControllerDebug(pad) {
+    if (!controllerName) return;
+    controllerName.textContent = pad ? `${pad.id} (${pad.mapping || 'unknown mapping'})` : 'None detected';
+    const rawDown = [...gamepadDown].filter(code => code.startsWith('PadButton') || code.startsWith('PadAxis'));
+    controllerInputs.textContent = rawDown.length ? rawDown.join(', ') : 'None';
+    if (controllerBindAction && latestRawGamepadPressed.length) {
+      gamepadBinds[controllerBindAction] = [latestRawGamepadPressed[0]];
+      setControllerStatus(`${bindLabels[controllerBindAction]} bound to ${latestRawGamepadPressed[0]}.`);
+      controllerBindAction = null;
+    }
+  }
+
+  function exportBinds() {
+    bindJson.value = JSON.stringify(binds, null, 2);
+    bindJson.select();
+    navigator.clipboard?.writeText(bindJson.value).then(() => setBindStatus('Exported and copied to clipboard.')).catch(() => setBindStatus('Exported JSON.'));
+  }
+
+  function importBinds() {
+    try {
+      const parsed = JSON.parse(bindJson.value);
+      if (!validBinds(parsed)) throw new Error('Invalid key bind shape.');
+      binds = Object.fromEntries(Object.keys(defaultBinds).map(action => [action, [...new Set(parsed[action])]]));
+      listeningFor = null;
+      bindMode = 'replace';
+      renderBinds();
+      setBindStatus('Imported key binds.');
+    } catch (err) {
+      setBindStatus(`Import failed: ${err.message}`, true);
+    }
+  }
+
+  function visibleFocusables(root) {
+    return [...root.querySelectorAll('button:not(:disabled), input:not(:disabled), textarea:not(:disabled)')]
+      .filter(el => el.offsetParent !== null && getComputedStyle(el).visibility !== 'hidden');
+  }
+
+  function activeMenuRoot() {
+    if (document.body.classList.contains('start-settings')) return pauseScreen;
+    if (!gameStarted) return document.getElementById('startScreen');
+    if (paused) return pauseScreen;
+    return null;
+  }
+
+  function updateMenuPageHeight() {
+    if (!menuPages) return;
+    const activePage = pauseScreen.classList.contains('settings-open') ? settingsPanel : pauseMain;
+    menuPages.style.height = `${activePage.scrollHeight}px`;
+  }
+
+  const menuResizeObserver = new ResizeObserver(updateMenuPageHeight);
+  menuResizeObserver.observe(pauseMain);
+  menuResizeObserver.observe(settingsPanel);
+  requestAnimationFrame(updateMenuPageHeight);
+
+  function focusAndReveal(el) {
+    if (!el) return;
+    document.querySelectorAll('.controller-focus').forEach(node => node.classList.remove('controller-focus'));
+    el.focus({ preventScroll: true });
+    el.classList.add('controller-focus');
+    updateMenuPageHeight();
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (document.activeElement === el) el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+    }));
+  }
+
+  addEventListener('focusin', e => {
+    document.querySelectorAll('.controller-focus').forEach(node => {
+      if (node !== e.target) node.classList.remove('controller-focus');
+    });
+  });
+
+  function focusFirstMenuItem() {
+    const root = activeMenuRoot();
+    const first = root && visibleFocusables(root)[0];
+    focusAndReveal(first);
+  }
+
+  function moveMenuFocus(dir) {
+    const root = activeMenuRoot();
+    if (!root) return;
+    const items = visibleFocusables(root);
+    if (!items.length) return;
+    const current = items.indexOf(document.activeElement);
+    const next = current < 0 ? 0 : (current + dir + items.length) % items.length;
+    focusAndReveal(items[next]);
+  }
+
+  function moveBindGridFocus(dx, dy) {
+    const row = document.activeElement?.closest?.('.bind-row');
+    if (!row) return false;
+    const rows = [...bindList.querySelectorAll('.bind-row')];
+    const rowIndex = rows.indexOf(row);
+    const buttons = [...row.querySelectorAll('button:not(:disabled)')];
+    const colIndex = buttons.indexOf(document.activeElement);
+    if (rowIndex < 0 || colIndex < 0) return false;
+
+    if (dx) {
+      const nextButton = buttons[Math.max(0, Math.min(buttons.length - 1, colIndex + dx))];
+      focusAndReveal(nextButton);
+      return true;
+    }
+
+    if (dy) {
+      const nextRow = rows[rowIndex + dy];
+      if (!nextRow) return false;
+      const nextButtons = [...nextRow.querySelectorAll('button:not(:disabled)')];
+      const nextButton = nextButtons[Math.min(colIndex, nextButtons.length - 1)];
+      focusAndReveal(nextButton);
+      return true;
+    }
+    return false;
+  }
+
+  function moveHorizontalGroupFocus(dx) {
+    const group = document.activeElement?.closest?.('.settings-actions');
+    if (!group) return false;
+    const items = visibleFocusables(group);
+    const index = items.indexOf(document.activeElement);
+    if (index < 0) return false;
+    const next = Math.max(0, Math.min(items.length - 1, index + dx));
+    focusAndReveal(items[next]);
+    return true;
+  }
+
+  function handleGamepadMenuInput() {
+    const root = activeMenuRoot();
+    if (!root || listeningFor) return false;
+    const focusables = visibleFocusables(root);
+    if (!root.contains(document.activeElement) || !focusables.includes(document.activeElement)) focusFirstMenuItem();
+    if (gamepadPressed.has(menuButtons.left)) { return moveBindGridFocus(-1, 0) || moveHorizontalGroupFocus(-1); }
+    if (gamepadPressed.has(menuButtons.right)) { return moveBindGridFocus(1, 0) || moveHorizontalGroupFocus(1); }
+    if (gamepadPressed.has(menuButtons.up)) { if (!moveBindGridFocus(0, -1)) moveMenuFocus(-1); return true; }
+    if (gamepadPressed.has(menuButtons.down)) { if (!moveBindGridFocus(0, 1)) moveMenuFocus(1); return true; }
+    if (gamepadPressed.has(menuButtons.accept)) { document.activeElement?.click?.(); return true; }
+    if (gamepadPressed.has(menuButtons.back)) {
+      if (pauseScreen.classList.contains('settings-open')) backButton.click();
+      else if (document.body.classList.contains('start-settings')) closeStartSettings();
+      else if (gameStarted) resumeButton.click();
+      return true;
+    }
+    return false;
+  }
+
+  renderBinds();
+
+  const keys = new Set();
+  const pressed = new Set();
+  addEventListener('keydown', e => {
+    if (listeningFor) {
+      e.preventDefault();
+      bindKey(listeningFor, e.code);
+      return;
+    }
+
+    const root = activeMenuRoot();
+    const active = document.activeElement;
+    const menuFocused = root && active && root.contains(active);
+    const activatable = active?.matches?.('button, input[type="checkbox"]');
+
+    if (menuFocused && activatable && ['Enter', 'Space'].includes(e.code)) {
+      e.preventDefault();
+      active.click();
+      return;
+    }
+
+    if (e.code === 'Escape') {
+      if (document.body.classList.contains('start-settings')) { e.preventDefault(); closeStartSettings(); return; }
+      if (gameStarted && paused && pauseScreen.classList.contains('settings-open')) { e.preventDefault(); backButton.click(); return; }
+    }
+
+    if (e.code.startsWith('Arrow')) setInputScheme('arrows');
+    else if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) setInputScheme('wasd');
+    const pauseHit = binds.pause.includes(e.code);
+    if (!gameStarted && ['Enter','Space'].includes(e.code)) startGame();
+    else if (gameStarted && !player.dead && !won && pauseHit) setPaused(!paused);
+    if (!paused && !keys.has(e.code)) pressed.add(e.code);
+    keys.add(e.code);
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+  });
+  addEventListener('keyup', e => keys.delete(e.code));
+
+  const level = {
+    spawn: { x: 95, y: 430 },
+    platforms: [
+      {x:0,y:650,w:1280,h:90}, {x:0,y:0,w:40,h:720}, {x:1240,y:0,w:40,h:720},
+      {x:150,y:540,w:190,h:24}, {x:425,y:475,w:200,h:24}, {x:720,y:410,w:190,h:24},
+      {x:990,y:530,w:170,h:24}, {x:520,y:615,w:130,h:35}, {x:825,y:630,w:95,h:20},
+      {x:365,y:405,w:26,h:135}, {x:665,y:285,w:26,h:150}, {x:940,y:420,w:26,h:210}
+    ],
+    spikes: [ {x:665,y:635,w:120,h:15}, {x:930,y:635,w:80,h:15} ]
+  };
+
+  const player = {
+    x: level.spawn.x, y: level.spawn.y, w: 34, h: 50,
+    vx: 0, vy: 0, dir: 1, grounded: false,
+    hp: 5, inv: 0, attack: 0, coyote: 0, jumpBuf: 0,
+    dash: 0, dashCooldown: 0, wallDir: 0, wallSlide: false,
+    dead: false
+  };
+
+  const enemies = [
+    {x: 780, y: 360, w: 42, h: 38, vx: 55, hp: 3, hurt: 0, min: 720, max: 900},
+    {x: 1015, y: 490, w: 42, h: 38, vx: -45, hp: 2, hurt: 0, min: 990, max: 1150}
+  ];
+
+  const dust = [];
+  const particles = [];
+  let cameraX = 0;
+  let shake = 0;
+  let won = false;
+
+  for (let i = 0; i < 5; i++) {
+    const heart = document.createElement('span');
+    heart.className = 'heart full';
+    heartsEl.appendChild(heart);
+  }
+
+  function syncHtmlHud() {
+    [...heartsEl.children].forEach((heart, i) => heart.classList.toggle('full', i < player.hp));
+    dashStatusEl.classList.toggle('ready', player.dashCooldown <= 0);
+    messageEl.hidden = !(player.dead || won);
+    messageTitleEl.textContent = won ? 'Gate Reached!' : 'You Faded';
+  }
+
+  function drawHtmlElement(el, x, y, w, h) {
+    if (!htmlInCanvas || el.hidden) return false;
+    try {
+      const transform = w == null ? ctx.drawElementImage(el, x, y) : ctx.drawElementImage(el, x, y, w, h);
+      el.style.transform = transform.toString();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function applyResize() {
+    const rect = canvas.getBoundingClientRect();
+    dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.round(rect.width * dpr));
+    canvas.height = Math.max(1, Math.round(rect.height * dpr));
+    viewScale = Math.min(canvas.width / W, canvas.height / H);
+    viewOffsetX = (canvas.width - W * viewScale) / 2;
+    viewOffsetY = (canvas.height - H * viewScale) / 2;
+    canvas.classList.remove('resizing');
+    firstResizeDone = true;
+    if (htmlInCanvas) canvas.requestPaint();
+  }
+
+  function scheduleResize() {
+    if (!firstResizeDone) return applyResize();
+    if (gameStarted) canvas.classList.add('resizing');
+    clearTimeout(resizeDebounce);
+    resizeDebounce = setTimeout(applyResize, RESIZE_DEBOUNCE_MS);
+  }
+
+  new ResizeObserver(scheduleResize).observe(canvas);
+  addEventListener('resize', scheduleResize);
+  applyResize();
+
+  function reset() {
+    setPaused(false);
+    Object.assign(player, {x:level.spawn.x,y:level.spawn.y,vx:0,vy:0,dir:1,grounded:false,hp:5,inv:0,attack:0,coyote:0,jumpBuf:0,dash:0,dashCooldown:0,wallDir:0,wallSlide:false,dead:false});
+    enemies.length = 0;
+    enemies.push({x:780,y:360,w:42,h:38,vx:55,hp:3,hurt:0,min:720,max:900}, {x:1015,y:490,w:42,h:38,vx:-45,hp:2,hurt:0,min:990,max:1150});
+    particles.length = dust.length = 0;
+    won = false; shake = 0;
+  }
+
+  const rectsOverlap = (a,b) => a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+
+  function collide(entity, dt) {
+    entity.wallDir = 0;
+    entity.x += entity.vx * dt;
+    for (const p of level.platforms) if (rectsOverlap(entity, p)) {
+      if (entity.vx > 0) { entity.x = p.x - entity.w; entity.wallDir = 1; }
+      if (entity.vx < 0) { entity.x = p.x + p.w; entity.wallDir = -1; }
+      entity.vx = 0;
+    }
+    entity.y += entity.vy * dt;
+    entity.grounded = false;
+    for (const p of level.platforms) if (rectsOverlap(entity, p)) {
+      if (entity.vy > 0) { entity.y = p.y - entity.h; entity.grounded = true; entity.coyote = .09; }
+      if (entity.vy < 0) entity.y = p.y + p.h;
+      entity.vy = 0;
+    }
+  }
+
+  function spawnBurst(x, y, color, n = 10) {
+    for (let i=0;i<n;i++) particles.push({x,y,vx:(Math.random()-.5)*220,vy:(Math.random()-.9)*180,life:.35+Math.random()*.25,color});
+  }
+
+  function hurtPlayer(amount, knockDir) {
+    if (player.inv > 0 || player.dead) return;
+    player.hp -= amount; player.inv = 1.1; shake = .18;
+    player.vx = knockDir * 260; player.vy = -210;
+    spawnBurst(player.x+player.w/2, player.y+20, '#ffffff', 14);
+    if (player.hp <= 0) player.dead = true;
+  }
+
+  function update(dt) {
+    if (hasPressed('restart')) reset();
+    if (player.dead || won) { pressed.clear(); return; }
+
+    const left = hasDown('left');
+    const right = hasDown('right');
+    const jumpPressed = hasPressed('jump');
+    const jumpHeld = hasDown('jump');
+    const attackPressed = hasPressed('attack');
+    const dashPressed = hasPressed('dash');
+
+    if (dashPressed && player.dashCooldown <= 0) {
+      player.dash = .14; player.dashCooldown = .55;
+      player.vx = player.dir * 560; player.vy = 0; shake = .08;
+      spawnBurst(player.x + player.w/2, player.y + player.h/2, '#cfffff', 14);
+    }
+
+    if (player.dash <= 0) {
+      const accel = player.grounded ? 2500 : 1500;
+      const max = 245;
+      if (left) { player.vx -= accel * dt; player.dir = -1; }
+      if (right) { player.vx += accel * dt; player.dir = 1; }
+      if (!left && !right) player.vx *= player.grounded ? Math.pow(.0007, dt) : Math.pow(.03, dt);
+      player.vx = Math.max(-max, Math.min(max, player.vx));
+    }
+
+    if (jumpPressed) player.jumpBuf = .12;
+    if (player.jumpBuf > 0 && player.wallSlide) {
+      player.vx = -player.wallDir * 335; player.vy = -505; player.dir = -player.wallDir;
+      player.jumpBuf = 0; player.wallSlide = false;
+      spawnBurst(player.x + player.w/2, player.y + 28, '#7ad7ff', 12);
+    } else if (player.jumpBuf > 0 && (player.grounded || player.coyote > 0)) {
+      player.vy = -535; player.grounded = false; player.coyote = 0; player.jumpBuf = 0;
+      spawnBurst(player.x + player.w/2, player.y + player.h, '#7ad7ff', 8);
+    }
+    if (!jumpHeld && player.vy < -120 && player.dash <= 0) player.vy *= .965;
+
+    if (attackPressed && player.attack <= 0) {
+      player.attack = .22; shake = .05;
+      const slash = {x: player.x + (player.dir > 0 ? 24 : -48), y: player.y + 8, w: 58, h: 34};
+      for (const e of enemies) if (e.hp > 0 && rectsOverlap(slash, e)) {
+        e.hp--; e.hurt = .22; e.vx = player.dir * 180; shake = .12;
+        spawnBurst(e.x+e.w/2, e.y+e.h/2, '#bfffff', 16);
+      }
+    }
+
+    if (player.dash > 0) {
+      player.dash -= dt;
+    } else {
+      player.vy += 1450 * dt;
+    }
+    player.coyote -= dt; player.jumpBuf -= dt; player.inv -= dt; player.attack -= dt; player.dashCooldown -= dt;
+    collide(player, dt);
+    const pushingWall = (player.wallDir === -1 && left) || (player.wallDir === 1 && right);
+    player.wallSlide = !player.grounded && player.wallDir !== 0 && pushingWall && player.vy >= 0 && player.dash <= 0;
+    if (player.wallSlide) player.vy = Math.min(player.vy, 95);
+
+    for (const s of level.spikes) if (rectsOverlap(player, s)) hurtPlayer(1, player.x < s.x ? -1 : 1);
+
+    for (const e of enemies) if (e.hp > 0) {
+      e.hurt -= dt;
+      e.vy = (e.vy || 0) + 1200 * dt;
+      e.x += e.vx * dt;
+      if (e.x < e.min || e.x + e.w > e.max) e.vx *= -1;
+      for (const p of level.platforms) if (rectsOverlap(e, p)) {
+        if (e.vx > 0) e.x = p.x - e.w;
+        if (e.vx < 0) e.x = p.x + p.w;
+        e.vx *= -1;
+      }
+      e.y += e.vy * dt;
+      for (const p of level.platforms) if (rectsOverlap(e, p)) {
+        if (e.vy > 0) e.y = p.y - e.h;
+        if (e.vy < 0) e.y = p.y + p.h;
+        e.vy = 0;
+      }
+      if (rectsOverlap(player, e)) hurtPlayer(1, player.x < e.x ? -1 : 1);
+    }
+
+    if (player.x > 1185 && player.y > 470) won = true;
+
+    for (let i=particles.length-1;i>=0;i--) {
+      const p = particles[i]; p.life -= dt; p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 500*dt;
+      if (p.life <= 0) particles.splice(i,1);
+    }
+    if (player.grounded && Math.abs(player.vx) > 90 && Math.random() < .35) dust.push({x:player.x+player.w/2,y:player.y+player.h,vx:-player.dir*30,life:.25});
+    if (player.wallSlide && Math.random() < .45) dust.push({x:player.x+(player.wallDir>0?player.w:0),y:player.y+28,vx:-player.wallDir*45,life:.22});
+    for (let i=dust.length-1;i>=0;i--) { dust[i].life -= dt; dust[i].x += dust[i].vx*dt; if (dust[i].life<=0) dust.splice(i,1); }
+    shake = Math.max(0, shake - dt);
+    cameraX += ((player.x + player.w/2 - W/2) - cameraX) * Math.min(1, dt*4);
+    cameraX = Math.max(0, Math.min(0, cameraX));
+    pressed.clear();
+  }
+
+  function roundedRect(x,y,w,h,r) {
+    ctx.beginPath(); ctx.roundRect(x,y,w,h,r); ctx.fill();
+  }
+
+  function drawPlayer() {
+    const flicker = player.inv > 0 && Math.floor(performance.now()/70)%2 === 0;
+    if (flicker) return;
+    const x = player.x, y = player.y, d = player.dir;
+    ctx.save();
+    ctx.translate(x + player.w/2, y + player.h/2);
+    ctx.scale(d, 1);
+    ctx.translate(-player.w/2, -player.h/2);
+
+    ctx.fillStyle = '#171729'; roundedRect(4, 18, 26, 31, 10); // cloak
+    ctx.fillStyle = '#f4f1ff'; roundedRect(1, 0, 32, 27, 13); // chibi head
+    ctx.fillStyle = '#171729'; roundedRect(6, 6, 20, 16, 8); // mask face
+    ctx.fillStyle = '#dffbff'; ctx.fillRect(11, 12, 4, 5); ctx.fillRect(21, 12, 4, 5);
+    ctx.strokeStyle = '#f4f1ff'; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(8, 4); ctx.quadraticCurveTo(1, -12, 13, -2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(25, 4); ctx.quadraticCurveTo(37, -12, 23, -2); ctx.stroke();
+    ctx.fillStyle = '#0d0d19'; ctx.fillRect(7, 46, 7, 5); ctx.fillRect(22, 46, 7, 5);
+
+    if (player.attack > 0) {
+      ctx.globalAlpha = .86;
+      ctx.fillStyle = '#cfffff';
+      ctx.beginPath();
+      ctx.ellipse(49, 23, 34, 12, -.25, 0, Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(20, 25); ctx.lineTo(73, 13); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawEnemy(e) {
+    if (e.hp <= 0) return;
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    ctx.fillStyle = e.hurt > 0 ? '#ffffff' : '#4a183f'; roundedRect(0, 8, e.w, e.h-4, 13);
+    ctx.fillStyle = '#ff7bd5'; ctx.fillRect(10, 20, 5, 5); ctx.fillRect(27, 20, 5, 5);
+    ctx.strokeStyle = '#8e497b'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(8, 12); ctx.quadraticCurveTo(2, 0, 17, 8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(33, 12); ctx.quadraticCurveTo(42, 0, 25, 8); ctx.stroke();
+    ctx.restore();
+  }
+
+  function draw() {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(viewScale, 0, 0, viewScale, viewOffsetX, viewOffsetY);
+    ctx.fillStyle = '#090912';
+    ctx.fillRect(-viewOffsetX / viewScale, -viewOffsetY / viewScale, canvas.width / viewScale, canvas.height / viewScale);
+    ctx.save();
+    const sx = (Math.random()-.5)*shake*24, sy = (Math.random()-.5)*shake*24;
+    ctx.translate(-cameraX + sx, sy);
+
+    // background caves
+    for (let i=0;i<9;i++) {
+      ctx.fillStyle = `rgba(58,60,104,${0.06 + i*.008})`;
+      ctx.beginPath();
+      ctx.ellipse(120+i*150, 240 + Math.sin(i)*45, 120, 210, 0, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(130,230,255,.08)';
+    for (let i=0;i<24;i++) { ctx.beginPath(); ctx.arc((i*97)%1250, 80+(i*53)%360, 2+(i%3), 0, Math.PI*2); ctx.fill(); }
+
+    // platforms
+    for (const p of level.platforms) {
+      const grad = ctx.createLinearGradient(0,p.y,0,p.y+p.h);
+      grad.addColorStop(0,'#34385a'); grad.addColorStop(1,'#17182a');
+      ctx.fillStyle = grad; roundedRect(p.x,p.y,p.w,p.h,8);
+      ctx.fillStyle = '#7ad7ff22'; ctx.fillRect(p.x, p.y, p.w, 4);
+    }
+    for (const s of level.spikes) {
+      ctx.fillStyle = '#c7d7e9';
+      for (let x=s.x; x<s.x+s.w; x+=20) { ctx.beginPath(); ctx.moveTo(x,s.y+s.h); ctx.lineTo(x+10,s.y); ctx.lineTo(x+20,s.y+s.h); ctx.fill(); }
+    }
+
+    // exit gate
+    ctx.fillStyle = '#101223'; roundedRect(1190, 490, 50, 160, 18);
+    ctx.strokeStyle = '#9ef7ff'; ctx.lineWidth = 3; ctx.strokeRect(1202, 508, 26, 132);
+
+    for (const d of dust) { ctx.globalAlpha = Math.max(0,d.life*3); ctx.fillStyle = '#bfffff'; ctx.beginPath(); ctx.arc(d.x,d.y,5,0,Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; }
+    for (const e of enemies) drawEnemy(e);
+    drawPlayer();
+    for (const p of particles) { ctx.globalAlpha = Math.max(0,p.life*2); ctx.fillStyle = p.color; ctx.fillRect(p.x,p.y,4,4); ctx.globalAlpha = 1; }
+
+    ctx.restore();
+
+    // UI: prefer WICG HTML-in-Canvas drawElementImage(); fallback to plain canvas text.
+    syncHtmlHud();
+    controlsEl.textContent = controlsText();
+    const drewHud = drawHtmlElement(hudEl, 0, 0, 310, 150);
+    drawHtmlElement(controlsEl, 14, H - 42, 760, 34);
+
+    if (!drewHud) {
+      ctx.fillStyle = '#efeaff'; ctx.font = '700 22px system-ui'; ctx.fillText('Chibi Knight', 24, 38);
+      for (let i=0;i<5;i++) {
+        ctx.fillStyle = i < player.hp ? '#e8fbff' : '#343449';
+        ctx.beginPath(); ctx.arc(34+i*30, 68, 10, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#8adfff'; ctx.stroke();
+      }
+      ctx.fillStyle = '#efeaffcc'; ctx.font = '16px system-ui'; ctx.fillText('Reach the glowing gate →', 24, 104);
+      ctx.fillStyle = player.dashCooldown <= 0 ? '#9ef7ff' : '#46516e'; ctx.fillText('Dash', 24, 130);
+      ctx.fillStyle = '#efeaffaa'; ctx.font = '14px system-ui';
+      ctx.fillText(controlsText(), 16, H - 18);
+    }
+
+    if (player.dead || won) {
+      ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(0,0,W,H);
+      if (!drawHtmlElement(messageEl, W/2 - 310, H/2 - 95, 620, 190)) {
+        ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(0,0,W,H);
+        ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
+        ctx.font = '800 54px system-ui'; ctx.fillText(won ? 'Gate Reached!' : 'You Faded', W/2, H/2-20);
+        ctx.font = '22px system-ui'; ctx.fillText('Press R to restart', W/2, H/2+28);
+        ctx.textAlign = 'left';
+      }
+    }
+  }
+
+  let last = performance.now();
+  function transitionDOM(change, after) {
+    if (document.startViewTransition) {
+      const transition = document.startViewTransition(change);
+      transition.finished.finally(() => after?.());
+    } else {
+      change();
+      after?.();
+    }
+  }
+
+  function setPaused(value) {
+    transitionDOM(() => {
+      paused = value;
+      keys.clear();
+      pressed.clear();
+      document.body.classList.toggle('paused', paused);
+      last = performance.now();
+    }, () => {
+      if (paused) focusAndReveal(resumeButton);
+      else document.activeElement?.blur?.();
+    });
+  }
+
+  function startGame() {
+    if (gameStarted) return;
+    transitionDOM(() => {
+      closeStartSettings(false, false);
+      gameStarted = true;
+      last = performance.now();
+      document.body.classList.add('playing');
+      canvas.focus?.({ preventScroll: true });
+      if (htmlInCanvas) canvas.requestPaint();
+    });
+  }
+
+  function openSettings(fromStart = false) {
+    if (fromStart) document.body.classList.add('start-settings');
+    pauseScreen.classList.add('settings-open');
+    updateMenuPageHeight();
+    requestAnimationFrame(() => focusAndReveal(visibleFocusables(settingsPanel)[0]));
+  }
+
+  function closeStartSettings(transition = true, refocus = true) {
+    const change = () => {
+      document.body.classList.add('no-nested-menu-transition');
+      document.body.classList.remove('start-settings');
+      pauseScreen.classList.remove('settings-open');
+      listeningFor = null;
+      renderBinds();
+      updateMenuPageHeight();
+    };
+    const after = () => {
+      document.body.classList.remove('no-nested-menu-transition');
+      if (refocus) focusAndReveal(startSettingsButton);
+    };
+    if (transition) transitionDOM(change, after);
+    else {
+      change();
+      requestAnimationFrame(after);
+    }
+  }
+
+  function returnToMainMenu() {
+    transitionDOM(() => {
+      reset();
+      gameStarted = false;
+      paused = false;
+      document.body.classList.remove('playing', 'paused', 'start-settings');
+      pauseScreen.classList.remove('settings-open');
+      keys.clear();
+      pressed.clear();
+      updateMenuPageHeight();
+    }, () => focusAndReveal(startButton));
+  }
+
+  startButton.addEventListener('click', startGame);
+  startSettingsButton.addEventListener('click', () => openSettings(true));
+  resumeButton.addEventListener('click', () => setPaused(false));
+  restartButton.addEventListener('click', reset);
+  mainMenuButton.addEventListener('click', returnToMainMenu);
+  settingsButton.addEventListener('click', () => openSettings(false));
+  backButton.addEventListener('click', () => {
+    if (document.body.classList.contains('start-settings')) return closeStartSettings();
+    listeningFor = null;
+    pauseScreen.classList.remove('settings-open');
+    renderBinds();
+    updateMenuPageHeight();
+    requestAnimationFrame(() => focusAndReveal(settingsButton));
+  });
+  controllerEnabled.addEventListener('change', () => {
+    useController = controllerEnabled.checked;
+    gamepadDown.clear();
+    gamepadPressed.clear();
+    previousGamepadDown.clear();
+    controllerBindAction = null;
+    setControllerStatus(useController ? 'Controller enabled.' : 'Controller disabled.');
+  });
+  advancedMode.addEventListener('change', () => {
+    settingsPanel.classList.toggle('advanced', advancedMode.checked);
+    updateMenuPageHeight();
+  });
+  exportBindsButton.addEventListener('click', exportBinds);
+  importBindsButton.addEventListener('click', importBinds);
+  bindControllerButton.addEventListener('click', () => {
+    controllerBindAction = controllerAction.value;
+    setControllerStatus(`Press controller input for ${bindLabels[controllerBindAction]}…`);
+  });
+  resetControllerButton.addEventListener('click', () => {
+    gamepadBinds = JSON.parse(JSON.stringify(defaultGamepadBinds));
+    controllerBindAction = null;
+    setControllerStatus('Restored controller defaults.');
+  });
+  resetBindsButton.addEventListener('click', () => { binds = JSON.parse(JSON.stringify(defaultBinds)); listeningFor = null; bindMode = 'replace'; renderBinds(); bindJson.value = ''; setBindStatus('Restored default key binds.'); });
+  bindList.addEventListener('click', e => {
+    const button = e.target.closest('button[data-action]');
+    if (!button) return;
+    listeningFor = button.dataset.action;
+    bindMode = button.dataset.mode || 'replace';
+    renderBinds();
+  });
+
+  function frame(now = performance.now()) {
+    const dt = Math.min(.033, (now-last)/1000); last = now;
+    pollGamepads();
+    const menuUsedGamepad = useController && handleGamepadMenuInput();
+    if (!menuUsedGamepad && gameStarted && !player.dead && !won && hasPressed('pause')) setPaused(!paused);
+    if (gameStarted && !paused) update(dt); else { pressed.clear(); gamepadPressed.clear(); }
+    draw();
+  }
+
+  requestAnimationFrame(() => focusAndReveal(startButton));
+
+  if (htmlInCanvas) {
+    canvas.onpaint = () => {
+      frame();
+      canvas.requestPaint();
+    };
+    canvas.requestPaint();
+  } else {
+    function loop(now) {
+      frame(now); requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  }
+})();
+</script>
+</body>
+</html>
