@@ -4,6 +4,14 @@
 
 Refactor menu/settings transitions to use the **View Transition API** for section-level navigation/state changes, while keeping direct interaction feedback as CSS/instant. Add a persistent app settings model with motion preference, developer mode, bindings, and controller enabled state.
 
+## Current repo context
+
+This handoff still applies after the later asset-pack and physics-fix commits. Those changes do not alter the transition/settings scope, but implementation should preserve them:
+
+- `src/assets.js`, `src/assets/kenney-medieval/*`, and the asset-backed drawing/decor in `src/level.js` and `src/render.js` are unrelated to this refactor and should not be reverted.
+- The medieval visual theme updates in `styles/main.css` should be kept while removing only the old nested menu structural transitions called out below.
+- The enemy patrol/collision fix in `src/physics.js` and regression coverage in `tests/physics.spec.js` must continue to pass; include them in the validation run alongside updated Playwright tests.
+
 ## Core decisions
 
 ### Transition boundary
