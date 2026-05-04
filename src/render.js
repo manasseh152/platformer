@@ -12,26 +12,37 @@ function drawAsset(ctx, asset, x, y, w = TILE_SIZE, h = TILE_SIZE) {
   return true;
 }
 
-function drawTiledPlatform(ctx, p) {
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(p.x, p.y, p.w, p.h);
-  ctx.clip();
+function drawStoneTile(ctx, x, y, asset) {
+  if (!drawAsset(ctx, asset, x, y)) {
+    const grad = ctx.createLinearGradient(0, y, 0, y + TILE_SIZE);
+    grad.addColorStop(0, '#b8cdd0'); grad.addColorStop(1, '#8fa7a9');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+  }
+}
 
-  for (let y = p.y; y < p.y + p.h; y += TILE_SIZE) {
-    for (let x = p.x; x < p.x + p.w; x += TILE_SIZE) {
-      const topRow = y === p.y;
-      const asset = topRow && p.kind !== 'stone-column' ? assets.stoneTop : assets.stoneFill;
-      if (!drawAsset(ctx, asset, x, y)) {
-        const grad = ctx.createLinearGradient(0, y, 0, y + TILE_SIZE);
-        grad.addColorStop(0, '#b8cdd0'); grad.addColorStop(1, '#8fa7a9');
-        ctx.fillStyle = grad;
-        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+function drawTilemap(ctx, level) {
+  const terrainRows = level.tiles?.terrainRows;
+  if (!terrainRows) {
+    for (const p of level.platforms) {
+      for (let y = p.y; y < p.y + p.h; y += TILE_SIZE) {
+        for (let x = p.x; x < p.x + p.w; x += TILE_SIZE) {
+          const topRow = y === p.y;
+          drawStoneTile(ctx, x, y, topRow ? assets.stoneTop : assets.stoneFill);
+        }
       }
     }
+    return;
   }
 
-  ctx.restore();
+  terrainRows.forEach((line, row) => {
+    [...line].forEach((ch, col) => {
+      if (ch !== '#' && ch !== '=') return;
+      const x = col * TILE_SIZE;
+      const y = row * TILE_SIZE;
+      drawStoneTile(ctx, x, y, ch === '=' ? assets.stoneTop : assets.stoneFill);
+    });
+  });
 }
 
 function drawGoal(ctx, goal) {
@@ -204,7 +215,7 @@ export function drawGame(game) {
     drawAsset(ctx, asset, d.col * TILE_SIZE, d.row * TILE_SIZE);
   }
 
-  for (const p of level.platforms) drawTiledPlatform(ctx, p);
+  drawTilemap(ctx, level);
 
   drawGoal(ctx, level.goal);
 
