@@ -36,55 +36,80 @@
       </ul>
       <div class="menu-actions">
         <button id="startButton">Start</button>
-        <button id="startSettingsButton" class="secondary">Controls</button>
+        <button id="startSettingsButton" class="secondary">Settings</button>
       </div>
     </main>
   </div>
 
-  <div id="pauseScreen">
+  <div id="pauseScreen" data-menu-page="main" data-menu-direction="forward">
     <div class="menu-card">
-      <div class="eyebrow">Paused</div>
-      <h2 id="pauseTitle">Paused</h2>
+      <div class="eyebrow" id="menuEyebrow">Paused</div>
+      <h2 id="menuTitle">Paused</h2>
       <div id="menuPages" class="menu-pages">
-        <div class="pause-main menu-page">
-          <p>Take a break, restart the run, or change controls.</p>
+        <div id="pauseMainPage" class="pause-main menu-page" data-page="main">
+          <p>Take a break, restart the run, or change settings.</p>
           <div class="menu-actions">
             <button id="resumeButton">Continue</button>
-            <button id="settingsButton" class="secondary">Controls</button>
+            <button id="settingsButton" class="secondary">Settings</button>
             <button id="restartButton" class="secondary">Restart</button>
             <button id="mainMenuButton" class="secondary">Main Menu</button>
           </div>
         </div>
-        <div id="settingsPanel" class="menu-page">
-          <p class="settings-title">Controls <span>Choose which device you are editing. The list defaults to your current input.</span></p>
-          <div class="bind-device-toggle" role="group" aria-label="Binding device">
+
+        <div id="settingsPage" class="menu-page" data-page="settings">
+          <p>Tune how the game feels before jumping in.</p>
+          <div class="settings-section">
+            <h3>Motion</h3>
+            <div class="segmented" role="group" aria-label="Motion preference">
+              <button type="button" data-motion="system">System</button>
+              <button type="button" data-motion="on">On</button>
+              <button type="button" data-motion="off">Off</button>
+            </div>
+            <p class="helper">System follows your device preference. On and Off override it.</p>
+            <div id="motionStatus" class="status-line" aria-live="polite"></div>
+          </div>
+          <div class="settings-actions">
+            <button id="controlsNavButton" class="secondary">Controls</button>
+            <button id="advancedNavButton" class="secondary">Advanced</button>
+            <button id="settingsBackButton">Back</button>
+          </div>
+        </div>
+
+        <div id="controlsPage" class="menu-page" data-page="controls">
+          <p>Remap keyboard and controller inputs.</p>
+          <div class="bind-device-toggle segmented" role="group" aria-label="Binding device">
             <button id="editKeyboardButton" type="button" data-edit-device="keyboard">Keyboard</button>
             <button id="editControllerButton" type="button" data-edit-device="controller">Controller</button>
           </div>
           <div id="bindStatus" aria-live="polite"></div>
           <div id="bindList"></div>
           <label class="advanced-toggle"><input id="controllerEnabled" type="checkbox" checked> Controller enabled</label>
-          <label class="advanced-toggle"><input id="advancedMode" type="checkbox"> Advanced tools</label>
-          <div class="advanced-tools">
-            <textarea id="bindJson" class="bind-json" spellcheck="false" placeholder="Exported key bind JSON appears here. Paste JSON here, then Import."></textarea>
-            <div class="settings-actions">
-              <button id="exportBindsButton" class="secondary">Export JSON</button>
-              <button id="importBindsButton" class="secondary">Import JSON</button>
-            </div>
-            <div class="controller-debug">
-              <p>Controller mapper</p>
-              <div>Controller: <code id="controllerName">None detected</code></div>
-              <div>Pressed inputs: <code id="controllerInputs">None</code></div>
-              <select id="controllerAction" hidden></select>
-              <div class="settings-actions">
-                <button id="resetControllerButton" class="secondary">Controller Defaults</button>
-              </div>
-              <div id="controllerStatus"></div>
-            </div>
-          </div>
           <div class="settings-actions">
             <button id="resetBindsButton" class="secondary">Defaults</button>
-            <button id="backButton">Back</button>
+            <button id="controlsBackButton">Back</button>
+          </div>
+        </div>
+
+        <div id="advancedPage" class="menu-page" data-page="advanced">
+          <p>Advanced tools are for debugging, diagnostics, and raw settings edits.</p>
+          <label class="advanced-toggle"><input id="developerMode" type="checkbox"> Developer Mode <span>Shows diagnostics and raw settings tools.</span></label>
+          <div id="developerTools" class="advanced-tools">
+            <textarea id="settingsJson" class="bind-json" spellcheck="false" placeholder="App settings JSON appears here."></textarea>
+            <div class="settings-actions">
+              <button id="dumpSettingsButton" class="secondary">Dump app settings</button>
+              <button id="replaceSettingsButton" class="secondary">Replace app settings</button>
+            </div>
+            <div id="settingsJsonStatus" class="status-line" aria-live="polite"></div>
+            <div class="controller-debug">
+              <p>Controller diagnostics</p>
+              <div>Controller: <code id="controllerName">None detected</code></div>
+              <div>Pressed inputs: <code id="controllerInputs">None</code></div>
+              <div id="controllerStatus"></div>
+            </div>
+            <div class="future-debug">Future debug tools area</div>
+          </div>
+          <div class="settings-actions">
+            <button id="advancedBackButton">Back</button>
           </div>
         </div>
       </div>

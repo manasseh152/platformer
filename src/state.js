@@ -1,19 +1,21 @@
-import { WORLD_HEIGHT, WORLD_WIDTH } from './constants.js';
+import { CAMERA_HEIGHT, CAMERA_WIDTH } from './constants.js';
+import { centerCameraOnPlayer, createCamera } from './camera.js';
 import { createEnemies, createPlayer, level } from './level.js';
 import { createInputState } from './input.js';
+import { applySettingsToGame, loadSettings } from './settings.js';
 
 /**
  * Creates the mutable game context shared by systems.
  */
 export function createGame(ui) {
   const ctx = ui.canvas.getContext('2d');
-  return {
+  const game = {
     canvas: ui.canvas,
     ctx,
     ui,
     view: {
-      width: WORLD_WIDTH,
-      height: WORLD_HEIGHT,
+      width: CAMERA_WIDTH,
+      height: CAMERA_HEIGHT,
       dpr: 1,
       scale: 1,
       offsetX: 0,
@@ -31,10 +33,15 @@ export function createGame(ui) {
     enemies: createEnemies(),
     dust: [],
     particles: [],
-    camera: { x: 0, shake: 0 },
+    camera: createCamera(),
     input: createInputState(),
+    settings: loadSettings(),
+    menu: { page: 'main', origin: 'pause', direction: 'forward' },
     clock: { last: performance.now() }
   };
+  centerCameraOnPlayer(game.camera, game.player, game.view);
+  applySettingsToGame(game);
+  return game;
 }
 
 export function resetGame(game) {
@@ -45,6 +52,7 @@ export function resetGame(game) {
   game.particles.length = 0;
   game.dust.length = 0;
   game.flags.won = false;
+  centerCameraOnPlayer(game.camera, game.player, game.view);
   game.camera.shake = 0;
 }
 

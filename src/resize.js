@@ -1,13 +1,16 @@
 import { RESIZE_DEBOUNCE_MS } from './constants.js';
+import { calculateViewport } from './viewport.js';
 
 export function applyResize(game) {
   const rect = game.canvas.getBoundingClientRect();
   game.view.dpr = window.devicePixelRatio || 1;
   game.canvas.width = Math.max(1, Math.round(rect.width * game.view.dpr));
   game.canvas.height = Math.max(1, Math.round(rect.height * game.view.dpr));
-  game.view.scale = Math.min(game.canvas.width / game.view.width, game.canvas.height / game.view.height);
-  game.view.offsetX = (game.canvas.width - game.view.width * game.view.scale) / 2;
-  game.view.offsetY = (game.canvas.height - game.view.height * game.view.scale) / 2;
+  const viewport = calculateViewport(game.canvas.width, game.canvas.height, game.view.width, game.view.height);
+  game.view.scale = viewport.scale;
+  game.view.offsetX = viewport.offsetX;
+  game.view.offsetY = viewport.offsetY;
+  game.ctx.imageSmoothingEnabled = false;
   game.canvas.classList.remove('resizing');
   game.view.firstResizeDone = true;
 }

@@ -10,7 +10,7 @@ export const defaultBinds = {
 
 export const bindLabels = { left:'Move Left', right:'Move Right', jump:'Jump', dash:'Dash', attack:'Attack', pause:'Pause', restart:'Restart' };
 
-const defaultGamepadBinds = {
+export const defaultGamepadBinds = {
   left: ['PadAxis0-', 'PadButton14'],
   right: ['PadAxis0+', 'PadButton15'],
   jump: ['PadButton0'],
@@ -134,9 +134,9 @@ export function clearExtraBinds(input, action) {
   input.bindDeadline = 0;
 }
 
-export function validBinds(candidate) {
+export function validBinds(candidate, defaults = defaultBinds) {
   if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return false;
-  return Object.keys(defaultBinds).every(action =>
+  return Object.keys(defaults).every(action =>
     Array.isArray(candidate[action]) && candidate[action].length > 0 && candidate[action].every(code => typeof code === 'string')
   );
 }

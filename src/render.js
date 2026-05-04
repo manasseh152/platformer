@@ -1,5 +1,5 @@
 import { assets, isLoaded } from './assets.js';
-import { TILE_SIZE } from './constants.js';
+import { DEBUG_CAMERA, TILE_SIZE } from './constants.js';
 import { controlsText } from './input.js';
 
 function roundedRect(ctx, x,y,w,h,r) {
@@ -63,6 +63,8 @@ export function syncHtmlHud(game) {
   ui.dashStatusEl.classList.toggle('ready', player.dashCooldown <= 0);
   ui.messageEl.hidden = !(player.dead || game.flags.won);
   ui.messageTitleEl.textContent = game.flags.won ? 'Gate Reached!' : 'You Faded';
+  document.body.classList.toggle('game-over', player.dead);
+  document.body.classList.toggle('game-won', game.flags.won);
 }
 
 function drawPlayer(game) {
@@ -111,20 +113,24 @@ function drawEnemy(game, e) {
 
 export function drawGame(game) {
   const { ctx, canvas, view, level, ui } = game;
-  const W = view.width;
-  const H = view.height;
+  ctx.imageSmoothingEnabled = false;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.setTransform(view.scale, 0, 0, view.scale, view.offsetX, view.offsetY);
-  const sky = ctx.createLinearGradient(0, 0, 0, H);
+
+  const sky = ctx.createLinearGradient(0, 0, 0, view.height);
   sky.addColorStop(0, '#cfe9f0');
   sky.addColorStop(.58, '#dff2ec');
   sky.addColorStop(1, '#f2e0bb');
   ctx.fillStyle = sky;
-  ctx.fillRect(-view.offsetX / view.scale, -view.offsetY / view.scale, canvas.width / view.scale, canvas.height / view.scale);
+  ctx.fillRect(0, 0, view.width, view.height);
+
   ctx.save();
-  const sx = (Math.random()-.5)*game.camera.shake*24, sy = (Math.random()-.5)*game.camera.shake*24;
-  ctx.translate(-game.camera.x + sx, sy);
+  const sx = Math.round((Math.random()-.5)*game.camera.shake*24);
+  const sy = Math.round((Math.random()-.5)*game.camera.shake*24);
+  const cameraX = Math.round(game.camera.x);
+  const cameraY = Math.round(game.camera.y);
+  ctx.translate(-cameraX + sx, -cameraY + sy);
 
   ctx.fillStyle = 'rgba(124,169,166,.20)';
   for (let i=0;i<7;i++) {
@@ -160,13 +166,21 @@ export function drawGame(game) {
   drawPlayer(game);
   for (const p of game.particles) { ctx.globalAlpha = Math.max(0,p.life*2); ctx.fillStyle = p.color; ctx.fillRect(p.x,p.y,4,4); ctx.globalAlpha = 1; }
 
+  if (DEBUG_CAMERA) {
+    ctx.strokeStyle = 'rgba(255,255,0,.8)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(
+      cameraX + game.camera.deadzone.left,
+      cameraY + game.camera.deadzone.top,
+      game.camera.deadzone.right - game.camera.deadzone.left,
+      game.camera.deadzone.bottom - game.camera.deadzone.top
+    );
+    ctx.strokeStyle = 'rgba(255,80,80,.9)';
+    ctx.strokeRect(cameraX, cameraY, view.width, view.height);
+  }
+
   ctx.restore();
 
   syncHtmlHud(game);
   ui.controlsEl.textContent = controlsText(game.input);
-
-  if (game.player.dead || game.flags.won) {
-    ctx.fillStyle = 'rgba(0,0,0,.35)';
-    ctx.fillRect(0, 0, W, H);
-  }
 }

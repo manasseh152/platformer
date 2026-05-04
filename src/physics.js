@@ -134,8 +134,5 @@ export function updateGame(game, dt) {
   if (player.grounded && Math.abs(player.vx) > 90 && Math.random() < .35) game.dust.push({x:player.x+player.w/2,y:player.y+player.h,vx:-player.dir*30,life:.25});
   if (player.wallSlide && Math.random() < .45) game.dust.push({x:player.x+(player.wallDir>0?player.w:0),y:player.y+28,vx:-player.wallDir*45,life:.22});
   for (let i=game.dust.length-1;i>=0;i--) { game.dust[i].life -= dt; game.dust[i].x += game.dust[i].vx*dt; if (game.dust[i].life<=0) game.dust.splice(i,1); }
-  game.camera.shake = Math.max(0, game.camera.shake - dt);
-  game.camera.x += ((player.x + player.w/2 - game.view.width/2) - game.camera.x) * Math.min(1, dt*4);
-  game.camera.x = Math.max(0, Math.min(0, game.camera.x));
   input.pressed.clear();
 }

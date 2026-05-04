@@ -17,6 +17,8 @@
     html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font-family: var(--ui); }
     body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 20; opacity: .20; background-image: radial-gradient(rgba(248,236,210,.10) .7px, transparent .7px); background-size: 18px 18px; }
     #gameShell { position: fixed; inset: 0; background: #17120e; }
+    body.game-over #gameShell::after,
+    body.game-won #gameShell::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: rgba(0,0,0,.35); }
     canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; background: #17120e; opacity: 0; transition: opacity .16s ease, filter .16s ease; }
     body.playing canvas { opacity: 1; }
     body.playing canvas.resizing { opacity: .72; filter: blur(.7px) saturate(.85); }
@@ -36,15 +38,16 @@
     #message .small { color: rgba(255,253,246,.70); }
     #startScreen, #pauseScreen { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 24px; overflow: auto; overscroll-behavior: contain; background: linear-gradient(180deg, rgba(23,18,14,.98), rgba(23,18,14,.92)), radial-gradient(circle at 50% 0%, rgba(227,185,79,.13), transparent 34%); transition: opacity .16s ease; }
     #pauseScreen { z-index: 9; opacity: 0; pointer-events: none; background: rgba(23,18,14,.88); backdrop-filter: blur(6px); }
-    body.start-settings #pauseScreen { opacity: 1; pointer-events: auto; z-index: 11; }
-    body.playing #startScreen { opacity: 0; pointer-events: none; }
-    body.paused #pauseScreen { opacity: 1; pointer-events: auto; }
+    body[data-menu-origin="start"] #pauseScreen { opacity: 1; pointer-events: auto; z-index: 11; }
+    body.playing #startScreen { opacity: 0; pointer-events: none; visibility: hidden; transition-duration: 0s; }
+    body.paused #pauseScreen { opacity: 1; pointer-events: auto; visibility: visible; }
+    body.playing:not(.paused):not([data-menu-origin="start"]) #pauseScreen { visibility: hidden; transition-duration: 0s; }
     ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .16s; animation-timing-function: ease; }
     #startScreen { view-transition-name: start-screen; }
     #pauseScreen { view-transition-name: pause-screen; }
     #startScreen .menu-card { view-transition-name: start-card; }
     #pauseScreen .menu-card { view-transition-name: menu-card; }
-    #settingsPanel { view-transition-name: settings-panel; }
+    ::view-transition-old(menu-card), ::view-transition-new(menu-card) { animation-duration: .16s; animation-timing-function: ease; }
     .menu-card { width: min(620px, 100%); max-height: calc(100vh - 48px); overflow: auto; padding: clamp(24px, 5vw, 48px); background: var(--panel); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); }
     .eyebrow { margin-bottom: 14px; color: var(--accent); font: 700 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
     .menu-card h1, .menu-card h2 { margin: 0 0 12px; font: 700 clamp(42px, 8vw, 72px)/.95 var(--display); letter-spacing: -.04em; }
@@ -66,10 +69,10 @@
       color: var(--ink) !important;
       box-shadow: inset 0 0 0 2px rgba(143,199,168,.72) !important;
     }
-    .menu-actions button:first-child, #startButton, #resumeButton, #backButton { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
-    .menu-actions button:first-child:hover, #startButton:hover, #resumeButton:hover, #backButton:hover,
-    .menu-actions button:first-child:focus-visible:not(.secondary), #startButton:focus-visible, #resumeButton:focus-visible, #backButton:focus-visible,
-    .menu-actions button:first-child.controller-focus:not(.secondary), #startButton.controller-focus, #resumeButton.controller-focus, #backButton.controller-focus {
+    .menu-actions button:first-child, #startButton, #resumeButton, #settingsBackButton, #controlsBackButton, #advancedBackButton { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
+    .menu-actions button:first-child:hover, #startButton:hover, #resumeButton:hover, #settingsBackButton:hover, #controlsBackButton:hover, #advancedBackButton:hover,
+    .menu-actions button:first-child:focus-visible:not(.secondary), #startButton:focus-visible, #resumeButton:focus-visible, #settingsBackButton:focus-visible, #controlsBackButton:focus-visible, #advancedBackButton:focus-visible,
+    .menu-actions button:first-child.controller-focus:not(.secondary), #startButton.controller-focus, #resumeButton.controller-focus, #settingsBackButton.controller-focus, #controlsBackButton.controller-focus, #advancedBackButton.controller-focus {
       background: var(--primary) !important;
       color: var(--primary-ink) !important;
       border-color: var(--primary) !important;
@@ -78,23 +81,26 @@
     button.secondary { background: transparent; color: var(--ink); }
     button.secondary:focus-visible, button.secondary.controller-focus { background: #262922 !important; color: var(--ink) !important; border-color: rgba(143,199,168,.72) !important; }
     button:disabled { opacity: .45; cursor: not-allowed; }
-    .menu-pages { position: relative; overflow: hidden; box-sizing: content-box; padding: 4px; margin: -4px; transition: height .20s ease; }
-    .menu-page { width: 100%; transition: transform .20s ease, opacity .16s ease; }
-    .pause-main { position: relative; transform: translateX(0); opacity: 1; }
-    #settingsPanel { display: block; margin-top: 0; text-align: left; position: absolute; inset: 0 auto auto 0; transform: translateX(104%); opacity: 0; visibility: hidden; pointer-events: none; }
-    #pauseScreen.settings-open .pause-main { position: absolute; inset: 0 auto auto 0; transform: translateX(-104%); opacity: 0; pointer-events: none; }
-    #pauseScreen.settings-open #settingsPanel { position: relative; transform: translateX(0); opacity: 1; visibility: visible; pointer-events: auto; }
-    body.start-settings .menu-page, body.no-nested-menu-transition .menu-page { transition: none; }
-    body.start-settings #pauseScreen.settings-open .pause-main, body.no-nested-menu-transition #pauseScreen .pause-main { display: none; }
-    body.start-settings #pauseScreen.settings-open #settingsPanel, body.no-nested-menu-transition #pauseScreen #settingsPanel { transform: none; opacity: 1; visibility: visible; }
-    #pauseScreen.settings-open .menu-card { width: min(940px, calc(100vw - 32px)); padding: clamp(22px, 3.6vw, 36px); }
-    #pauseScreen.settings-open .eyebrow { margin-bottom: 8px; }
-    #pauseScreen.settings-open .menu-card h2 { margin-bottom: 8px; font-size: clamp(38px, 6vw, 58px); }
-    #settingsPanel > p.settings-title { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 12px; color: var(--ink); font-weight: 900; }
-    .settings-title span { max-width: 42ch; color: var(--muted); font: 12px/1.35 var(--mono); text-align: right; }
-    .bind-device-toggle { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border: 1px solid rgba(241,238,229,.12); border-radius: 999px; background: rgba(16,17,15,.72); box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
-    .bind-device-toggle button { min-height: 34px; padding: 8px 16px; border-radius: 999px; border-color: transparent; background: transparent; color: var(--muted); text-align: center; }
-    .bind-device-toggle button.active { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); box-shadow: 0 8px 22px rgba(143,199,168,.16); }
+    .menu-pages { position: relative; padding: 4px; margin: -4px; }
+    .menu-page { display: none; width: 100%; text-align: left; }
+    #pauseScreen[data-menu-page="main"] [data-page="main"],
+    #pauseScreen[data-menu-page="settings"] [data-page="settings"],
+    #pauseScreen[data-menu-page="controls"] [data-page="controls"],
+    #pauseScreen[data-menu-page="advanced"] [data-page="advanced"] { display: block; }
+    #pauseScreen[data-menu-page="controls"] .menu-card,
+    #pauseScreen[data-menu-page="advanced"] .menu-card { width: min(940px, calc(100vw - 32px)); padding: clamp(22px, 3.6vw, 36px); }
+    #pauseScreen[data-menu-page="settings"] .eyebrow,
+    #pauseScreen[data-menu-page="controls"] .eyebrow,
+    #pauseScreen[data-menu-page="advanced"] .eyebrow { margin-bottom: 8px; }
+    #pauseScreen[data-menu-page="settings"] .menu-card h2,
+    #pauseScreen[data-menu-page="controls"] .menu-card h2,
+    #pauseScreen[data-menu-page="advanced"] .menu-card h2 { margin-bottom: 8px; font-size: clamp(38px, 6vw, 58px); }
+    .settings-section { margin: 10px 0 18px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.035); }
+    .settings-section h3 { margin: 0 0 10px; color: var(--ink); }
+    .helper, .advanced-toggle span { color: var(--muted); font: 12px/1.35 var(--mono); }
+    .segmented { display: inline-grid; grid-auto-flow: column; gap: 4px; padding: 4px; border: 1px solid rgba(241,238,229,.12); border-radius: 999px; background: rgba(16,17,15,.72); box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+    .segmented button { min-height: 34px; padding: 8px 16px; border-radius: 999px; border-color: transparent; background: transparent; color: var(--muted); text-align: center; }
+    .segmented button.active { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); box-shadow: 0 8px 22px rgba(143,199,168,.16); }
     #bindList { display: grid; gap: 8px; margin-top: 14px; }
     .bind-row { position: relative; display: grid; grid-template-columns: 150px minmax(0,1fr); gap: 12px; align-items: stretch; padding: 10px; border: 1px solid rgba(241,238,229,.10); border-radius: 18px; background: linear-gradient(135deg, rgba(255,255,255,.045), rgba(255,255,255,.018)); box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
     .bind-row::before { content: ""; position: absolute; left: 150px; top: 14px; bottom: 14px; width: 1px; background: linear-gradient(transparent, rgba(143,199,168,.22), transparent); }
@@ -109,24 +115,35 @@
     .bind-row .cancel-bind { grid-column: 2 / -1; justify-self: end; min-width: 118px; background: rgba(143,199,168,.12); }
     .advanced-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 12px 0; color: var(--muted); font-size: 14px; border-bottom: 1px solid var(--line); }
     .advanced-toggle input { accent-color: var(--accent); }
-    .advanced-tools { display: none; }
-    #settingsPanel.advanced .advanced-tools { display: block; }
+    .advanced-tools[hidden] { display: none; }
+    .advanced-tools { display: block; }
     .bind-json { width: 100%; min-height: 108px; margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #1d1f1b; color: var(--ink); font: 12px var(--mono); resize: vertical; }
-    #bindStatus, #controllerStatus { min-height: 18px; margin-top: 8px; color: var(--accent); font: 12px var(--mono); text-align: left; }
+    #bindStatus, #controllerStatus, .status-line { min-height: 18px; margin-top: 8px; color: var(--accent); font: 12px var(--mono); text-align: left; }
     .settings-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start; margin-top: 18px; }
     .settings-actions button { text-align: center; min-width: 120px; }
     .controller-debug { margin-top: 18px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.035); }
     .controller-debug p { margin-bottom: 10px; color: var(--ink); font-weight: 700; }
     .controller-debug code { display: block; min-height: 24px; margin: 6px 0 10px; color: var(--muted); font: 12px var(--mono); word-break: break-word; }
     .controller-debug select { width: 100%; margin-top: 10px; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: #1d1f1b; color: var(--ink); font: 13px var(--ui); }
+
+    body.motion-reduce canvas,
+    body.motion-reduce #hud,
+    body.motion-reduce #controls,
+    body.motion-reduce #message,
+    body.motion-reduce #startScreen,
+    body.motion-reduce #pauseScreen,
+    body.motion-reduce button {
+      transition-duration: 0s !important;
+      animation-duration: 0s !important;
+    }
+    body.motion-reduce button:hover { transform: none; }
+    .future-debug { margin-top: 14px; color: var(--muted); font: 12px var(--mono); }
     @media (max-width: 620px), (max-height: 680px) {
       #startScreen, #pauseScreen { place-items: start center; padding: 12px; }
       .menu-card { max-height: none; padding: 24px 18px; }
       .menu-card h1, .menu-card h2 { font-size: 42px; }
-      #pauseScreen.settings-open .menu-card { width: 100%; }
-      #settingsPanel > p.settings-title { display: block; }
-      .settings-title span { display: block; margin-top: 6px; text-align: left; }
-      .bind-device-toggle { width: 100%; }
+      #pauseScreen[data-menu-page="controls"] .menu-card, #pauseScreen[data-menu-page="advanced"] .menu-card { width: 100%; }
+      .segmented { width: 100%; }
       .bind-row { grid-template-columns: 1fr; text-align: left; }
       .bind-row::before { display: none; }
       .bind-editor { grid-template-columns: 1fr; }
