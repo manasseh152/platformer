@@ -5,6 +5,6 @@ export const WORLD_WIDTH = WORLD_COLS * TILE_SIZE;
 export const WORLD_HEIGHT = WORLD_ROWS * TILE_SIZE;
 export const CAMERA_WIDTH = 630;
 export const CAMERA_HEIGHT = 360;
-export const PIXEL_PERFECT = true;
+export const PIXEL_PERFECT = false;
 export const DEBUG_CAMERA = false;
 export const RESIZE_DEBOUNCE_MS = 280;

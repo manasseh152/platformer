@@ -57,6 +57,77 @@ function drawFloorSpike(ctx, asset, x, y) {
   return true;
 }
 
+function drawCanvasBackdrop(ctx, canvas) {
+  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grad.addColorStop(0, '#080b11');
+  grad.addColorStop(.62, '#0d151c');
+  grad.addColorStop(1, '#101e22');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const tile = 96;
+  ctx.fillStyle = 'rgba(185, 213, 207, .045)';
+  ctx.strokeStyle = 'rgba(0, 0, 0, .22)';
+  ctx.lineWidth = 4;
+  for (let y = -tile; y < canvas.height + tile; y += tile) {
+    for (let x = -tile; x < canvas.width + tile; x += tile) {
+      const stagger = ((y / tile) & 1) * tile / 2;
+      ctx.fillRect(x + stagger, y, tile - 4, tile - 4);
+      ctx.strokeRect(x + stagger, y, tile - 4, tile - 4);
+    }
+  }
+}
+
+function drawDungeonBackdrop(ctx, view, camera) {
+  const grad = ctx.createLinearGradient(0, 0, 0, view.height);
+  grad.addColorStop(0, '#080c13');
+  grad.addColorStop(.48, '#101a22');
+  grad.addColorStop(1, '#18272a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, view.width, view.height);
+
+  const tile = 56;
+  const parallaxX = Math.round(camera.x * .22) % tile;
+  const parallaxY = Math.round(camera.y * .14) % tile;
+  ctx.save();
+  ctx.translate(-parallaxX - tile, -parallaxY - tile);
+  for (let y = 0; y < view.height + tile * 2; y += tile) {
+    for (let x = 0; x < view.width + tile * 2; x += tile) {
+      const stagger = ((y / tile) & 1) * tile / 2;
+      const bx = x + stagger;
+      ctx.fillStyle = ((x / tile + y / tile) & 1) ? 'rgba(126, 159, 158, .105)' : 'rgba(187, 211, 205, .075)';
+      ctx.fillRect(bx, y, tile - 2, tile - 2);
+      ctx.fillStyle = 'rgba(255,255,255,.035)';
+      ctx.fillRect(bx + 10, y + 12, 8, 8);
+      ctx.fillStyle = 'rgba(0,0,0,.13)';
+      ctx.fillRect(bx + 26, y + 30, 14, 12);
+    }
+  }
+  ctx.restore();
+
+  ctx.fillStyle = 'rgba(4, 8, 12, .34)';
+  for (let i = -1; i < 6; i++) {
+    const x = i * 170 - (camera.x * .08 % 170);
+    ctx.beginPath();
+    ctx.roundRect(x + 20, 86, 80, view.height, 40);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = 'rgba(124,169,166,.18)';
+  for (let i = 0; i < 7; i++) {
+    ctx.beginPath();
+    ctx.ellipse(80 + i * 210 - (camera.x * .16 % 210), view.height - 64 + Math.sin(i) * 12, 150, 62, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const vignette = ctx.createRadialGradient(view.width * .54, view.height * .45, 40, view.width * .54, view.height * .45, view.width * .78);
+  vignette.addColorStop(0, 'rgba(255, 245, 205, .10)');
+  vignette.addColorStop(.55, 'rgba(255, 245, 205, .025)');
+  vignette.addColorStop(1, 'rgba(0, 0, 0, .38)');
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, view.width, view.height);
+}
+
 export function syncHtmlHud(game) {
   const { ui, player } = game;
   [...ui.heartsEl.children].forEach((heart, i) => heart.classList.toggle('full', i < player.hp));
@@ -116,30 +187,17 @@ export function drawGame(game) {
   ctx.imageSmoothingEnabled = false;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawCanvasBackdrop(ctx, canvas);
   ctx.setTransform(view.scale, 0, 0, view.scale, view.offsetX, view.offsetY);
 
-  const sky = ctx.createLinearGradient(0, 0, 0, view.height);
-  sky.addColorStop(0, '#cfe9f0');
-  sky.addColorStop(.58, '#dff2ec');
-  sky.addColorStop(1, '#f2e0bb');
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, view.width, view.height);
-
-  ctx.save();
   const sx = Math.round((Math.random()-.5)*game.camera.shake*24);
   const sy = Math.round((Math.random()-.5)*game.camera.shake*24);
   const cameraX = Math.round(game.camera.x);
   const cameraY = Math.round(game.camera.y);
-  ctx.translate(-cameraX + sx, -cameraY + sy);
+  drawDungeonBackdrop(ctx, view, { x: cameraX - sx, y: cameraY - sy });
 
-  ctx.fillStyle = 'rgba(124,169,166,.20)';
-  for (let i=0;i<7;i++) {
-    ctx.beginPath();
-    ctx.ellipse(80+i*210, 606 + Math.sin(i)*12, 150, 62, 0, 0, Math.PI*2);
-    ctx.fill();
-  }
-  ctx.fillStyle = 'rgba(255,255,255,.58)';
-  for (let i=0;i<9;i++) { ctx.beginPath(); ctx.arc(90+i*150, 94+(i%3)*22, 24+(i%2)*8, 0, Math.PI*2); ctx.fill(); }
+  ctx.save();
+  ctx.translate(-cameraX + sx, -cameraY + sy);
 
   for (const d of level.decor || []) {
     const asset = assets[d.type];

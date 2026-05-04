@@ -2,10 +2,14 @@ import { expect, test } from '@playwright/test';
 import { approachExp, clampCameraToWorld, createCamera } from '../src/camera.js';
 import { calculateViewport } from '../src/viewport.js';
 
-test('pixel-perfect viewport picks integer scale and centered offsets', () => {
+test('default viewport fills the available canvas with fractional scale', () => {
   expect(calculateViewport(1920, 1080, 630, 360)).toEqual({ scale: 3, offsetX: 15, offsetY: 0 });
   expect(calculateViewport(1280, 720, 630, 360)).toEqual({ scale: 2, offsetX: 10, offsetY: 0 });
-  expect(calculateViewport(800, 600, 630, 360)).toEqual({ scale: 1, offsetX: 85, offsetY: 120 });
+  expect(calculateViewport(800, 600, 630, 360)).toEqual({ scale: 800 / 630, offsetX: 0, offsetY: 71 });
+});
+
+test('pixel-perfect viewport can still be requested explicitly', () => {
+  expect(calculateViewport(800, 600, 630, 360, true)).toEqual({ scale: 1, offsetX: 85, offsetY: 120 });
 });
 
 test('camera clamps to world bounds when viewport is smaller than world', () => {
