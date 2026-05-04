@@ -1,5 +1,6 @@
 import { centerCameraOnPlayer } from './camera.js';
 import { createEnemies, createPlayer, getLevelById, getSpawnPoint, level as mainLevel, levels as levelRegistry } from './level.js';
+import { browserRuntime } from './runtime.js';
 
 const MAIN_LEVEL_ID = 'main';
 
@@ -21,7 +22,7 @@ export function getAllLevels() {
   return Object.values(levelRegistry);
 }
 
-export function createLevelManager(game) {
+export function createLevelManager(game, runtime = browserRuntime) {
   function resetRuntimeForLevel() {
     Object.assign(game.player, createPlayer(getSpawnPoint(game.level)));
     game.enemies.length = 0;
@@ -37,16 +38,24 @@ export function createLevelManager(game) {
   function switchLevel(levelId) {
     const previousLevel = game.level;
     const nextLevel = getLevelById(levelId);
-    if (!nextLevel) return { ok: false, reason: 'missing-level', level: null, previousLevel };
-    if (!canAccessLevel(game.settings, nextLevel)) return { ok: false, reason: 'developer-only', level: null, previousLevel };
+    if (!nextLevel) {
+      runtime.emit('level.switch.failed', { levelId, reason: 'missing-level', previousLevelId: previousLevel?.id || null });
+      return { ok: false, reason: 'missing-level', level: null, previousLevel };
+    }
+    if (!canAccessLevel(game.settings, nextLevel)) {
+      runtime.emit('level.switch.failed', { levelId, reason: 'developer-only', previousLevelId: previousLevel?.id || null });
+      return { ok: false, reason: 'developer-only', level: null, previousLevel };
+    }
     game.level = nextLevel;
     resetRuntimeForLevel();
+    runtime.emit('level.switch', { from: previousLevel?.id || null, to: nextLevel.id });
     return { ok: true, reason: null, level: nextLevel, previousLevel };
   }
 
   function restartLevel() {
     const previousLevel = game.level;
     resetRuntimeForLevel();
+    runtime.emit('level.restart', { levelId: game.level?.id || null });
     return { ok: true, reason: null, level: game.level, previousLevel };
   }
 
@@ -66,7 +75,10 @@ export function createLevelManager(game) {
 
   function switchToNextLevel() {
     const nextLevel = getNextLevel();
-    if (!nextLevel) return { ok: false, reason: 'no-next-level', level: null, previousLevel: game.level };
+    if (!nextLevel) {
+      runtime.emit('level.switch.failed', { levelId: null, reason: 'no-next-level', previousLevelId: game.level?.id || null });
+      return { ok: false, reason: 'no-next-level', level: null, previousLevel: game.level };
+    }
     return switchLevel(nextLevel.id);
   }
 

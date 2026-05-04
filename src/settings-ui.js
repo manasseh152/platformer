@@ -1,5 +1,6 @@
 import { bindLabels, bindText, controllerBindText, controllerName, defaultBinds, defaultGamepadBinds } from './input.js';
 import { motionStatusText } from './transitions.js';
+import { browserRuntime } from './runtime.js';
 
 const categoryDescriptions = {
   keyboard: 'Remap keyboard controls. Selecting a binding replaces that action’s current keys. Reset defaults restores alternate keys.',
@@ -129,12 +130,12 @@ export function refreshDynamicRefs(game) {
   ui.bindList = ui.settingsCategoryBody;
 }
 
-export function renderSettingsCategory(game) {
+export function renderSettingsCategory(game, runtime = browserRuntime) {
   const category = selectedCategory(game);
   const { ui } = game;
   if (!category) return;
   ui.settingsCategoryDescription.textContent = category.description;
-  if (game.input.bindError && performance.now() > game.input.bindError.until) game.input.bindError = null;
+  if (game.input.bindError && runtime.now() > game.input.bindError.until) game.input.bindError = null;
   const renderers = { keyboard: renderKeyboard, controller: renderController, accessibility: renderAccessibility, advanced: renderAdvanced };
   ui.settingsCategoryBody.innerHTML = renderers[category.id](game);
   refreshDynamicRefs(game);

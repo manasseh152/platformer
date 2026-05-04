@@ -5,15 +5,17 @@ import { createLevelManager, resolveInitialLevel } from './level-manager.js';
 import { createInputState } from './input.js';
 import { createPresenter } from './presenter.js';
 import { applySettingsToGame, loadSettings } from './settings.js';
+import { browserRuntime } from './runtime.js';
 
 /**
  * Creates the mutable game context shared by systems.
  */
-export function createGame(ui) {
+export function createGame(ui, runtime = browserRuntime) {
   const presenter = createPresenter(ui.canvas, CAMERA_WIDTH, CAMERA_HEIGHT);
-  const settings = loadSettings();
+  const settings = loadSettings(runtime.storage);
   const activeLevel = resolveInitialLevel(settings);
   const game = {
+    runtime,
     canvas: ui.canvas,
     renderCanvas: presenter.renderCanvas,
     ctx: presenter.renderCtx,
@@ -49,24 +51,25 @@ export function createGame(ui) {
     input: createInputState(),
     settings,
     menu: { page: 'main', origin: 'pause', direction: 'forward' },
-    clock: { last: performance.now() }
+    clock: { last: runtime.now() }
   };
   centerCameraOnPlayer(game.camera, game.player, game.view);
-  game.levels = createLevelManager(game);
+  game.levels = createLevelManager(game, runtime);
   applySettingsToGame(game);
   document.body.dataset.levelId = game.level?.id || 'main';
   return game;
 }
 
-export function resetGame(game) {
-  setPausedFlag(game, false);
+export function resetGame(game, runtime = browserRuntime) {
+  setPausedFlag(game, false, runtime);
   game.levels.restartLevel();
+  runtime.emit('game.reset', { levelId: game.level?.id || 'main' });
 }
 
-export function setPausedFlag(game, value) {
+export function setPausedFlag(game, value, runtime = browserRuntime) {
   game.flags.paused = value;
   game.input.keys.clear();
   game.input.pressed.clear();
   document.body.classList.toggle('paused', value);
-  game.clock.last = performance.now();
+  game.clock.last = runtime.now();
 }

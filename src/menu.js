@@ -3,6 +3,8 @@ import { syncSettingsFromInput, replaceSettings, saveSettings, serializeSettings
 import { setPausedFlag } from './state.js';
 import { applyMotionPreference, runDOMTransition, shouldReduceMotion, setupMotionPreference } from './transitions.js';
 import { renderSettings, renderSettingsCategory, refreshDynamicRefs, selectedCategory } from './settings-ui.js';
+import { syncGymApi } from './gym.js';
+import { browserRuntime } from './runtime.js';
 
 const pageElement = (ui, page) => ({ main: ui.pauseMainPage, 'level-select': ui.levelSelectPage, settings: ui.settingsHubPage, 'settings-category': ui.settingsCategoryPage })[page];
 const backablePages = ['level-select', 'settings', 'settings-category'];
@@ -161,14 +163,14 @@ export function cancelBindListening(game, message = '') {
   if (message) setBindStatus(ui, message);
 }
 
-export function startBindListening(game, action, type) {
+export function startBindListening(game, action, type, runtime = browserRuntime) {
   const { input, ui } = game;
   if (game.bindListenTimer) clearTimeout(game.bindListenTimer);
   input.bindError = null;
   input.listeningFor = type === 'keyboard' ? action : null;
   input.controllerBindAction = type === 'controller' ? action : null;
   input.bindMode = 'replace';
-  input.bindDeadline = performance.now() + 6000;
+  input.bindDeadline = runtime.now() + 6000;
   const label = bindLabels[action];
   setBindStatus(ui, type === 'keyboard' ? `Press a key for ${label}. Escape cancels.` : `Press a controller button for ${label}. B / Circle cancels.`);
   renderSettingsCategory(game);
@@ -246,28 +248,29 @@ export function goBack(game) {
   if (game.menu.page === 'level-select') return closeLevelSelect(game);
 }
 
-export function setPaused(game, value) {
+export function setPaused(game, value, runtime = browserRuntime) {
   const change = () => {
     game.menu.origin = 'pause';
     game.menu.page = 'main';
     game.menu.settingsCategory = null;
     document.body.dataset.menuOrigin = 'pause';
-    setPausedFlag(game, value);
+    setPausedFlag(game, value, runtime);
     updateMenuChrome(game);
   };
   const after = () => game.flags.paused ? focusAndReveal(game, game.ui.resumeButton) : document.activeElement?.blur?.();
-  if (!value) { change(); after(); return; }
-  runDOMTransition(game, change, after);
+  if (!value) { change(); runtime.emit('game.pause', { paused: game.flags.paused }); after(); return; }
+  runDOMTransition(game, () => { change(); runtime.emit('game.pause', { paused: game.flags.paused }); }, after);
 }
 
-export function startGame(game) {
+export function startGame(game, runtime = browserRuntime) {
   if (game.flags.started) return;
   game.menu.page = 'main';
   game.menu.settingsCategory = null;
   document.body.dataset.menuOrigin = 'pause';
   game.flags.started = true;
-  game.clock.last = performance.now();
+  game.clock.last = runtime.now();
   document.body.classList.add('playing');
+  runtime.emit('game.start', { levelId: game.level?.id || null });
   game.canvas.focus?.({ preventScroll: true });
   updateMenuChrome(game);
 }
@@ -294,7 +297,7 @@ function dumpSettings(game) {
   game.ui.settingsJsonStatus.textContent = 'Dumped app settings.';
 }
 
-function handleReplaceSettings(game) {
+function handleReplaceSettings(game, runtime = browserRuntime) {
   const { ui } = game;
   let normalized;
   try { normalized = JSON.parse(ui.settingsJson.value); } catch (err) { ui.settingsJsonStatus.textContent = `Replace failed: ${err.message}`; return; }
@@ -302,7 +305,9 @@ function handleReplaceSettings(game) {
   const developerWasVisible = game.settings.developerMode && game.menu.page === 'settings-category';
   try {
     const apply = () => {
-      replaceSettings(game, JSON.stringify(normalized));
+      replaceSettings(game, JSON.stringify(normalized), runtime.storage);
+      runtime.emit('settings.replace', { developerMode: game.settings.developerMode, motion: game.settings.motion, controllerEnabled: game.settings.controllerEnabled });
+      syncGymApi(game, runtime);
       renderSettings(game);
       updateMenuChrome(game);
     };
@@ -318,28 +323,32 @@ function handleReplaceSettings(game) {
   } catch (err) { ui.settingsJsonStatus.textContent = `Replace failed: ${err.message}`; }
 }
 
-function cycleMotion(game) {
+function cycleMotion(game, runtime = browserRuntime) {
   const index = motionOrder.indexOf(game.settings.motion);
   game.settings.motion = motionOrder[(index + 1) % motionOrder.length];
-  game.settings = saveSettings(game.settings);
+  game.settings = saveSettings(game.settings, runtime.storage);
+  runtime.emit('settings.change', { key: 'motion', value: game.settings.motion });
   renderSettingsCategory(game);
   updateMenuChrome(game);
 }
 
-function toggleController(game) {
+function toggleController(game, runtime = browserRuntime) {
   const { input, ui } = game;
   input.useController = !input.useController;
   resetControllerInput(input);
-  syncSettingsFromInput(game);
+  syncSettingsFromInput(game, runtime.storage);
+  runtime.emit('settings.change', { key: 'controllerEnabled', value: game.settings.controllerEnabled });
   renderSettingsCategory(game);
   setBindStatus(ui, input.useController ? 'Controller enabled.' : 'Controller disabled.');
   setControllerStatus(ui, input.useController ? 'Controller enabled.' : 'Controller disabled.');
 }
 
-function toggleDeveloperMode(game) {
+function toggleDeveloperMode(game, runtime = browserRuntime) {
   runDOMTransition(game, () => {
     game.settings.developerMode = !game.settings.developerMode;
-    game.settings = saveSettings(game.settings);
+    game.settings = saveSettings(game.settings, runtime.storage);
+    runtime.emit('settings.change', { key: 'developerMode', value: game.settings.developerMode });
+    syncGymApi(game, runtime);
     if (!game.settings.developerMode && game.level?.developerOnly) game.levels.switchLevel('main');
     renderSettingsCategory(game);
     updateMenuChrome(game);
@@ -362,7 +371,7 @@ function selectLevel(game, levelId) {
   if (game.menu.origin === 'start') closeLevelSelect(game);
 }
 
-function resetBinds(game, device) {
+function resetBinds(game, device, runtime = browserRuntime) {
   const { input, ui } = game;
   if (device === 'controller') {
     resetDefaultGamepadBinds(input);
@@ -371,11 +380,12 @@ function resetBinds(game, device) {
     resetDefaultKeyBinds(input);
     setBindStatus(ui, 'Restored keyboard defaults.');
   }
-  syncSettingsFromInput(game);
+  syncSettingsFromInput(game, runtime.storage);
+  runtime.emit('settings.binds-reset', { device });
   renderSettingsCategory(game);
 }
 
-function handleSettingsClick(game, e) {
+function handleSettingsClick(game, e, runtime = browserRuntime) {
   const levelButton = e.target.closest('button[data-level-id]');
   if (levelButton) return selectLevel(game, levelButton.dataset.levelId);
   if (e.target.closest('[data-level-select-back]')) return goBack(game);
@@ -384,21 +394,21 @@ function handleSettingsClick(game, e) {
   const backButton = e.target.closest('[data-settings-back]');
   if (backButton) return goBack(game);
   const bindButton = e.target.closest('button[data-bind-action]');
-  if (bindButton) return startBindListening(game, bindButton.dataset.bindAction, bindButton.dataset.bindDevice);
+  if (bindButton) return startBindListening(game, bindButton.dataset.bindAction, bindButton.dataset.bindDevice, runtime);
   const row = e.target.closest('[data-setting-row]');
   if (row) {
-    if (row.dataset.settingRow === 'motion') return cycleMotion(game);
-    if (row.dataset.settingRow === 'controller-enabled') return toggleController(game);
-    if (row.dataset.settingRow === 'developer-mode') return toggleDeveloperMode(game);
+    if (row.dataset.settingRow === 'motion') return cycleMotion(game, runtime);
+    if (row.dataset.settingRow === 'controller-enabled') return toggleController(game, runtime);
+    if (row.dataset.settingRow === 'developer-mode') return toggleDeveloperMode(game, runtime);
   }
   const action = e.target.closest('[data-settings-action]')?.dataset.settingsAction;
-  if (action === 'reset-keyboard') return resetBinds(game, 'keyboard');
-  if (action === 'reset-controller') return resetBinds(game, 'controller');
+  if (action === 'reset-keyboard') return resetBinds(game, 'keyboard', runtime);
+  if (action === 'reset-controller') return resetBinds(game, 'controller', runtime);
   if (action === 'dump-settings') return dumpSettings(game);
-  if (action === 'replace-settings') return handleReplaceSettings(game);
+  if (action === 'replace-settings') return handleReplaceSettings(game, runtime);
 }
 
-export function setupMenu(game) {
+export function setupMenu(game, runtime = browserRuntime) {
   const { ui } = game;
   setupMotionPreference(game);
   renderSettings(game);
@@ -418,10 +428,10 @@ export function setupMenu(game) {
 
   renderSelectedLevelSummary(game);
 
-  ui.startButton.addEventListener('click', () => startGame(game));
+  ui.startButton.addEventListener('click', () => startGame(game, runtime));
   ui.startLevelSelectButton.addEventListener('click', () => openLevelSelect(game, 'start'));
   ui.startSettingsButton.addEventListener('click', () => openSettings(game, 'start'));
-  ui.resumeButton.addEventListener('click', () => setPaused(game, false));
+  ui.resumeButton.addEventListener('click', () => setPaused(game, false, runtime));
   ui.restartButton.addEventListener('click', () => game.resetGame());
   ui.mainMenuButton.addEventListener('click', () => returnToMainMenu(game));
   ui.levelSelectButton.addEventListener('click', () => openLevelSelect(game, 'pause'));
@@ -430,22 +440,23 @@ export function setupMenu(game) {
   ui.messageNextLevelButton.addEventListener('click', () => {
     const result = game.levels.switchToNextLevel();
     if (!result.ok) return;
-    setPausedFlag(game, false);
+    setPausedFlag(game, false, runtime);
     game.flags.started = true;
+    runtime.emit('game.next-level', { levelId: game.level?.id || null });
     document.body.classList.add('playing');
     document.body.classList.remove('game-won', 'game-over');
     game.canvas.focus?.({ preventScroll: true });
   });
   ui.messageLevelSelectButton.addEventListener('click', () => {
-    setPausedFlag(game, true);
+    setPausedFlag(game, true, runtime);
     openLevelSelect(game, 'pause');
   });
-  ui.menuPages.addEventListener('click', e => handleSettingsClick(game, e));
+  ui.menuPages.addEventListener('click', e => handleSettingsClick(game, e, runtime));
 
   requestAnimationFrame(() => focusAndReveal(game, ui.startButton));
 }
 
-export function handleListeningKey(game, code) {
+export function handleListeningKey(game, code, runtime = browserRuntime) {
   const action = game.input.listeningFor;
   if (!action) return;
   if (code === 'Escape') return cancelBindListening(game, 'Listening cancelled.');
@@ -453,14 +464,15 @@ export function handleListeningKey(game, code) {
   game.bindListenTimer = null;
   const conflict = findBindConflict(game.input, 'keyboard', action, code);
   if (conflict) {
-    game.input.bindError = { device: 'keyboard', action, until: performance.now() + 1800 };
+    game.input.bindError = { device: 'keyboard', action, until: runtime.now() + 1800 };
     setBindStatus(game.ui, `${code.replace(/^Key/, '')} is already bound to ${bindLabels[conflict]}.`, true);
     renderSettingsCategory(game);
     setTimeout(() => renderSettingsCategory(game), 1850);
     return;
   }
   bindKey(game.input, action, code);
-  syncSettingsFromInput(game);
+  syncSettingsFromInput(game, runtime.storage);
+  runtime.emit('settings.bind-changed', { device: 'keyboard', action, code });
   setBindStatus(game.ui, `${bindLabels[action]} updated.`);
   renderSettingsCategory(game);
 }

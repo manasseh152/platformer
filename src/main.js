@@ -2,25 +2,32 @@ import { getUI } from './dom.js';
 import { controlsText, hasPressed, pollGamepads, setInputScheme } from './input.js';
 import { handleGamepadMenuInput, handleListeningKey, activeMenuRoot, goBack, renderBinds, setupMenu, setPaused, startGame } from './menu.js';
 import { syncSettingsFromInput } from './settings.js';
-import { updateCamera } from './camera.js';
-import { updateGame } from './physics.js';
-import { drawGame } from './render.js';
 import { setupResize } from './resize.js';
 import { createGame, resetGame } from './state.js';
+import { syncGymApi } from './gym.js';
+import { createRuntime } from './runtime.js';
+import { createSceneHost } from './scene-host.js';
+import { createLegacyAppScene } from './scenes/legacy-app-scene.js';
 
+const runtime = createRuntime();
 const ui = getUI();
-const game = createGame(ui);
+const game = createGame(ui, runtime);
+const scenes = createSceneHost(runtime);
+runtime.scenes = scenes;
 game.controlsText = () => controlsText(game.input);
-game.resetGame = () => resetGame(game);
+game.resetGame = () => resetGame(game, runtime);
 
-setupMenu(game);
+setupMenu(game, runtime);
+scenes.register(createLegacyAppScene(game));
+scenes.switchScene('legacy-app');
+syncGymApi(game, runtime);
 setupResize(game);
 
 addEventListener('keydown', e => {
   const { input, player } = game;
   if (input.listeningFor) {
     e.preventDefault();
-    handleListeningKey(game, e.code);
+    handleListeningKey(game, e.code, runtime);
     return;
   }
 
@@ -45,10 +52,10 @@ addEventListener('keydown', e => {
   else if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) setInputScheme(game, 'wasd');
 
   const pauseHit = input.binds.pause.includes(e.code);
-  if (!game.flags.started && ['Enter','Space'].includes(e.code)) startGame(game);
+  if (!game.flags.started && ['Enter','Space'].includes(e.code)) startGame(game, runtime);
   else if (game.flags.started && !player.dead && !game.flags.won && pauseHit) {
     e.preventDefault();
-    if (!e.repeat) setPaused(game, !game.flags.paused);
+    if (!e.repeat) setPaused(game, !game.flags.paused, runtime);
     input.keys.add(e.code);
     return;
   }
@@ -59,27 +66,27 @@ addEventListener('keydown', e => {
 
 addEventListener('keyup', e => game.input.keys.delete(e.code));
 
-function frame(now = performance.now()) {
+function frame(now = runtime.now()) {
   const dt = Math.min(.033, (now - game.clock.last) / 1000);
   game.clock.last = now;
-  pollGamepads(game);
+  pollGamepads(runtime, game);
   if (game.input.bindRenderDirty) {
     game.input.bindRenderDirty = false;
-    syncSettingsFromInput(game);
+    syncSettingsFromInput(game, runtime.storage);
+    runtime.emit('settings.input-sync', { controllerEnabled: game.settings.controllerEnabled });
     renderBinds(game);
   }
   const menuUsedGamepad = game.input.useController && handleGamepadMenuInput(game);
   if (!menuUsedGamepad && game.flags.started && !game.player.dead && !game.flags.won && hasPressed(game.input, 'pause')) {
-    setPaused(game, !game.flags.paused);
+    setPaused(game, !game.flags.paused, runtime);
   }
   if (game.flags.started && !game.flags.paused) {
-    updateGame(game, dt);
-    updateCamera(game, dt);
+    scenes.update(dt);
   } else {
     game.input.pressed.clear();
     game.input.gamepadPressed.clear();
   }
-  drawGame(game);
+  scenes.render();
 }
 
 function loop(now) {

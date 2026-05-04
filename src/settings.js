@@ -1,4 +1,5 @@
 import { clone, defaultBinds, defaultGamepadBinds, validBinds } from './input.js';
+import { browserRuntime } from './runtime.js';
 
 export const SETTINGS_KEY = 'chibi.settings';
 const MOTIONS = new Set(['system', 'on', 'off']);
@@ -41,9 +42,9 @@ export function normalizeSettings(candidate = {}) {
   };
 }
 
-export function loadSettings() {
+export function loadSettings(storage = browserRuntime.storage) {
   try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
+    const raw = storage.getItem(SETTINGS_KEY);
     return raw ? normalizeSettings(JSON.parse(raw)) : defaultSettings();
   } catch (err) {
     console.warn('Falling back to default settings:', err);
@@ -51,9 +52,9 @@ export function loadSettings() {
   }
 }
 
-export function saveSettings(settings) {
+export function saveSettings(settings, storage = browserRuntime.storage) {
   const normalized = normalizeSettings(settings);
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(normalized));
+  storage.setItem(SETTINGS_KEY, JSON.stringify(normalized));
   return normalized;
 }
 
@@ -68,21 +69,21 @@ export function applySettingsToGame(game) {
   return game.settings;
 }
 
-export function syncSettingsFromInput(game) {
+export function syncSettingsFromInput(game, storage = browserRuntime.storage) {
   game.settings = normalizeSettings({
     ...game.settings,
     controllerEnabled: game.input.useController,
     keyboardBinds: game.input.binds,
     gamepadBinds: game.input.gamepadBinds
   });
-  saveSettings(game.settings);
+  saveSettings(game.settings, storage);
   return game.settings;
 }
 
-export function replaceSettings(game, json) {
+export function replaceSettings(game, json, storage = browserRuntime.storage) {
   const parsed = JSON.parse(json);
   const normalized = normalizeSettings(parsed);
-  game.settings = saveSettings(normalized);
+  game.settings = saveSettings(normalized, storage);
   applySettingsToGame(game);
   return game.settings;
 }

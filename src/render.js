@@ -298,9 +298,9 @@ function snapRenderY(game, y) {
   return snap ? snap.cameraY + Math.round((y - snap.cameraY) * snap.scaleY) / snap.scaleY : y;
 }
 
-function drawPlayer(game) {
+function drawPlayer(runtime, game) {
   const { ctx, player } = game;
-  const flicker = player.inv > 0 && Math.floor(performance.now()/70)%2 === 0;
+  const flicker = player.inv > 0 && Math.floor(runtime.now()/70)%2 === 0;
   if (flicker) return;
   const x = snapRenderX(game, player.x), y = snapRenderY(game, player.y), d = player.dir;
   ctx.save();
@@ -342,7 +342,11 @@ function drawEnemy(game, e) {
   ctx.restore();
 }
 
-export function drawGame(game) {
+export function drawGame(runtime, game) {
+  if (!game) {
+    game = runtime;
+    runtime = { now: () => performance.now(), random: Math.random };
+  }
   const { ctx, renderCanvas, view, level, ui } = game;
   ctx.imageSmoothingEnabled = false;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -351,8 +355,8 @@ export function drawGame(game) {
   ctx.fillRect(0, 0, renderCanvas.width, renderCanvas.height);
   ctx.setTransform(renderCanvas.width / view.width, 0, 0, renderCanvas.height / view.height, 0, 0);
 
-  const sx = Math.round((Math.random()-.5)*game.camera.shake*24);
-  const sy = Math.round((Math.random()-.5)*game.camera.shake*24);
+  const sx = Math.round((runtime.random()-.5)*game.camera.shake*24);
+  const sy = Math.round((runtime.random()-.5)*game.camera.shake*24);
   const cameraScaleX = renderCanvas.width / view.width;
   const cameraScaleY = renderCanvas.height / view.height;
   const desiredCameraX = game.camera.x - sx;
@@ -378,7 +382,7 @@ export function drawGame(game) {
 
   for (const d of game.dust) { ctx.globalAlpha = Math.max(0,d.life*3); ctx.fillStyle = '#bfffff'; ctx.beginPath(); ctx.arc(snapRenderX(game,d.x),snapRenderY(game,d.y),5,0,Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; }
   for (const e of game.enemies) drawEnemy(game, e);
-  drawPlayer(game);
+  drawPlayer(runtime, game);
   for (const p of game.particles) { ctx.globalAlpha = Math.max(0,p.life*2); ctx.fillStyle = p.color; ctx.fillRect(snapRenderX(game,p.x),snapRenderY(game,p.y),4,4); ctx.globalAlpha = 1; }
 
   if (DEBUG_CAMERA) {

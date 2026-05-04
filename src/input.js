@@ -182,7 +182,11 @@ export function importBinds(input, json) {
   input.bindMode = 'replace';
 }
 
-export function pollGamepads(game) {
+export function pollGamepads(runtime, game) {
+  if (!game) {
+    game = runtime;
+    runtime = { now: () => performance.now() };
+  }
   const { input, ui } = game;
   input.gamepadPressed.clear();
   input.gamepadDown.clear();
@@ -218,10 +222,15 @@ export function pollGamepads(game) {
   if (input.gamepadPressed.size) setInputScheme(game, 'gamepad');
   input.previousGamepadDown.clear();
   for (const code of input.gamepadDown) input.previousGamepadDown.add(code);
-  updateControllerDebug(game, firstPad);
+  updateControllerDebug(runtime, game, firstPad);
 }
 
-export function updateControllerDebug(game, pad) {
+export function updateControllerDebug(runtime, game, pad) {
+  if (!pad && game?.input === undefined) {
+    pad = game;
+    game = runtime;
+    runtime = { now: () => performance.now() };
+  }
   const { input, ui } = game;
   if (!ui.controllerName) return;
   ui.controllerName.textContent = pad ? `${pad.id} (${pad.mapping || 'unknown mapping'})` : 'None detected';
@@ -240,7 +249,7 @@ export function updateControllerDebug(game, pad) {
     }
     const conflict = findBindConflict(input, 'controller', action, code);
     if (conflict) {
-      input.bindError = { device: 'controller', action, until: performance.now() + 1800 };
+      input.bindError = { device: 'controller', action, until: runtime.now() + 1800 };
       input.bindRenderDirty = true;
       const message = `${controllerName(code)} is already bound to ${bindLabels[conflict]}.`;
       setBindStatus(ui, message, true);
