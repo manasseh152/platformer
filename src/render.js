@@ -1,7 +1,60 @@
+import { assets, isLoaded } from './assets.js';
+import { TILE_SIZE } from './constants.js';
 import { controlsText } from './input.js';
 
 function roundedRect(ctx, x,y,w,h,r) {
   ctx.beginPath(); ctx.roundRect(x,y,w,h,r); ctx.fill();
+}
+
+function drawAsset(ctx, asset, x, y, w = TILE_SIZE, h = TILE_SIZE) {
+  if (!isLoaded(asset)) return false;
+  ctx.drawImage(asset, x, y, w, h);
+  return true;
+}
+
+function drawTiledPlatform(ctx, p) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(p.x, p.y, p.w, p.h);
+  ctx.clip();
+
+  for (let y = p.y; y < p.y + p.h; y += TILE_SIZE) {
+    for (let x = p.x; x < p.x + p.w; x += TILE_SIZE) {
+      const topRow = y === p.y;
+      const asset = topRow && p.kind !== 'stone-column' ? assets.stoneTop : assets.stoneFill;
+      if (!drawAsset(ctx, asset, x, y)) {
+        const grad = ctx.createLinearGradient(0, y, 0, y + TILE_SIZE);
+        grad.addColorStop(0, '#b8cdd0'); grad.addColorStop(1, '#8fa7a9');
+        ctx.fillStyle = grad;
+        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+      }
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawGoal(ctx, goal) {
+  const x = goal.x;
+  const y = goal.y;
+  ctx.save();
+  ctx.shadowColor = 'rgba(227,185,79,.62)';
+  ctx.shadowBlur = 18;
+  if (!drawAsset(ctx, assets.gate, x, y, goal.w, goal.h)) {
+    ctx.fillStyle = '#2d3838'; roundedRect(ctx, x, y, goal.w, goal.h, 18);
+    ctx.strokeStyle = '#d7b15a'; ctx.lineWidth = 3; ctx.strokeRect(x + 12, y + 14, goal.w - 24, goal.h - 28);
+  }
+  ctx.restore();
+}
+
+function drawFloorSpike(ctx, asset, x, y) {
+  if (!isLoaded(asset)) return false;
+  ctx.save();
+  ctx.translate(x + TILE_SIZE / 2, y + TILE_SIZE / 2);
+  ctx.rotate(Math.PI);
+  ctx.drawImage(asset, -TILE_SIZE / 2, -TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
+  ctx.restore();
+  return true;
 }
 
 export function syncHtmlHud(game) {
@@ -59,37 +112,48 @@ function drawEnemy(game, e) {
 export function drawGame(game) {
   const { ctx, canvas, view, level, ui } = game;
   const W = view.width;
+  const H = view.height;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.setTransform(view.scale, 0, 0, view.scale, view.offsetX, view.offsetY);
-  ctx.fillStyle = '#090912';
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#cfe9f0');
+  sky.addColorStop(.58, '#dff2ec');
+  sky.addColorStop(1, '#f2e0bb');
+  ctx.fillStyle = sky;
   ctx.fillRect(-view.offsetX / view.scale, -view.offsetY / view.scale, canvas.width / view.scale, canvas.height / view.scale);
   ctx.save();
   const sx = (Math.random()-.5)*game.camera.shake*24, sy = (Math.random()-.5)*game.camera.shake*24;
   ctx.translate(-game.camera.x + sx, sy);
 
-  for (let i=0;i<9;i++) {
-    ctx.fillStyle = `rgba(58,60,104,${0.06 + i*.008})`;
+  ctx.fillStyle = 'rgba(124,169,166,.20)';
+  for (let i=0;i<7;i++) {
     ctx.beginPath();
-    ctx.ellipse(120+i*150, 240 + Math.sin(i)*45, 120, 210, 0, 0, Math.PI*2);
+    ctx.ellipse(80+i*210, 606 + Math.sin(i)*12, 150, 62, 0, 0, Math.PI*2);
     ctx.fill();
   }
-  ctx.fillStyle = 'rgba(130,230,255,.08)';
-  for (let i=0;i<24;i++) { ctx.beginPath(); ctx.arc((i*97)%1250, 80+(i*53)%360, 2+(i%3), 0, Math.PI*2); ctx.fill(); }
+  ctx.fillStyle = 'rgba(255,255,255,.58)';
+  for (let i=0;i<9;i++) { ctx.beginPath(); ctx.arc(90+i*150, 94+(i%3)*22, 24+(i%2)*8, 0, Math.PI*2); ctx.fill(); }
 
-  for (const p of level.platforms) {
-    const grad = ctx.createLinearGradient(0,p.y,0,p.y+p.h);
-    grad.addColorStop(0,'#34385a'); grad.addColorStop(1,'#17182a');
-    ctx.fillStyle = grad; roundedRect(ctx, p.x,p.y,p.w,p.h,8);
-    ctx.fillStyle = '#7ad7ff22'; ctx.fillRect(p.x, p.y, p.w, 4);
+  for (const d of level.decor || []) {
+    const asset = assets[d.type];
+    drawAsset(ctx, asset, d.col * TILE_SIZE, d.row * TILE_SIZE);
   }
+
+  for (const p of level.platforms) drawTiledPlatform(ctx, p);
+
+  drawGoal(ctx, level.goal);
+
   for (const s of level.spikes) {
-    ctx.fillStyle = '#c7d7e9';
-    for (let x=s.x; x<s.x+s.w; x+=20) { ctx.beginPath(); ctx.moveTo(x,s.y+s.h); ctx.lineTo(x+10,s.y); ctx.lineTo(x+20,s.y+s.h); ctx.fill(); }
+    for (let i = 0; i < (s.cols || Math.ceil(s.w / TILE_SIZE)); i++) {
+      const x = (s.visualX ?? s.x) + i * TILE_SIZE;
+      const y = s.visualY ?? (s.y - 46);
+      if (!drawFloorSpike(ctx, assets.spikes, x, y)) {
+        ctx.fillStyle = '#6c7472';
+        ctx.beginPath(); ctx.moveTo(x, y + TILE_SIZE); ctx.lineTo(x + TILE_SIZE/2, y + 24); ctx.lineTo(x + TILE_SIZE, y + TILE_SIZE); ctx.fill();
+      }
+    }
   }
-
-  ctx.fillStyle = '#101223'; roundedRect(ctx, 1190, 490, 50, 160, 18);
-  ctx.strokeStyle = '#9ef7ff'; ctx.lineWidth = 3; ctx.strokeRect(1202, 508, 26, 132);
 
   for (const d of game.dust) { ctx.globalAlpha = Math.max(0,d.life*3); ctx.fillStyle = '#bfffff'; ctx.beginPath(); ctx.arc(d.x,d.y,5,0,Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; }
   for (const e of game.enemies) drawEnemy(game, e);

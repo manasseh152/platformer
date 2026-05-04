@@ -108,7 +108,7 @@ export function updateGame(game, dt) {
     if (rectsOverlap(player, e)) hurtPlayer(game, 1, player.x < e.x ? -1 : 1);
   }
 
-  if (player.x > 1185 && player.y > 470) game.flags.won = true;
+  if (rectsOverlap(player, level.goal)) game.flags.won = true;
 
   for (let i=game.particles.length-1;i>=0;i--) {
     const p = game.particles[i]; p.life -= dt; p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 500*dt;

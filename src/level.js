@@ -1,12 +1,66 @@
+import { TILE_SIZE, WORLD_COLS, WORLD_ROWS } from './constants.js';
+
+const T = TILE_SIZE;
+
+export function tileRect(col, row, cols = 1, rows = 1, kind = 'stone') {
+  return { x: col * T, y: row * T, w: cols * T, h: rows * T, kind };
+}
+
+function spawnAt(col, floorRow) {
+  return { x: col * T + 18, y: floorRow * T - 50 };
+}
+
+function hazardAt(col, row, cols = 1) {
+  return {
+    x: col * T,
+    y: row * T + 46,
+    w: cols * T,
+    h: 24,
+    visualX: col * T,
+    visualY: row * T,
+    cols
+  };
+}
+
+function enemyAt(col, floorRow, minCol, maxCol, dir = 1, hp = 3) {
+  return {
+    x: col * T + 14,
+    y: floorRow * T - 38,
+    w: 42,
+    h: 38,
+    vx: dir * 55,
+    hp,
+    hurt: 0,
+    min: minCol * T,
+    max: (maxCol + 1) * T
+  };
+}
+
 export const level = {
-  spawn: { x: 95, y: 430 },
+  tileSize: T,
+  cols: WORLD_COLS,
+  rows: WORLD_ROWS,
+  spawn: spawnAt(1, 9),
   platforms: [
-    {x:0,y:650,w:1280,h:90}, {x:0,y:0,w:40,h:720}, {x:1240,y:0,w:40,h:720},
-    {x:150,y:540,w:190,h:24}, {x:425,y:475,w:200,h:24}, {x:720,y:410,w:190,h:24},
-    {x:990,y:530,w:170,h:24}, {x:520,y:615,w:130,h:35}, {x:825,y:630,w:95,h:20},
-    {x:365,y:405,w:26,h:135}, {x:665,y:285,w:26,h:150}, {x:940,y:420,w:26,h:210}
+    tileRect(0, 0, 18, 1, 'stone-boundary'),
+    tileRect(0, 0, 1, 10, 'stone-boundary'),
+    tileRect(17, 0, 1, 10, 'stone-boundary'),
+    tileRect(0, 9, 18, 1, 'stone-floor'),
+    tileRect(2, 8, 2, 1, 'stone-ledge'),
+    tileRect(5, 7, 2, 1, 'stone-ledge'),
+    tileRect(8, 6, 2, 1, 'stone-ledge'),
+    tileRect(11, 5, 2, 1, 'stone-ledge'),
+    tileRect(13, 4, 2, 1, 'stone-ledge')
   ],
-  spikes: [ {x:665,y:635,w:120,h:15}, {x:930,y:635,w:80,h:15} ]
+  spikes: [hazardAt(7, 8, 2), hazardAt(12, 8, 2)],
+  goal: tileRect(15, 8, 1, 1, 'gate'),
+  decor: [
+    { type: 'bannerRed', col: 2, row: 1 },
+    { type: 'bannerGreen', col: 14, row: 1 },
+    { type: 'torch', col: 7, row: 8 },
+    { type: 'torch', col: 11, row: 8 },
+    { type: 'flag', col: 15, row: 1 }
+  ]
 };
 
 export function createPlayer(spawn = level.spawn) {
@@ -21,7 +75,7 @@ export function createPlayer(spawn = level.spawn) {
 
 export function createEnemies() {
   return [
-    {x: 780, y: 360, w: 42, h: 38, vx: 55, hp: 3, hurt: 0, min: 720, max: 900},
-    {x: 1015, y: 490, w: 42, h: 38, vx: -45, hp: 2, hurt: 0, min: 990, max: 1150}
+    enemyAt(4, 9, 2, 6, 1, 2),
+    enemyAt(11, 5, 11, 12, -1, 3)
   ];
 }
