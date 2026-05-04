@@ -11,11 +11,26 @@
   <div id="gameShell" class="ds-game-shell">
     <canvas id="game" width="1280" height="720"></canvas>
 
-    <section id="hud" class="ds-hud">
-      <div class="title ds-overline">Chibi Knight</div>
-      <div id="hearts" aria-label="Health"></div>
-      <div id="objective">Reach the glowing gate →</div>
-      <div id="dashStatus">Dash</div>
+    <section id="hud" class="ds-hud" aria-label="Run status">
+      <div class="hud-topline">
+        <div>
+          <div class="title ds-overline">Chibi Knight</div>
+          <div class="hud-zone">Hollow Gate</div>
+        </div>
+        <div class="hud-act">Act 01</div>
+      </div>
+      <div class="hud-health-row">
+        <span class="hud-label">Vigor</span>
+        <div id="hearts" aria-label="Health"></div>
+      </div>
+      <div class="hud-objective-card">
+        <span class="hud-label">Objective</span>
+        <div id="objective">Reach the glowing gate →</div>
+      </div>
+      <div class="hud-dash-card">
+        <span class="hud-label">Skill</span>
+        <div id="dashStatus">Dash</div>
+      </div>
     </section>
     <section id="controls"></section>
     <section id="message" class="ds-toast" hidden>
@@ -25,19 +40,41 @@
   </div>
 
   <div id="startScreen" class="ds-screen ds-screen--hero">
-    <main class="menu-card ds-panel ds-panel--hero">
-      <div class="eyebrow ds-overline">Local game</div>
-      <h1 class="ds-title">Chibi Knight</h1>
-      <p>A small platformer. Reach the glowing gate, avoid hazards, and adjust controls if needed.</p>
-      <ul class="menu-meta ds-chip-list" aria-label="Game summary">
-        <li class="ds-chip">Keyboard</li>
-        <li class="ds-chip">Controller</li>
-        <li class="ds-chip">Single player</li>
-      </ul>
-      <div class="menu-actions ds-action-stack">
-        <button id="startButton" class="ds-button ds-button--primary">Start</button>
-        <button id="startSettingsButton" class="secondary ds-button ds-button--secondary">Settings</button>
-      </div>
+    <main class="start-stage menu-card ds-panel ds-panel--hero" aria-labelledby="startTitle">
+      <section class="hero-copy" aria-label="Game introduction">
+        <div class="eyebrow ds-overline">Gate run // local build</div>
+        <h1 id="startTitle" class="ds-title">Chibi<br />Knight</h1>
+        <p class="hero-lede">Sprint through a tiny moonlit keep, pop over spikes, and reach the glowing gate before the hollow gets brave.</p>
+        <ul class="menu-meta ds-chip-list" aria-label="Game summary">
+          <li class="ds-chip">Keyboard</li>
+          <li class="ds-chip">Controller</li>
+          <li class="ds-chip">Single player</li>
+        </ul>
+        <div class="menu-actions ds-action-stack">
+          <button id="startButton" class="ds-button ds-button--primary">Start</button>
+          <button id="startSettingsButton" class="secondary ds-button ds-button--secondary">Settings</button>
+        </div>
+      </section>
+
+      <aside class="hero-scene" aria-label="Quest preview">
+        <div class="moon" aria-hidden="true"></div>
+        <div class="hero-scene__badge">Act 01</div>
+        <div class="hero-scene__title">Hollow Gate</div>
+        <div class="hero-pixel hero-pixel--torch" aria-hidden="true"></div>
+        <div class="hero-runner" aria-hidden="true">
+          <div class="runner-head"></div>
+          <div class="runner-body"></div>
+          <div class="runner-sword"></div>
+        </div>
+        <div class="hero-gate" aria-hidden="true"></div>
+        <div class="hero-ground" aria-hidden="true"></div>
+        <dl class="hero-loadout" aria-label="Run loadout">
+          <div><dt>Objective</dt><dd>Reach gate</dd></div>
+          <div><dt>Threat</dt><dd>Spike floor</dd></div>
+          <div><dt>Skill</dt><dd>Dash ready</dd></div>
+        </dl>
+      </aside>
+
       <nav class="command-bar" aria-label="Menu shortcuts">
         <span class="input-hint" data-input-hint="accept"></span>
         <span class="input-hint" data-input-hint="back"></span>
@@ -61,60 +98,21 @@
           </div>
         </div>
 
-        <div id="settingsPage" class="menu-page" data-page="settings">
+        <div id="settingsHubPage" class="menu-page settings-layout" data-page="settings">
           <p>Tune how the game feels before jumping in.</p>
-          <div class="settings-section ds-surface">
-            <h3>Motion</h3>
-            <div class="segmented ds-segmented" role="group" aria-label="Motion preference">
-              <button type="button" data-motion="system">System</button>
-              <button type="button" data-motion="on">On</button>
-              <button type="button" data-motion="off">Off</button>
-            </div>
-            <p class="helper">System follows your device preference. On and Off override it.</p>
-            <div id="motionStatus" class="status-line" aria-live="polite"></div>
-          </div>
+          <div id="settingsRootRows" class="settings-root-rows"></div>
+          <div id="settingsCategoryList" class="settings-category-list" aria-label="Settings categories"></div>
           <div class="settings-actions ds-action-row">
-            <button id="controlsNavButton" class="secondary ds-button ds-button--secondary">Controls</button>
-            <button id="advancedNavButton" class="secondary ds-button ds-button--secondary">Advanced</button>
-            <button id="settingsBackButton" class="ds-button ds-button--primary">Back</button>
+            <button id="settingsBackButton" class="ds-button ds-button--primary" data-settings-back="root">Back</button>
           </div>
         </div>
 
-        <div id="controlsPage" class="menu-page" data-page="controls">
-          <p>Remap keyboard and controller inputs.</p>
-          <div class="bind-device-toggle segmented ds-segmented" role="group" aria-label="Binding device">
-            <button id="editKeyboardButton" type="button" data-edit-device="keyboard">Keyboard</button>
-            <button id="editControllerButton" type="button" data-edit-device="controller">Controller</button>
-          </div>
-          <div id="bindStatus" aria-live="polite"></div>
-          <div id="bindList"></div>
-          <label class="advanced-toggle"><input id="controllerEnabled" type="checkbox" checked> Controller enabled</label>
+        <div id="settingsCategoryPage" class="menu-page settings-layout" data-page="settings-category">
+          <p id="settingsCategoryDescription">Adjust settings.</p>
+          <div id="settingsStatus" class="status-line" aria-live="polite"></div>
+          <div id="settingsCategoryBody" class="settings-category-body"></div>
           <div class="settings-actions ds-action-row">
-            <button id="resetBindsButton" class="secondary ds-button ds-button--secondary">Defaults</button>
-            <button id="controlsBackButton" class="ds-button ds-button--primary">Back</button>
-          </div>
-        </div>
-
-        <div id="advancedPage" class="menu-page" data-page="advanced">
-          <p>Advanced tools are for debugging, diagnostics, and raw settings edits.</p>
-          <label class="advanced-toggle"><input id="developerMode" type="checkbox"> Developer Mode <span>Shows diagnostics and raw settings tools.</span></label>
-          <div id="developerTools" class="advanced-tools">
-            <textarea id="settingsJson" class="bind-json" spellcheck="false" placeholder="App settings JSON appears here."></textarea>
-            <div class="settings-actions ds-action-row">
-              <button id="dumpSettingsButton" class="secondary ds-button ds-button--secondary">Dump app settings</button>
-              <button id="replaceSettingsButton" class="secondary ds-button ds-button--secondary">Replace app settings</button>
-            </div>
-            <div id="settingsJsonStatus" class="status-line" aria-live="polite"></div>
-            <div class="controller-debug ds-surface">
-              <p>Controller diagnostics</p>
-              <div>Controller: <code id="controllerName">None detected</code></div>
-              <div>Pressed inputs: <code id="controllerInputs">None</code></div>
-              <div id="controllerStatus"></div>
-            </div>
-            <div class="future-debug">Future debug tools area</div>
-          </div>
-          <div class="settings-actions ds-action-row">
-            <button id="advancedBackButton" class="ds-button ds-button--primary">Back</button>
+            <button id="settingsCategoryBackButton" class="ds-button ds-button--primary" data-settings-back="category">Back</button>
           </div>
         </div>
       </div>

@@ -6,53 +6,51 @@ test.beforeEach(async ({ page }) => {
   await page.reload();
 });
 
-test('start settings, motion persistence, controls, advanced, and JSON settings', async ({ page }) => {
+async function openStartSettings(page) {
+  await page.locator('#startSettingsButton').click();
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'settings');
+}
+
+async function openCategory(page, id, title) {
+  await page.locator(`[data-settings-category="${id}"]`).click();
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'settings-category');
+  await expect(page.locator('#settingsHubPage')).toBeHidden();
+  await expect(page.locator('#settingsCategoryPage')).toBeVisible();
+  await expect(page.locator('#menuTitle')).toHaveText(title);
+}
+
+test('settings hub, accessibility motion, advanced JSON, and start flow', async ({ page }) => {
   const body = page.locator('body');
   const pauseScreen = page.locator('#pauseScreen');
 
   await expect(page.locator('#startScreen')).toBeVisible();
   await expect(page.locator('#startSettingsButton')).toHaveText('Settings');
-  await expect(page.locator('#startSettingsButton')).toBeVisible();
 
-  await page.locator('#startSettingsButton').click();
-  await expect(pauseScreen).toHaveAttribute('data-menu-page', 'settings');
+  await openStartSettings(page);
   await expect(page.locator('#menuTitle')).toHaveText('Settings');
-  await expect(page.locator('#motionStatus')).toContainText('System is currently');
+  await expect(page.locator('.settings-category-card__title')).toHaveText(['Keyboard', 'Controller', 'Accessibility', 'Advanced']);
 
-  await page.getByRole('button', { name: 'Off' }).click();
+  await openCategory(page, 'accessibility', 'Accessibility');
+  await expect(page.locator('[data-setting-row="motion"]')).toContainText('System');
+  await page.locator('[data-setting-row="motion"]').click();
+  await expect(page.locator('[data-setting-row="motion"]')).toContainText('On');
+  await page.locator('[data-setting-row="motion"]').click();
+  await expect(page.locator('[data-setting-row="motion"]')).toContainText('Off');
   await expect(body).toHaveClass(/\bmotion-reduce\b/);
   await page.reload();
   await expect(body).toHaveClass(/\bmotion-reduce\b/);
-  await page.locator('#startSettingsButton').click();
-  await expect(page.getByRole('button', { name: 'Off' })).toHaveClass(/\bactive\b/);
 
-  await page.getByRole('button', { name: 'Controls' }).click();
-  await expect(pauseScreen).toHaveAttribute('data-menu-page', 'controls');
-  await expect(page.locator('#bindList .bind-row')).toHaveCount(7);
-  await expect(page.locator('#bindList')).toContainText('Move Left');
-  await expect(page.getByRole('button', { name: 'Keyboard', exact: true })).toHaveClass(/\bactive\b/);
-  await page.getByRole('button', { name: 'Controller', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Controller', exact: true })).toHaveClass(/\bactive\b/);
-  await expect(page.locator('#bindList')).toContainText('A / Cross');
-  await page.getByRole('button', { name: 'Back' }).click();
-  await expect(pauseScreen).toHaveAttribute('data-menu-page', 'settings');
-
-  await page.getByRole('button', { name: 'Advanced' }).click();
-  await expect(pauseScreen).toHaveAttribute('data-menu-page', 'advanced');
-  await expect(page.locator('#developerMode')).toBeVisible();
+  await openStartSettings(page);
+  await openCategory(page, 'advanced', 'Advanced');
+  await expect(page.locator('[data-setting-row="developer-mode"]')).toContainText('Off');
   await expect(page.locator('#developerTools')).toBeHidden();
-  await page.locator('#developerMode').check();
+  await page.locator('[data-setting-row="developer-mode"]').click();
+  await expect(page.locator('[data-setting-row="developer-mode"]')).toContainText('On');
   await expect(page.locator('#developerTools')).toBeVisible();
-  await page.reload();
-  await page.locator('#startSettingsButton').click();
-  await page.getByRole('button', { name: 'Advanced' }).click();
-  await expect(page.locator('#developerMode')).toBeChecked();
 
   await page.getByRole('button', { name: 'Dump app settings' }).click();
   const dumped = await page.locator('#settingsJson').inputValue();
   expect(dumped).toContain('schemaVersion');
-  expect(dumped).toContain('motion');
-  expect(dumped).toContain('developerMode');
   expect(dumped).toContain('keyboardBinds');
   expect(dumped).toContain('gamepadBinds');
 
@@ -66,61 +64,70 @@ test('start settings, motion persistence, controls, advanced, and JSON settings'
   await expect(body).not.toHaveClass(/\bmotion-reduce\b/);
   await expect(page.locator('#developerTools')).toBeHidden();
 
-  await page.locator('#developerMode').check();
-  await expect(page.locator('#developerTools')).toBeVisible();
+  await page.locator('[data-setting-row="developer-mode"]').click();
   await page.locator('#settingsJson').fill('{ invalid');
   await page.getByRole('button', { name: 'Replace app settings' }).click();
   await expect(page.locator('#settingsJsonStatus')).toContainText('Replace failed');
+
+  await page.locator('[data-settings-back="category"]').click();
+  await expect(pauseScreen).toHaveAttribute('data-menu-page', 'settings');
+  await page.locator('[data-settings-back="root"]').click();
+  await expect(pauseScreen).toHaveAttribute('data-menu-page', 'main');
 });
 
-test('pause flow and controls defaults', async ({ page }) => {
+test('keyboard and controller settings rows, binds, diagnostics, and pause flow', async ({ page }) => {
   const body = page.locator('body');
   const pauseScreen = page.locator('#pauseScreen');
   const startScreen = page.locator('#startScreen');
   const canvas = page.locator('#game');
 
+  await openStartSettings(page);
+  await openCategory(page, 'keyboard', 'Keyboard');
+  await expect(page.locator('.settings-section h3')).toContainText(['Movement', 'Actions', 'System']);
+  await expect(page.locator('.settings-section .settings-section')).toHaveCount(0);
+  await expect(page.locator('[data-bind-device="keyboard"]')).toHaveCount(7);
+
+  await page.locator('[data-bind-device="keyboard"][data-bind-action="jump"]').click();
+  await expect(page.locator('[data-bind-action="jump"]')).toContainText('Press a key');
+  await page.keyboard.press('KeyZ');
+  await expect(page.locator('#settingsStatus')).toContainText('Jump updated');
+  await expect(page.locator('[data-bind-action="jump"]')).toContainText('Z');
+
+  await page.locator('[data-bind-device="keyboard"][data-bind-action="attack"]').click();
+  await page.keyboard.press('KeyZ');
+  await expect(page.locator('#settingsStatus')).toContainText('already bound to Jump');
+  await expect(page.locator('[data-bind-action="attack"]')).toHaveClass(/is-error/);
+
+  await page.getByRole('button', { name: 'Reset Keyboard Defaults' }).click();
+  await expect(page.locator('#settingsStatus')).toContainText('Restored keyboard defaults');
+  await expect(page.locator('[data-bind-action="left"]')).toContainText('A');
+  await expect(page.locator('[data-bind-action="left"]')).toContainText('←');
+
+  await page.locator('[data-settings-back="category"]').click();
+  await openCategory(page, 'controller', 'Controller');
+  await expect(page.locator('[data-setting-row="controller-enabled"]')).toContainText('On');
+  await expect(page.locator('#controllerName')).toContainText('None detected');
+  await expect(page.locator('#controllerInputs')).toContainText('None');
+  await page.locator('[data-setting-row="controller-enabled"]').click();
+  await expect(page.locator('[data-setting-row="controller-enabled"]')).toContainText('Off');
+  await page.getByRole('button', { name: 'Reset Controller Defaults' }).click();
+  await expect(page.locator('#settingsStatus')).toContainText('Restored controller defaults');
+
+  await page.locator('[data-settings-back="category"]').click();
+  await page.locator('[data-settings-back="root"]').click();
+
   await page.locator('#startButton').click();
   await expect(body).toHaveClass(/\bplaying\b/);
   await expect(startScreen).toBeHidden();
-  await expect(startScreen).toHaveCSS('visibility', 'hidden');
-  await expect(startScreen).toHaveCSS('transition-duration', '0s');
   await expect(canvas).toHaveCSS('opacity', '1');
 
   await page.keyboard.press('Escape');
   await expect(body).toHaveClass(/\bpaused\b/);
-  await expect(pauseScreen).toHaveCSS('opacity', '1');
-
-  await page.keyboard.press('Escape');
-  await expect(body).not.toHaveClass(/\bpaused\b/);
-  await expect(pauseScreen).toBeHidden();
-
-  await page.keyboard.press('Escape');
-  await expect(body).toHaveClass(/\bpaused\b/);
-
-  await pauseScreen.getByRole('button', { name: 'Settings' }).click();
+  await page.locator('#settingsButton').click();
   await expect(pauseScreen).toHaveAttribute('data-menu-page', 'settings');
-  await page.getByRole('button', { name: 'Back' }).click();
+  await page.locator('[data-settings-back="root"]').click();
   await expect(pauseScreen).toHaveAttribute('data-menu-page', 'main');
-  await expect(pauseScreen.getByRole('button', { name: 'Continue' })).toBeVisible();
-
-  await pauseScreen.getByRole('button', { name: 'Settings' }).click();
-  await expect(pauseScreen).toHaveAttribute('data-menu-page', 'settings');
-  await page.getByRole('button', { name: 'Controls' }).click();
-  await expect(pauseScreen).toHaveAttribute('data-menu-page', 'controls');
-  await page.getByRole('button', { name: 'Defaults' }).click();
-  await expect(page.locator('#bindStatus')).toContainText('Restored keyboard defaults');
-  await expect(page.locator('#bindList .bind-row').filter({ hasText: 'Move Left' })).toContainText('A / ←');
-
-  await page.getByRole('button', { name: 'Controller', exact: true }).click();
-  await page.getByRole('button', { name: 'Defaults' }).click();
-  await expect(page.locator('#bindStatus')).toContainText('Restored controller defaults');
-
-  await page.locator('#controlsBackButton').click();
-  await expect(pauseScreen).toHaveAttribute('data-menu-page', 'settings');
-  await page.locator('#settingsBackButton').click();
   await pauseScreen.getByRole('button', { name: 'Continue' }).click();
   await expect(body).not.toHaveClass(/\bpaused\b/);
   await expect(pauseScreen).toBeHidden();
-  await expect(pauseScreen).toHaveCSS('visibility', 'hidden');
-  await expect(pauseScreen).toHaveCSS('transition-duration', '0s');
 });

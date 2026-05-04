@@ -1,9 +1,12 @@
-import { bindKey, bindLabels, bindText, clearExtraBinds, controllerBindText, defaultBinds, menuButtons, renderInputHints, resetControllerInput, resetDefaultGamepadBinds, resetDefaultKeyBinds, setBindStatus, setControllerStatus } from './input.js';
+import { bindKey, bindLabels, findBindConflict, menuButtons, renderInputHints, resetControllerInput, resetDefaultGamepadBinds, resetDefaultKeyBinds, setBindStatus, setControllerStatus } from './input.js';
 import { syncSettingsFromInput, replaceSettings, saveSettings, serializeSettings } from './settings.js';
 import { setPausedFlag } from './state.js';
 import { applyMotionPreference, runDOMTransition, shouldReduceMotion, setupMotionPreference } from './transitions.js';
+import { renderSettings, renderSettingsCategory, refreshDynamicRefs, selectedCategory } from './settings-ui.js';
 
-const pageElement = (ui, page) => ({ main: ui.pauseMainPage, settings: ui.settingsPage, controls: ui.controlsPage, advanced: ui.advancedPage })[page];
+const pageElement = (ui, page) => ({ main: ui.pauseMainPage, settings: ui.settingsHubPage, 'settings-category': ui.settingsCategoryPage })[page];
+const settingsPages = ['settings', 'settings-category'];
+const motionOrder = ['system', 'on', 'off'];
 
 export function visibleFocusables(root) {
   return [...root.querySelectorAll('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled)')]
@@ -21,13 +24,13 @@ export function updateMenuChrome(game) {
   const { ui, menu } = game;
   ui.pauseScreen.dataset.menuPage = menu.page;
   ui.pauseScreen.dataset.menuDirection = menu.direction;
+  ui.pauseScreen.dataset.currentSettingsCategory = menu.settingsCategory || '';
   document.body.dataset.menuOrigin = menu.origin;
-  const titles = { main: 'Paused', settings: 'Settings', controls: 'Controls', advanced: 'Advanced' };
-  ui.menuTitle.textContent = titles[menu.page];
-  ui.menuEyebrow.textContent = menu.page === 'main' ? 'Paused' : (menu.origin === 'start' ? 'Before you begin' : 'Settings');
-  ui.controllerEnabled.checked = game.input.useController;
-  ui.developerMode.checked = game.settings.developerMode;
-  ui.developerTools.hidden = !game.settings.developerMode;
+  const category = selectedCategory(game);
+  ui.menuTitle.textContent = menu.page === 'settings-category' && category ? category.title : (menu.page === 'settings' ? 'Settings' : 'Paused');
+  ui.menuEyebrow.textContent = menu.page === 'main' ? 'Paused' : (menu.page === 'settings-category' ? 'Settings' : (menu.origin === 'start' ? 'Before you begin' : 'Settings'));
+  refreshDynamicRefs(game);
+  if (ui.developerTools) ui.developerTools.hidden = !game.settings.developerMode;
   applyMotionPreference(game);
 }
 
@@ -55,22 +58,6 @@ export function moveMenuFocus(game, dir) {
   focusAndReveal(game, items[current < 0 ? 0 : (current + dir + items.length) % items.length]);
 }
 
-function moveBindGridFocus(game, dx, dy) {
-  const row = document.activeElement?.closest?.('.bind-row');
-  if (!row) return false;
-  const rows = [...game.ui.bindList.querySelectorAll('.bind-row')];
-  const rowIndex = rows.indexOf(row);
-  const buttons = [...row.querySelectorAll('button:not(:disabled)')];
-  const colIndex = buttons.indexOf(document.activeElement);
-  if (rowIndex < 0 || colIndex < 0) return false;
-  if (dx) { focusAndReveal(game, buttons[Math.max(0, Math.min(buttons.length - 1, colIndex + dx))]); return true; }
-  const nextRow = rows[rowIndex + dy];
-  if (!nextRow) return false;
-  const nextButtons = [...nextRow.querySelectorAll('button:not(:disabled)')];
-  focusAndReveal(game, nextButtons[Math.min(colIndex, nextButtons.length - 1)]);
-  return true;
-}
-
 function moveHorizontalGroupFocus(game, dx) {
   const group = document.activeElement?.closest?.('.settings-actions, .segmented');
   if (!group) return false;
@@ -84,16 +71,18 @@ function moveHorizontalGroupFocus(game, dx) {
 export function handleGamepadMenuInput(game) {
   const { input, ui } = game;
   const root = activeMenuRoot(game);
-  if (!root || input.listeningFor || input.controllerBindAction) return false;
+  if (!root) return false;
+  if (input.controllerBindAction) return false;
   if (input.suppressMenuInputOnce) { input.suppressMenuInputOnce = false; return true; }
+  if (input.listeningFor) return false;
   const focusables = visibleFocusables(root);
   if (!root.contains(document.activeElement) || !focusables.includes(document.activeElement)) focusFirstMenuItem(game);
-  if (input.gamepadPressed.has(menuButtons.left)) return moveBindGridFocus(game, -1, 0) || moveHorizontalGroupFocus(game, -1);
-  if (input.gamepadPressed.has(menuButtons.right)) return moveBindGridFocus(game, 1, 0) || moveHorizontalGroupFocus(game, 1);
-  if (input.gamepadPressed.has(menuButtons.up)) { if (!moveBindGridFocus(game, 0, -1)) moveMenuFocus(game, -1); return true; }
-  if (input.gamepadPressed.has(menuButtons.down)) { if (!moveBindGridFocus(game, 0, 1)) moveMenuFocus(game, 1); return true; }
+  if (input.gamepadPressed.has(menuButtons.left)) return moveHorizontalGroupFocus(game, -1);
+  if (input.gamepadPressed.has(menuButtons.right)) return moveHorizontalGroupFocus(game, 1);
+  if (input.gamepadPressed.has(menuButtons.up)) { moveMenuFocus(game, -1); return true; }
+  if (input.gamepadPressed.has(menuButtons.down)) { moveMenuFocus(game, 1); return true; }
   if (input.gamepadPressed.has(menuButtons.accept)) { document.activeElement?.click?.(); return true; }
-  if (input.gamepadPressed.has(menuButtons.back)) { if (['settings','controls','advanced'].includes(game.menu.page)) goBack(game); else if (game.flags.started) ui.resumeButton.click(); return true; }
+  if (input.gamepadPressed.has(menuButtons.back)) { if (settingsPages.includes(game.menu.page)) goBack(game); else if (game.flags.started) ui.resumeButton.click(); return true; }
   return false;
 }
 
@@ -105,51 +94,26 @@ export function cancelBindListening(game, message = '') {
   input.bindDeadline = 0;
   if (game.bindListenTimer) clearTimeout(game.bindListenTimer);
   game.bindListenTimer = null;
-  renderBinds(game);
+  renderSettingsCategory(game);
   if (message) setBindStatus(ui, message);
 }
 
-export function startBindListening(game, action, type, mode = 'replace') {
+export function startBindListening(game, action, type) {
   const { input, ui } = game;
   if (game.bindListenTimer) clearTimeout(game.bindListenTimer);
+  input.bindError = null;
   input.listeningFor = type === 'keyboard' ? action : null;
   input.controllerBindAction = type === 'controller' ? action : null;
-  input.bindMode = mode;
+  input.bindMode = 'replace';
   input.bindDeadline = performance.now() + 6000;
   const label = bindLabels[action];
-  setBindStatus(ui, type === 'keyboard' ? `Press a key for ${label}. Click Cancel or wait to keep current binds.` : `Press a controller button for ${label}. Click Cancel or wait to keep current binds.`);
-  renderBinds(game);
+  setBindStatus(ui, type === 'keyboard' ? `Press a key for ${label}. Escape cancels.` : `Press a controller button for ${label}. B / Circle cancels.`);
+  renderSettingsCategory(game);
   game.bindListenTimer = setTimeout(() => cancelBindListening(game, 'Listening cancelled.'), 6000);
 }
 
 export function renderBinds(game) {
-  const { input, ui } = game;
-  const editingController = input.bindEditorDevice === 'controller';
-  ui.controlsEl.textContent = game.controlsText();
-  ui.bindList.innerHTML = '';
-  ui.editKeyboardButton.classList.toggle('active', !editingController);
-  ui.editControllerButton.classList.toggle('active', editingController);
-  ui.editKeyboardButton.setAttribute('aria-pressed', String(!editingController));
-  ui.editControllerButton.setAttribute('aria-pressed', String(editingController));
-  for (const action of Object.keys(defaultBinds)) {
-    const row = document.createElement('div');
-    row.className = 'bind-row';
-    const keyboardListening = input.listeningFor === action;
-    const controllerListening = input.controllerBindAction === action;
-    const bindValue = editingController ? (controllerListening ? 'Press controller input…' : controllerBindText(input, action)) : (keyboardListening ? (input.bindMode === 'add' ? 'Press key to add…' : 'Press key…') : bindText(input, action));
-    row.innerHTML = `
-      <div class="bind-action">${bindLabels[action]}</div>
-      <div class="bind-editor">
-        <span class="bind-type">${editingController ? 'Controller' : 'Keyboard'}</span>
-        <div class="bind-value">${bindValue}</div>
-        <div class="bind-buttons">${editingController
-          ? `<button class="mini" data-action="${action}" data-type="controller" data-mode="replace">Replace controller</button><button class="mini secondary" data-action="${action}" data-clear="extras">Clear extra binds</button>`
-          : `<button class="mini" data-action="${action}" data-type="keyboard" data-mode="replace">Replace keyboard</button><button class="mini" data-action="${action}" data-type="keyboard" data-mode="add">Add keyboard</button>`}</div>
-      </div>
-      ${(keyboardListening || controllerListening) ? `<button class="cancel-bind secondary" data-cancel-bind="true">Cancel</button>` : ''}`;
-    row.classList.toggle('listening', keyboardListening || controllerListening);
-    ui.bindList.appendChild(row);
-  }
+  renderSettingsCategory(game);
 }
 
 function commitMenuPageChange(game, change, after) {
@@ -157,12 +121,13 @@ function commitMenuPageChange(game, change, after) {
   requestAnimationFrame(() => after?.());
 }
 
-export function setMenuPage(game, page, direction = 'forward') {
+export function setMenuPage(game, page, direction = 'forward', category = null) {
   commitMenuPageChange(game, () => {
     game.menu.page = page;
     game.menu.direction = direction;
+    game.menu.settingsCategory = category;
+    renderSettings(game);
     updateMenuChrome(game);
-    if (page === 'controls') renderBinds(game);
   }, () => focusFirstMenuItem(game));
 }
 
@@ -170,10 +135,10 @@ export function openSettings(game, origin) {
   commitMenuPageChange(game, () => {
     game.menu.origin = origin;
     game.menu.page = 'settings';
+    game.menu.settingsCategory = null;
     game.menu.direction = 'forward';
-    game.input.bindEditorDevice = game.input.inputScheme === 'gamepad' ? 'controller' : 'keyboard';
+    renderSettings(game);
     updateMenuChrome(game);
-    renderBinds(game);
   }, () => focusFirstMenuItem(game));
 }
 
@@ -182,6 +147,7 @@ export function closeSettings(game) {
   commitMenuPageChange(game, () => {
     cancelBindListening(game);
     game.menu.page = 'main';
+    game.menu.settingsCategory = null;
     game.menu.direction = 'back';
     game.menu.origin = origin === 'start' ? 'none' : 'pause';
     updateMenuChrome(game);
@@ -189,7 +155,7 @@ export function closeSettings(game) {
 }
 
 export function goBack(game) {
-  if (game.menu.page === 'controls' || game.menu.page === 'advanced') return setMenuPage(game, 'settings', 'back');
+  if (game.menu.page === 'settings-category') return setMenuPage(game, 'settings', 'back', null);
   if (game.menu.page === 'settings') return closeSettings(game);
 }
 
@@ -197,24 +163,20 @@ export function setPaused(game, value) {
   const change = () => {
     game.menu.origin = 'pause';
     game.menu.page = 'main';
+    game.menu.settingsCategory = null;
     document.body.dataset.menuOrigin = 'pause';
     setPausedFlag(game, value);
     updateMenuChrome(game);
   };
   const after = () => game.flags.paused ? focusAndReveal(game, game.ui.resumeButton) : document.activeElement?.blur?.();
-
-  // Resuming must remove the modal before gameplay continues. A view transition
-  // keeps an old modal snapshot over the canvas for a frame, which looks like the
-  // game starts while the pause card is still open.
   if (!value) { change(); after(); return; }
   runDOMTransition(game, change, after);
 }
 
 export function startGame(game) {
   if (game.flags.started) return;
-  // Starting gameplay should be an immediate state switch: do not let view
-  // transitions keep the start/settings modal visible over the first game frame.
   game.menu.page = 'main';
+  game.menu.settingsCategory = null;
   document.body.dataset.menuOrigin = 'pause';
   game.flags.started = true;
   game.clock.last = performance.now();
@@ -229,6 +191,7 @@ export function returnToMainMenu(game) {
     game.flags.started = false;
     game.flags.paused = false;
     game.menu.page = 'main';
+    game.menu.settingsCategory = null;
     game.menu.origin = 'pause';
     document.body.classList.remove('playing', 'paused');
     document.body.dataset.menuOrigin = 'pause';
@@ -249,12 +212,12 @@ function handleReplaceSettings(game) {
   let normalized;
   try { normalized = JSON.parse(ui.settingsJson.value); } catch (err) { ui.settingsJsonStatus.textContent = `Replace failed: ${err.message}`; return; }
   if (!confirm('Replace all app settings?')) return;
-  const developerWasVisible = game.settings.developerMode && game.menu.page === 'advanced';
+  const developerWasVisible = game.settings.developerMode && game.menu.page === 'settings-category';
   try {
     const apply = () => {
       replaceSettings(game, JSON.stringify(normalized));
+      renderSettings(game);
       updateMenuChrome(game);
-      renderBinds(game);
     };
     const after = () => { ui.settingsJson.value = serializeSettings(game); ui.settingsJsonStatus.textContent = 'Replaced app settings.'; focusFirstMenuItem(game); };
     const developerChangesLayout = developerWasVisible !== game.settings.developerMode || normalized.developerMode !== game.settings.developerMode;
@@ -262,12 +225,72 @@ function handleReplaceSettings(game) {
   } catch (err) { ui.settingsJsonStatus.textContent = `Replace failed: ${err.message}`; }
 }
 
+function cycleMotion(game) {
+  const index = motionOrder.indexOf(game.settings.motion);
+  game.settings.motion = motionOrder[(index + 1) % motionOrder.length];
+  game.settings = saveSettings(game.settings);
+  renderSettingsCategory(game);
+  updateMenuChrome(game);
+}
+
+function toggleController(game) {
+  const { input, ui } = game;
+  input.useController = !input.useController;
+  resetControllerInput(input);
+  syncSettingsFromInput(game);
+  renderSettingsCategory(game);
+  setBindStatus(ui, input.useController ? 'Controller enabled.' : 'Controller disabled.');
+  setControllerStatus(ui, input.useController ? 'Controller enabled.' : 'Controller disabled.');
+}
+
+function toggleDeveloperMode(game) {
+  runDOMTransition(game, () => {
+    game.settings.developerMode = !game.settings.developerMode;
+    game.settings = saveSettings(game.settings);
+    renderSettingsCategory(game);
+    updateMenuChrome(game);
+  }, () => focusFirstMenuItem(game));
+}
+
+function resetBinds(game, device) {
+  const { input, ui } = game;
+  if (device === 'controller') {
+    resetDefaultGamepadBinds(input);
+    setBindStatus(ui, 'Restored controller defaults.');
+  } else {
+    resetDefaultKeyBinds(input);
+    setBindStatus(ui, 'Restored keyboard defaults.');
+  }
+  syncSettingsFromInput(game);
+  renderSettingsCategory(game);
+}
+
+function handleSettingsClick(game, e) {
+  const categoryButton = e.target.closest('[data-settings-category]');
+  if (categoryButton) return setMenuPage(game, 'settings-category', 'forward', categoryButton.dataset.settingsCategory);
+  const backButton = e.target.closest('[data-settings-back]');
+  if (backButton) return goBack(game);
+  const bindButton = e.target.closest('button[data-bind-action]');
+  if (bindButton) return startBindListening(game, bindButton.dataset.bindAction, bindButton.dataset.bindDevice);
+  const row = e.target.closest('[data-setting-row]');
+  if (row) {
+    if (row.dataset.settingRow === 'motion') return cycleMotion(game);
+    if (row.dataset.settingRow === 'controller-enabled') return toggleController(game);
+    if (row.dataset.settingRow === 'developer-mode') return toggleDeveloperMode(game);
+  }
+  const action = e.target.closest('[data-settings-action]')?.dataset.settingsAction;
+  if (action === 'reset-keyboard') return resetBinds(game, 'keyboard');
+  if (action === 'reset-controller') return resetBinds(game, 'controller');
+  if (action === 'dump-settings') return dumpSettings(game);
+  if (action === 'replace-settings') return handleReplaceSettings(game);
+}
+
 export function setupMenu(game) {
-  const { ui, input } = game;
+  const { ui } = game;
   setupMotionPreference(game);
+  renderSettings(game);
   updateMenuChrome(game);
   renderInputHints(game.input);
-  renderBinds(game);
 
   for (let i = 0; i < 5; i++) {
     const heart = document.createElement('span');
@@ -283,60 +306,7 @@ export function setupMenu(game) {
   ui.restartButton.addEventListener('click', () => game.resetGame());
   ui.mainMenuButton.addEventListener('click', () => returnToMainMenu(game));
   ui.settingsButton.addEventListener('click', () => openSettings(game, 'pause'));
-  ui.controlsNavButton.addEventListener('click', () => setMenuPage(game, 'controls', 'forward'));
-  ui.advancedNavButton.addEventListener('click', () => setMenuPage(game, 'advanced', 'forward'));
-  ui.settingsBackButton.addEventListener('click', () => goBack(game));
-  ui.controlsBackButton.addEventListener('click', () => goBack(game));
-  ui.advancedBackButton.addEventListener('click', () => goBack(game));
-
-  for (const button of ui.motionButtons) button.addEventListener('click', () => {
-    game.settings.motion = button.dataset.motion;
-    game.settings = saveSettings(game.settings);
-    applyMotionPreference(game);
-  });
-
-  ui.editKeyboardButton.addEventListener('click', () => { input.bindEditorDevice = 'keyboard'; cancelBindListening(game); });
-  ui.editControllerButton.addEventListener('click', () => { input.bindEditorDevice = 'controller'; cancelBindListening(game); });
-  ui.controllerEnabled.addEventListener('change', () => {
-    input.useController = ui.controllerEnabled.checked;
-    resetControllerInput(input);
-    syncSettingsFromInput(game);
-    setControllerStatus(ui, input.useController ? 'Controller enabled.' : 'Controller disabled.');
-  });
-  ui.developerMode.addEventListener('change', () => {
-    runDOMTransition(game, () => {
-      game.settings.developerMode = ui.developerMode.checked;
-      game.settings = saveSettings(game.settings);
-      updateMenuChrome(game);
-    }, () => focusAndReveal(game, ui.developerMode));
-  });
-  ui.dumpSettingsButton.addEventListener('click', () => dumpSettings(game));
-  ui.replaceSettingsButton.addEventListener('click', () => handleReplaceSettings(game));
-  ui.resetBindsButton.addEventListener('click', () => {
-    if (input.bindEditorDevice === 'controller') {
-      resetDefaultGamepadBinds(input);
-      setBindStatus(ui, 'Restored controller defaults.');
-    } else {
-      resetDefaultKeyBinds(input);
-      setBindStatus(ui, 'Restored keyboard defaults.');
-    }
-    syncSettingsFromInput(game);
-    renderBinds(game);
-  });
-  ui.bindList.addEventListener('click', e => {
-    if (e.target.closest('button[data-cancel-bind]')) return cancelBindListening(game, 'Listening cancelled.');
-    const button = e.target.closest('button[data-action]');
-    if (!button) return;
-    const action = button.dataset.action;
-    if (button.dataset.clear === 'extras') {
-      clearExtraBinds(input, action);
-      syncSettingsFromInput(game);
-      renderBinds(game);
-      setBindStatus(ui, `Kept primary binds for ${bindLabels[action]}.`);
-      return;
-    }
-    startBindListening(game, action, button.dataset.type || 'keyboard', button.dataset.mode || 'replace');
-  });
+  ui.menuPages.addEventListener('click', e => handleSettingsClick(game, e));
 
   requestAnimationFrame(() => focusAndReveal(game, ui.startButton));
 }
@@ -344,10 +314,19 @@ export function setupMenu(game) {
 export function handleListeningKey(game, code) {
   const action = game.input.listeningFor;
   if (!action) return;
+  if (code === 'Escape') return cancelBindListening(game, 'Listening cancelled.');
   if (game.bindListenTimer) clearTimeout(game.bindListenTimer);
   game.bindListenTimer = null;
+  const conflict = findBindConflict(game.input, 'keyboard', action, code);
+  if (conflict) {
+    game.input.bindError = { device: 'keyboard', action, until: performance.now() + 1800 };
+    setBindStatus(game.ui, `${code.replace(/^Key/, '')} is already bound to ${bindLabels[conflict]}.`, true);
+    renderSettingsCategory(game);
+    setTimeout(() => renderSettingsCategory(game), 1850);
+    return;
+  }
   bindKey(game.input, action, code);
   syncSettingsFromInput(game);
   setBindStatus(game.ui, `${bindLabels[action]} updated.`);
-  renderBinds(game);
+  renderSettingsCategory(game);
 }

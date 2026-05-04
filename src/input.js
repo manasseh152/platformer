@@ -153,6 +153,11 @@ export function bindGamepad(input, action, code) {
   input.suppressMenuInputOnce = true;
 }
 
+export function findBindConflict(input, device, action, code) {
+  const source = device === 'controller' ? input.gamepadBinds : input.binds;
+  return Object.keys(source).find(candidate => candidate !== action && source[candidate].includes(code)) || null;
+}
+
 export function clearExtraBinds(input, action) {
   input.binds[action] = input.binds[action].slice(0, 1);
   input.gamepadBinds[action] = input.gamepadBinds[action].slice(0, 1);
@@ -224,19 +229,40 @@ export function updateControllerDebug(game, pad) {
   ui.controllerInputs.textContent = rawDown.length ? rawDown.join(', ') : 'None';
   if (input.controllerBindAction && input.latestRawGamepadPressed.length) {
     const action = input.controllerBindAction;
-    bindGamepad(input, action, input.latestRawGamepadPressed[0]);
-    const message = `${bindLabels[action]} bound to ${controllerName(input.latestRawGamepadPressed[0])}.`;
+    const code = input.latestRawGamepadPressed[0];
+    if (['PadButton1', 'PadB'].includes(code)) {
+      input.controllerBindAction = null;
+      input.bindDeadline = 0;
+      input.bindRenderDirty = true;
+      input.suppressMenuInputOnce = true;
+      setBindStatus(ui, 'Listening cancelled.');
+      return;
+    }
+    const conflict = findBindConflict(input, 'controller', action, code);
+    if (conflict) {
+      input.bindError = { device: 'controller', action, until: performance.now() + 1800 };
+      input.bindRenderDirty = true;
+      const message = `${controllerName(code)} is already bound to ${bindLabels[conflict]}.`;
+      setBindStatus(ui, message, true);
+      setControllerStatus(ui, message, true);
+      return;
+    }
+    bindGamepad(input, action, code);
+    const message = `${bindLabels[action]} bound to ${controllerName(code)}.`;
     setBindStatus(ui, message);
     setControllerStatus(ui, message);
   }
 }
 
 export function setBindStatus(ui, message, error = false) {
-  ui.bindStatus.textContent = message;
-  ui.bindStatus.style.color = error ? '#ff9ebc' : '#9ef7ff';
+  const el = ui.bindStatus || ui.settingsStatus;
+  if (!el) return;
+  el.textContent = message;
+  el.style.color = error ? '#ff9ebc' : '#9ef7ff';
 }
 
 export function setControllerStatus(ui, message, error = false) {
+  if (!ui.controllerStatus) return;
   ui.controllerStatus.textContent = message;
   ui.controllerStatus.style.color = error ? '#ff9ebc' : '#9ef7ff';
 }

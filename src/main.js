@@ -35,7 +35,7 @@ addEventListener('keydown', e => {
     return;
   }
 
-  if (e.code === 'Escape' && ['settings', 'controls', 'advanced'].includes(game.menu.page)) {
+  if (e.code === 'Escape' && ['settings', 'settings-category'].includes(game.menu.page)) {
     e.preventDefault();
     goBack(game);
     return;
