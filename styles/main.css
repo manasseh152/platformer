@@ -41,6 +41,7 @@
   --shadow-glow: 0 14px 36px rgba(var(--color-accent-rgb), .18);
   --blur-panel: none;
   --game-ui-scale: 1;
+  --menu-ui-scale: 1;
 
   /* Back-compat aliases for old selectors. */
   --bg: var(--color-void);
@@ -98,7 +99,7 @@ body::after {
   inset: 0;
   display: grid;
   place-items: center;
-  padding: clamp(16px, 4vw, 46px);
+  padding: clamp(calc(16px * var(--menu-ui-scale)), calc(4vw * var(--menu-ui-scale)), calc(46px * var(--menu-ui-scale)));
   overflow: auto;
   overscroll-behavior: contain;
 }
@@ -137,11 +138,11 @@ body::after {
 .menu-card {
   position: relative;
   width: min(680px, 100%);
-  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - calc(48px * var(--menu-ui-scale)));
   overflow: auto;
-  padding: clamp(24px, 5vw, 50px);
+  padding: clamp(calc(24px * var(--menu-ui-scale)), calc(5vw * var(--menu-ui-scale)), calc(50px * var(--menu-ui-scale)));
   border: 1px solid var(--color-line);
-  border-radius: var(--radius-lg);
+  border-radius: max(var(--radius-md), calc(var(--radius-lg) * var(--menu-ui-scale)));
   background:
     linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.022)),
     linear-gradient(135deg, rgba(21, 29, 42, .94), rgba(9, 13, 20, .92));
@@ -167,7 +168,7 @@ body::after {
   grid-template-columns: minmax(0, .95fr) minmax(320px, .78fr);
   gap: clamp(22px, 4vw, 48px);
   align-items: stretch;
-  padding: clamp(22px, 4.6vw, 56px);
+  padding: clamp(calc(22px * var(--menu-ui-scale)), calc(4.6vw * var(--menu-ui-scale)), calc(56px * var(--menu-ui-scale)));
   overflow: hidden;
 }
 
@@ -380,13 +381,13 @@ body::after {
 .menu-card h2 {
   margin: 0 0 14px;
   color: var(--color-cream);
-  font: 900 clamp(44px, 8vw, 82px)/.86 var(--font-display);
+  font: 900 clamp(calc(40px * var(--menu-ui-scale)), calc(8vw * var(--menu-ui-scale)), calc(82px * var(--menu-ui-scale)))/.86 var(--font-display);
   letter-spacing: -.055em;
   text-transform: uppercase;
   text-shadow: 0 16px 40px rgba(0,0,0,.42);
 }
 
-.menu-card h2 { font-size: clamp(38px, 6.8vw, 64px); }
+.menu-card h2 { font-size: clamp(calc(36px * var(--menu-ui-scale)), calc(6.8vw * var(--menu-ui-scale)), calc(64px * var(--menu-ui-scale))); }
 .menu-card p {
   margin: 0 0 var(--space-5);
   max-width: 54ch;
@@ -424,10 +425,10 @@ body::after {
 
 .ds-button,
 button {
-  min-height: 50px;
+  min-height: max(44px, calc(50px * var(--menu-ui-scale)));
   border: 1px solid rgba(255, 246, 232, .17);
   border-radius: var(--radius-pill);
-  padding: 13px 20px;
+  padding: calc(13px * var(--menu-ui-scale)) calc(20px * var(--menu-ui-scale));
   background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.025));
   color: var(--color-cream);
   font: 900 14px/1 var(--font-ui);
@@ -807,13 +808,13 @@ body.motion-reduce #pauseScreen .menu-page { animation: none !important; }
 }
 #pauseScreen[data-menu-page="level-select"] .menu-card,
 #pauseScreen[data-menu-page="settings"] .menu-card,
-#pauseScreen[data-menu-page="settings-category"] .menu-card { width: min(980px, calc(100vw - 32px)); padding: clamp(22px, 3.6vw, 38px); }
+#pauseScreen[data-menu-page="settings-category"] .menu-card { width: min(980px, calc(100vw - calc(32px * var(--menu-ui-scale)))); padding: clamp(calc(22px * var(--menu-ui-scale)), calc(3.6vw * var(--menu-ui-scale)), calc(38px * var(--menu-ui-scale))); }
 #pauseScreen[data-menu-page="level-select"] .eyebrow,
 #pauseScreen[data-menu-page="settings"] .eyebrow,
 #pauseScreen[data-menu-page="settings-category"] .eyebrow { margin-bottom: 8px; }
 #pauseScreen[data-menu-page="level-select"] .menu-card h2,
 #pauseScreen[data-menu-page="settings"] .menu-card h2,
-#pauseScreen[data-menu-page="settings-category"] .menu-card h2 { margin-bottom: 8px; font-size: clamp(38px, 6vw, 58px); }
+#pauseScreen[data-menu-page="settings-category"] .menu-card h2 { margin-bottom: calc(8px * var(--menu-ui-scale)); font-size: clamp(calc(34px * var(--menu-ui-scale)), calc(6vw * var(--menu-ui-scale)), calc(58px * var(--menu-ui-scale))); }
 
 .settings-layout { gap: 14px; }
 .settings-category-list,
@@ -829,7 +830,7 @@ body.motion-reduce #pauseScreen .menu-page { animation: none !important; }
 .settings-category-card,
 .ds-setting-row {
   width: 100%;
-  min-height: 62px;
+  min-height: max(44px, calc(62px * var(--menu-ui-scale)));
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 18px;
@@ -918,11 +919,12 @@ body.motion-reduce .hero-runner { transition-duration: 0s !important; animation-
 body.motion-reduce button:hover { transform: none; }
 
 @media (max-width: 620px), (max-height: 680px) {
+  :root { --menu-ui-scale: .88; }
   #startScreen,
-  #pauseScreen { place-items: start center; padding: 12px; }
-  .menu-card { max-height: none; padding: 24px 18px; border-radius: var(--radius-md); }
+  #pauseScreen { place-items: start center; padding: max(10px, calc(12px * var(--menu-ui-scale))); }
+  .menu-card { max-height: none; padding: calc(24px * var(--menu-ui-scale)) calc(18px * var(--menu-ui-scale)); border-radius: max(18px, calc(var(--radius-md) * var(--menu-ui-scale))); }
   .menu-card h1,
-  .menu-card h2 { font-size: 42px; }
+  .menu-card h2 { font-size: calc(42px * var(--menu-ui-scale)); }
   #pauseScreen[data-menu-page="level-select"] .menu-card,
   #pauseScreen[data-menu-page="settings"] .menu-card,
   #pauseScreen[data-menu-page="settings-category"] .menu-card { width: 100%; }
@@ -954,11 +956,11 @@ body.motion-reduce button:hover { transform: none; }
 }
 
 @media (max-width: 430px), (max-height: 520px) {
-  :root { --game-ui-scale: .64; }
+  :root { --game-ui-scale: .64; --menu-ui-scale: .80; }
   #hud { top: calc(8px + env(safe-area-inset-top)); left: calc(8px + env(safe-area-inset-left)); }
   #controls { bottom: calc(8px + env(safe-area-inset-bottom)); }
 }
 
 @media (max-height: 430px) and (orientation: landscape) {
-  :root { --game-ui-scale: .58; }
+  :root { --game-ui-scale: .58; --menu-ui-scale: .74; }
 }
