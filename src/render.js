@@ -263,10 +263,27 @@ export function drawDungeonBackdrop(ctx, view, camera) {
 
 export function syncHtmlHud(game) {
   const { ui, player } = game;
+  if (ui.hudLevelName) ui.hudLevelName.textContent = game.level?.name || 'Unknown Level';
   [...ui.heartsEl.children].forEach((heart, i) => heart.classList.toggle('full', i < player.hp));
   ui.dashStatusEl.classList.toggle('ready', player.dashCooldown <= 0);
-  ui.messageEl.hidden = !(player.dead || game.flags.won);
+  const showingEndMessage = player.dead || game.flags.won;
+  ui.messageEl.hidden = !showingEndMessage;
   ui.messageTitleEl.textContent = game.flags.won ? 'Gate Reached!' : 'You Faded';
+  if (ui.messageNextLevelButton) {
+    const nextLevel = game.flags.won ? game.levels.getNextLevel() : null;
+    ui.messageNextLevelButton.hidden = !nextLevel;
+    ui.messageNextLevelButton.textContent = nextLevel ? `Play ${nextLevel.name}` : 'Play Next';
+  }
+  if (showingEndMessage && !game.endMessageWasVisible) {
+    game.endMessageWasVisible = true;
+    requestAnimationFrame(() => {
+      const firstAction = ui.messageEl.querySelector('button:not([hidden]):not(:disabled)');
+      firstAction?.focus?.({ preventScroll: true });
+      firstAction?.classList.add('controller-focus');
+    });
+  } else if (!showingEndMessage) {
+    game.endMessageWasVisible = false;
+  }
   document.body.classList.toggle('game-over', player.dead);
   document.body.classList.toggle('game-won', game.flags.won);
 }

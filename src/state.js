@@ -1,19 +1,10 @@
 import { CAMERA_HEIGHT, CAMERA_WIDTH, CAMERA_WORLD_HEIGHT, CAMERA_WORLD_WIDTH } from './constants.js';
 import { centerCameraOnPlayer, createCamera } from './camera.js';
-import { createEnemies, createPlayer, getLevelById, getSpawnPoint, level as mainLevel } from './level.js';
+import { createEnemies, createPlayer, getSpawnPoint } from './level.js';
+import { createLevelManager, resolveInitialLevel } from './level-manager.js';
 import { createInputState } from './input.js';
 import { createPresenter } from './presenter.js';
 import { applySettingsToGame, loadSettings } from './settings.js';
-
-function syncActiveLevelDataset(game) {
-  document.body.dataset.levelId = game.level?.id || 'main';
-}
-
-function requestedDeveloperLevel(settings) {
-  const requested = new URLSearchParams(location.search).get('level');
-  const candidate = requested ? getLevelById(requested) : null;
-  return settings.developerMode && candidate ? candidate : mainLevel;
-}
 
 /**
  * Creates the mutable game context shared by systems.
@@ -21,7 +12,7 @@ function requestedDeveloperLevel(settings) {
 export function createGame(ui) {
   const presenter = createPresenter(ui.canvas, CAMERA_WIDTH, CAMERA_HEIGHT);
   const settings = loadSettings();
-  const activeLevel = requestedDeveloperLevel(settings);
+  const activeLevel = resolveInitialLevel(settings);
   const game = {
     canvas: ui.canvas,
     renderCanvas: presenter.renderCanvas,
@@ -49,6 +40,7 @@ export function createGame(ui) {
       won: false
     },
     level: activeLevel,
+    levels: null,
     player: createPlayer(getSpawnPoint(activeLevel)),
     enemies: createEnemies(activeLevel),
     dust: [],
@@ -60,34 +52,15 @@ export function createGame(ui) {
     clock: { last: performance.now() }
   };
   centerCameraOnPlayer(game.camera, game.player, game.view);
+  game.levels = createLevelManager(game);
   applySettingsToGame(game);
-  syncActiveLevelDataset(game);
+  document.body.dataset.levelId = game.level?.id || 'main';
   return game;
-}
-
-function resetWorld(game) {
-  Object.assign(game.player, createPlayer(getSpawnPoint(game.level)));
-  game.enemies.length = 0;
-  game.enemies.push(...createEnemies(game.level));
-  game.particles.length = 0;
-  game.dust.length = 0;
-  game.flags.won = false;
-  centerCameraOnPlayer(game.camera, game.player, game.view);
-  game.camera.shake = 0;
-}
-
-export function setActiveLevel(game, levelId) {
-  const nextLevel = getLevelById(levelId);
-  if (!nextLevel) return false;
-  game.level = nextLevel;
-  syncActiveLevelDataset(game);
-  resetWorld(game);
-  return true;
 }
 
 export function resetGame(game) {
   setPausedFlag(game, false);
-  resetWorld(game);
+  game.levels.restartLevel();
 }
 
 export function setPausedFlag(game, value) {

@@ -97,11 +97,6 @@ function renderAdvanced(game) {
         <button type="button" class="secondary ds-button ds-button--secondary" data-settings-action="replace-settings">Replace app settings</button>
       </div>
       <div id="settingsJsonStatus" class="status-line" aria-live="polite"></div>`)}
-    ${section('Developer Maps', `<p class="helper">Current map: ${game.level?.name || 'Unknown'}.</p>
-      <div class="settings-actions ds-action-row">
-        <button type="button" class="secondary ds-button ds-button--secondary" data-settings-action="load-main-level">Open Main Level</button>
-        <button type="button" class="secondary ds-button ds-button--secondary" data-settings-action="load-gym-level">Open Gym Level</button>
-      </div>`)}
   </div>`;
 }
 

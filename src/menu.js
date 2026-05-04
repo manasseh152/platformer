@@ -1,11 +1,19 @@
 import { bindKey, bindLabels, findBindConflict, menuButtons, renderInputHints, resetControllerInput, resetDefaultGamepadBinds, resetDefaultKeyBinds, setBindStatus, setControllerStatus } from './input.js';
 import { syncSettingsFromInput, replaceSettings, saveSettings, serializeSettings } from './settings.js';
-import { setActiveLevel, setPausedFlag } from './state.js';
+import { setPausedFlag } from './state.js';
 import { applyMotionPreference, runDOMTransition, shouldReduceMotion, setupMotionPreference } from './transitions.js';
 import { renderSettings, renderSettingsCategory, refreshDynamicRefs, selectedCategory } from './settings-ui.js';
 
-const pageElement = (ui, page) => ({ main: ui.pauseMainPage, settings: ui.settingsHubPage, 'settings-category': ui.settingsCategoryPage })[page];
-const settingsPages = ['settings', 'settings-category'];
+const pageElement = (ui, page) => ({ main: ui.pauseMainPage, 'level-select': ui.levelSelectPage, settings: ui.settingsHubPage, 'settings-category': ui.settingsCategoryPage })[page];
+const backablePages = ['level-select', 'settings', 'settings-category'];
+
+const levelKindLabels = {
+  campaign: 'Campaign',
+  gym: 'Gyms',
+  zoo: 'Zoos',
+  sandbox: 'Sandboxes'
+};
+const levelKindOrder = ['campaign', 'gym', 'zoo', 'sandbox'];
 const motionOrder = ['system', 'on', 'off'];
 
 export function visibleFocusables(root) {
@@ -15,8 +23,9 @@ export function visibleFocusables(root) {
 
 export function activeMenuRoot(game) {
   if (document.body.dataset.menuOrigin === 'start') return pageElement(game.ui, game.menu.page) || game.ui.pauseScreen;
-  if (!game.flags.started) return game.ui.startScreen;
   if (game.flags.paused) return pageElement(game.ui, game.menu.page) || game.ui.pauseScreen;
+  if (game.player.dead || game.flags.won) return game.ui.messageEl;
+  if (!game.flags.started) return game.ui.startScreen;
   return null;
 }
 
@@ -27,8 +36,8 @@ export function updateMenuChrome(game) {
   ui.pauseScreen.dataset.currentSettingsCategory = menu.settingsCategory || '';
   document.body.dataset.menuOrigin = menu.origin;
   const category = selectedCategory(game);
-  ui.menuTitle.textContent = menu.page === 'settings-category' && category ? category.title : (menu.page === 'settings' ? 'Settings' : 'Paused');
-  ui.menuEyebrow.textContent = menu.page === 'main' ? 'Paused' : (menu.page === 'settings-category' ? 'Settings' : (menu.origin === 'start' ? 'Before you begin' : 'Settings'));
+  ui.menuTitle.textContent = menu.page === 'settings-category' && category ? category.title : (menu.page === 'level-select' ? 'Level Select' : (menu.page === 'settings' ? 'Settings' : 'Paused'));
+  ui.menuEyebrow.textContent = menu.page === 'main' ? 'Paused' : (menu.page === 'level-select' ? 'Choose your route' : (menu.page === 'settings-category' ? 'Settings' : (menu.origin === 'start' ? 'Before you begin' : 'Settings')));
   refreshDynamicRefs(game);
   if (ui.developerTools) ui.developerTools.hidden = !game.settings.developerMode;
   applyMotionPreference(game);
@@ -49,23 +58,69 @@ export function focusFirstMenuItem(game) {
   focusAndReveal(game, root && visibleFocusables(root)[0]);
 }
 
+function currentMenuElement(game, root = activeMenuRoot(game)) {
+  const active = document.activeElement;
+  if (active && root?.contains(active)) return active;
+  if (game.menu.lastFocused && root?.contains(game.menu.lastFocused)) return game.menu.lastFocused;
+  return active;
+}
+
 export function moveMenuFocus(game, dir) {
   const root = activeMenuRoot(game);
   if (!root) return;
   const items = visibleFocusables(root);
   if (!items.length) return;
-  const current = items.indexOf(document.activeElement);
+  const current = items.indexOf(currentMenuElement(game, root));
   focusAndReveal(game, items[current < 0 ? 0 : (current + dir + items.length) % items.length]);
 }
 
 function moveHorizontalGroupFocus(game, dx) {
-  const group = document.activeElement?.closest?.('.settings-actions, .segmented');
+  const current = currentMenuElement(game);
+  const group = current?.closest?.('.ds-action-row, .segmented');
   if (!group) return false;
   const items = visibleFocusables(group);
-  const index = items.indexOf(document.activeElement);
-  if (index < 0) return false;
-  focusAndReveal(game, items[Math.max(0, Math.min(items.length - 1, index + dx))]);
+  const index = items.indexOf(current);
+  if (items.length < 2 || index < 0) return false;
+  focusAndReveal(game, items[(index + dx + items.length) % items.length]);
   return true;
+}
+
+function renderSelectedLevelSummary(game) {
+  const level = game.levels.getCurrentLevel();
+  if (game.ui.selectedLevelSummary) game.ui.selectedLevelSummary.textContent = `Selected level: ${level.name}`;
+  const heroTitle = document.querySelector('.hero-scene__title');
+  if (heroTitle) heroTitle.textContent = level.name;
+  if (game.ui.hudLevelName) game.ui.hudLevelName.textContent = level.name;
+}
+
+function renderLevelSelect(game, message = '') {
+  const { ui } = game;
+  if (!ui.levelSelectList) return;
+  const current = game.levels.getCurrentLevel();
+  const levels = game.levels.getSelectableLevels();
+  const grouped = new Map();
+  for (const level of levels) {
+    const kind = level.kind || 'campaign';
+    if (!grouped.has(kind)) grouped.set(kind, []);
+    grouped.get(kind).push(level);
+  }
+  const orderedKinds = [...levelKindOrder, ...[...grouped.keys()].filter(kind => !levelKindOrder.includes(kind))];
+  ui.levelSelectList.innerHTML = orderedKinds
+    .filter(kind => grouped.has(kind))
+    .map(kind => `<section class="ds-section settings-section level-select-group">
+      <h3>${levelKindLabels[kind] || kind}</h3>
+      <div class="settings-row-list">
+        ${grouped.get(kind).map(level => `<button type="button" class="ds-setting-row level-select-row${level.id === current.id ? ' is-current' : ''}" data-level-id="${level.id}">
+          <span class="ds-setting-row__copy">
+            <span class="ds-setting-row__label">${level.name}</span>
+            <span class="ds-setting-row__description">${level.description || ''}${level.developerOnly ? ' // Developer' : ''}</span>
+          </span>
+          <span class="ds-setting-row__value">${level.id === current.id ? 'Selected' : 'Load'}</span>
+        </button>`).join('')}
+      </div>
+    </section>`).join('');
+  if (ui.levelSelectStatus) ui.levelSelectStatus.textContent = message || `Current level: ${current.name}.`;
+  renderSelectedLevelSummary(game);
 }
 
 export function handleGamepadMenuInput(game) {
@@ -76,13 +131,21 @@ export function handleGamepadMenuInput(game) {
   if (input.suppressMenuInputOnce) { input.suppressMenuInputOnce = false; return true; }
   if (input.listeningFor) return false;
   const focusables = visibleFocusables(root);
-  if (!root.contains(document.activeElement) || !focusables.includes(document.activeElement)) focusFirstMenuItem(game);
-  if (input.gamepadPressed.has(menuButtons.left)) return moveHorizontalGroupFocus(game, -1);
-  if (input.gamepadPressed.has(menuButtons.right)) return moveHorizontalGroupFocus(game, 1);
-  if (input.gamepadPressed.has(menuButtons.up)) { moveMenuFocus(game, -1); return true; }
-  if (input.gamepadPressed.has(menuButtons.down)) { moveMenuFocus(game, 1); return true; }
+  if (!root.contains(document.activeElement) && !root.contains(game.menu.lastFocused)) focusFirstMenuItem(game);
+  if (input.gamepadPressed.has(menuButtons.left) && moveHorizontalGroupFocus(game, -1)) return true;
+  if (input.gamepadPressed.has(menuButtons.right) && moveHorizontalGroupFocus(game, 1)) return true;
+  if (input.gamepadPressed.has(menuButtons.up)) {
+    if (moveHorizontalGroupFocus(game, 1)) return true;
+    moveMenuFocus(game, -1);
+    return true;
+  }
+  if (input.gamepadPressed.has(menuButtons.down)) {
+    if (moveHorizontalGroupFocus(game, -1)) return true;
+    moveMenuFocus(game, 1);
+    return true;
+  }
   if (input.gamepadPressed.has(menuButtons.accept)) { document.activeElement?.click?.(); return true; }
-  if (input.gamepadPressed.has(menuButtons.back)) { if (settingsPages.includes(game.menu.page)) goBack(game); else if (game.flags.started) ui.resumeButton.click(); return true; }
+  if (input.gamepadPressed.has(menuButtons.back)) { if (backablePages.includes(game.menu.page)) goBack(game); else if (game.flags.started) ui.resumeButton.click(); return true; }
   return false;
 }
 
@@ -127,6 +190,7 @@ export function setMenuPage(game, page, direction = 'forward', category = null) 
     game.menu.direction = direction;
     game.menu.settingsCategory = category;
     renderSettings(game);
+    if (page === 'level-select') renderLevelSelect(game);
     updateMenuChrome(game);
   }, () => focusFirstMenuItem(game));
 }
@@ -140,6 +204,28 @@ export function openSettings(game, origin) {
     renderSettings(game);
     updateMenuChrome(game);
   }, () => focusFirstMenuItem(game));
+}
+
+export function openLevelSelect(game, origin) {
+  commitMenuPageChange(game, () => {
+    game.menu.origin = origin;
+    game.menu.page = 'level-select';
+    game.menu.settingsCategory = null;
+    game.menu.direction = 'forward';
+    renderLevelSelect(game);
+    updateMenuChrome(game);
+  }, () => focusFirstMenuItem(game));
+}
+
+function closeLevelSelect(game) {
+  const origin = game.menu.origin;
+  commitMenuPageChange(game, () => {
+    game.menu.page = 'main';
+    game.menu.settingsCategory = null;
+    game.menu.direction = 'back';
+    game.menu.origin = origin === 'start' ? 'none' : 'pause';
+    updateMenuChrome(game);
+  }, () => focusAndReveal(game, origin === 'start' ? game.ui.startLevelSelectButton : game.ui.levelSelectButton));
 }
 
 export function closeSettings(game) {
@@ -157,6 +243,7 @@ export function closeSettings(game) {
 export function goBack(game) {
   if (game.menu.page === 'settings-category') return setMenuPage(game, 'settings', 'back', null);
   if (game.menu.page === 'settings') return closeSettings(game);
+  if (game.menu.page === 'level-select') return closeLevelSelect(game);
 }
 
 export function setPaused(game, value) {
@@ -220,9 +307,10 @@ function handleReplaceSettings(game) {
       updateMenuChrome(game);
     };
     const after = () => {
-      if (!game.settings.developerMode && game.level?.developerOnly) setActiveLevel(game, 'main');
+      if (!game.settings.developerMode && game.level?.developerOnly) game.levels.switchLevel('main');
       ui.settingsJson.value = serializeSettings(game);
       ui.settingsJsonStatus.textContent = 'Replaced app settings.';
+      renderSelectedLevelSummary(game);
       focusFirstMenuItem(game);
     };
     const developerChangesLayout = developerWasVisible !== game.settings.developerMode || normalized.developerMode !== game.settings.developerMode;
@@ -252,20 +340,26 @@ function toggleDeveloperMode(game) {
   runDOMTransition(game, () => {
     game.settings.developerMode = !game.settings.developerMode;
     game.settings = saveSettings(game.settings);
-    if (!game.settings.developerMode && game.level?.developerOnly) setActiveLevel(game, 'main');
+    if (!game.settings.developerMode && game.level?.developerOnly) game.levels.switchLevel('main');
     renderSettingsCategory(game);
     updateMenuChrome(game);
-  }, () => focusFirstMenuItem(game));
+    renderSelectedLevelSummary(game);
+  }, () => {
+    const root = activeMenuRoot(game);
+    if (!root?.contains(document.activeElement)) focusFirstMenuItem(game);
+  });
 }
 
-function loadDeveloperLevel(game, levelId) {
-  if (levelId !== 'main' && !game.settings.developerMode) {
-    if (game.ui.settingsJsonStatus) game.ui.settingsJsonStatus.textContent = 'Enable Developer Mode to load developer maps.';
+function selectLevel(game, levelId) {
+  const result = game.levels.switchLevel(levelId);
+  if (!result.ok) {
+    const message = result.reason === 'developer-only' ? 'Enable Developer Mode to load developer levels.' : 'Level not found.';
+    renderLevelSelect(game, message);
     return;
   }
-  const loaded = setActiveLevel(game, levelId);
-  renderSettingsCategory(game);
-  if (game.ui.settingsJsonStatus) game.ui.settingsJsonStatus.textContent = loaded ? `Loaded ${game.level.name}.` : 'Map not found.';
+  const message = game.menu.origin === 'start' ? `Selected ${result.level.name}.` : `Loaded ${result.level.name}.`;
+  renderLevelSelect(game, message);
+  if (game.menu.origin === 'start') closeLevelSelect(game);
 }
 
 function resetBinds(game, device) {
@@ -282,6 +376,9 @@ function resetBinds(game, device) {
 }
 
 function handleSettingsClick(game, e) {
+  const levelButton = e.target.closest('button[data-level-id]');
+  if (levelButton) return selectLevel(game, levelButton.dataset.levelId);
+  if (e.target.closest('[data-level-select-back]')) return goBack(game);
   const categoryButton = e.target.closest('[data-settings-category]');
   if (categoryButton) return setMenuPage(game, 'settings-category', 'forward', categoryButton.dataset.settingsCategory);
   const backButton = e.target.closest('[data-settings-back]');
@@ -299,8 +396,6 @@ function handleSettingsClick(game, e) {
   if (action === 'reset-controller') return resetBinds(game, 'controller');
   if (action === 'dump-settings') return dumpSettings(game);
   if (action === 'replace-settings') return handleReplaceSettings(game);
-  if (action === 'load-main-level') return loadDeveloperLevel(game, 'main');
-  if (action === 'load-gym-level') return loadDeveloperLevel(game, 'gym');
 }
 
 export function setupMenu(game) {
@@ -316,14 +411,35 @@ export function setupMenu(game) {
     ui.heartsEl.appendChild(heart);
   }
 
-  addEventListener('focusin', e => document.querySelectorAll('.controller-focus').forEach(node => { if (node !== e.target) node.classList.remove('controller-focus'); }));
+  addEventListener('focusin', e => {
+    game.menu.lastFocused = e.target;
+    document.querySelectorAll('.controller-focus').forEach(node => { if (node !== e.target) node.classList.remove('controller-focus'); });
+  });
+
+  renderSelectedLevelSummary(game);
 
   ui.startButton.addEventListener('click', () => startGame(game));
+  ui.startLevelSelectButton.addEventListener('click', () => openLevelSelect(game, 'start'));
   ui.startSettingsButton.addEventListener('click', () => openSettings(game, 'start'));
   ui.resumeButton.addEventListener('click', () => setPaused(game, false));
   ui.restartButton.addEventListener('click', () => game.resetGame());
   ui.mainMenuButton.addEventListener('click', () => returnToMainMenu(game));
+  ui.levelSelectButton.addEventListener('click', () => openLevelSelect(game, 'pause'));
   ui.settingsButton.addEventListener('click', () => openSettings(game, 'pause'));
+  ui.messageRestartButton.addEventListener('click', () => game.resetGame());
+  ui.messageNextLevelButton.addEventListener('click', () => {
+    const result = game.levels.switchToNextLevel();
+    if (!result.ok) return;
+    setPausedFlag(game, false);
+    game.flags.started = true;
+    document.body.classList.add('playing');
+    document.body.classList.remove('game-won', 'game-over');
+    game.canvas.focus?.({ preventScroll: true });
+  });
+  ui.messageLevelSelectButton.addEventListener('click', () => {
+    setPausedFlag(game, true);
+    openLevelSelect(game, 'pause');
+  });
   ui.menuPages.addEventListener('click', e => handleSettingsClick(game, e));
 
   requestAnimationFrame(() => focusAndReveal(game, ui.startButton));

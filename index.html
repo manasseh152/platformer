@@ -14,8 +14,8 @@
     <section id="hud" class="ds-hud" aria-label="Run status">
       <div class="hud-topline">
         <div>
-          <div class="title ds-overline">Chibi Knight</div>
-          <div class="hud-zone">Hollow Gate</div>
+          <div class="title ds-overline">Current Level</div>
+          <div id="hudLevelName" class="hud-zone">Main Level</div>
         </div>
         <div class="hud-act">Act 01</div>
       </div>
@@ -36,6 +36,11 @@
     <section id="message" class="ds-toast" hidden>
       <div id="messageTitle" class="big"></div>
       <div class="small"><span class="input-hint input-hint--inline" data-input-hint="restart"></span></div>
+      <div class="message-actions ds-action-row">
+        <button id="messageNextLevelButton" class="ds-button ds-button--primary" type="button">Play Next</button>
+        <button id="messageLevelSelectButton" class="secondary ds-button ds-button--secondary" type="button">Level Select</button>
+        <button id="messageRestartButton" class="secondary ds-button ds-button--secondary" type="button">Restart</button>
+      </div>
     </section>
   </div>
 
@@ -50,8 +55,10 @@
           <li class="ds-chip">Controller</li>
           <li class="ds-chip">Single player</li>
         </ul>
+        <div id="selectedLevelSummary" class="selected-level-summary" aria-live="polite">Selected level: Main Level</div>
         <div class="menu-actions ds-action-stack">
           <button id="startButton" class="ds-button ds-button--primary">Start</button>
+          <button id="startLevelSelectButton" class="secondary ds-button ds-button--secondary">Level Select</button>
           <button id="startSettingsButton" class="secondary ds-button ds-button--secondary">Settings</button>
         </div>
       </section>
@@ -92,9 +99,19 @@
           <p>Take a break, restart the run, or change settings.</p>
           <div class="menu-actions ds-action-stack">
             <button id="resumeButton" class="ds-button ds-button--primary">Continue</button>
+            <button id="levelSelectButton" class="secondary ds-button ds-button--secondary">Level Select</button>
             <button id="settingsButton" class="secondary ds-button ds-button--secondary">Settings</button>
             <button id="restartButton" class="secondary ds-button ds-button--secondary">Restart</button>
             <button id="mainMenuButton" class="secondary ds-button ds-button--secondary">Main Menu</button>
+          </div>
+        </div>
+
+        <div id="levelSelectPage" class="menu-page settings-layout" data-page="level-select">
+          <p>Choose the level to load. Developer Mode reveals gyms, zoos, and other test maps.</p>
+          <div id="levelSelectStatus" class="status-line" aria-live="polite"></div>
+          <div id="levelSelectList" class="level-select-list" aria-label="Available levels"></div>
+          <div class="settings-actions ds-action-row">
+            <button id="levelSelectBackButton" class="ds-button ds-button--primary" data-level-select-back>Back</button>
           </div>
         </div>
 

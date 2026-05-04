@@ -19,6 +19,53 @@ async function openCategory(page, id, title) {
   await expect(page.locator('#menuTitle')).toHaveText(title);
 }
 
+async function installMockGamepad(page) {
+  await page.addInitScript(() => {
+    const buttons = Array.from({ length: 16 }, () => ({ pressed: false, value: 0 }));
+    const pad = { id: 'Mock Controller', index: 0, connected: true, mapping: 'standard', axes: [0, 0], buttons };
+    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] });
+    window.__mockGamepadButton = (index, pressed) => {
+      buttons[index].pressed = pressed;
+      buttons[index].value = pressed ? 1 : 0;
+    };
+  });
+  await page.reload();
+}
+
+async function pressPadButtonFrom(page, index, focusSelector) {
+  await page.evaluate(({ buttonIndex, selector }) => {
+    document.querySelector(selector).focus();
+    window.__mockGamepadButton(buttonIndex, true);
+  }, { buttonIndex: index, selector: focusSelector });
+  await page.waitForTimeout(200);
+  await page.evaluate(buttonIndex => window.__mockGamepadButton(buttonIndex, false), index);
+  await page.waitForTimeout(120);
+}
+
+async function focusSettingsAction(page, action) {
+  await expect.poll(() => page.evaluate(name => {
+    const button = document.querySelector(`[data-settings-action="${name}"]`);
+    button?.focus();
+    return document.activeElement === button ? button.dataset.settingsAction : '';
+  }, action)).toBe(action);
+}
+
+async function expectFocusedSettingsAction(page, action) {
+  await expect.poll(() => page.evaluate(() => document.activeElement?.dataset.settingsAction || '')).toBe(action);
+}
+
+async function focusLevelRow(page, levelId) {
+  await expect.poll(() => page.evaluate(id => {
+    const button = document.querySelector(`button[data-level-id="${id}"]`);
+    button?.focus();
+    return document.activeElement === button ? button.dataset.levelId : '';
+  }, levelId)).toBe(levelId);
+}
+
+async function expectFocusedLevelRow(page, levelId) {
+  await expect.poll(() => page.evaluate(() => document.activeElement?.dataset.levelId || '')).toBe(levelId);
+}
+
 test('settings hub, accessibility motion, advanced JSON, and start flow', async ({ page }) => {
   const body = page.locator('body');
   const pauseScreen = page.locator('#pauseScreen');
@@ -75,21 +122,37 @@ test('settings hub, accessibility motion, advanced JSON, and start flow', async 
   await expect(pauseScreen).toHaveAttribute('data-menu-page', 'main');
 });
 
-test('developer maps are only available when Developer Mode is enabled', async ({ page }) => {
+test('developer maps are only available in the normal Level Select when Developer Mode is enabled', async ({ page }) => {
   await page.goto('/?level=gym');
   await expect(page.locator('body')).toHaveAttribute('data-level-id', 'main');
+
+  await page.locator('#startLevelSelectButton').click();
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'level-select');
+  await expect(page.getByRole('button', { name: /Main Level/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Movement Gym/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Enemy Zoo/ })).toHaveCount(0);
+  await page.locator('[data-level-select-back]').click();
 
   await openStartSettings(page);
   await openCategory(page, 'advanced', 'Advanced');
   await expect(page.locator('#developerTools')).toBeHidden();
-
   await page.locator('[data-setting-row="developer-mode"]').click();
   await expect(page.locator('#developerTools')).toBeVisible();
-  await expect(page.locator('#developerTools')).toContainText('Current map: Main Level');
-  await page.getByRole('button', { name: 'Open Gym Level' }).click();
-  await expect(page.locator('body')).toHaveAttribute('data-level-id', 'gym');
-  await expect(page.locator('#settingsJsonStatus')).toContainText('Loaded Developer Gym');
+  await page.locator('[data-settings-back="category"]').click();
+  await page.locator('[data-settings-back="root"]').click();
 
+  await page.locator('#startLevelSelectButton').click();
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'level-select');
+  await expect(page.getByRole('button', { name: /Movement Gym/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Hazard Gym/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Enemy Zoo/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Gate Lab/ })).toBeVisible();
+  await page.getByRole('button', { name: /Enemy Zoo/ }).click();
+  await expect(page.locator('body')).toHaveAttribute('data-level-id', 'enemy-zoo');
+  await expect(page.locator('#selectedLevelSummary')).toContainText('Enemy Zoo');
+
+  await openStartSettings(page);
+  await openCategory(page, 'advanced', 'Advanced');
   await page.locator('[data-setting-row="developer-mode"]').click();
   await expect(page.locator('body')).toHaveAttribute('data-level-id', 'main');
   await expect(page.locator('#developerTools')).toBeHidden();
@@ -99,6 +162,51 @@ test('developer maps are only available when Developer Mode is enabled', async (
   await page.evaluate(value => localStorage.setItem('chibi.settings', JSON.stringify(value)), settings);
   await page.goto('/?level=gym');
   await expect(page.locator('body')).toHaveAttribute('data-level-id', 'gym');
+});
+
+test('controller can navigate and choose levels in Level Select', async ({ page }) => {
+  await installMockGamepad(page);
+  await openStartSettings(page);
+  await openCategory(page, 'advanced', 'Advanced');
+  await page.locator('[data-setting-row="developer-mode"]').click();
+  await expect(page.locator('#developerTools')).toBeVisible();
+  await page.locator('[data-settings-back="category"]').click();
+  await page.locator('[data-settings-back="root"]').click();
+
+  await page.locator('#startLevelSelectButton').click();
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'level-select');
+  await page.waitForTimeout(250);
+  await focusLevelRow(page, 'main');
+
+  await pressPadButtonFrom(page, 13, 'button[data-level-id="main"]');
+  await expectFocusedLevelRow(page, 'gym');
+
+  await pressPadButtonFrom(page, 0, 'button[data-level-id="gym"]');
+  await expect(page.locator('body')).toHaveAttribute('data-level-id', 'gym');
+  await expect(page.locator('#selectedLevelSummary')).toContainText('Movement Gym');
+});
+
+test('controller diagonal menu directions navigate horizontal button groups', async ({ page }) => {
+  await installMockGamepad(page);
+  await openStartSettings(page);
+  await openCategory(page, 'advanced', 'Advanced');
+  await page.locator('[data-setting-row="developer-mode"]').click();
+  await expect(page.locator('#developerTools')).toBeVisible();
+  await page.waitForTimeout(250);
+
+  await focusSettingsAction(page, 'dump-settings');
+
+  await pressPadButtonFrom(page, 12, '[data-settings-action="dump-settings"]'); // D-pad up advances through horizontal groups like right.
+  await expectFocusedSettingsAction(page, 'replace-settings');
+
+  await pressPadButtonFrom(page, 13, '[data-settings-action="replace-settings"]'); // D-pad down reverses through horizontal groups like left.
+  await expectFocusedSettingsAction(page, 'dump-settings');
+
+  await pressPadButtonFrom(page, 15, '[data-settings-action="dump-settings"]'); // D-pad right advances.
+  await expectFocusedSettingsAction(page, 'replace-settings');
+
+  await pressPadButtonFrom(page, 14, '[data-settings-action="replace-settings"]'); // D-pad left reverses.
+  await expectFocusedSettingsAction(page, 'dump-settings');
 });
 
 test('keyboard and controller settings rows, binds, diagnostics, and pause flow', async ({ page }) => {

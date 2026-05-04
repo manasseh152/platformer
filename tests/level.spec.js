@@ -10,7 +10,10 @@ import {
   getTile,
   getSpawnPoint,
   isSolidTileAt,
+  enemyZooLevel,
+  gateLabLevel,
   gymLevel,
+  hazardGymLevel,
   level,
   parseTilemap,
   solidTileRectsOverlapping,
@@ -19,6 +22,7 @@ import {
   tileToWorld,
   worldToTile
 } from '../src/level.js';
+import { resolveInitialLevel } from '../src/level-manager.js';
 
 test('level exposes world dimensions derived from tile dimensions', () => {
   expect(level.worldWidth).toBe(level.cols * level.tileSize);
@@ -79,14 +83,31 @@ test('tilemap parser exposes layered tiles and direct query helpers derive gamep
   ]));
 });
 
-test('developer gym is a named developer-only map with core platformer fixtures', () => {
+test('initial level resolution uses the same developer-only gate as the level manager', () => {
+  expect(resolveInitialLevel({ developerMode: false }, '?level=gym')).toBe(level);
+  expect(resolveInitialLevel({ developerMode: true }, '?level=gym')).toBe(gymLevel);
+  expect(resolveInitialLevel({ developerMode: true }, '?level=missing')).toBe(level);
+});
+
+test('developer showcase levels are split into focused gyms, zoos, and labs', () => {
   expect(getLevelById('gym')).toBe(gymLevel);
-  expect(gymLevel).toMatchObject({ id: 'gym', name: 'Developer Gym', developerOnly: true });
-  expect(getSpawnPoint(gymLevel)).toEqual(expect.objectContaining({ x: expect.any(Number), y: expect.any(Number) }));
-  expect(createEnemies(gymLevel)).toHaveLength(2);
-  const goal = getGoalRect(gymLevel);
-  for (let col = goal.col; col < goal.col + goal.cols; col++) {
-    expect(isSolidTileAt(gymLevel, col, goal.row + 1)).toBe(true);
+  expect(getLevelById('hazard-gym')).toBe(hazardGymLevel);
+  expect(getLevelById('enemy-zoo')).toBe(enemyZooLevel);
+  expect(getLevelById('gate-lab')).toBe(gateLabLevel);
+
+  expect(gymLevel).toMatchObject({ id: 'gym', name: 'Movement Gym', kind: 'gym', developerOnly: true });
+  expect(hazardGymLevel).toMatchObject({ id: 'hazard-gym', kind: 'gym', developerOnly: true });
+  expect(enemyZooLevel).toMatchObject({ id: 'enemy-zoo', kind: 'zoo', developerOnly: true });
+  expect(gateLabLevel).toMatchObject({ id: 'gate-lab', kind: 'sandbox', developerOnly: true });
+  expect(createEnemies(gymLevel)).toHaveLength(0);
+  expect(createEnemies(enemyZooLevel)).toHaveLength(6);
+
+  for (const devLevel of [gymLevel, hazardGymLevel, enemyZooLevel, gateLabLevel]) {
+    expect(getSpawnPoint(devLevel)).toEqual(expect.objectContaining({ x: expect.any(Number), y: expect.any(Number) }));
+    const goal = getGoalRect(devLevel);
+    for (let col = goal.col; col < goal.col + goal.cols; col++) {
+      expect(isSolidTileAt(devLevel, col, goal.row + 1)).toBe(true);
+    }
   }
 });
 
