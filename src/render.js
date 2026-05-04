@@ -22,7 +22,7 @@ function drawStoneTile(ctx, x, y, asset) {
   }
 }
 
-function drawTilemap(ctx, level) {
+export function drawTilemap(ctx, level) {
   forEachLayerTile(level, 'terrain', (ch, col, row) => {
     if (ch !== '#' && ch !== '=' && ch !== 'B') return;
     const x = col * TILE_SIZE;
@@ -32,14 +32,14 @@ function drawTilemap(ctx, level) {
   });
 }
 
-function drawDecorLayer(ctx, level) {
+export function drawDecorLayer(ctx, level) {
   forEachLayerTile(level, 'decor', (ch, col, row) => {
     const type = getDecorType(ch);
     if (type) drawAsset(ctx, assets[type], col * TILE_SIZE, row * TILE_SIZE);
   });
 }
 
-function drawSpikeLayer(ctx, level) {
+export function drawSpikeLayer(ctx, level) {
   forEachLayerTile(level, 'terrain', (ch, col, row) => {
     if (ch !== '^') return;
     const x = col * TILE_SIZE;
@@ -51,7 +51,7 @@ function drawSpikeLayer(ctx, level) {
   });
 }
 
-function drawGoal(ctx, goal) {
+export function drawGoal(ctx, goal) {
   const x = goal.x;
   const y = goal.y;
   ctx.save();
@@ -107,7 +107,7 @@ function drawCanvasBackdrop(ctx, canvas) {
   }
 }
 
-function drawDungeonBackdrop(ctx, view, camera) {
+export function drawDungeonBackdrop(ctx, view, camera) {
   const grad = ctx.createLinearGradient(0, 0, 0, view.height);
   grad.addColorStop(0, '#080c13');
   grad.addColorStop(.48, '#101a22');

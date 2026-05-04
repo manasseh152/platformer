@@ -4,7 +4,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "render:map": "node tools/render-map.js",
+    "validate:map-render": "node tools/render-map.js .temp/full-map.png"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
