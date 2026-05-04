@@ -7,6 +7,7 @@ const SOLID_TILES = new Set(['#', '=', 'B']);
 const TERRAIN_CHARS = new Set([EMPTY, '#', '=', 'B', '^']);
 const OBJECT_CHARS = new Set([EMPTY, 'P', 'E', 'G', '<', '>']);
 const DECOR_CHARS = new Set([EMPTY, 'r', 'g', 't', 'f']);
+const BACKDROP_CHARS = new Set([EMPTY, 'a', 'k', 'c', 'd']);
 
 export const DECOR_TYPES = {
   r: 'bannerRed',
@@ -51,14 +52,14 @@ export const levelDefinition = {
     '########################',
     '#......................#',
     '#......................#',
-    '#......................#',
-    '#.................====.#',
-    '#............====......#',
+    '#.................===..#',
+    '#.............===.BBB..#',
     '#.......====...........#',
     '#......................#',
-    '#...====......====.....#',
+    '#...====.........====..#',
     '#........^^^...........#',
-    '#.....====......====...#',
+    '#.....====.....====....#',
+    '#..====.........====...#',
     '########################'
   ],
   objectRows: [
@@ -68,10 +69,10 @@ export const levelDefinition = {
     '..................<G>...',
     '........................',
     '........................',
+    '.....E...........E......',
     '........................',
-    '.....E.........E........',
     '........................',
-    '.......E.........E......',
+    '.....E............E.....',
     '..P.....................',
     '........................'
   ],
@@ -87,6 +88,20 @@ export const levelDefinition = {
     '.....t.........t........',
     '........................',
     '........................',
+    '........................'
+  ],
+  backdropRows: [
+    '........................',
+    '.a..k.....a.....k..a....',
+    '....d..........c........',
+    '........a.........d.....',
+    '..k.........d...........',
+    '...............a....k...',
+    '....c.....k.............',
+    '............d...........',
+    '..d.............k.......',
+    '........a...............',
+    '...k.........c.....d....',
     '........................'
   ]
 };
@@ -159,6 +174,18 @@ export function getGoalRect(level) {
   while (getTile(level, 'object', startCol - 1, goal.row) === '<') startCol--;
   while (getTile(level, 'object', endCol + 1, goal.row) === '>') endCol++;
   return tileRect(startCol, goal.row, endCol - startCol + 1, 1, 'gate', level.tileSize);
+}
+
+export function getGoalTriggerRect(level) {
+  const goal = getGoalRect(level);
+  const pad = level.tileSize / 2;
+  return {
+    ...goal,
+    x: goal.x - pad,
+    w: goal.w + pad * 2,
+    h: goal.h + level.tileSize,
+    kind: 'gate-trigger'
+  };
 }
 
 export function getSpawnPoint(level) {
@@ -252,6 +279,8 @@ export function parseTilemap(definition, tileSize = T) {
   validateLayer('terrainRows', terrainRows, cols, rows, TERRAIN_CHARS);
   validateLayer('objectRows', objectRows, cols, rows, OBJECT_CHARS);
   validateLayer('decorRows', decorRows, cols, rows, DECOR_CHARS);
+  const backdropRows = definition.backdropRows ?? Array.from({ length: rows }, () => EMPTY.repeat(cols));
+  validateLayer('backdropRows', backdropRows, cols, rows, BACKDROP_CHARS);
 
   const spawnMarker = assertSingleMarker(objectRows, 'P', 'player spawn');
   assertSingleMarker(objectRows, 'G', 'goal');
@@ -265,7 +294,8 @@ export function parseTilemap(definition, tileSize = T) {
     tiles: {
       terrainRows: [...terrainRows],
       objectRows: [...objectRows],
-      decorRows: [...decorRows]
+      decorRows: [...decorRows],
+      backdropRows: [...backdropRows]
     }
   };
 

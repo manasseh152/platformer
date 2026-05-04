@@ -5,7 +5,10 @@ import {
   forEachLayerTile,
   getDecorType,
   getGoalRect,
+  getGoalTriggerRect,
+  getTile,
   getSpawnPoint,
+  isSolidTileAt,
   level,
   parseTilemap,
   solidTileRectsOverlapping,
@@ -59,6 +62,7 @@ test('tilemap parser exposes layered tiles and direct query helpers derive gamep
 
   expect(parsed.cols).toBe(5);
   expect(parsed.rows).toBe(5);
+  expect(getTile(parsed, 'backdrop', 2, 2)).toBe('.');
   expect(getSpawnPoint(parsed)).toEqual({ x: 88, y: 160 });
   expect(getGoalRect(parsed)).toMatchObject({ x: 210, y: 70, w: 70, h: 70, kind: 'gate' });
   expect(spikeHazardRectsOverlapping(parsed, { x: 210, y: 210, w: 70, h: 70 })).toHaveLength(1);
@@ -71,6 +75,21 @@ test('tilemap parser exposes layered tiles and direct query helpers derive gamep
     expect.objectContaining({ x: 70, y: 210, w: 70, h: 70 }),
     expect.objectContaining({ x: 140, y: 210, w: 70, h: 70 })
   ]));
+});
+
+test('default gate is completable from solid support blocks', () => {
+  const goal = getGoalRect(level);
+  const trigger = getGoalTriggerRect(level);
+  for (let col = goal.col; col < goal.col + goal.cols; col++) {
+    expect(isSolidTileAt(level, col, goal.row + 1)).toBe(true);
+  }
+  expect(trigger).toMatchObject({
+    x: goal.x - level.tileSize / 2,
+    y: goal.y,
+    w: goal.w + level.tileSize,
+    h: goal.h + level.tileSize,
+    kind: 'gate-trigger'
+  });
 });
 
 test('tilemap supports block tiles and three-tile gates', () => {
@@ -102,6 +121,61 @@ test('tilemap supports block tiles and three-tile gates', () => {
   expect(solidTileRectsOverlapping(parsed, { x: 140, y: 140, w: 70, h: 70 })).toEqual([
     expect.objectContaining({ x: 140, y: 140, w: 70, h: 70 })
   ]);
+});
+
+test('tilemap parser supports optional backdrop rows with validation and iteration', () => {
+  const parsed = parseTilemap({
+    terrainRows: [
+      '#####',
+      '#...#',
+      '#...#',
+      '#==.#',
+      '#####'
+    ],
+    objectRows: [
+      '.....',
+      '.G...',
+      '.P...',
+      '.....',
+      '.....'
+    ],
+    decorRows: [
+      '.....',
+      '.....',
+      '.....',
+      '.....',
+      '.....'
+    ],
+    backdropRows: [
+      '.....',
+      '.ak..',
+      '..c..',
+      '..d..',
+      '.....'
+    ]
+  });
+
+  const backdrop = [];
+  forEachLayerTile(parsed, 'backdrop', (tile, col, row) => {
+    if (tile !== '.') backdrop.push({ tile, col, row });
+  });
+
+  expect(backdrop).toEqual([
+    { tile: 'a', col: 1, row: 1 },
+    { tile: 'k', col: 2, row: 1 },
+    { tile: 'c', col: 2, row: 2 },
+    { tile: 'd', col: 2, row: 3 }
+  ]);
+
+  const valid = {
+    terrainRows: ['###', '#.#', '###'],
+    objectRows: ['...', '.P.', '.G.'],
+    decorRows: ['...', '...', '...']
+  };
+
+  expect(() => parseTilemap({ ...valid, backdropRows: ['...', '.x.', '...'] })).toThrow(/backdropRows contains unknown tile/);
+  expect(() => parseTilemap({ ...valid, backdropRows: ['...', '...'] })).toThrow(/backdropRows must contain 3 rows/);
+  expect(() => parseTilemap({ ...valid, backdropRows: ['...', '..', '...'] })).toThrow(/backdropRows row 1 must be 3 chars wide/);
 });
 
 test('tilemap parser rejects invalid layers and missing required markers', () => {

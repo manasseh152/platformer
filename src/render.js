@@ -1,7 +1,7 @@
 import { assets, isLoaded } from './assets.js';
 import { DEBUG_CAMERA, TILE_SIZE } from './constants.js';
 import { controlsText } from './input.js';
-import { forEachLayerTile, getDecorType, getGoalRect } from './level.js';
+import { forEachLayerTile, getDecorType, getGoalRect, getTile, isSolidTile } from './level.js';
 
 function roundedRect(ctx, x,y,w,h,r) {
   ctx.beginPath(); ctx.roundRect(x,y,w,h,r); ctx.fill();
@@ -13,22 +13,126 @@ function drawAsset(ctx, asset, x, y, w = TILE_SIZE, h = TILE_SIZE) {
   return true;
 }
 
-function drawStoneTile(ctx, x, y, asset) {
+function tileNoise(col, row, salt = 0) {
+  const n = Math.sin((col * 127.1 + row * 311.7 + salt * 74.7)) * 43758.5453;
+  return n - Math.floor(n);
+}
+
+function drawStoneTile(ctx, level, ch, col, row, asset) {
+  const x = col * TILE_SIZE;
+  const y = row * TILE_SIZE;
   if (!drawAsset(ctx, asset, x, y)) {
     const grad = ctx.createLinearGradient(0, y, 0, y + TILE_SIZE);
     grad.addColorStop(0, '#b8cdd0'); grad.addColorStop(1, '#8fa7a9');
     ctx.fillStyle = grad;
     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
   }
+
+  if (ch === '#') {
+    ctx.fillStyle = 'rgba(0, 0, 0, .36)';
+    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+  }
+
+  const shade = tileNoise(col, row) > .55 ? 'rgba(255,255,255,.045)' : 'rgba(0,0,0,.08)';
+  ctx.fillStyle = shade;
+  ctx.fillRect(x + 4, y + 5, TILE_SIZE - 8, TILE_SIZE - 10);
+
+  const above = isSolidTile(getTile(level, 'terrain', col, row - 1));
+  const below = isSolidTile(getTile(level, 'terrain', col, row + 1));
+  const left = isSolidTile(getTile(level, 'terrain', col - 1, row));
+  const right = isSolidTile(getTile(level, 'terrain', col + 1, row));
+
+  if (ch === '=' || (!above && ch !== '#' && row > 0)) {
+    ctx.fillStyle = 'rgba(255, 245, 198, .30)';
+    ctx.fillRect(x + 4, y + 4, TILE_SIZE - 8, 6);
+  }
+  if (!below) {
+    ctx.fillStyle = 'rgba(0, 0, 0, .28)';
+    ctx.fillRect(x + 6, y + TILE_SIZE - 10, TILE_SIZE - 12, 7);
+  }
+  if (!left) {
+    ctx.fillStyle = 'rgba(0, 0, 0, .18)';
+    ctx.fillRect(x, y + 6, 6, TILE_SIZE - 12);
+  }
+  if (!right) {
+    ctx.fillStyle = 'rgba(255, 255, 255, .08)';
+    ctx.fillRect(x + TILE_SIZE - 6, y + 6, 4, TILE_SIZE - 12);
+  }
+
+  if (ch === 'B') {
+    ctx.strokeStyle = 'rgba(36, 45, 45, .55)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+  }
+
+  if (tileNoise(col, row, 1) > .72) {
+    ctx.strokeStyle = 'rgba(49, 67, 66, .36)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x + 18, y + 18);
+    ctx.lineTo(x + 30 + tileNoise(col, row, 2) * 18, y + 24);
+    ctx.lineTo(x + 26, y + 38);
+    ctx.stroke();
+  }
 }
 
 export function drawTilemap(ctx, level) {
   forEachLayerTile(level, 'terrain', (ch, col, row) => {
     if (ch !== '#' && ch !== '=' && ch !== 'B') return;
-    const x = col * TILE_SIZE;
-    const y = row * TILE_SIZE;
     const asset = ch === '=' ? assets.stoneTop : ch === 'B' ? assets.stoneBlock : assets.stoneFill;
-    drawStoneTile(ctx, x, y, asset);
+    drawStoneTile(ctx, level, ch, col, row, asset);
+  });
+}
+
+function drawBackdropGlyph(ctx, ch, x, y, col, row) {
+  ctx.save();
+  if (ch === 'd') {
+    ctx.fillStyle = 'rgba(3, 8, 11, .28)';
+    ctx.fillRect(x + 6, y + 8, TILE_SIZE - 12, TILE_SIZE - 16);
+    ctx.fillStyle = 'rgba(255,255,255,.035)';
+    ctx.fillRect(x + 16, y + 18, 12, 10);
+  } else if (ch === 'a') {
+    ctx.fillStyle = 'rgba(0, 0, 0, .24)';
+    ctx.beginPath();
+    ctx.roundRect(x + 8, y + 18, TILE_SIZE - 16, TILE_SIZE + 26, 28);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(151, 178, 174, .12)';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.roundRect(x + 12, y + 22, TILE_SIZE - 24, TILE_SIZE + 16, 24);
+    ctx.stroke();
+  } else if (ch === 'k') {
+    ctx.strokeStyle = 'rgba(14, 22, 24, .44)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x + 22, y + 14);
+    ctx.lineTo(x + 34, y + 29);
+    ctx.lineTo(x + 28, y + 44);
+    ctx.lineTo(x + 42, y + 58);
+    ctx.moveTo(x + 34, y + 29);
+    ctx.lineTo(x + 48, y + 24);
+    ctx.stroke();
+  } else if (ch === 'c') {
+    ctx.strokeStyle = 'rgba(121, 105, 77, .42)';
+    ctx.lineWidth = 4;
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      const cy = y + i * 17 + 3;
+      ctx.ellipse(x + TILE_SIZE / 2, cy, 7, 10, i % 2 ? Math.PI / 2 : 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+  if (tileNoise(col, row, 7) > .5) {
+    ctx.fillStyle = 'rgba(185, 213, 207, .045)';
+    ctx.fillRect(x + 48, y + 14, 8, 8);
+  }
+  ctx.restore();
+}
+
+export function drawBackdropLayer(ctx, level) {
+  forEachLayerTile(level, 'backdrop', (ch, col, row) => {
+    if (ch === '.') return;
+    drawBackdropGlyph(ctx, ch, col * TILE_SIZE, row * TILE_SIZE, col, row);
   });
 }
 
@@ -227,6 +331,8 @@ export function drawGame(game) {
 
   ctx.save();
   ctx.translate(-cameraX + sx, -cameraY + sy);
+
+  drawBackdropLayer(ctx, level);
 
   drawDecorLayer(ctx, level);
 

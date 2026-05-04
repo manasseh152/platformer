@@ -1,5 +1,5 @@
 import { hasDown, hasPressed } from './input.js';
-import { getGoalRect, solidTileRectsOverlapping, spikeHazardRectsOverlapping } from './level.js';
+import { getGoalTriggerRect, solidTileRectsOverlapping, spikeHazardRectsOverlapping } from './level.js';
 
 export const rectsOverlap = (a,b) => a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
 
@@ -126,7 +126,7 @@ export function updateGame(game, dt) {
 
   for (const e of enemies) if (e.hp > 0) updateEnemy(game, e, dt);
 
-  if (rectsOverlap(player, getGoalRect(level))) game.flags.won = true;
+  if (rectsOverlap(player, getGoalTriggerRect(level))) game.flags.won = true;
 
   for (let i=game.particles.length-1;i>=0;i--) {
     const p = game.particles[i]; p.life -= dt; p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 500*dt;
