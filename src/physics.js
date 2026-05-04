@@ -32,6 +32,40 @@ export function hurtPlayer(game, amount, knockDir) {
   if (player.hp <= 0) player.dead = true;
 }
 
+export function updateEnemy(game, enemy, dt) {
+  const { player, level } = game;
+  enemy.hurt -= dt;
+  enemy.vy = (enemy.vy || 0) + 1200 * dt;
+
+  const moveVx = enemy.vx;
+  let turnAround = false;
+  enemy.x += moveVx * dt;
+
+  for (const p of level.platforms) if (rectsOverlap(enemy, p)) {
+    if (moveVx > 0) enemy.x = p.x - enemy.w;
+    else if (moveVx < 0) enemy.x = p.x + p.w;
+    turnAround = true;
+  }
+
+  if (enemy.x < enemy.min) {
+    enemy.x = enemy.min;
+    if (moveVx < 0) turnAround = true;
+  }
+  if (enemy.x + enemy.w > enemy.max) {
+    enemy.x = enemy.max - enemy.w;
+    if (moveVx > 0) turnAround = true;
+  }
+  if (turnAround && moveVx !== 0) enemy.vx = -moveVx;
+
+  enemy.y += enemy.vy * dt;
+  for (const p of level.platforms) if (rectsOverlap(enemy, p)) {
+    if (enemy.vy > 0) enemy.y = p.y - enemy.h;
+    if (enemy.vy < 0) enemy.y = p.y + p.h;
+    enemy.vy = 0;
+  }
+  if (rectsOverlap(player, enemy)) hurtPlayer(game, 1, player.x < enemy.x ? -1 : 1);
+}
+
 export function updateGame(game, dt) {
   const { input, player, enemies, level } = game;
   if (hasPressed(input, 'restart')) game.resetGame();
@@ -89,24 +123,7 @@ export function updateGame(game, dt) {
 
   for (const s of level.spikes) if (rectsOverlap(player, s)) hurtPlayer(game, 1, player.x < s.x ? -1 : 1);
 
-  for (const e of enemies) if (e.hp > 0) {
-    e.hurt -= dt;
-    e.vy = (e.vy || 0) + 1200 * dt;
-    e.x += e.vx * dt;
-    if (e.x < e.min || e.x + e.w > e.max) e.vx *= -1;
-    for (const p of level.platforms) if (rectsOverlap(e, p)) {
-      if (e.vx > 0) e.x = p.x - e.w;
-      if (e.vx < 0) e.x = p.x + p.w;
-      e.vx *= -1;
-    }
-    e.y += e.vy * dt;
-    for (const p of level.platforms) if (rectsOverlap(e, p)) {
-      if (e.vy > 0) e.y = p.y - e.h;
-      if (e.vy < 0) e.y = p.y + p.h;
-      e.vy = 0;
-    }
-    if (rectsOverlap(player, e)) hurtPlayer(game, 1, player.x < e.x ? -1 : 1);
-  }
+  for (const e of enemies) if (e.hp > 0) updateEnemy(game, e, dt);
 
   if (rectsOverlap(player, level.goal)) game.flags.won = true;
 
