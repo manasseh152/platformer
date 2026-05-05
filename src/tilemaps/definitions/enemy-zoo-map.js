@@ -2,6 +2,9 @@ import { parseTilemap, withLevelMeta } from '../tilemap.js';
 import { developerBackdropRows } from './developer-backdrop.js';
 
 export const enemyZooMapDefinition = {
+  tileSize: 36,
+  artTileSize: 18,
+  theme: 'kenney-pixel-platformer:grass',
   terrainRows: [
     '########################',
     '#......................#',
@@ -49,7 +52,8 @@ export const enemyZooMapDefinition = {
 
 export const enemyZooMap = withLevelMeta(parseTilemap(enemyZooMapDefinition), {
   id: 'enemy-zoo-map',
-  name: 'Enemy Zoo Map',
+  name: 'Enemy Zoo Map',
+
   categories: ['enemy'],
   visibility: 'developer',
   description: 'Tilemap fixture documenting enemy combinations.'

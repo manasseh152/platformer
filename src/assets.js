@@ -10,6 +10,7 @@ import torchUrl from './assets/kenney-medieval/torch.png';
 import bannerRedUrl from './assets/kenney-medieval/banner-red.png';
 import bannerGreenUrl from './assets/kenney-medieval/banner-green.png';
 import flagUrl from './assets/kenney-medieval/flag.png';
+import { KENNEY_PIXEL_PLATFORMER } from './assets/kenney-pixel-platformer-manifest.js';
 
 function image(src) {
   const img = new Image();
@@ -17,8 +18,14 @@ function image(src) {
   return img;
 }
 
+function imageMap(entries) {
+  return Object.fromEntries(Object.entries(entries).map(([key, value]) => [key, typeof value === 'string' ? image(value) : imageMap(value)]));
+}
+
 export const assets = {
-  tileSize: 70,
+  tileSize: 36,
+  artTileSize: 18,
+  pixelPlatformer: imageMap(KENNEY_PIXEL_PLATFORMER.themes),
   stoneFill: image(stoneFillUrl),
   stoneTop: image(stoneTopUrl),
   stoneBlock: image(stoneBlockUrl),

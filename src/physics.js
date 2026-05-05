@@ -35,7 +35,8 @@ export function hurtPlayer(runtime, game, amount, knockDir) {
   const { player } = game;
   if (player.inv > 0 || player.dead) return;
   player.hp -= amount; player.inv = 1.1; game.camera.shake = .18;
-  player.vx = knockDir * 260; player.vy = -210;
+  const scale = (game.level?.tileSize ?? 36) / 70;
+  player.vx = knockDir * 260 * scale; player.vy = -210 * scale;
   spawnBurst(runtime, game, player.x+player.w/2, player.y+20, '#ffffff', 14);
   if (player.hp <= 0) player.dead = true;
 }
@@ -49,7 +50,8 @@ export function updateEnemy(runtime, game, enemy, dt) {
   }
   const { player, level } = game;
   enemy.hurt -= dt;
-  enemy.vy = (enemy.vy || 0) + 1200 * dt;
+  const scale = (level?.tileSize ?? 36) / 70;
+  enemy.vy = (enemy.vy || 0) + 1200 * scale * dt;
 
   const moveVx = enemy.vx;
   let turnAround = false;
@@ -87,6 +89,8 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
   const { player, enemies, level } = game;
   if (hasPressed(input, 'restart')) controls.resetGame?.();
   if (player.dead || gameplaySession.outcome === 'completed') { input.pressed.clear(); return; }
+  if (rectsOverlap(player, getGoalTriggerRect(level))) gameplaySession.outcome = 'completed';
+  if (gameplaySession.outcome === 'completed') { input.pressed.clear(); return; }
 
   const left = hasDown(input, 'left');
   const right = hasDown(input, 'right');
@@ -97,13 +101,15 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
 
   if (dashPressed && player.dashCooldown <= 0) {
     player.dash = .14; player.dashCooldown = .55;
-    player.vx = player.dir * 560; player.vy = 0; game.camera.shake = .08;
+    const scale = level.tileSize / 70;
+    player.vx = player.dir * 560 * scale; player.vy = 0; game.camera.shake = .08;
     spawnBurst(runtime, game, player.x + player.w/2, player.y + player.h/2, '#cfffff', 14);
   }
 
   if (player.dash <= 0) {
-    const accel = player.grounded ? 2500 : 1500;
-    const max = 245;
+    const scale = level.tileSize / 70;
+    const accel = (player.grounded ? 2500 : 1500) * scale;
+    const max = 245 * scale;
     if (left) { player.vx -= accel * dt; player.dir = -1; }
     if (right) { player.vx += accel * dt; player.dir = 1; }
     if (!left && !right) player.vx *= player.grounded ? Math.pow(.0007, dt) : Math.pow(.03, dt);
@@ -112,17 +118,20 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
 
   if (jumpPressed) player.jumpBuf = .12;
   if (player.jumpBuf > 0 && player.wallSlide) {
-    player.vx = -player.wallDir * 335; player.vy = -505; player.dir = -player.wallDir;
+    const scale = level.tileSize / 70;
+    player.vx = -player.wallDir * 335 * scale; player.vy = -505 * scale; player.dir = -player.wallDir;
     player.jumpBuf = 0; player.wallSlide = false;
     spawnBurst(runtime, game, player.x + player.w/2, player.y + 28, '#7ad7ff', 12);
   } else if (player.jumpBuf > 0 && (player.grounded || player.coyote > 0)) {
-    player.vy = -535; player.grounded = false; player.coyote = 0; player.jumpBuf = 0;
+    const scale = level.tileSize / 70;
+    player.vy = -535 * scale; player.grounded = false; player.coyote = 0; player.jumpBuf = 0;
     spawnBurst(runtime, game, player.x + player.w/2, player.y + player.h, '#7ad7ff', 8);
   }
   if (!jumpHeld && player.vy < -120 && player.dash <= 0) player.vy *= .965;
 
   if (attackPressed && player.attack <= 0) {
     player.attack = .22; game.camera.shake = .05;
+    const scale = level.tileSize / 70;
     const slash = {x: player.x + (player.dir > 0 ? 24 : -48), y: player.y + 8, w: 58, h: 34};
     for (const e of enemies) if (e.hp > 0 && rectsOverlap(slash, e)) {
       e.hp--; e.hurt = .22; e.vx = player.dir * 180; game.camera.shake = .12;
@@ -131,12 +140,12 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
   }
 
   if (player.dash > 0) player.dash -= dt;
-  else player.vy += 1450 * dt;
+  else player.vy += 1450 * (level.tileSize / 70) * dt;
   player.coyote -= dt; player.jumpBuf -= dt; player.inv -= dt; player.attack -= dt; player.dashCooldown -= dt;
   collideWithLevel(player, level, dt);
   const pushingWall = (player.wallDir === -1 && left) || (player.wallDir === 1 && right);
   player.wallSlide = !player.grounded && player.wallDir !== 0 && pushingWall && player.vy >= 0 && player.dash <= 0;
-  if (player.wallSlide) player.vy = Math.min(player.vy, 95);
+  if (player.wallSlide) player.vy = Math.min(player.vy, 95 * (level.tileSize / 70));
 
   for (const s of spikeHazardRectsOverlapping(level, player)) if (rectsOverlap(player, s)) hurtPlayer(runtime, game, 1, player.x < s.x ? -1 : 1);
 
@@ -150,8 +159,8 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
     const p = game.particles[i]; p.life -= dt; p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 500*dt;
     if (p.life <= 0) game.particles.splice(i,1);
   }
-  if (player.grounded && Math.abs(player.vx) > 90 && runtime.random() < .35) game.dust.push({x:player.x+player.w/2,y:player.y+player.h,vx:-player.dir*30,life:.25});
-  if (player.wallSlide && runtime.random() < .45) game.dust.push({x:player.x+(player.wallDir>0?player.w:0),y:player.y+28,vx:-player.wallDir*45,life:.22});
+  if (player.grounded && Math.abs(player.vx) > 90 * (level.tileSize / 70) && runtime.random() < .35) game.dust.push({x:player.x+player.w/2,y:player.y+player.h,vx:-player.dir*30*(level.tileSize/70),life:.25});
+  if (player.wallSlide && runtime.random() < .45) game.dust.push({x:player.x+(player.wallDir>0?player.w:0),y:player.y+28*(level.tileSize/70),vx:-player.wallDir*45*(level.tileSize/70),life:.22});
   for (let i=game.dust.length-1;i>=0;i--) { game.dust[i].life -= dt; game.dust[i].x += game.dust[i].vx*dt; if (game.dust[i].life<=0) game.dust.splice(i,1); }
   input.pressed.clear();
 }

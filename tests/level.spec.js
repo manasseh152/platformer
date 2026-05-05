@@ -28,9 +28,9 @@ test('level exposes world dimensions derived from tile dimensions', () => {
 });
 
 test('tile helpers convert between tile and world coordinates', () => {
-  expect(tileToWorld(3, 2)).toEqual({ x: 210, y: 140 });
-  expect(worldToTile(219, 141)).toEqual({ col: 3, row: 2 });
-  expect(tileRect(2, 4, 3, 1)).toMatchObject({ x: 140, y: 280, w: 210, h: 70 });
+  expect(tileToWorld(3, 2)).toEqual({ x: 108, y: 72 });
+  expect(worldToTile(117, 73)).toEqual({ col: 3, row: 2 });
+  expect(tileRect(2, 4, 3, 1)).toMatchObject({ x: 72, y: 144, w: 108, h: 36 });
 });
 
 test('tilemap parser exposes layered tiles and direct query helpers derive gameplay data', () => {
@@ -67,17 +67,25 @@ test('tilemap parser exposes layered tiles and direct query helpers derive gamep
   expect(parsed.cols).toBe(5);
   expect(parsed.rows).toBe(5);
   expect(getTile(parsed, 'backdrop', 2, 2)).toBe('.');
-  expect(getSpawnPoint(parsed)).toEqual({ x: 88, y: 160 });
-  expect(getGoalRect(parsed)).toMatchObject({ x: 210, y: 70, w: 70, h: 70, kind: 'gate' });
-  expect(spikeHazardRectsOverlapping(parsed, { x: 210, y: 210, w: 70, h: 70 })).toHaveLength(1);
+  expect(getSpawnPoint(parsed)).toEqual({ x: 54, y: 58 });
+  expect(getGoalRect(parsed)).toMatchObject({ x: 108, y: 36, w: 36, h: 36, kind: 'gate' });
+  expect(parsed.artTileSize).toBe(18);
+  expect(parsed.artTilesPerTile).toBe(2);
+  expect(parsed.theme).toBe('kenney-pixel-platformer:grass');
+  expect(parsed.renderLayers.terrainVisuals.filter(visual => visual.col === 1 && visual.row === 3)).toHaveLength(4);
+  expect(parsed.renderLayers.terrainPrimitives).toEqual(expect.arrayContaining([
+    expect.objectContaining({ col: 1, row: 0, x: 18, y: -18, mask: 12, offsetGrid: true }),
+    expect.objectContaining({ col: 2, row: 3, x: 54, y: 90, mask: 12, offsetGrid: true })
+  ]));
+  expect(spikeHazardRectsOverlapping(parsed, { x: 108, y: 108, w: 36, h: 36 })).toHaveLength(1);
   expect(decor).toEqual([
     { type: 'bannerRed', col: 1, row: 1 },
     { type: 'torch', col: 3, row: 1 }
   ]);
   expect(createEnemySpawns(parsed)).toHaveLength(1);
-  expect(solidTileRectsOverlapping(parsed, { x: 70, y: 210, w: 140, h: 70 })).toEqual(expect.arrayContaining([
-    expect.objectContaining({ x: 70, y: 210, w: 70, h: 70 }),
-    expect.objectContaining({ x: 140, y: 210, w: 70, h: 70 })
+  expect(solidTileRectsOverlapping(parsed, { x: 36, y: 108, w: 72, h: 36 })).toEqual(expect.arrayContaining([
+    expect.objectContaining({ x: 36, y: 108, w: 36, h: 36 }),
+    expect.objectContaining({ x: 72, y: 108, w: 36, h: 36 })
   ]));
 });
 
@@ -99,6 +107,20 @@ test('default gate is completable from solid support blocks', () => {
     h: goal.h + level.tileSize,
     kind: 'gate-trigger'
   });
+});
+
+test('tilemap can opt into dual-grid collision rects that match offset primitives', () => {
+  const parsed = parseTilemap({
+    collisionMode: 'dual-grid',
+    terrainRows: ['###', '#.#', '###'],
+    objectRows: ['...', '.P.', '.G.'],
+    decorRows: ['...', '...', '...']
+  });
+
+  expect(parsed.collisionMode).toBe('dual-grid');
+  expect(solidTileRectsOverlapping(parsed, { x: 16, y: 0, w: 4, h: 4 })).toEqual(expect.arrayContaining([
+    expect.objectContaining({ x: 18, y: 0, w: 36, h: 18, kind: 'dual-grid-solid' })
+  ]));
 });
 
 test('tilemap supports block tiles and three-tile gates', () => {
@@ -126,9 +148,9 @@ test('tilemap supports block tiles and three-tile gates', () => {
     ]
   });
 
-  expect(getGoalRect(parsed)).toMatchObject({ x: 70, y: 70, w: 210, h: 70, cols: 3 });
-  expect(solidTileRectsOverlapping(parsed, { x: 140, y: 140, w: 70, h: 70 })).toEqual([
-    expect.objectContaining({ x: 140, y: 140, w: 70, h: 70 })
+  expect(getGoalRect(parsed)).toMatchObject({ x: 36, y: 36, w: 108, h: 36, cols: 3 });
+  expect(solidTileRectsOverlapping(parsed, { x: 72, y: 72, w: 36, h: 36 })).toEqual([
+    expect.objectContaining({ x: 72, y: 72, w: 36, h: 36 })
   ]);
 });
 

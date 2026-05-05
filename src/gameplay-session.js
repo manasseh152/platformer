@@ -4,7 +4,7 @@ import { createCamera } from './camera.js';
 
 export function createGameplaySession(tilemapLevelDefinition, { view, scenarioId = null, goal = { type: 'finish-gate' } } = {}) {
   if (!tilemapLevelDefinition) throw new Error('createGameplaySession requires a tilemap level definition');
-  const player = createPlayer(getSpawnPoint(tilemapLevelDefinition));
+  const player = createPlayer(getSpawnPoint(tilemapLevelDefinition), tilemapLevelDefinition.tileSize);
   const session = {
     scenarioId,
     tilemapLevelDefinition,

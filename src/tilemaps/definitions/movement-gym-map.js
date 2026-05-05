@@ -2,6 +2,9 @@ import { parseTilemap, withLevelMeta } from '../tilemap.js';
 import { developerBackdropRows } from './developer-backdrop.js';
 
 export const movementGymMapDefinition = {
+  tileSize: 36,
+  artTileSize: 18,
+  theme: 'kenney-pixel-platformer:grass',
   terrainRows: [
     '########################',
     '#......................#',
@@ -49,7 +52,8 @@ export const movementGymMapDefinition = {
 
 export const movementGymMap = withLevelMeta(parseTilemap(movementGymMapDefinition), {
   id: 'movement-gym-map',
-  name: 'Movement Gym Map',
+  name: 'Movement Gym Map',
+
   categories: ['movement'],
   visibility: 'developer',
   description: 'Tilemap fixture for movement validation scenarios.'

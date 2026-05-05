@@ -10,8 +10,14 @@ function roundedRect(ctx, x,y,w,h,r) {
 
 function drawAsset(ctx, asset, x, y, w = TILE_SIZE, h = TILE_SIZE) {
   if (!isLoaded(asset)) return false;
+  ctx.imageSmoothingEnabled = false;
   ctx.drawImage(asset, x, y, w, h);
   return true;
+}
+
+function getPixelPlatformerTerrainAsset(level, key) {
+  const [, themeName = 'grass'] = (level.theme || 'kenney-pixel-platformer:grass').split(':');
+  return assets.pixelPlatformer?.[themeName]?.terrain?.[key] || null;
 }
 
 function tileNoise(col, row, salt = 0) {
@@ -78,6 +84,35 @@ function drawStoneTile(ctx, level, ch, col, row, asset) {
 }
 
 export function drawTilemap(ctx, level) {
+  const terrainPrimitives = level.renderLayers?.terrainPrimitives;
+  if (terrainPrimitives?.length) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, level.worldWidth, level.worldHeight);
+    ctx.clip();
+    for (const primitive of terrainPrimitives) {
+      const asset = getPixelPlatformerTerrainAsset(level, primitive.assetKey);
+      if (!drawAsset(ctx, asset, primitive.x, primitive.y, primitive.w, primitive.h)) {
+        ctx.fillStyle = primitive.assetKey.includes('top') ? '#5cba47' : '#9b683f';
+        ctx.fillRect(primitive.x, primitive.y, primitive.w, primitive.h);
+      }
+    }
+    ctx.restore();
+    return;
+  }
+
+  const terrainVisuals = level.renderLayers?.terrainVisuals;
+  if (terrainVisuals?.length) {
+    for (const visual of terrainVisuals) {
+      const asset = getPixelPlatformerTerrainAsset(level, visual.assetKey);
+      if (!drawAsset(ctx, asset, visual.x, visual.y, visual.w, visual.h)) {
+        ctx.fillStyle = visual.assetKey.includes('top') ? '#5cba47' : '#9b683f';
+        ctx.fillRect(visual.x, visual.y, visual.w, visual.h);
+      }
+    }
+    return;
+  }
+
   forEachLayerTile(level, 'terrain', (ch, col, row) => {
     if (ch !== '#' && ch !== '=' && ch !== 'B') return;
     const asset = ch === '=' ? assets.stoneTop : ch === 'B' ? assets.stoneBlock : assets.stoneFill;

@@ -145,7 +145,7 @@ test('player can use coyote time to jump shortly after walking off a ledge', () 
   press(input, 'jump');
   step(session, input, 1 / 60);
 
-  expect(session.player.vy).toBeLessThan(-400);
+  expect(session.player.vy).toBeLessThan(-240);
   expect(session.player.coyote).toBeLessThan(0);
 });
 
@@ -181,7 +181,7 @@ test('jump input buffers before landing and fires when the player touches ground
   step(session, createInputState(), 1 / 60);
 
   expect(session.player.grounded).toBe(false);
-  expect(session.player.vy).toBeLessThan(-400);
+  expect(session.player.vy).toBeLessThan(-240);
   expect(session.player.jumpBuf).toBeLessThanOrEqual(0);
 });
 
