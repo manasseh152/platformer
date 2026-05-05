@@ -1,6 +1,7 @@
 import { updateCamera } from '../camera.js';
 import { updateGameplay } from '../physics.js';
 import { drawGame } from '../render.js';
+import { isPaused, isStarted, isWon } from '../app/app-state.js';
 
 function round(value) {
   return Number.isFinite(value) ? Math.round(value * 1000) / 1000 : value;
@@ -34,7 +35,6 @@ export function createLevelScene(game) {
     kind: 'level',
     update(runtime, dt) {
       updateGameplay(runtime, game.gameplaySession, game.input, dt, { resetGame: game.resetGame });
-      game.flags.won = game.gameplaySession.outcome === 'completed';
       updateCamera(game, dt);
     },
     render(runtime) {
@@ -54,9 +54,9 @@ export function createLevelScene(game) {
         sceneId: 'level',
         levelId: game.level?.id || 'act-01-level-1',
         flags: {
-          started: Boolean(game.flags.started),
-          paused: Boolean(game.flags.paused),
-          won: Boolean(game.gameplaySession?.outcome === 'completed' || game.flags.won)
+          started: isStarted(game),
+          paused: isPaused(game),
+          won: isWon(game)
         },
         menu: {
           page: game.menu.page,

@@ -8,7 +8,6 @@ function assertScenario(scenario) {
 
 const registry = createCatalogRegistry({
   name: 'campaigns',
-  allowedKinds: ['campaign-scenario'],
   validateEntry: assertScenario
 });
 

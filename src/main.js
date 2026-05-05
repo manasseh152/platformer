@@ -10,6 +10,7 @@ import { createRuntime } from './runtime.js';
 import { createSceneHost } from './scene-host.js';
 import { createLevelScene } from './scenes/level-scene.js';
 import { applyScenarioLaunchParams, readScenarioLaunchParams } from './scenarios/url.js';
+import { isPaused, isStarted, isWon } from './app/app-state.js';
 
 const runtime = createRuntime();
 const ui = getUI();
@@ -63,14 +64,14 @@ addEventListener('keydown', e => {
   else if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) setInputScheme(game, 'wasd');
 
   const pauseHit = input.binds.pause.includes(e.code);
-  if (!game.flags.started && ['Enter','Space'].includes(e.code)) startGame(game, runtime);
-  else if (game.flags.started && !player.dead && !game.flags.won && pauseHit) {
+  if (!isStarted(game) && ['Enter','Space'].includes(e.code)) startGame(game, runtime);
+  else if (isStarted(game) && !player.dead && !isWon(game) && pauseHit) {
     e.preventDefault();
-    if (!e.repeat) setPaused(game, !game.flags.paused, runtime);
+    if (!e.repeat) setPaused(game, !isPaused(game), runtime);
     input.keys.add(e.code);
     return;
   }
-  if (!game.flags.paused && !input.keys.has(e.code)) input.pressed.add(e.code);
+  if (!isPaused(game) && !input.keys.has(e.code)) input.pressed.add(e.code);
   input.keys.add(e.code);
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
 });
@@ -88,10 +89,10 @@ function frame(now = runtime.now()) {
     renderBinds(game);
   }
   const menuUsedGamepad = game.input.useController && handleGamepadMenuInput(game);
-  if (!menuUsedGamepad && game.flags.started && !game.player.dead && !game.flags.won && hasPressed(game.input, 'pause')) {
-    setPaused(game, !game.flags.paused, runtime);
+  if (!menuUsedGamepad && isStarted(game) && !game.player.dead && !isWon(game) && hasPressed(game.input, 'pause')) {
+    setPaused(game, !isPaused(game), runtime);
   }
-  if (game.flags.started && !game.flags.paused) {
+  if (isStarted(game) && !isPaused(game)) {
     scenes.update(dt);
   } else {
     game.input.pressed.clear();

@@ -2,7 +2,6 @@ export const hazardGymScenario = {
   id: 'hazard-gym',
   name: 'Hazard Gym',
   source: 'gyms',
-  kind: 'gym-scenario',
   categories: ['hazards'],
   visibility: 'developer',
   description: 'Validates hazard placement and player damage edge cases in isolation.',

@@ -2,7 +2,6 @@ export const uiNavigationGym = {
   id: 'ui-navigation-gym',
   name: 'UI Navigation Gym',
   source: 'gyms',
-  kind: 'gym-scenario',
   categories: ['ui'],
   visibility: 'developer',
   description: 'Executable browser gym for Developer Mode, Scenario Browser visibility, and scene/event snapshots.',

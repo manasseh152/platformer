@@ -2,7 +2,6 @@ export const act01Level1Scenario = {
   id: 'act-01-level-1',
   name: 'Act 01 Level 1',
   source: 'campaigns',
-  kind: 'campaign-scenario',
   visibility: 'public',
   categories: ['levels', 'act-01'],
   description: 'Reach the glowing gate beyond the crumbling platforms and spike pit.',

@@ -5,12 +5,11 @@ test('zoo scenarios document composed examples and default out of CI', () => {
   expect(getZooScenarioById('enemy-zoo')).toMatchObject({
     id: 'enemy-zoo',
     source: 'zoos',
-    kind: 'zoo-scenario',
     targetId: 'enemy-zoo-map',
     visibility: 'developer',
     composition: { type: 'tilemap-gameplay' },
     covers: ['enemy.composition-showcase', 'enemy.patrol-variety'],
     ci: false
   });
-  expect(getAllZooScenarios().map(zoo => zoo.id)).toEqual(['enemy-zoo', 'legacy-enemy-zoo']);
+  expect(getAllZooScenarios().map(zoo => zoo.id)).toEqual(['enemy-zoo']);
 });

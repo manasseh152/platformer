@@ -4,19 +4,15 @@ import {
   getAllTilemapLevelDefinitions,
   getDefaultTilemapLevelDefinition,
   getTilemapLevelDefinitionById,
-  legacyMovementLabTilemapLevelDefinition
+  movementGymMapTilemapLevelDefinition
 } from '../src/tilemaps/registry.js';
 
 test('tilemap registry owns parsed tilemap level definitions', () => {
   expect(getDefaultTilemapLevelDefinition()).toBe(act01Level1TilemapLevelDefinition);
   expect(getTilemapLevelDefinitionById('act-01-level-1')).toBe(act01Level1TilemapLevelDefinition);
-  expect(getTilemapLevelDefinitionById('legacy-movement-lab')).toBe(legacyMovementLabTilemapLevelDefinition);
+  expect(getTilemapLevelDefinitionById('movement-gym-map')).toBe(movementGymMapTilemapLevelDefinition);
   expect(getAllTilemapLevelDefinitions().map(definition => definition.id)).toEqual([
     'act-01-level-1',
-    'legacy-movement-lab',
-    'legacy-hazard-lab',
-    'legacy-enemy-zoo',
-    'gate-lab',
     'movement-gym-map',
     'hazard-gym-map',
     'finish-gate-gym-map',

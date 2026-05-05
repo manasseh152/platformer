@@ -2,6 +2,7 @@ import { assets, isLoaded } from './assets.js';
 import { DEBUG_CAMERA, TILE_SIZE } from './constants.js';
 import { controlsText } from './input.js';
 import { forEachLayerTile, getDecorType, getGoalRect, getTile, isSolidTile } from './tilemaps/tilemap.js';
+import { isWon } from './app/app-state.js';
 
 function roundedRect(ctx, x,y,w,h,r) {
   ctx.beginPath(); ctx.roundRect(x,y,w,h,r); ctx.fill();
@@ -266,11 +267,12 @@ export function syncHtmlHud(game) {
   if (ui.hudLevelName) ui.hudLevelName.textContent = game.level?.name || 'Unknown Level';
   [...ui.heartsEl.children].forEach((heart, i) => heart.classList.toggle('full', i < player.hp));
   ui.dashStatusEl.classList.toggle('ready', player.dashCooldown <= 0);
-  const showingEndMessage = player.dead || game.flags.won;
+  const won = isWon(game);
+  const showingEndMessage = player.dead || won;
   ui.messageEl.hidden = !showingEndMessage;
-  ui.messageTitleEl.textContent = game.flags.won ? 'Gate Reached!' : 'You Faded';
+  ui.messageTitleEl.textContent = won ? 'Gate Reached!' : 'You Faded';
   if (ui.messageNextLevelButton) {
-    const nextLevel = game.flags.won ? game.levels.getNextLevel() : null;
+    const nextLevel = won ? game.levels.getNextLevel() : null;
     ui.messageNextLevelButton.hidden = !nextLevel;
     ui.messageNextLevelButton.textContent = nextLevel ? `Play ${nextLevel.name}` : 'Play Next';
   }
@@ -285,7 +287,7 @@ export function syncHtmlHud(game) {
     game.endMessageWasVisible = false;
   }
   document.body.classList.toggle('game-over', player.dead);
-  document.body.classList.toggle('game-won', game.flags.won);
+  document.body.classList.toggle('game-won', won);
 }
 
 function snapRenderX(game, x) {

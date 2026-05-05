@@ -2,7 +2,6 @@ export const movementGymScenario = {
   id: 'movement-gym',
   name: 'Movement Gym',
   source: 'gyms',
-  kind: 'gym-scenario',
   categories: ['movement'],
   visibility: 'developer',
   description: 'Validates player movement traversal in an isolated tilemap fixture.',

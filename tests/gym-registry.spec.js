@@ -6,7 +6,6 @@ test('gym scenarios use shared scenario metadata conventions', () => {
     id: 'ui-navigation-gym',
     name: 'UI Navigation Gym',
     source: 'gyms',
-    kind: 'gym-scenario',
     categories: ['ui'],
     sceneId: 'level',
     visibility: 'developer',

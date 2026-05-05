@@ -14,7 +14,6 @@ function assertGymScenario(gym) {
 
 const registry = createCatalogRegistry({
   name: 'gyms',
-  allowedKinds: ['gym-scenario', 'executable-gym'],
   validateEntry: assertGymScenario
 });
 

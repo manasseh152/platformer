@@ -21,25 +21,25 @@ test('gameplay session owns tilemap runtime state', () => {
 
 test('gameplay session reset replaces mutable runtime collections in place', () => {
   const level = getTilemapLevelDefinitionById('act-01-level-1');
-  const gym = getTilemapLevelDefinitionById('legacy-movement-lab');
+  const gym = getTilemapLevelDefinitionById('movement-gym-map');
   const session = createGameplaySession(level, { scenarioId: 'act-01-level-1' });
   const enemies = session.enemies;
   const particles = session.particles;
 
   session.particles.push({ id: 'old' });
-  resetGameplaySession(session, gym, { scenarioId: 'legacy-movement-lab' });
+  resetGameplaySession(session, gym, { scenarioId: 'movement-gym' });
 
   expect(session.tilemapLevelDefinition).toBe(gym);
-  expect(session.scenarioId).toBe('legacy-movement-lab');
+  expect(session.scenarioId).toBe('movement-gym');
   expect(session.enemies).toBe(enemies);
   expect(session.particles).toBe(particles);
   expect(session.particles).toEqual([]);
 });
 
 test('gameplay session can sync compatibility fields onto game', () => {
-  const level = getTilemapLevelDefinitionById('legacy-enemy-zoo');
-  const session = createGameplaySession(level, { scenarioId: 'legacy-enemy-zoo' });
-  const game = { flags: { won: false } };
+  const level = getTilemapLevelDefinitionById('enemy-zoo-map');
+  const session = createGameplaySession(level, { scenarioId: 'enemy-zoo' });
+  const game = {};
 
   syncGameplaySessionToGame(game, session);
 

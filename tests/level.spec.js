@@ -1,13 +1,8 @@
 import { expect, test } from '@playwright/test';
 import {
-  enemyZooLevel,
-  gateLabLevel,
-  getDefaultLevel,
-  getLevelById,
-  gymLevel,
-  hazardGymLevel,
-  level
-} from '../src/campaign/registry.js';
+  act01Level1TilemapLevelDefinition as level,
+  getDefaultTilemapLevelDefinition as getDefaultLevel
+} from '../src/tilemaps/registry.js';
 import {
   createEnemies,
   createEnemySpawns,
@@ -88,29 +83,7 @@ test('tilemap parser exposes layered tiles and direct query helpers derive gamep
 
 test('initial level resolution ignores URL selection and uses the default level', () => {
   expect(resolveInitialLevel()).toBe(getDefaultLevel());
-  expect(resolveInitialLevel({ developerMode: true }, '?level=legacy-movement-lab')).toBe(getDefaultLevel());
-});
-
-test('developer showcase levels are legacy tilemap labs while gyms move to executable scenarios', () => {
-  expect(getLevelById('legacy-movement-lab')).toBe(gymLevel);
-  expect(getLevelById('legacy-hazard-lab')).toBe(hazardGymLevel);
-  expect(getLevelById('legacy-enemy-zoo')).toBe(enemyZooLevel);
-  expect(getLevelById('gate-lab')).toBe(gateLabLevel);
-
-  expect(gymLevel).toMatchObject({ id: 'legacy-movement-lab', name: 'Legacy Movement Lab', kind: 'tilemap-level', categories: ['gyms', 'legacy'], visibility: 'developer' });
-  expect(hazardGymLevel).toMatchObject({ id: 'legacy-hazard-lab', name: 'Legacy Hazard Lab', kind: 'tilemap-level', categories: ['gyms', 'legacy'], visibility: 'developer' });
-  expect(enemyZooLevel).toMatchObject({ id: 'legacy-enemy-zoo', name: 'Legacy Enemy Zoo', kind: 'tilemap-level', categories: ['zoos', 'legacy'], visibility: 'developer' });
-  expect(gateLabLevel).toMatchObject({ id: 'gate-lab', kind: 'tilemap-level', categories: ['labs'], visibility: 'developer' });
-  expect(createEnemies(gymLevel)).toHaveLength(0);
-  expect(createEnemies(enemyZooLevel)).toHaveLength(6);
-
-  for (const devLevel of [gymLevel, hazardGymLevel, enemyZooLevel, gateLabLevel]) {
-    expect(getSpawnPoint(devLevel)).toEqual(expect.objectContaining({ x: expect.any(Number), y: expect.any(Number) }));
-    const goal = getGoalRect(devLevel);
-    for (let col = goal.col; col < goal.col + goal.cols; col++) {
-      expect(isSolidTileAt(devLevel, col, goal.row + 1)).toBe(true);
-    }
-  }
+  expect(resolveInitialLevel({ developerMode: true }, '?level=movement-gym')).toBe(getDefaultLevel());
 });
 
 test('default gate is completable from solid support blocks', () => {

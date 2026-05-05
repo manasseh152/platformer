@@ -84,7 +84,6 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
   const game = gameplaySession;
   game.input = input;
   game.resetGame = controls.resetGame;
-  game.flags = { won: gameplaySession.outcome === 'completed' };
   const { player, enemies, level } = game;
   if (hasPressed(input, 'restart')) controls.resetGame?.();
   if (player.dead || gameplaySession.outcome === 'completed') { input.pressed.clear(); return; }
@@ -145,7 +144,6 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
 
   if (rectsOverlap(player, getGoalTriggerRect(level))) {
     gameplaySession.outcome = 'completed';
-    game.flags.won = true;
   }
 
   for (let i=game.particles.length-1;i>=0;i--) {
@@ -165,5 +163,4 @@ export function updateGame(runtime, game, dt) {
     runtime = { random: Math.random };
   }
   updateGameplay(runtime, game.gameplaySession ?? game, game.input, dt, { resetGame: game.resetGame });
-  if (game.gameplaySession) game.flags.won = game.gameplaySession.outcome === 'completed';
 }

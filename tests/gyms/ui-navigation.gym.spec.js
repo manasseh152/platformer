@@ -15,7 +15,7 @@ async function captureCheckpoint(page, testInfo, name) {
 
 const gym = getGymById('ui-navigation-gym');
 
-test(`${gym.name}: developer mode exposes deprecated test maps and loads Legacy Movement Lab`, async ({ page }, testInfo) => {
+test(`${gym.name}: developer mode exposes clean scenarios and loads Movement Gym`, async ({ page }, testInfo) => {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
   await page.reload();

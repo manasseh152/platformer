@@ -26,7 +26,6 @@ export function createLevelManager(game, runtime = browserRuntime) {
       scenarioId: game.scenarios?.current?.id ?? game.level?.id ?? null
     });
     syncGameplaySessionToGame(game, game.gameplaySession);
-    game.flags.won = false;
     syncActiveLevelDataset(game);
   }
 

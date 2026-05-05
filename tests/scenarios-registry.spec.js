@@ -23,7 +23,7 @@ test('scenario registry composes tilemap definitions and executable gyms', () =>
     composition: { type: 'tilemap-gameplay' },
     ci: false
   });
-  expect(getScenarioEntryById('legacy-enemy-zoo')).toBeNull();
+  expect(getScenarioEntryById('enemy-zoo')).toBeTruthy();
   expect(getScenarioEntryById('ui-navigation-gym')).toMatchObject({
     source: 'gyms',
     targetId: 'level',

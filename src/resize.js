@@ -1,5 +1,6 @@
 import { RESIZE_DEBOUNCE_MS } from './constants.js';
 import { calculateViewport } from './viewport.js';
+import { isStarted } from './app/app-state.js';
 
 export function applyResize(game) {
   const rect = game.canvas.getBoundingClientRect();
@@ -21,7 +22,7 @@ export function applyResize(game) {
 
 export function scheduleResize(game) {
   if (!game.view.firstResizeDone) return applyResize(game);
-  if (game.flags.started) game.canvas.classList.add('resizing');
+  if (isStarted(game)) game.canvas.classList.add('resizing');
   clearTimeout(game.view.resizeDebounce);
   game.view.resizeDebounce = setTimeout(() => applyResize(game), RESIZE_DEBOUNCE_MS);
 }

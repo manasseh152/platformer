@@ -2,7 +2,6 @@ export const enemyZooScenario = {
   id: 'enemy-zoo',
   name: 'Enemy Zoo',
   source: 'zoos',
-  kind: 'zoo-scenario',
   categories: ['enemy'],
   visibility: 'developer',
   description: 'Documents enemy combinations in a reusable tilemap fixture.',

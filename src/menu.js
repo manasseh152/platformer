@@ -8,6 +8,7 @@ import { browserRuntime } from './runtime.js';
 import { getAllCategories, getCategoryById, primaryGroupCategoryFor } from './categories/registry.js';
 import { getDefaultTilemapLevelDefinition } from './tilemaps/registry.js';
 import { getVisibleScenarioEntries } from './scenarios/registry.js';
+import { isPaused, isStarted, isWon, setStarted } from './app/app-state.js';
 
 const pageElement = (ui, page) => ({ main: ui.pauseMainPage, 'level-select': ui.levelSelectPage, settings: ui.settingsHubPage, 'settings-category': ui.settingsCategoryPage })[page];
 const backablePages = ['level-select', 'settings', 'settings-category'];
@@ -21,9 +22,9 @@ export function visibleFocusables(root) {
 
 export function activeMenuRoot(game) {
   if (document.body.dataset.menuOrigin === 'start') return pageElement(game.ui, game.menu.page) || game.ui.pauseScreen;
-  if (game.flags.paused) return pageElement(game.ui, game.menu.page) || game.ui.pauseScreen;
-  if (game.player.dead || game.flags.won) return game.ui.messageEl;
-  if (!game.flags.started) return game.ui.startScreen;
+  if (isPaused(game)) return pageElement(game.ui, game.menu.page) || game.ui.pauseScreen;
+  if (game.player.dead || isWon(game)) return game.ui.messageEl;
+  if (!isStarted(game)) return game.ui.startScreen;
   return null;
 }
 
@@ -173,7 +174,7 @@ export function handleGamepadMenuInput(game) {
     return true;
   }
   if (input.gamepadPressed.has(menuButtons.accept)) { document.activeElement?.click?.(); return true; }
-  if (input.gamepadPressed.has(menuButtons.back)) { if (backablePages.includes(game.menu.page)) goBack(game); else if (game.flags.started) ui.resumeButton.click(); return true; }
+  if (input.gamepadPressed.has(menuButtons.back)) { if (backablePages.includes(game.menu.page)) goBack(game); else if (isStarted(game)) ui.resumeButton.click(); return true; }
   return false;
 }
 
@@ -283,17 +284,17 @@ export function setPaused(game, value, runtime = browserRuntime) {
     setPausedFlag(game, value, runtime);
     updateMenuChrome(game);
   };
-  const after = () => game.flags.paused ? focusAndReveal(game, game.ui.resumeButton) : document.activeElement?.blur?.();
-  if (!value) { change(); runtime.emit('game.pause', { paused: game.flags.paused }); after(); return; }
-  runDOMTransition(game, () => { change(); runtime.emit('game.pause', { paused: game.flags.paused }); }, after);
+  const after = () => isPaused(game) ? focusAndReveal(game, game.ui.resumeButton) : document.activeElement?.blur?.();
+  if (!value) { change(); runtime.emit('game.pause', { paused: isPaused(game) }); after(); return; }
+  runDOMTransition(game, () => { change(); runtime.emit('game.pause', { paused: isPaused(game) }); }, after);
 }
 
 export function startGame(game, runtime = browserRuntime) {
-  if (game.flags.started) return;
+  if (isStarted(game)) return;
   game.menu.page = 'main';
   game.menu.settingsCategory = null;
   document.body.dataset.menuOrigin = 'pause';
-  game.flags.started = true;
+  setStarted(game, true);
   game.clock.last = runtime.now();
   document.body.classList.add('playing');
   runtime.emit('game.start', { levelId: game.level?.id || null });
@@ -304,8 +305,8 @@ export function startGame(game, runtime = browserRuntime) {
 export function returnToMainMenu(game) {
   runDOMTransition(game, () => {
     game.resetGame();
-    game.flags.started = false;
-    game.flags.paused = false;
+    setStarted(game, false);
+    setPausedFlag(game, false, runtime);
     game.menu.page = 'main';
     game.menu.settingsCategory = null;
     game.menu.origin = 'pause';
@@ -468,7 +469,7 @@ export function setupMenu(game, runtime = browserRuntime) {
     const result = game.levels.switchToNextLevel();
     if (!result.ok) return;
     setPausedFlag(game, false, runtime);
-    game.flags.started = true;
+    setStarted(game, true);
     runtime.emit('game.next-level', { levelId: game.level?.id || null });
     document.body.classList.add('playing');
     document.body.classList.remove('game-won', 'game-over');

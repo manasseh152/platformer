@@ -16,8 +16,6 @@ export function defineScenarioEntry(entry) {
 
 const registry = createCatalogRegistry({
   name: 'scenarios',
-  // Deprecated compatibility: scenario kind will be removed in favor of source + composition.type.
-  allowedKinds: ['tilemap-level', 'executable-gym', 'campaign-scenario', 'gym-scenario', 'zoo-scenario', 'scene'],
   validateEntry: assertScenarioEntry
 });
 
@@ -32,7 +30,6 @@ function registerTilemapLevelDefinition(definition) {
   return registry.register(defineScenarioEntry({
     id: definition.id,
     name: definition.name,
-    kind: definition.kind,
     categories: definition.categories,
     visibility: definition.visibility,
     description: definition.description,
@@ -95,14 +92,11 @@ function registerGymScenario(gym) {
   }));
 }
 
-const deprecatedScenarioIds = new Set(['legacy-movement-lab', 'legacy-hazard-lab', 'legacy-enemy-zoo', 'gate-lab']);
-
 export const registeredTilemapScenarios = getAllTilemapLevelDefinitions()
-  .filter(definition => !definition.id.endsWith('-map') && !deprecatedScenarioIds.has(definition.id))
+  .filter(definition => !definition.id.endsWith('-map'))
   .map(registerTilemapLevelDefinition);
 export const registeredGymScenarios = getAllGyms().map(registerGymScenario);
 export const registeredZooScenarios = getAllZooScenarios()
-  .filter(zoo => zoo.id !== 'legacy-enemy-zoo')
   .map(zoo => registerSourceScenario(zoo, 'zoos'));
 
 export const scenarioEntries = Object.fromEntries(registry.getAll().map(entry => [entry.id, entry]));

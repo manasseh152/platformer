@@ -1,3 +1,5 @@
+import { isPaused, isStarted, isWon } from './app/app-state.js';
+
 function activeElementSnapshot() {
   const active = document.activeElement;
   if (!active || active === document.body) return null;
@@ -27,9 +29,9 @@ export function snapshotGame(game) {
       categories: [...(game.level.categories || [])]
     } : null,
     ui: {
-      started: Boolean(game.flags.started),
-      paused: Boolean(game.flags.paused),
-      won: Boolean(game.flags.won),
+      started: isStarted(game),
+      paused: isPaused(game),
+      won: isWon(game),
       menuPage: game.menu.page,
       menuOrigin: game.menu.origin,
       bodyLevelId: document.body.dataset.levelId || null,
