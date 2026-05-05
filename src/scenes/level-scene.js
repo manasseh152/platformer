@@ -1,5 +1,5 @@
-import { updateCamera } from '../camera.js';
-import { updateGameplay } from '../physics.js';
+import { updateCamera } from '../core/camera.js';
+import { updateGameplay } from '../core/physics.js';
 import { drawGame } from '../render.js';
 import { isPaused, isStarted, isWon } from '../app/app-state.js';
 

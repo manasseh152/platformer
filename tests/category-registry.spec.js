@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { getAllCategories, getCategoryById, primaryGroupCategoryFor } from '../src/categories/registry.js';
-import { getScenarioEntryById, getAllScenarioEntries } from '../src/scenarios/registry.js';
+import { getAllCategories, getCategoryById, primaryGroupCategoryFor } from '../src/core/categories/registry.js';
+import { getScenarioEntryById, getAllScenarioEntries } from '../src/core/scenarios/registry.js';
 
 const campaign = getScenarioEntryById('act-01-level-1');
 const gym = getScenarioEntryById('movement-gym');

@@ -5,9 +5,9 @@ import { applyMotionPreference, runDOMTransition, shouldReduceMotion, setupMotio
 import { renderSettings, renderSettingsCategory, refreshDynamicRefs, selectedCategory } from './settings-ui.js';
 import { syncGymApi } from './gym.js';
 import { browserRuntime } from './runtime.js';
-import { getAllCategories, getCategoryById, primaryGroupCategoryFor } from './categories/registry.js';
-import { getDefaultTilemapLevelDefinition } from './tilemaps/registry.js';
-import { getVisibleScenarioEntries } from './scenarios/registry.js';
+import { getAllCategories, getCategoryById, primaryGroupCategoryFor } from './core/categories/registry.js';
+import { getDefaultTilemapLevelDefinition } from './core/tilemaps/registry.js';
+import { getVisibleScenarioEntries } from './core/scenarios/registry.js';
 import { isPaused, isStarted, isWon, setStarted } from './app/app-state.js';
 
 const pageElement = (ui, page) => ({ main: ui.pauseMainPage, 'level-select': ui.levelSelectPage, settings: ui.settingsHubPage, 'settings-category': ui.settingsCategoryPage })[page];

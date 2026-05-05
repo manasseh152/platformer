@@ -1,6 +1,6 @@
 import { assets } from './assets.js';
-import { getDefaultTilemapLevelDefinition as getDefaultLevel } from './tilemaps/registry.js';
-import { createEnemies, createPlayer, getGoalRect, getSpawnPoint } from './tilemaps/tilemap.js';
+import { getDefaultTilemapLevelDefinition as getDefaultLevel } from './core/tilemaps/registry.js';
+import { createEnemies, createPlayer, getGoalRect, getSpawnPoint } from './core/tilemaps/tilemap.js';
 import { drawBackdropLayer, drawDecorLayer, drawGoal, drawSpikeLayer, drawTilemap } from './render.js';
 
 function waitForAsset(asset) {

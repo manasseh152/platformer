@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { getScenarioEntryById, getVisibleScenarioEntries, scenarioEntries } from '../src/scenarios/registry.js';
+import { getScenarioEntryById, getVisibleScenarioEntries, scenarioEntries } from '../src/core/scenarios/registry.js';
 
 test('runtime scene registry adapter has been removed; scenarios are canonical', () => {
   expect(getScenarioEntryById('act-01-level-1')).toMatchObject({

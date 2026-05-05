@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { applyScenarioLaunchParams, readScenarioLaunchParams } from '../src/scenarios/url.js';
+import { applyScenarioLaunchParams, readScenarioLaunchParams } from '../src/core/scenarios/url.js';
 import { createRuntime } from '../src/runtime.js';
-import { createScenarioService } from '../src/scenarios/service.js';
+import { createScenarioService } from '../src/core/scenarios/service.js';
 
 function makeGame() {
   const runtime = createRuntime({ now: () => 200 });

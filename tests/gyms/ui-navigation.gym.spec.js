@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
-import { getGymById } from '../../src/gyms/registry.js';
+import { getGymById } from '../../src/core/gyms/registry.js';
 
 async function writeSnapshot(testInfo, name, snapshot) {
   await writeFile(testInfo.outputPath(`${name}.json`), `${JSON.stringify(snapshot, null, 2)}\n`);

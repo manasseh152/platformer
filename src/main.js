@@ -9,7 +9,7 @@ import { syncGymApi } from './gym.js';
 import { createRuntime } from './runtime.js';
 import { createSceneHost } from './scene-host.js';
 import { createLevelScene } from './scenes/level-scene.js';
-import { applyScenarioLaunchParams, readScenarioLaunchParams } from './scenarios/url.js';
+import { applyScenarioLaunchParams, readScenarioLaunchParams } from './core/scenarios/url.js';
 import { isPaused, isStarted, isWon } from './app/app-state.js';
 
 const runtime = createRuntime();

@@ -1,3 +1,8 @@
+/**
+ * Application-layer browser input adapter.
+ * Core input state/bind semantics live in `src/core/input.js`; this module owns DOM hints,
+ * navigator gamepad polling, and settings UI status mutations.
+ */
 export const defaultBinds = {
   left: ['KeyA', 'ArrowLeft'],
   right: ['KeyD', 'ArrowRight'],

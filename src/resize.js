@@ -1,5 +1,5 @@
-import { RESIZE_DEBOUNCE_MS } from './constants.js';
-import { calculateViewport } from './viewport.js';
+import { RESIZE_DEBOUNCE_MS } from './core/constants.js';
+import { calculateViewport } from './core/viewport.js';
 import { isStarted } from './app/app-state.js';
 
 export function applyResize(game) {

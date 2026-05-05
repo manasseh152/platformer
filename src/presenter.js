@@ -1,4 +1,4 @@
-import { calculateViewport } from './viewport.js';
+import { calculateViewport } from './core/viewport.js';
 
 const VERTEX_SHADER = `
 attribute vec2 a_position;

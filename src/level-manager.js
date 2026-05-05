@@ -1,6 +1,11 @@
-import { resetGameplaySession, syncGameplaySessionToGame } from './gameplay-session.js';
-import { getAllTilemapLevelDefinitions as getRegisteredLevels, getDefaultTilemapLevelDefinition as getDefaultLevel, getTilemapLevelDefinitionById as getLevelById } from './tilemaps/registry.js';
-import { isVisibleToMode } from './categories/registry.js';
+/**
+ * Application-layer legacy level orchestration adapter.
+ * Intentionally outside `src/core`: mutates the compatibility game object, emits app events,
+ * and mirrors active level identity to browser DOM state.
+ */
+import { resetGameplaySession, syncGameplaySessionToGame } from './core/gameplay-session.js';
+import { getAllTilemapLevelDefinitions as getRegisteredLevels, getDefaultTilemapLevelDefinition as getDefaultLevel, getTilemapLevelDefinitionById as getLevelById } from './core/tilemaps/registry.js';
+import { isVisibleToMode } from './core/categories/registry.js';
 import { browserRuntime } from './runtime.js';
 
 function syncActiveLevelDataset(game) {

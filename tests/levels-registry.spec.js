@@ -4,7 +4,7 @@ import {
   getScenarioEntryById,
   getVisibleScenarioEntries,
   scenarioEntries
-} from '../src/scenarios/registry.js';
+} from '../src/core/scenarios/registry.js';
 
 test('scenario registry is a curated selectable catalog over multiple sources', () => {
   expect(getScenarioEntryById('act-01-level-1')).toMatchObject({

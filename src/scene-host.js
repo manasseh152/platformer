@@ -1,4 +1,4 @@
-import { createSceneStack } from './scene-stack.js';
+import { createSceneStack } from './core/scene-stack.js';
 
 export function createSceneHost(runtime) {
   const registry = new Map();

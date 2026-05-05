@@ -5,7 +5,7 @@ import {
   getDefaultTilemapLevelDefinition,
   getTilemapLevelDefinitionById,
   movementGymMapTilemapLevelDefinition
-} from '../src/tilemaps/registry.js';
+} from '../src/core/tilemaps/registry.js';
 
 test('tilemap registry owns parsed tilemap level definitions', () => {
   expect(getDefaultTilemapLevelDefinition()).toBe(act01Level1TilemapLevelDefinition);

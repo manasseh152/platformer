@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import {
   act01Level1TilemapLevelDefinition as level,
   getDefaultTilemapLevelDefinition as getDefaultLevel
-} from '../src/tilemaps/registry.js';
+} from '../src/core/tilemaps/registry.js';
 import {
   createEnemies,
   createEnemySpawns,
@@ -19,7 +19,7 @@ import {
   tileRect,
   tileToWorld,
   worldToTile
-} from '../src/tilemaps/tilemap.js';
+} from '../src/core/tilemaps/tilemap.js';
 import { resolveInitialLevel } from '../src/level-manager.js';
 
 test('level exposes world dimensions derived from tile dimensions', () => {

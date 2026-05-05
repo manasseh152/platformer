@@ -1,11 +1,16 @@
-import { CAMERA_HEIGHT, CAMERA_WIDTH, CAMERA_WORLD_HEIGHT, CAMERA_WORLD_WIDTH } from './constants.js';
-import { createGameplaySession, resetGameplaySession, syncGameplaySessionToGame } from './gameplay-session.js';
+/**
+ * Application composition root for the mutable compatibility game object.
+ * Intentionally outside `src/core`: wires UI canvas, presenter, browser runtime, DOM mirrors,
+ * app adapters, and core gameplay state together.
+ */
+import { CAMERA_HEIGHT, CAMERA_WIDTH, CAMERA_WORLD_HEIGHT, CAMERA_WORLD_WIDTH } from './core/constants.js';
+import { createGameplaySession, resetGameplaySession, syncGameplaySessionToGame } from './core/gameplay-session.js';
 import { createLevelManager, resolveInitialLevel } from './level-manager.js';
 import { createInputState } from './input.js';
 import { createPresenter } from './presenter.js';
 import { applySettingsToGame, loadSettings } from './settings.js';
 import { browserRuntime } from './runtime.js';
-import { createScenarioService } from './scenarios/service.js';
+import { createScenarioService } from './core/scenarios/service.js';
 import { createDefaultSceneLibrary } from './scenes/default-library.js';
 import { createAppState, setPausedState } from './app/app-state.js';
 

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createSceneStack } from '../src/scene-stack.js';
+import { createSceneStack } from '../src/core/scene-stack.js';
 
 function makeRuntime() {
   const emitted = [];

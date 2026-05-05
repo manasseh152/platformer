@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { createInputState } from '../src/input.js';
-import { createGameplaySession } from '../src/gameplay-session.js';
-import { parseTilemap } from '../src/tilemaps/tilemap.js';
-import { updateEnemy, updateGameplay } from '../src/physics.js';
+import { createGameplaySession } from '../src/core/gameplay-session.js';
+import { parseTilemap } from '../src/core/tilemaps/tilemap.js';
+import { updateEnemy, updateGameplay } from '../src/core/physics.js';
 
 function makeLevel(terrainRows) {
   return parseTilemap({
