@@ -1,29 +1,38 @@
-import { parseTilemap, withLevelMeta } from '../tilemap.js';
-import { developerBackdropRows } from './developer-backdrop.js';
+import { defineTilemapScene, gridLayer } from '../tilemap.js';
+import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../objects.js';
 
 export const finishGateGymMapDefinition = {
   tileSize: 36,
   artTileSize: 18,
   theme: 'kenney-pixel-platformer:grass',
-  terrainRows: [
+  layers: [
+    gridLayer({
+      id: 'terrain',
+      symbols: { '#': solidTerrain },
+      rows: [
     '########################',
     '#......................#',
     '#......................#',
-    '#................BBB...#',
-    '#.............===BBB...#',
+    '#................###...#',
+    '#.............######...#',
     '#......................#',
-    '#......BBB.............#',
-    '#..===.BBB.....===.....#',
+    '#......###.............#',
+    '#..###.###.....###.....#',
     '#......................#',
-    '#..===...........===...#',
+    '#..###...........###...#',
     '#......................#',
     '########################'
-  ],
-  objectRows: [
+  
+      ]
+    }),
+    gridLayer({
+      id: 'entities',
+      symbols: { P: playerSpawner, E: slimeSpawner, G: finishGateObject },
+      rows: [
     '........................',
     '........................',
     '........................',
-    '.................<G>....',
+    '.................GGG....',
     '........................',
     '........................',
     '........................',
@@ -32,29 +41,17 @@ export const finishGateGymMapDefinition = {
     '........................',
     '..P.....................',
     '........................'
-  ],
-  decorRows: [
-    '........................',
-    '..g...............f.....',
-    '........................',
-    '..............t..t......',
-    '........................',
-    '......f.................',
-    '........................',
-    '...t..........t.........',
-    '........................',
-    '..f...........f.........',
-    '........................',
-    '........................'
-  ],
-  backdropRows: developerBackdropRows
+  
+      ]
+    })
+  ]
 };
 
-export const finishGateGymMap = withLevelMeta(parseTilemap(finishGateGymMapDefinition), {
+export const finishGateGymMap = defineTilemapScene({
   id: 'finish-gate-gym-map',
   name: 'Finish Gate Gym Map',
-
   categories: ['finish-gate'],
   visibility: 'developer',
-  description: 'Tilemap fixture for finish gate trigger sizing, camera framing, and completion flow.'
+  description: 'Tilemap fixture for finish gate trigger sizing, camera framing, and completion flow.',
+  ...finishGateGymMapDefinition
 });

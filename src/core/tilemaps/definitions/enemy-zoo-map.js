@@ -1,29 +1,38 @@
-import { parseTilemap, withLevelMeta } from '../tilemap.js';
-import { developerBackdropRows } from './developer-backdrop.js';
+import { defineTilemapScene, gridLayer } from '../tilemap.js';
+import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../objects.js';
 
 export const enemyZooMapDefinition = {
   tileSize: 36,
   artTileSize: 18,
   theme: 'kenney-pixel-platformer:grass',
-  terrainRows: [
+  layers: [
+    gridLayer({
+      id: 'terrain',
+      symbols: { '#': solidTerrain },
+      rows: [
     '########################',
     '#......................#',
-    '#...............=====..#',
+    '#...............#####..#',
     '#......................#',
-    '#.......=====..........#',
+    '#.......#####..........#',
     '#......................#',
-    '#..=====......=====....#',
+    '#..#####......#####....#',
     '#......................#',
-    '#......====............#',
+    '#......####............#',
     '#......................#',
-    '#.=====.....=====..==..#',
+    '#.#####.....#####..##..#',
     '########################'
-  ],
-  objectRows: [
+  
+      ]
+    }),
+    gridLayer({
+      id: 'entities',
+      symbols: { P: playerSpawner, E: slimeSpawner, G: finishGateObject },
+      rows: [
     '........................',
     '.................E.E....',
     '........................',
-    '........<G>.............',
+    '........GGG.............',
     '........................',
     '...E...........E........',
     '........................',
@@ -32,29 +41,17 @@ export const enemyZooMapDefinition = {
     '...E.........E..........',
     '..P.....................',
     '........................'
-  ],
-  decorRows: [
-    '........................',
-    '..r......t.....t.....r..',
-    '........................',
-    '........f...............',
-    '........................',
-    '...t...........t........',
-    '........................',
-    '........t...............',
-    '........................',
-    '..f.........f...........',
-    '........................',
-    '........................'
-  ],
-  backdropRows: developerBackdropRows
+  
+      ]
+    })
+  ]
 };
 
-export const enemyZooMap = withLevelMeta(parseTilemap(enemyZooMapDefinition), {
+export const enemyZooMap = defineTilemapScene({
   id: 'enemy-zoo-map',
   name: 'Enemy Zoo Map',
-
   categories: ['enemy'],
   visibility: 'developer',
-  description: 'Tilemap fixture documenting enemy combinations.'
+  description: 'Tilemap fixture documenting enemy combinations.',
+  ...enemyZooMapDefinition
 });

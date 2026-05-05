@@ -1,28 +1,37 @@
-import { parseTilemap, withLevelMeta } from '../tilemap.js';
-import { developerBackdropRows } from './developer-backdrop.js';
+import { defineTilemapScene, gridLayer } from '../tilemap.js';
+import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../objects.js';
 
 export const movementGymMapDefinition = {
   tileSize: 36,
   artTileSize: 18,
   theme: 'kenney-pixel-platformer:grass',
-  terrainRows: [
+  layers: [
+    gridLayer({
+      id: 'terrain',
+      symbols: { '#': solidTerrain },
+      rows: [
     '########################',
     '#......................#',
     '#......................#',
-    '#.................===..#',
-    '#.............===......#',
-    '#.........===..........#',
-    '#.....===..............#',
+    '#.................###..#',
+    '#.............###......#',
+    '#.........###..........#',
+    '#.....###..............#',
     '#......................#',
-    '#..===....===....===...#',
+    '#..###....###....###...#',
     '#......................#',
-    '#.===..............==..#',
+    '#.###..............##..#',
     '########################'
-  ],
-  objectRows: [
+  
+      ]
+    }),
+    gridLayer({
+      id: 'entities',
+      symbols: { P: playerSpawner, E: slimeSpawner, G: finishGateObject },
+      rows: [
     '........................',
     '........................',
-    '..................<G>...',
+    '..................GGG...',
     '........................',
     '........................',
     '........................',
@@ -32,29 +41,17 @@ export const movementGymMapDefinition = {
     '........................',
     '..P.....................',
     '........................'
-  ],
-  decorRows: [
-    '........................',
-    '..g......t.....t.....r..',
-    '........................',
-    '.................f......',
-    '...........t............',
-    '.......f................',
-    '........................',
-    '...t.......t......t.....',
-    '........................',
-    '..f...........f.....f...',
-    '........................',
-    '........................'
-  ],
-  backdropRows: developerBackdropRows
+  
+      ]
+    })
+  ]
 };
 
-export const movementGymMap = withLevelMeta(parseTilemap(movementGymMapDefinition), {
+export const movementGymMap = defineTilemapScene({
   id: 'movement-gym-map',
   name: 'Movement Gym Map',
-
   categories: ['movement'],
   visibility: 'developer',
-  description: 'Tilemap fixture for movement validation scenarios.'
+  description: 'Tilemap fixture for movement validation scenarios.',
+  ...movementGymMapDefinition
 });

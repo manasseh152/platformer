@@ -1,5 +1,5 @@
 import { hasDown, hasPressed } from './input.js';
-import { getGoalTriggerRect, solidTileRectsOverlapping, spikeHazardRectsOverlapping } from './tilemaps/tilemap.js';
+import { getGoalTriggerRect, solidTileRectsOverlapping } from './tilemaps/tilemap.js';
 
 export const rectsOverlap = (a,b) => a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
 
@@ -146,8 +146,6 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
   const pushingWall = (player.wallDir === -1 && left) || (player.wallDir === 1 && right);
   player.wallSlide = !player.grounded && player.wallDir !== 0 && pushingWall && player.vy >= 0 && player.dash <= 0;
   if (player.wallSlide) player.vy = Math.min(player.vy, 95 * (level.tileSize / 70));
-
-  for (const s of spikeHazardRectsOverlapping(level, player)) if (rectsOverlap(player, s)) hurtPlayer(runtime, game, 1, player.x < s.x ? -1 : 1);
 
   for (const e of enemies) if (e.hp > 0) updateEnemy(runtime, game, e, dt);
 
