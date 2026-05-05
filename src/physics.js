@@ -80,15 +80,14 @@ export function updateEnemy(runtime, game, enemy, dt) {
   if (rectsOverlap(player, enemy)) hurtPlayer(runtime, game, 1, player.x < enemy.x ? -1 : 1);
 }
 
-export function updateGame(runtime, game, dt) {
-  if (arguments.length === 2) {
-    dt = game;
-    game = runtime;
-    runtime = { random: Math.random };
-  }
-  const { input, player, enemies, level } = game;
-  if (hasPressed(input, 'restart')) game.resetGame();
-  if (player.dead || game.flags.won) { input.pressed.clear(); return; }
+export function updateGameplay(runtime, gameplaySession, input, dt, controls = {}) {
+  const game = gameplaySession;
+  game.input = input;
+  game.resetGame = controls.resetGame;
+  game.flags = { won: gameplaySession.outcome === 'completed' };
+  const { player, enemies, level } = game;
+  if (hasPressed(input, 'restart')) controls.resetGame?.();
+  if (player.dead || gameplaySession.outcome === 'completed') { input.pressed.clear(); return; }
 
   const left = hasDown(input, 'left');
   const right = hasDown(input, 'right');
@@ -144,7 +143,10 @@ export function updateGame(runtime, game, dt) {
 
   for (const e of enemies) if (e.hp > 0) updateEnemy(runtime, game, e, dt);
 
-  if (rectsOverlap(player, getGoalTriggerRect(level))) game.flags.won = true;
+  if (rectsOverlap(player, getGoalTriggerRect(level))) {
+    gameplaySession.outcome = 'completed';
+    game.flags.won = true;
+  }
 
   for (let i=game.particles.length-1;i>=0;i--) {
     const p = game.particles[i]; p.life -= dt; p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 500*dt;
@@ -154,4 +156,14 @@ export function updateGame(runtime, game, dt) {
   if (player.wallSlide && runtime.random() < .45) game.dust.push({x:player.x+(player.wallDir>0?player.w:0),y:player.y+28,vx:-player.wallDir*45,life:.22});
   for (let i=game.dust.length-1;i>=0;i--) { game.dust[i].life -= dt; game.dust[i].x += game.dust[i].vx*dt; if (game.dust[i].life<=0) game.dust.splice(i,1); }
   input.pressed.clear();
+}
+
+export function updateGame(runtime, game, dt) {
+  if (arguments.length === 2) {
+    dt = game;
+    game = runtime;
+    runtime = { random: Math.random };
+  }
+  updateGameplay(runtime, game.gameplaySession ?? game, game.input, dt, { resetGame: game.resetGame });
+  if (game.gameplaySession) game.flags.won = game.gameplaySession.outcome === 'completed';
 }

@@ -1,5 +1,5 @@
 import { updateCamera } from '../camera.js';
-import { updateGame } from '../physics.js';
+import { updateGameplay } from '../physics.js';
 import { drawGame } from '../render.js';
 
 function round(value) {
@@ -33,7 +33,8 @@ export function createLevelScene(game) {
     id: 'level',
     kind: 'level',
     update(runtime, dt) {
-      updateGame(runtime, game, dt);
+      updateGameplay(runtime, game.gameplaySession, game.input, dt, { resetGame: game.resetGame });
+      game.flags.won = game.gameplaySession.outcome === 'completed';
       updateCamera(game, dt);
     },
     render(runtime) {
@@ -43,9 +44,9 @@ export function createLevelScene(game) {
       return {
         id: 'level',
         kind: 'level',
-        levelId: game.level?.id || 'act-01-level-1',
-        player: snapshotPlayer(game.player),
-        camera: snapshotCamera(game.camera)
+        levelId: game.gameplaySession?.tilemapLevelDefinition?.id || game.level?.id || 'act-01-level-1',
+        player: snapshotPlayer(game.gameplaySession?.player || game.player),
+        camera: snapshotCamera(game.gameplaySession?.camera || game.camera)
       };
     },
     dehydrate() {
@@ -55,7 +56,7 @@ export function createLevelScene(game) {
         flags: {
           started: Boolean(game.flags.started),
           paused: Boolean(game.flags.paused),
-          won: Boolean(game.flags.won)
+          won: Boolean(game.gameplaySession?.outcome === 'completed' || game.flags.won)
         },
         menu: {
           page: game.menu.page,

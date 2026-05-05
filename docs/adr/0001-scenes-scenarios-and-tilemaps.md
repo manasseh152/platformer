@@ -329,15 +329,25 @@ Completed:
 - Added `src/zoos/registry.js`.
 - Kept deprecated `src/scenes/registry.js` and `src/levels/registry.js` as adapters over scenarios.
 - Added scenario metadata/composition foundation.
-
-Remaining:
-
-- Purify `src/gyms/registry.js` into gym scenario entries rather than the current executable-gym compatibility shape.
-- Replace useful legacy labs with clean gym/zoo scenarios:
+- Promoted `src/gyms/registry.js` entries toward gym scenario metadata.
+- Added clean gym/zoo scenarios:
   - `movement-gym`
   - `hazard-gym`
   - `finish-gate-gym`
   - `enemy-zoo`
+- Added clean map fixtures:
+  - `movement-gym-map`
+  - `hazard-gym-map`
+  - `finish-gate-gym-map`
+  - `enemy-zoo-map`
+
+Remaining:
+
+- Hide/remove legacy scenario IDs once smoke/gym tests migrate:
+  - `legacy-movement-lab`
+  - `legacy-hazard-lab`
+  - `legacy-enemy-zoo`
+  - `gate-lab`
 - Remove source-as-category duplication.
 - Remove scenario `kind` compatibility.
 
@@ -350,12 +360,13 @@ Completed:
 - Added `src/scenarios/service.js` for visible listing, selection, current scenario tracking, launch, and restart.
 - Added `src/scenarios/url.js` for `scenario`, `mode=developer`, `developerMode=1`, and `autorun=1` behavior.
 - Wired current Level Select selection through `game.scenarios`.
+- Existing Level Select now surfaces scenario metadata, groups developer entries by source, and uses the title “Scenario Browser” in developer mode while keeping “Level Select” publicly.
 
 Remaining:
 
 - Move from `game.scenarios` compatibility placement to `app.scenarios` after `createGameApp()` lands.
 - Update the eventual `ScenarioBrowserScene` to use this service directly.
-- Expand browser UI copy/grouping from Level Select toward Scenario Browser in developer mode.
+- Launch scenarios from declarative `composition.stack` via the scene library instead of registry-specific switch logic.
 
 ### Phase 5: App and GameplaySession split
 
@@ -366,11 +377,15 @@ Completed:
 - Added `src/gameplay-session.js` with `createGameplaySession()`, `resetGameplaySession()`, and `syncGameplaySessionToGame()`.
 - `state.js` now creates `game.gameplaySession` while preserving compatibility fields.
 - `level-manager.js` resets gameplay through `GameplaySession`.
+- Added `updateGameplay(runtime, gameplaySession, input, dt, controls)` and kept `updateGame()` as a compatibility wrapper.
+- `LevelScene` now updates through `game.gameplaySession` and mirrors `game.flags.won` for compatibility.
 
 Remaining:
 
+- Commit the current `updateGameplay` slice.
 - Introduce `createGameApp()` as composition root.
-- Move gameplay systems toward `gameplaySession` parameters instead of full `game`.
+- Move rendering toward `drawGameplay(...)` / `gameplaySession` parameters instead of full `game`.
+- Move camera APIs toward `gameplaySession + view` parameters.
 - Remove compatibility mirrors for `game.level`, `game.player`, `game.enemies`, `game.camera`, and global flags after scenes/app split.
 - Keep runtime as `app.runtime`.
 
@@ -383,10 +398,12 @@ Completed:
 - Added `src/scenes/library.js` for resolving declarative scenario compositions.
 - Added `src/scenes/default-library.js` for current gameplay/level factory compatibility.
 - Added `src/scene-stack.js` with layered update/render/input behavior.
+- Backed `src/scene-host.js` with `scene-stack` while preserving the existing single-scene API.
 
 Remaining:
 
-- Integrate `scene-stack` into `main.js` in place of single-current `scene-host`.
+- Use `scene-host.replaceStack(...)` for scenario launches.
+- Route discrete input through scene stack top-down.
 - Model pause/start as scene stack/base scene state.
 - Mirror old flags only during migration.
 
@@ -396,6 +413,24 @@ Remaining:
 - Move `ScenarioBrowserScene` DOM ownership first.
 - Move `PauseOverlayScene` and `SettingsOverlayScene` DOM ownership next.
 - Remove static menu markup from `index.html` after scene modules own it.
+
+### Near-term implementation order
+
+1. Commit the current `updateGameplay` / `GameplaySession` update slice.
+2. Move draw/render reads toward `GameplaySession` while keeping `drawGame` as a compatibility wrapper.
+3. Move camera update APIs toward `GameplaySession + view` while keeping compatibility wrappers.
+4. Launch scenarios from declarative `composition.stack` using the scene library and `scene-host.replaceStack(...)`.
+5. Prefer clean scenario IDs in browser/tests:
+   - `movement-gym`
+   - `hazard-gym`
+   - `finish-gate-gym`
+   - `enemy-zoo`
+6. Add real secondary categories such as `movement`, `hazards`, `finish-gate`, `enemy`, and `ui`; stop clean scenarios from using source categories long-term.
+7. Introduce `createGameApp()` and move runtime/scenarios/scene library/URL launch wiring there.
+8. Add thin scene wrappers for current menus:
+   - `PauseOverlayScene`
+   - `ScenarioBrowserScene`
+   - `SettingsOverlayScene`
 
 ### Phase 8: Cleanup
 
