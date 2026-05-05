@@ -7,6 +7,7 @@ import { createPresenter } from './presenter.js';
 import { applySettingsToGame, loadSettings } from './settings.js';
 import { browserRuntime } from './runtime.js';
 import { createScenarioService } from './scenarios/service.js';
+import { createDefaultSceneLibrary } from './scenes/default-library.js';
 
 /**
  * Creates the mutable game context shared by systems.
@@ -53,11 +54,13 @@ export function createGame(ui, runtime = browserRuntime) {
     settings,
     session: { developerModeOverride: false },
     scenarios: null,
+    sceneLibrary: null,
     menu: { page: 'main', origin: 'pause', direction: 'forward' },
     clock: { last: runtime.now() }
   };
   centerCameraOnPlayer(game.camera, game.player, game.view);
   game.levels = createLevelManager(game, runtime);
+  game.sceneLibrary = createDefaultSceneLibrary();
   game.scenarios = createScenarioService(game, runtime);
   game.scenarios.select(activeLevel.id);
   applySettingsToGame(game);
