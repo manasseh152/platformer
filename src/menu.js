@@ -5,16 +5,12 @@ import { applyMotionPreference, runDOMTransition, shouldReduceMotion, setupMotio
 import { renderSettings, renderSettingsCategory, refreshDynamicRefs, selectedCategory } from './settings-ui.js';
 import { syncGymApi } from './gym.js';
 import { browserRuntime } from './runtime.js';
+import { getAllCategories, primaryGroupCategoryFor } from './categories/registry.js';
+import { getDefaultLevel } from './campaign/registry.js';
 
 const pageElement = (ui, page) => ({ main: ui.pauseMainPage, 'level-select': ui.levelSelectPage, settings: ui.settingsHubPage, 'settings-category': ui.settingsCategoryPage })[page];
 const backablePages = ['level-select', 'settings', 'settings-category'];
 
-const levelKindLabels = {
-  campaign: 'Campaign',
-  'legacy-test-map': 'Deprecated Test Maps',
-  sandbox: 'Sandboxes'
-};
-const levelKindOrder = ['campaign', 'legacy-test-map', 'sandbox'];
 const motionOrder = ['system', 'on', 'off'];
 
 export function visibleFocusables(root) {
@@ -101,20 +97,19 @@ function renderLevelSelect(game, message = '') {
   const levels = game.levels.getSelectableLevels();
   const grouped = new Map();
   for (const level of levels) {
-    const kind = level.kind || 'campaign';
-    if (!grouped.has(kind)) grouped.set(kind, []);
-    grouped.get(kind).push(level);
+    const category = primaryGroupCategoryFor(level, { developerMode: game.settings.developerMode });
+    if (!grouped.has(category.id)) grouped.set(category.id, { category, levels: [] });
+    grouped.get(category.id).levels.push(level);
   }
-  const orderedKinds = [...levelKindOrder, ...[...grouped.keys()].filter(kind => !levelKindOrder.includes(kind))];
-  ui.levelSelectList.innerHTML = orderedKinds
-    .filter(kind => grouped.has(kind))
-    .map(kind => `<section class="ds-section settings-section level-select-group">
-      <h3>${levelKindLabels[kind] || kind}</h3>
+  const orderedCategories = getAllCategories().filter(category => grouped.has(category.id));
+  ui.levelSelectList.innerHTML = orderedCategories
+    .map(category => `<section class="ds-section settings-section level-select-group">
+      <h3>${category.name}</h3>
       <div class="settings-row-list">
-        ${grouped.get(kind).map(level => `<button type="button" class="ds-setting-row level-select-row${level.id === current.id ? ' is-current' : ''}" data-level-id="${level.id}">
+        ${grouped.get(category.id).levels.map(level => `<button type="button" class="ds-setting-row level-select-row${level.id === current.id ? ' is-current' : ''}" data-level-id="${level.id}">
           <span class="ds-setting-row__copy">
             <span class="ds-setting-row__label">${level.name}</span>
-            <span class="ds-setting-row__description">${level.description || ''}${level.deprecated ? ' // Deprecated' : ''}${level.developerOnly ? ' // Developer' : ''}</span>
+            <span class="ds-setting-row__description">${level.description || ''}${level.categories?.includes('legacy') ? ' // Legacy' : ''}${level.visibility === 'developer' ? ' // Developer' : ''}</span>
           </span>
           <span class="ds-setting-row__value">${level.id === current.id ? 'Selected' : 'Load'}</span>
         </button>`).join('')}
@@ -311,7 +306,7 @@ function handleReplaceSettings(game, runtime = browserRuntime) {
       updateMenuChrome(game);
     };
     const after = () => {
-      if (!game.settings.developerMode && game.level?.developerOnly) game.levels.switchLevel('main');
+      if (!game.settings.developerMode && game.level?.visibility === 'developer') game.levels.switchLevel(getDefaultLevel().id);
       ui.settingsJson.value = serializeSettings(game);
       ui.settingsJsonStatus.textContent = 'Replaced app settings.';
       renderSelectedLevelSummary(game);
@@ -348,7 +343,7 @@ function toggleDeveloperMode(game, runtime = browserRuntime) {
     game.settings = saveSettings(game.settings, runtime.storage);
     runtime.emit('settings.change', { key: 'developerMode', value: game.settings.developerMode });
     syncGymApi(game, runtime);
-    if (!game.settings.developerMode && game.level?.developerOnly) game.levels.switchLevel('main');
+    if (!game.settings.developerMode && game.level?.visibility === 'developer') game.levels.switchLevel(getDefaultLevel().id);
     renderSettingsCategory(game);
     updateMenuChrome(game);
     renderSelectedLevelSummary(game);

@@ -123,12 +123,12 @@ test('settings hub, accessibility motion, advanced JSON, and start flow', async 
 });
 
 test('developer maps are only available in the normal Level Select when Developer Mode is enabled', async ({ page }) => {
-  await page.goto('/?level=gym');
-  await expect(page.locator('body')).toHaveAttribute('data-level-id', 'main');
+  await page.goto('/?level=legacy-movement-lab');
+  await expect(page.locator('body')).toHaveAttribute('data-level-id', 'act-01-level-1');
 
   await page.locator('#startLevelSelectButton').click();
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'level-select');
-  await expect(page.getByRole('button', { name: /Main Level/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Act 01 Level 1/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Legacy Movement Lab/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /Legacy Enemy Zoo/ })).toHaveCount(0);
   await page.locator('[data-level-select-back]').click();
@@ -148,20 +148,20 @@ test('developer maps are only available in the normal Level Select when Develope
   await expect(page.getByRole('button', { name: /Legacy Enemy Zoo/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Gate Lab/ })).toBeVisible();
   await page.getByRole('button', { name: /Legacy Enemy Zoo/ }).click();
-  await expect(page.locator('body')).toHaveAttribute('data-level-id', 'enemy-zoo');
+  await expect(page.locator('body')).toHaveAttribute('data-level-id', 'legacy-enemy-zoo');
   await expect(page.locator('#selectedLevelSummary')).toContainText('Legacy Enemy Zoo');
 
   await openStartSettings(page);
   await openCategory(page, 'advanced', 'Advanced');
   await page.locator('[data-setting-row="developer-mode"]').click();
-  await expect(page.locator('body')).toHaveAttribute('data-level-id', 'main');
+  await expect(page.locator('body')).toHaveAttribute('data-level-id', 'act-01-level-1');
   await expect(page.locator('#developerTools')).toBeHidden();
 
   const settings = await page.evaluate(() => JSON.parse(localStorage.getItem('chibi.settings')));
   settings.developerMode = true;
   await page.evaluate(value => localStorage.setItem('chibi.settings', JSON.stringify(value)), settings);
-  await page.goto('/?level=gym');
-  await expect(page.locator('body')).toHaveAttribute('data-level-id', 'gym');
+  await page.goto('/?level=legacy-movement-lab');
+  await expect(page.locator('body')).toHaveAttribute('data-level-id', 'act-01-level-1');
 });
 
 test('controller can navigate and choose levels in Level Select', async ({ page }) => {
@@ -176,13 +176,13 @@ test('controller can navigate and choose levels in Level Select', async ({ page 
   await page.locator('#startLevelSelectButton').click();
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'level-select');
   await page.waitForTimeout(250);
-  await focusLevelRow(page, 'main');
+  await focusLevelRow(page, 'act-01-level-1');
 
-  await pressPadButtonFrom(page, 13, 'button[data-level-id="main"]');
-  await expectFocusedLevelRow(page, 'gym');
+  await pressPadButtonFrom(page, 13, 'button[data-level-id="act-01-level-1"]');
+  await expectFocusedLevelRow(page, 'legacy-movement-lab');
 
-  await pressPadButtonFrom(page, 0, 'button[data-level-id="gym"]');
-  await expect(page.locator('body')).toHaveAttribute('data-level-id', 'gym');
+  await pressPadButtonFrom(page, 0, 'button[data-level-id="legacy-movement-lab"]');
+  await expect(page.locator('body')).toHaveAttribute('data-level-id', 'legacy-movement-lab');
   await expect(page.locator('#selectedLevelSummary')).toContainText('Legacy Movement Lab');
 });
 

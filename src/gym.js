@@ -22,8 +22,9 @@ export function snapshotGame(game) {
     level: game.level ? {
       id: game.level.id,
       name: game.level.name,
-      kind: game.level.kind || 'campaign',
-      developerOnly: Boolean(game.level.developerOnly)
+      kind: game.level.kind || 'tilemap-level',
+      visibility: game.level.visibility || 'public',
+      categories: [...(game.level.categories || [])]
     } : null,
     ui: {
       started: Boolean(game.flags.started),

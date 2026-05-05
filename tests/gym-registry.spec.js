@@ -1,14 +1,15 @@
 import { expect, test } from '@playwright/test';
 import { getAllGyms, getGymById } from '../src/gyms/registry.js';
 
-test('executable gyms are registered separately from deprecated tilemap test maps', () => {
-  expect(getGymById('ui-navigation')).toMatchObject({
-    id: 'ui-navigation',
+test('executable gyms use shared catalog metadata conventions', () => {
+  expect(getGymById('ui-navigation-gym')).toMatchObject({
+    id: 'ui-navigation-gym',
     name: 'UI Navigation Gym',
-    kind: 'ui',
+    kind: 'executable-gym',
+    categories: ['gyms'],
     sceneId: 'level',
-    developerOnly: true,
-    status: 'active'
+    visibility: 'developer'
   });
-  expect(getAllGyms().map(gym => gym.id)).toContain('ui-navigation');
+  expect(getGymById('ui-navigation')).toBeNull();
+  expect(getAllGyms().map(gym => gym.id)).toContain('ui-navigation-gym');
 });

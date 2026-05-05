@@ -1,5 +1,6 @@
 import { assets } from './assets.js';
-import { createEnemies, createPlayer, getGoalRect, getSpawnPoint, level as defaultLevel } from './level.js';
+import { getDefaultLevel } from './campaign/registry.js';
+import { createEnemies, createPlayer, getGoalRect, getSpawnPoint } from './levels/tilemap.js';
 import { drawBackdropLayer, drawDecorLayer, drawGoal, drawSpikeLayer, drawTilemap } from './render.js';
 
 function waitForAsset(asset) {
@@ -46,7 +47,7 @@ function drawSnapshotEnemy(ctx, enemy) {
   ctx.restore();
 }
 
-export async function renderMapToCanvas(sourceLevel = defaultLevel) {
+export async function renderMapToCanvas(sourceLevel = getDefaultLevel()) {
   await waitForMapAssets();
 
   const canvas = document.createElement('canvas');
@@ -70,6 +71,6 @@ export async function renderMapToCanvas(sourceLevel = defaultLevel) {
   return canvas;
 }
 
-export async function renderMapToDataUrl(sourceLevel = defaultLevel) {
+export async function renderMapToDataUrl(sourceLevel = getDefaultLevel()) {
   return (await renderMapToCanvas(sourceLevel)).toDataURL('image/png');
 }

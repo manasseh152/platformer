@@ -43,7 +43,7 @@ export function createLevelScene(game) {
       return {
         id: 'level',
         kind: 'level',
-        levelId: game.level?.id || 'main',
+        levelId: game.level?.id || 'act-01-level-1',
         player: snapshotPlayer(game.player),
         camera: snapshotCamera(game.camera)
       };
@@ -51,7 +51,7 @@ export function createLevelScene(game) {
     dehydrate() {
       return {
         sceneId: 'level',
-        levelId: game.level?.id || 'main',
+        levelId: game.level?.id || 'act-01-level-1',
         flags: {
           started: Boolean(game.flags.started),
           paused: Boolean(game.flags.paused),

@@ -1,25 +1,23 @@
 import { centerCameraOnPlayer } from './camera.js';
-import { createEnemies, createPlayer, getLevelById, getSpawnPoint, level as mainLevel, levels as levelRegistry } from './level.js';
+import { createEnemies, createPlayer, getSpawnPoint } from './levels/tilemap.js';
+import { getAllLevels as getRegisteredLevels, getDefaultLevel, getLevelById } from './campaign/registry.js';
+import { isVisibleToMode } from './categories/registry.js';
 import { browserRuntime } from './runtime.js';
 
-const MAIN_LEVEL_ID = 'main';
-
 function syncActiveLevelDataset(game) {
-  document.body.dataset.levelId = game.level?.id || MAIN_LEVEL_ID;
+  document.body.dataset.levelId = game.level?.id || getDefaultLevel().id;
 }
 
 function canAccessLevel(settings, targetLevel) {
-  return Boolean(targetLevel) && (!targetLevel.developerOnly || settings.developerMode);
+  return Boolean(targetLevel) && isVisibleToMode(targetLevel, settings.developerMode);
 }
 
-export function resolveInitialLevel(settings, search = location.search) {
-  const requested = new URLSearchParams(search).get('level') || MAIN_LEVEL_ID;
-  const candidate = getLevelById(requested) || mainLevel;
-  return canAccessLevel(settings, candidate) ? candidate : mainLevel;
+export function resolveInitialLevel() {
+  return getDefaultLevel();
 }
 
 export function getAllLevels() {
-  return Object.values(levelRegistry);
+  return getRegisteredLevels();
 }
 
 export function createLevelManager(game, runtime = browserRuntime) {

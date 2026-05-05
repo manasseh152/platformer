@@ -1,7 +1,7 @@
 import { assets, isLoaded } from './assets.js';
 import { DEBUG_CAMERA, TILE_SIZE } from './constants.js';
 import { controlsText } from './input.js';
-import { forEachLayerTile, getDecorType, getGoalRect, getTile, isSolidTile } from './level.js';
+import { forEachLayerTile, getDecorType, getGoalRect, getTile, isSolidTile } from './levels/tilemap.js';
 
 function roundedRect(ctx, x,y,w,h,r) {
   ctx.beginPath(); ctx.roundRect(x,y,w,h,r); ctx.fill();

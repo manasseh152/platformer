@@ -1,27 +1,30 @@
 import { expect, test } from '@playwright/test';
 import {
+  enemyZooLevel,
+  gateLabLevel,
+  getDefaultLevel,
+  getLevelById,
+  gymLevel,
+  hazardGymLevel,
+  level
+} from '../src/campaign/registry.js';
+import {
   createEnemies,
   createEnemySpawns,
   forEachLayerTile,
   getDecorType,
   getGoalRect,
   getGoalTriggerRect,
-  getLevelById,
   getTile,
   getSpawnPoint,
   isSolidTileAt,
-  enemyZooLevel,
-  gateLabLevel,
-  gymLevel,
-  hazardGymLevel,
-  level,
   parseTilemap,
   solidTileRectsOverlapping,
   spikeHazardRectsOverlapping,
   tileRect,
   tileToWorld,
   worldToTile
-} from '../src/level.js';
+} from '../src/levels/tilemap.js';
 import { resolveInitialLevel } from '../src/level-manager.js';
 
 test('level exposes world dimensions derived from tile dimensions', () => {
@@ -83,22 +86,21 @@ test('tilemap parser exposes layered tiles and direct query helpers derive gamep
   ]));
 });
 
-test('initial level resolution uses the same developer-only gate as the level manager', () => {
-  expect(resolveInitialLevel({ developerMode: false }, '?level=gym')).toBe(level);
-  expect(resolveInitialLevel({ developerMode: true }, '?level=gym')).toBe(gymLevel);
-  expect(resolveInitialLevel({ developerMode: true }, '?level=missing')).toBe(level);
+test('initial level resolution ignores URL selection and uses the default level', () => {
+  expect(resolveInitialLevel()).toBe(getDefaultLevel());
+  expect(resolveInitialLevel({ developerMode: true }, '?level=legacy-movement-lab')).toBe(getDefaultLevel());
 });
 
-test('developer showcase levels are deprecated tilemap labs while gyms move to executable scenarios', () => {
-  expect(getLevelById('gym')).toBe(gymLevel);
-  expect(getLevelById('hazard-gym')).toBe(hazardGymLevel);
-  expect(getLevelById('enemy-zoo')).toBe(enemyZooLevel);
+test('developer showcase levels are legacy tilemap labs while gyms move to executable scenarios', () => {
+  expect(getLevelById('legacy-movement-lab')).toBe(gymLevel);
+  expect(getLevelById('legacy-hazard-lab')).toBe(hazardGymLevel);
+  expect(getLevelById('legacy-enemy-zoo')).toBe(enemyZooLevel);
   expect(getLevelById('gate-lab')).toBe(gateLabLevel);
 
-  expect(gymLevel).toMatchObject({ id: 'gym', name: 'Legacy Movement Lab', kind: 'legacy-test-map', developerOnly: true, deprecated: true });
-  expect(hazardGymLevel).toMatchObject({ id: 'hazard-gym', name: 'Legacy Hazard Lab', kind: 'legacy-test-map', developerOnly: true, deprecated: true });
-  expect(enemyZooLevel).toMatchObject({ id: 'enemy-zoo', name: 'Legacy Enemy Zoo', kind: 'legacy-test-map', developerOnly: true, deprecated: true });
-  expect(gateLabLevel).toMatchObject({ id: 'gate-lab', kind: 'sandbox', developerOnly: true });
+  expect(gymLevel).toMatchObject({ id: 'legacy-movement-lab', name: 'Legacy Movement Lab', kind: 'tilemap-level', categories: ['gyms', 'legacy'], visibility: 'developer' });
+  expect(hazardGymLevel).toMatchObject({ id: 'legacy-hazard-lab', name: 'Legacy Hazard Lab', kind: 'tilemap-level', categories: ['gyms', 'legacy'], visibility: 'developer' });
+  expect(enemyZooLevel).toMatchObject({ id: 'legacy-enemy-zoo', name: 'Legacy Enemy Zoo', kind: 'tilemap-level', categories: ['zoos', 'legacy'], visibility: 'developer' });
+  expect(gateLabLevel).toMatchObject({ id: 'gate-lab', kind: 'tilemap-level', categories: ['labs'], visibility: 'developer' });
   expect(createEnemies(gymLevel)).toHaveLength(0);
   expect(createEnemies(enemyZooLevel)).toHaveLength(6);
 

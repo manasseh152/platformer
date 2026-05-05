@@ -23,12 +23,12 @@ test('runtime event logger records stable ordered events', () => {
   const logger = createEventLogger({ now: () => now });
   const runtime = createRuntime({ now: () => now, random: () => 0.5, storage: createMemoryStorage(), logger });
 
-  runtime.emit('gym.start', { id: 'ui-navigation' });
+  runtime.emit('gym.start', { id: 'ui-navigation-gym' });
   now = 116;
   runtime.emit('gym.frame', { frame: 1 });
 
   expect(runtime.events()).toEqual([
-    { index: 0, time: 100, type: 'gym.start', detail: { id: 'ui-navigation' } },
+    { index: 0, time: 100, type: 'gym.start', detail: { id: 'ui-navigation-gym' } },
     { index: 1, time: 116, type: 'gym.frame', detail: { frame: 1 } }
   ]);
 });

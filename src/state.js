@@ -1,6 +1,6 @@
 import { CAMERA_HEIGHT, CAMERA_WIDTH, CAMERA_WORLD_HEIGHT, CAMERA_WORLD_WIDTH } from './constants.js';
 import { centerCameraOnPlayer, createCamera } from './camera.js';
-import { createEnemies, createPlayer, getSpawnPoint } from './level.js';
+import { createEnemies, createPlayer, getSpawnPoint } from './levels/tilemap.js';
 import { createLevelManager, resolveInitialLevel } from './level-manager.js';
 import { createInputState } from './input.js';
 import { createPresenter } from './presenter.js';
@@ -56,14 +56,14 @@ export function createGame(ui, runtime = browserRuntime) {
   centerCameraOnPlayer(game.camera, game.player, game.view);
   game.levels = createLevelManager(game, runtime);
   applySettingsToGame(game);
-  document.body.dataset.levelId = game.level?.id || 'main';
+  document.body.dataset.levelId = game.level?.id || 'act-01-level-1';
   return game;
 }
 
 export function resetGame(game, runtime = browserRuntime) {
   setPausedFlag(game, false, runtime);
   game.levels.restartLevel();
-  runtime.emit('game.reset', { levelId: game.level?.id || 'main' });
+  runtime.emit('game.reset', { levelId: game.level?.id || 'act-01-level-1' });
 }
 
 export function setPausedFlag(game, value, runtime = browserRuntime) {
