@@ -1,5 +1,8 @@
 import { createCatalogRegistry } from '../catalog/registry.js';
 import { uiNavigationGym } from './ui-navigation-gym.js';
+import { movementGymScenario } from './movement-gym.js';
+import { hazardGymScenario } from './hazard-gym.js';
+import { finishGateGymScenario } from './finish-gate-gym.js';
 
 function assertGymScenario(gym) {
   if (gym.source !== 'gyms') throw new Error(`${gym.id} must use gyms source`);
@@ -15,6 +18,9 @@ const registry = createCatalogRegistry({
   validateEntry: assertGymScenario
 });
 
+export const movementGym = registry.register(movementGymScenario);
+export const hazardGym = registry.register(hazardGymScenario);
+export const finishGateGym = registry.register(finishGateGymScenario);
 export const registeredUiNavigationGym = registry.register(uiNavigationGym);
 export const gyms = Object.fromEntries(registry.getAll().map(entry => [entry.id, entry]));
 

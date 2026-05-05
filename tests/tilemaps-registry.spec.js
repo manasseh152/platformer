@@ -16,7 +16,10 @@ test('tilemap registry owns parsed tilemap level definitions', () => {
     'legacy-movement-lab',
     'legacy-hazard-lab',
     'legacy-enemy-zoo',
-    'gate-lab'
+    'gate-lab',
+    'movement-gym-map',
+    'hazard-gym-map',
+    'finish-gate-gym-map'
   ]);
 });
 

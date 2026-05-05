@@ -53,12 +53,17 @@ function registerTilemapLevelDefinition(definition) {
   }));
 }
 
-function registerExecutableGym(gym) {
+function tilemapDefinitionIdForScenario(entry) {
+  return entry.composition?.stack?.find(layer => layer.props?.tilemapLevelDefinitionId)?.props?.tilemapLevelDefinitionId ?? entry.targetId ?? entry.id;
+}
+
+function registerGymScenario(gym) {
   const sceneId = gym.sceneId ?? gym.composition?.stack?.[0]?.scene;
+  const targetId = gym.targetId ?? sceneId ?? tilemapDefinitionIdForScenario(gym);
   return registry.register(defineScenarioEntry({
     ...gym,
     source: 'gyms',
-    targetId: sceneId,
+    targetId,
     artifacts: gym.artifacts ?? [...(gym.tests ?? []), ...(gym.docs ?? [])],
     tests: gym.tests ?? gym.artifacts?.filter(artifact => artifact.startsWith('tests/')) ?? [],
     docs: gym.docs ?? [],
@@ -68,12 +73,17 @@ function registerExecutableGym(gym) {
       type: 'executable-gym',
       stack: [{ scene: sceneId, props: { gymId: gym.id } }]
     },
-    launch: game => game.runtime?.scenes?.switchScene?.(sceneId) ?? { ok: false, reason: 'missing-scene-host', level: game.level }
+    launch: game => {
+      if (gym.composition?.type === 'tilemap-gameplay') return game.levels.switchLevel(tilemapDefinitionIdForScenario(gym));
+      return game.runtime?.scenes?.switchScene?.(sceneId) ?? { ok: false, reason: 'missing-scene-host', level: game.level };
+    }
   }));
 }
 
-export const registeredTilemapScenarios = getAllTilemapLevelDefinitions().map(registerTilemapLevelDefinition);
-export const registeredGymScenarios = getAllGyms().map(registerExecutableGym);
+export const registeredTilemapScenarios = getAllTilemapLevelDefinitions()
+  .filter(definition => !definition.id.endsWith('-map'))
+  .map(registerTilemapLevelDefinition);
+export const registeredGymScenarios = getAllGyms().map(registerGymScenario);
 
 export const scenarioEntries = Object.fromEntries(registry.getAll().map(entry => [entry.id, entry]));
 

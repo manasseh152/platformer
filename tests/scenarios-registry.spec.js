@@ -39,6 +39,9 @@ test('scenario registry filters developer scenarios', () => {
     'legacy-hazard-lab',
     'legacy-enemy-zoo',
     'gate-lab',
+    'movement-gym',
+    'hazard-gym',
+    'finish-gate-gym',
     'ui-navigation-gym'
   ]);
 });
