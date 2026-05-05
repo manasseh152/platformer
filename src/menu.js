@@ -121,6 +121,7 @@ function renderScenarioBrowser(game, message = '') {
   const { ui } = game;
   if (!ui.levelSelectList) return;
   const current = game.levels.getCurrentLevel();
+  const currentScenarioId = game.scenarios?.current?.id ?? game.scenarios?.selectedScenarioId ?? null;
   const developerMode = Boolean(game.settings.developerMode || game.session?.developerModeOverride);
   const entries = game.scenarios?.getVisible?.() ?? getVisibleScenarioEntries({ developerMode });
   const grouped = new Map();
@@ -135,7 +136,7 @@ function renderScenarioBrowser(game, message = '') {
       <h3>${group.name}</h3>
       <div class="settings-row-list">
         ${entries.map(entry => {
-          const isCurrent = tilemapDefinitionIdForScenario(entry) === current.id || game.scenarios?.current?.id === entry.id;
+          const isCurrent = currentScenarioId ? currentScenarioId === entry.id : tilemapDefinitionIdForScenario(entry) === current.id;
           const tags = scenarioTagNames(entry);
           const docs = entry.docs?.length ? ` // Docs: ${entry.docs.join(', ')}` : '';
           const tests = entry.tests?.length ? ` // Tests: ${entry.tests.join(', ')}` : '';

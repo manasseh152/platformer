@@ -14,6 +14,8 @@ test('developer mode presents Level Select as Scenario Browser grouped by source
   await expect(page.locator('#levelSelectList [data-scenario-source="gyms"] h3')).toHaveText('Gyms');
   await expect(page.locator('#levelSelectList [data-scenario-source="zoos"] h3')).toHaveText('Zoos');
   await expect(page.locator('button[data-scenario-id="ui-navigation-gym"]')).toContainText('CI');
+  await expect(page.locator('button.is-current')).toHaveCount(1);
+  await expect(page.locator('button.is-current')).toHaveAttribute('data-scenario-id', 'act-01-level-1');
 });
 
 test('public mode keeps Level Select copy and hides developer scenarios', async ({ page }) => {
