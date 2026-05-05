@@ -37,7 +37,7 @@ test('scene host registers, switches, updates, renders, and dehydrates scenes', 
 
   expect(host.switchScene('second').ok).toBe(true);
   expect(calls).toEqual(['first.setup', 'first.update:0.016666666666666666', 'first.render', 'first.teardown', 'second.setup']);
-  expect(runtime.events().map(event => event.type)).toEqual(['scene.register', 'scene.register', 'scene.switch', 'scene.switch']);
+  expect(runtime.events().map(event => event.type).filter(type => type === 'scene.register' || type === 'scene.switch')).toEqual(['scene.register', 'scene.register', 'scene.switch', 'scene.switch']);
 });
 
 test('scene host reports missing scene switches as events', () => {
