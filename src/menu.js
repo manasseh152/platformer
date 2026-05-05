@@ -5,7 +5,7 @@ import { applyMotionPreference, runDOMTransition, shouldReduceMotion, setupMotio
 import { renderSettings, renderSettingsCategory, refreshDynamicRefs, selectedCategory } from './settings-ui.js';
 import { syncGymApi } from './gym.js';
 import { browserRuntime } from './runtime.js';
-import { getAllCategories, primaryGroupCategoryFor } from './categories/registry.js';
+import { getAllCategories, getCategoryById, primaryGroupCategoryFor } from './categories/registry.js';
 import { getDefaultLevel } from './campaign/registry.js';
 import { getVisibleLevelEntries } from './levels/registry.js';
 
@@ -34,7 +34,8 @@ export function updateMenuChrome(game) {
   ui.pauseScreen.dataset.currentSettingsCategory = menu.settingsCategory || '';
   document.body.dataset.menuOrigin = menu.origin;
   const category = selectedCategory(game);
-  ui.menuTitle.textContent = menu.page === 'settings-category' && category ? category.title : (menu.page === 'level-select' ? 'Level Select' : (menu.page === 'settings' ? 'Settings' : 'Paused'));
+  const scenarioBrowserTitle = game.settings.developerMode || game.session?.developerModeOverride ? 'Scenario Browser' : 'Level Select';
+  ui.menuTitle.textContent = menu.page === 'settings-category' && category ? category.title : (menu.page === 'level-select' ? scenarioBrowserTitle : (menu.page === 'settings' ? 'Settings' : 'Paused'));
   ui.menuEyebrow.textContent = menu.page === 'main' ? 'Paused' : (menu.page === 'level-select' ? 'Choose your route' : (menu.page === 'settings-category' ? 'Settings' : (menu.origin === 'start' ? 'Before you begin' : 'Settings')));
   refreshDynamicRefs(game);
   if (ui.developerTools) ui.developerTools.hidden = !game.settings.developerMode;
@@ -91,34 +92,64 @@ function renderSelectedLevelSummary(game) {
   if (game.ui.hudLevelName) game.ui.hudLevelName.textContent = level.name;
 }
 
-function renderLevelSelect(game, message = '') {
+const scenarioSourceGroups = {
+  campaign: { id: 'campaign', name: 'Campaigns', order: 10 },
+  campaigns: { id: 'campaigns', name: 'Campaigns', order: 10 },
+  gyms: { id: 'gyms', name: 'Gyms', order: 100 },
+  zoos: { id: 'zoos', name: 'Zoos', order: 110 }
+};
+
+function scenarioSourceGroupFor(entry, developerMode) {
+  if (developerMode && scenarioSourceGroups[entry.source]) return scenarioSourceGroups[entry.source];
+  const category = primaryGroupCategoryFor(entry, { developerMode });
+  return { id: category.id, name: category.name, order: category.order };
+}
+
+function scenarioTagNames(entry) {
+  return (entry.categories || [])
+    .filter(categoryId => categoryId !== 'levels' && categoryId !== 'gyms' && categoryId !== 'zoos')
+    .map(categoryId => getCategoryById(categoryId)?.name || categoryId)
+    .join(', ');
+}
+
+function renderScenarioBrowser(game, message = '') {
   const { ui } = game;
   if (!ui.levelSelectList) return;
   const current = game.levels.getCurrentLevel();
-  const entries = game.scenarios?.getVisible?.() ?? getVisibleLevelEntries({ developerMode: game.settings.developerMode });
+  const developerMode = Boolean(game.settings.developerMode || game.session?.developerModeOverride);
+  const entries = game.scenarios?.getVisible?.() ?? getVisibleLevelEntries({ developerMode });
   const grouped = new Map();
   for (const entry of entries) {
-    const category = primaryGroupCategoryFor(entry, { developerMode: game.settings.developerMode });
-    if (!grouped.has(category.id)) grouped.set(category.id, { category, entries: [] });
-    grouped.get(category.id).entries.push(entry);
+    const group = scenarioSourceGroupFor(entry, developerMode);
+    if (!grouped.has(group.id)) grouped.set(group.id, { group, entries: [] });
+    grouped.get(group.id).entries.push(entry);
   }
-  const orderedCategories = getAllCategories().filter(category => grouped.has(category.id));
-  ui.levelSelectList.innerHTML = orderedCategories
-    .map(category => `<section class="ds-section settings-section level-select-group">
-      <h3>${category.name}</h3>
+  const orderedGroups = [...grouped.values()].sort((a, b) => a.group.order - b.group.order || a.group.name.localeCompare(b.group.name));
+  ui.levelSelectList.innerHTML = orderedGroups
+    .map(({ group, entries }) => `<section class="ds-section settings-section level-select-group" data-scenario-source="${group.id}">
+      <h3>${group.name}</h3>
       <div class="settings-row-list">
-        ${grouped.get(category.id).entries.map(entry => `<button type="button" class="ds-setting-row level-select-row${entry.targetId === current.id ? ' is-current' : ''}" data-level-id="${entry.id}">
+        ${entries.map(entry => {
+          const isCurrent = entry.targetId === current.id || game.scenarios?.current?.id === entry.id;
+          const tags = scenarioTagNames(entry);
+          const docs = entry.docs?.length ? ` // Docs: ${entry.docs.join(', ')}` : '';
+          const tests = entry.tests?.length ? ` // Tests: ${entry.tests.join(', ')}` : '';
+          const covers = entry.covers?.length ? ` // Covers: ${entry.covers.join(', ')}` : '';
+          return `<button type="button" class="ds-setting-row level-select-row${isCurrent ? ' is-current' : ''}" data-level-id="${entry.id}" data-scenario-id="${entry.id}" data-scenario-source="${entry.source || group.id}">
           <span class="ds-setting-row__copy">
             <span class="ds-setting-row__label">${entry.name}</span>
-            <span class="ds-setting-row__description">${entry.description || ''}${entry.categories?.includes('legacy') ? ' // Legacy' : ''}${entry.visibility === 'developer' ? ' // Developer' : ''}</span>
+            <span class="ds-setting-row__description">${entry.description || ''}${tags ? ` // ${tags}` : ''}${entry.visibility === 'developer' ? ' // Developer' : ''}${entry.ci ? ' // CI' : ''}${docs}${tests}${covers}</span>
           </span>
-          <span class="ds-setting-row__value">${entry.targetId === current.id ? 'Selected' : 'Load'}</span>
-        </button>`).join('')}
+          <span class="ds-setting-row__value">${isCurrent ? 'Selected' : (game.menu.origin === 'start' ? 'Select' : 'Load')}</span>
+        </button>`;
+        }).join('')}
       </div>
     </section>`).join('');
-  if (ui.levelSelectStatus) ui.levelSelectStatus.textContent = message || `Current level: ${current.name}.`;
+  if (ui.levelSelectStatus) ui.levelSelectStatus.textContent = message || `Current scenario: ${(game.scenarios?.current?.entry || game.scenarios?.getSelected?.() || current).name}.`;
   renderSelectedLevelSummary(game);
 }
+
+const renderLevelSelect = renderScenarioBrowser;
 
 export function handleGamepadMenuInput(game) {
   const { input, ui } = game;
