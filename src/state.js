@@ -1,6 +1,6 @@
 import { CAMERA_HEIGHT, CAMERA_WIDTH, CAMERA_WORLD_HEIGHT, CAMERA_WORLD_WIDTH } from './constants.js';
 import { centerCameraOnPlayer, createCamera } from './camera.js';
-import { createEnemies, createPlayer, getSpawnPoint } from './levels/tilemap.js';
+import { createEnemies, createPlayer, getSpawnPoint } from './tilemaps/tilemap.js';
 import { createLevelManager, resolveInitialLevel } from './level-manager.js';
 import { createInputState } from './input.js';
 import { createPresenter } from './presenter.js';

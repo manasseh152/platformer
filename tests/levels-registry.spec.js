@@ -15,7 +15,7 @@ test('levels registry is a curated selectable catalog over multiple sources', ()
     visibility: 'public'
   });
   expect(getLevelEntryById('legacy-movement-lab')).toMatchObject({
-    source: 'campaign',
+    source: 'gyms',
     targetId: 'legacy-movement-lab',
     categories: ['gyms', 'legacy'],
     visibility: 'developer'

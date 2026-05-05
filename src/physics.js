@@ -1,5 +1,5 @@
 import { hasDown, hasPressed } from './input.js';
-import { getGoalTriggerRect, solidTileRectsOverlapping, spikeHazardRectsOverlapping } from './levels/tilemap.js';
+import { getGoalTriggerRect, solidTileRectsOverlapping, spikeHazardRectsOverlapping } from './tilemaps/tilemap.js';
 
 export const rectsOverlap = (a,b) => a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
 

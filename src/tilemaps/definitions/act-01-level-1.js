@@ -1,4 +1,4 @@
-import { parseTilemap, withLevelMeta } from '../levels/tilemap.js';
+import { parseTilemap, withLevelMeta } from '../tilemap.js';
 
 export const act01Level1Definition = {
   terrainRows: [

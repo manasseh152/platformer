@@ -1,33 +1,34 @@
+// Deprecated adapter. Level Select currently consumes scenario entries until ScenarioBrowserScene lands.
 import {
-  defineSceneEntry,
-  sceneEntries,
-  getSceneEntryById,
-  getAllSceneEntries,
-  getVisibleSceneEntries,
-  launchSceneEntry
-} from '../scenes/registry.js';
+  defineScenarioEntry,
+  scenarioEntries,
+  getScenarioEntryById,
+  getAllScenarioEntries,
+  getVisibleScenarioEntries,
+  launchScenarioEntry
+} from '../scenarios/registry.js';
 
-export const defineLevelEntry = defineSceneEntry;
-export const levelEntries = sceneEntries;
+export const defineLevelEntry = defineScenarioEntry;
+export const levelEntries = scenarioEntries;
 
-export const act01Level1Entry = getSceneEntryById('act-01-level-1');
-export const legacyMovementLabEntry = getSceneEntryById('legacy-movement-lab');
-export const legacyHazardLabEntry = getSceneEntryById('legacy-hazard-lab');
-export const legacyEnemyZooEntry = getSceneEntryById('legacy-enemy-zoo');
-export const gateLabEntry = getSceneEntryById('gate-lab');
+export const act01Level1Entry = getScenarioEntryById('act-01-level-1');
+export const legacyMovementLabEntry = getScenarioEntryById('legacy-movement-lab');
+export const legacyHazardLabEntry = getScenarioEntryById('legacy-hazard-lab');
+export const legacyEnemyZooEntry = getScenarioEntryById('legacy-enemy-zoo');
+export const gateLabEntry = getScenarioEntryById('gate-lab');
 
 export function getLevelEntryById(id) {
-  return getSceneEntryById(id);
+  return getScenarioEntryById(id);
 }
 
 export function getAllLevelEntries() {
-  return getAllSceneEntries();
+  return getAllScenarioEntries();
 }
 
 export function getVisibleLevelEntries(options = {}) {
-  return getVisibleSceneEntries(options);
+  return getVisibleScenarioEntries(options);
 }
 
 export function launchLevelEntry(game, entryId) {
-  return launchSceneEntry(game, entryId);
+  return launchScenarioEntry(game, entryId);
 }

@@ -1,4 +1,4 @@
-import { parseTilemap, withLevelMeta } from '../levels/tilemap.js';
+import { parseTilemap, withLevelMeta } from '../tilemap.js';
 import { developerBackdropRows } from './developer-backdrop.js';
 
 export const legacyEnemyZooDefinition = {

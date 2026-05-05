@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { parseTilemap } from '../src/levels/tilemap.js';
+import { parseTilemap } from '../src/tilemaps/tilemap.js';
 import { updateEnemy } from '../src/physics.js';
 
 function makeLevel(terrainRows) {

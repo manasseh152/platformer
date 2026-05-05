@@ -24,7 +24,7 @@ import {
   tileRect,
   tileToWorld,
   worldToTile
-} from '../src/levels/tilemap.js';
+} from '../src/tilemaps/tilemap.js';
 import { resolveInitialLevel } from '../src/level-manager.js';
 
 test('level exposes world dimensions derived from tile dimensions', () => {

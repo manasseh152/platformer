@@ -1,6 +1,6 @@
 import { centerCameraOnPlayer } from './camera.js';
-import { createEnemies, createPlayer, getSpawnPoint } from './levels/tilemap.js';
-import { getAllLevels as getRegisteredLevels, getDefaultLevel, getLevelById } from './campaign/registry.js';
+import { createEnemies, createPlayer, getSpawnPoint } from './tilemaps/tilemap.js';
+import { getAllTilemapLevelDefinitions as getRegisteredLevels, getDefaultTilemapLevelDefinition as getDefaultLevel, getTilemapLevelDefinitionById as getLevelById } from './tilemaps/registry.js';
 import { isVisibleToMode } from './categories/registry.js';
 import { browserRuntime } from './runtime.js';
 
