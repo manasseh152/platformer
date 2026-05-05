@@ -54,25 +54,21 @@ function registerTilemapLevelDefinition(definition) {
 }
 
 function registerExecutableGym(gym) {
+  const sceneId = gym.sceneId ?? gym.composition?.stack?.[0]?.scene;
   return registry.register(defineScenarioEntry({
-    id: gym.id,
-    name: gym.name,
-    kind: gym.kind,
-    categories: gym.categories,
-    visibility: gym.visibility,
-    description: gym.description,
+    ...gym,
     source: 'gyms',
-    targetId: gym.sceneId,
-    artifacts: gym.artifacts,
-    tests: gym.artifacts?.filter(artifact => artifact.startsWith('tests/')) ?? [],
+    targetId: sceneId,
+    artifacts: gym.artifacts ?? [...(gym.tests ?? []), ...(gym.docs ?? [])],
+    tests: gym.tests ?? gym.artifacts?.filter(artifact => artifact.startsWith('tests/')) ?? [],
     docs: gym.docs ?? [],
     covers: gym.covers ?? [],
     ci: gym.ci ?? true,
-    composition: {
+    composition: gym.composition ?? {
       type: 'executable-gym',
-      stack: [{ scene: gym.sceneId, props: { gymId: gym.id } }]
+      stack: [{ scene: sceneId, props: { gymId: gym.id } }]
     },
-    launch: game => game.runtime?.scenes?.switchScene?.(gym.sceneId) ?? { ok: false, reason: 'missing-scene-host', level: game.level }
+    launch: game => game.runtime?.scenes?.switchScene?.(sceneId) ?? { ok: false, reason: 'missing-scene-host', level: game.level }
   }));
 }
 

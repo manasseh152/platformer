@@ -1,14 +1,18 @@
 import { expect, test } from '@playwright/test';
 import { getAllGyms, getGymById } from '../src/gyms/registry.js';
 
-test('executable gyms use shared catalog metadata conventions', () => {
+test('gym scenarios use shared scenario metadata conventions', () => {
   expect(getGymById('ui-navigation-gym')).toMatchObject({
     id: 'ui-navigation-gym',
     name: 'UI Navigation Gym',
-    kind: 'executable-gym',
+    source: 'gyms',
+    kind: 'gym-scenario',
     categories: ['gyms'],
     sceneId: 'level',
-    visibility: 'developer'
+    visibility: 'developer',
+    composition: { type: 'executable-gym' },
+    tests: ['tests/gyms/ui-navigation.gym.spec.js'],
+    ci: true
   });
   expect(getGymById('ui-navigation')).toBeNull();
   expect(getAllGyms().map(gym => gym.id)).toContain('ui-navigation-gym');

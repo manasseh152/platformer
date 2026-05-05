@@ -1,10 +1,24 @@
 export const uiNavigationGym = {
   id: 'ui-navigation-gym',
   name: 'UI Navigation Gym',
-  kind: 'executable-gym',
+  source: 'gyms',
+  kind: 'gym-scenario',
   categories: ['gyms'],
-  sceneId: 'level',
   visibility: 'developer',
-  description: 'Executable browser gym for Developer Mode, Level Select visibility, and scene/event snapshots.',
-  artifacts: ['screenshots', 'snapshots', 'events']
+  description: 'Executable browser gym for Developer Mode, Scenario Browser visibility, and scene/event snapshots.',
+  docs: [],
+  tests: ['tests/gyms/ui-navigation.gym.spec.js'],
+  covers: [
+    'ui.developer-mode-toggle',
+    'ui.scenario-browser-navigation',
+    'ui.gym-api-snapshot'
+  ],
+  ci: true,
+  composition: {
+    type: 'executable-gym',
+    stack: [{ scene: 'level', props: { gymId: 'ui-navigation-gym' } }]
+  },
+  // Deprecated compatibility fields for current scenario launcher and gym tests.
+  sceneId: 'level',
+  artifacts: ['tests/gyms/ui-navigation.gym.spec.js', 'screenshots', 'snapshots', 'events']
 };
