@@ -296,47 +296,97 @@ gate-lab            -> finish-gate-gym
 
 ### Phase 1: Domain language and ADR
 
-- Add this ADR.
+Status: complete.
+
+- Added this ADR.
 - Use it as the source of truth for future implementation slices.
 - Do not introduce new code that expands the old `scene entry` / `level registry` ambiguity.
 
 ### Phase 2: Tilemap migration
 
-- Consolidate tilemap helpers and definitions under `src/tilemaps/`.
-- Introduce APIs such as `getTilemapLevelDefinitionById()` and `getAllTilemapLevelDefinitions()`.
-- Keep deprecated adapters from old campaign/level modules only as needed.
-- Ensure scenarios reference tilemaps explicitly by `tilemapLevelDefinitionId`.
+Status: partially complete.
+
+Completed:
+
+- Consolidated tilemap helpers and definitions under `src/tilemaps/`.
+- Added `src/tilemaps/registry.js` with `getTilemapLevelDefinitionById()` and `getAllTilemapLevelDefinitions()`.
+- Added deprecated adapters from old campaign/level modules where needed.
+- Scenario compositions now reference tilemaps explicitly by `tilemapLevelDefinitionId`.
+
+Remaining:
+
+- Rename legacy tilemap definition IDs to clean gym/zoo map IDs.
+- Remove deprecated `src/campaign/registry.js` and `src/levels/tilemap.js` adapters after callers migrate.
 
 ### Phase 3: Scenario registries
 
-- Add `src/scenarios/registry.js`.
-- Add or purify source registries:
-  - `src/campaigns/registry.js`
-  - `src/gyms/registry.js`
-  - `src/zoos/registry.js`
-- Campaigns contain only progression scenarios.
-- Gyms contain validation scenarios.
-- Zoos contain composition/example scenarios.
-- Replace useful legacy labs with clean gym/zoo scenarios.
+Status: partially complete.
+
+Completed:
+
+- Added `src/scenarios/registry.js`.
+- Added `src/campaigns/registry.js`.
+- Added `src/zoos/registry.js`.
+- Kept deprecated `src/scenes/registry.js` and `src/levels/registry.js` as adapters over scenarios.
+- Added scenario metadata/composition foundation.
+
+Remaining:
+
+- Purify `src/gyms/registry.js` into gym scenario entries rather than the current executable-gym compatibility shape.
+- Replace useful legacy labs with clean gym/zoo scenarios:
+  - `movement-gym`
+  - `hazard-gym`
+  - `finish-gate-gym`
+  - `enemy-zoo`
+- Remove source-as-category duplication.
+- Remove scenario `kind` compatibility.
 
 ### Phase 4: Scenario service and URL behavior
 
-- Add `app.scenarios` service.
-- Implement visible listing, selection, current scenario tracking, launch, and restart.
-- Implement URL `scenario`, `mode=developer`, and `autorun=1` behavior.
-- Update Scenario Browser/Level Select to use `app.scenarios`.
+Status: partially complete.
+
+Completed:
+
+- Added `src/scenarios/service.js` for visible listing, selection, current scenario tracking, launch, and restart.
+- Added `src/scenarios/url.js` for `scenario`, `mode=developer`, `developerMode=1`, and `autorun=1` behavior.
+- Wired current Level Select selection through `game.scenarios`.
+
+Remaining:
+
+- Move from `game.scenarios` compatibility placement to `app.scenarios` after `createGameApp()` lands.
+- Update the eventual `ScenarioBrowserScene` to use this service directly.
+- Expand browser UI copy/grouping from Level Select toward Scenario Browser in developer mode.
 
 ### Phase 5: App and GameplaySession split
 
+Status: partially complete.
+
+Completed:
+
+- Added `src/gameplay-session.js` with `createGameplaySession()`, `resetGameplaySession()`, and `syncGameplaySessionToGame()`.
+- `state.js` now creates `game.gameplaySession` while preserving compatibility fields.
+- `level-manager.js` resets gameplay through `GameplaySession`.
+
+Remaining:
+
 - Introduce `createGameApp()` as composition root.
-- Introduce `createGameplaySession()` for gameplay state.
 - Move gameplay systems toward `gameplaySession` parameters instead of full `game`.
+- Remove compatibility mirrors for `game.level`, `game.player`, `game.enemies`, `game.camera`, and global flags after scenes/app split.
 - Keep runtime as `app.runtime`.
 
 ### Phase 6: Scene library and scene stack
 
-- Add scene factory library for resolving declarative scenario compositions.
-- Replace single active scene host with layered scene stack.
+Status: partially complete.
+
+Completed:
+
+- Added `src/scenes/library.js` for resolving declarative scenario compositions.
+- Added `src/scenes/default-library.js` for current gameplay/level factory compatibility.
+- Added `src/scene-stack.js` with layered update/render/input behavior.
+
+Remaining:
+
+- Integrate `scene-stack` into `main.js` in place of single-current `scene-host`.
 - Model pause/start as scene stack/base scene state.
 - Mirror old flags only during migration.
 

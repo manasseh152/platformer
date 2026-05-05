@@ -1,6 +1,5 @@
 import { CAMERA_HEIGHT, CAMERA_WIDTH, CAMERA_WORLD_HEIGHT, CAMERA_WORLD_WIDTH } from './constants.js';
-import { centerCameraOnPlayer, createCamera } from './camera.js';
-import { createEnemies, createPlayer, getSpawnPoint } from './tilemaps/tilemap.js';
+import { createGameplaySession, resetGameplaySession, syncGameplaySessionToGame } from './gameplay-session.js';
 import { createLevelManager, resolveInitialLevel } from './level-manager.js';
 import { createInputState } from './input.js';
 import { createPresenter } from './presenter.js';
@@ -16,6 +15,7 @@ export function createGame(ui, runtime = browserRuntime) {
   const presenter = createPresenter(ui.canvas, CAMERA_WIDTH, CAMERA_HEIGHT);
   const settings = loadSettings(runtime.storage);
   const activeLevel = resolveInitialLevel(settings);
+  const gameplaySession = createGameplaySession(activeLevel, { view: null, scenarioId: activeLevel.id });
   const game = {
     runtime,
     canvas: ui.canvas,
@@ -43,13 +43,14 @@ export function createGame(ui, runtime = browserRuntime) {
       paused: false,
       won: false
     },
-    level: activeLevel,
+    gameplaySession,
+    level: gameplaySession.tilemapLevelDefinition,
     levels: null,
-    player: createPlayer(getSpawnPoint(activeLevel)),
-    enemies: createEnemies(activeLevel),
-    dust: [],
-    particles: [],
-    camera: createCamera(),
+    player: gameplaySession.player,
+    enemies: gameplaySession.enemies,
+    dust: gameplaySession.dust,
+    particles: gameplaySession.particles,
+    camera: gameplaySession.camera,
     input: createInputState(),
     settings,
     session: { developerModeOverride: false },
@@ -58,7 +59,8 @@ export function createGame(ui, runtime = browserRuntime) {
     menu: { page: 'main', origin: 'pause', direction: 'forward' },
     clock: { last: runtime.now() }
   };
-  centerCameraOnPlayer(game.camera, game.player, game.view);
+  resetGameplaySession(gameplaySession, activeLevel, { view: game.view, scenarioId: activeLevel.id });
+  syncGameplaySessionToGame(game, gameplaySession);
   game.levels = createLevelManager(game, runtime);
   game.sceneLibrary = createDefaultSceneLibrary();
   game.scenarios = createScenarioService(game, runtime);

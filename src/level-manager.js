@@ -1,5 +1,4 @@
-import { centerCameraOnPlayer } from './camera.js';
-import { createEnemies, createPlayer, getSpawnPoint } from './tilemaps/tilemap.js';
+import { resetGameplaySession, syncGameplaySessionToGame } from './gameplay-session.js';
 import { getAllTilemapLevelDefinitions as getRegisteredLevels, getDefaultTilemapLevelDefinition as getDefaultLevel, getTilemapLevelDefinitionById as getLevelById } from './tilemaps/registry.js';
 import { isVisibleToMode } from './categories/registry.js';
 import { browserRuntime } from './runtime.js';
@@ -22,14 +21,12 @@ export function getAllLevels() {
 
 export function createLevelManager(game, runtime = browserRuntime) {
   function resetRuntimeForLevel() {
-    Object.assign(game.player, createPlayer(getSpawnPoint(game.level)));
-    game.enemies.length = 0;
-    game.enemies.push(...createEnemies(game.level));
-    game.particles.length = 0;
-    game.dust.length = 0;
+    resetGameplaySession(game.gameplaySession, game.level, {
+      view: game.view,
+      scenarioId: game.scenarios?.current?.id ?? game.level?.id ?? null
+    });
+    syncGameplaySessionToGame(game, game.gameplaySession);
     game.flags.won = false;
-    centerCameraOnPlayer(game.camera, game.player, game.view);
-    game.camera.shake = 0;
     syncActiveLevelDataset(game);
   }
 
