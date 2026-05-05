@@ -29,7 +29,11 @@ function snapshotCamera(camera) {
   };
 }
 
-export function createLevelScene(game) {
+export function createLevelScene(game, props = {}) {
+  if (props.tilemapLevelDefinitionId && game.levels?.current?.id !== props.tilemapLevelDefinitionId) {
+    game.levels.switchLevel(props.tilemapLevelDefinitionId);
+  }
+
   return {
     id: 'level',
     kind: 'level',

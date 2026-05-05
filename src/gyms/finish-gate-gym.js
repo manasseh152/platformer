@@ -25,6 +25,5 @@ export const finishGateGymScenario = {
         }
       }
     ]
-  },
-  targetId: 'finish-gate-gym-map'
+  }
 };

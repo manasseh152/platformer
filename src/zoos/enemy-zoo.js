@@ -21,6 +21,5 @@ export const enemyZooScenario = {
         }
       }
     ]
-  },
-  targetId: 'enemy-zoo-map'
+  }
 };

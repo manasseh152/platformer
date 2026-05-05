@@ -10,17 +10,16 @@ test('scenario registry is a curated selectable catalog over multiple sources', 
   expect(getScenarioEntryById('act-01-level-1')).toMatchObject({
     id: 'act-01-level-1',
     source: 'campaigns',
-    targetId: 'act-01-level-1',
     visibility: 'public'
   });
   expect(getScenarioEntryById('movement-gym')).toMatchObject({
     source: 'gyms',
-    targetId: 'movement-gym-map',
     categories: ['movement'],
     visibility: 'developer'
   });
   expect(Object.keys(scenarioEntries)).toContain('movement-gym');
-  expect(getAllScenarioEntries().every(entry => typeof entry.launch === 'function')).toBe(true);
+  expect(getAllScenarioEntries().every(entry => entry.composition?.stack?.length)).toBe(true);
+  expect(getAllScenarioEntries().every(entry => entry.launch === undefined)).toBe(true);
 });
 
 test('scenario registry filters visibility independent of source catalog', () => {

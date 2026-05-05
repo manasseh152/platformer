@@ -5,7 +5,6 @@ test('zoo scenarios document composed examples and default out of CI', () => {
   expect(getZooScenarioById('enemy-zoo')).toMatchObject({
     id: 'enemy-zoo',
     source: 'zoos',
-    targetId: 'enemy-zoo-map',
     visibility: 'developer',
     composition: { type: 'tilemap-gameplay' },
     covers: ['enemy.composition-showcase', 'enemy.patrol-variety'],

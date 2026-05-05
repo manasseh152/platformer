@@ -1,44 +1,13 @@
 # Level Browser Registry Plan
 
-## Milestone 1: catalog foundations
+Superseded by `docs/adr/0001-scenes-scenarios-and-tilemaps.md`.
 
-- Split monolithic level data into `src/campaign/*`.
-- Keep `src/campaign/registry.js` and `src/gyms/registry.js` as separate static catalogs.
-- Keep reusable level-scene/tilemap domain code in `src/levels/*`; this can move toward `core` later if needed.
-- Delete the old `src/level.js` facade once imports are migrated.
-- Add `src/categories/registry.js` as a centralized category/tag catalog.
-- Add shared catalog metadata validation for common fields.
-- Remove URL-selected initial levels; boot always uses `getDefaultLevel()`.
+The level browser is now backed by the canonical scenario model:
 
-Canonical IDs:
+- scenarios come explicitly from `src/campaigns/`, `src/gyms/`, and `src/zoos/`
+- tilemaps live under `src/tilemaps/` as gameplay data assets, not inferred launch entries
+- clean scenario IDs are canonical (`movement-gym`, `hazard-gym`, `finish-gate-gym`, `enemy-zoo`)
+- scenario `kind`, legacy scenario IDs, source-as-category tags, and old registry adapters have been removed
+- scene-owned DOM and the scenario service are the current browser integration points
 
-- `act-01-level-1`
-- `legacy-movement-lab`
-- `legacy-hazard-lab`
-- `legacy-enemy-zoo`
-- `gate-lab`
-- `ui-navigation-gym`
-
-Common catalog fields:
-
-- `id`
-- `name`
-- `kind`
-- `categories`
-- `visibility`
-- `description`
-
-Conventions:
-
-- `kind` is implementation/runtime type, e.g. `tilemap-level` or `executable-gym`.
-- `categories` are generic grouping/filter tags.
-- `visibility` is access policy: `public` or `developer`.
-- `legacy` is a filter category/tag, not a status field.
-- Level Select remains named Level Select and groups entries by visible group categories.
-- Executable gyms remain registry-only until Milestone 2.
-
-## Milestone 2: browser behavior
-
-- Compose level, gym, zoo, lab, and future scene catalogs into a Level Select/browser registry.
-- Add developer-only category filters and search.
-- Add launch handling for executable gyms and future scenes.
+Keep this file only as a historical pointer; new structural decisions should update ADR 0001 or create a new ADR.

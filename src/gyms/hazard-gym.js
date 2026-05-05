@@ -21,6 +21,5 @@ export const hazardGymScenario = {
         }
       }
     ]
-  },
-  targetId: 'hazard-gym-map'
+  }
 };

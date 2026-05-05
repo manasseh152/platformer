@@ -16,8 +16,5 @@ export const uiNavigationGym = {
   composition: {
     type: 'executable-gym',
     stack: [{ scene: 'level', props: { gymId: 'ui-navigation-gym' } }]
-  },
-  // Deprecated compatibility fields for current scenario launcher and gym tests.
-  sceneId: 'level',
-  artifacts: ['tests/gyms/ui-navigation.gym.spec.js', 'screenshots', 'snapshots', 'events']
+  }
 };

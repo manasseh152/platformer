@@ -22,5 +22,5 @@ test('public mode keeps Level Select copy and hides developer scenarios', async 
 
   await expect(page.locator('#menuTitle')).toHaveText('Level Select');
   await expect(page.locator('button[data-scenario-id="act-01-level-1"]')).toBeVisible();
-  await expect(page.locator('button[data-scenario-id="movement-gym"]')).toBeVisible();
+  await expect(page.locator('button[data-scenario-id="movement-gym"]')).toHaveCount(0);
 });

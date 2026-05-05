@@ -6,15 +6,32 @@ import { createScenarioService } from '../src/scenarios/service.js';
 function makeGame() {
   const runtime = createRuntime({ now: () => 200 });
   const calls = [];
+  runtime.scenes = {
+    replaceStack: scenes => ({ scenes })
+  };
   const game = {
     runtime,
     settings: { developerMode: false },
     session: { developerModeOverride: false },
+    input: {},
+    menu: {},
     levels: {
+      current: { id: 'act-01-level-1' },
       switchLevel: id => {
         calls.push(id);
-        return { ok: true, level: { id } };
+        game.levels.current = { id };
+        game.level = game.levels.current;
+        return { ok: true, level: game.levels.current };
       }
+    }
+  };
+  game.sceneLibrary = {
+    create(id, app, props = {}) {
+      if (props.tilemapLevelDefinitionId) app.levels.switchLevel(props.tilemapLevelDefinitionId);
+      return { ok: true, scene: { id }, factory: { id } };
+    },
+    resolveSceneComposition(library, app, composition) {
+      return { ok: true, scenes: composition.stack.map(layer => library.create(layer.scene, app, layer.props).scene) };
     }
   };
   game.scenarios = createScenarioService(game, runtime);

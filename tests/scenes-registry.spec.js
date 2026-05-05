@@ -5,12 +5,10 @@ test('runtime scene registry adapter has been removed; scenarios are canonical',
   expect(getScenarioEntryById('act-01-level-1')).toMatchObject({
     id: 'act-01-level-1',
     source: 'campaigns',
-    targetId: 'act-01-level-1',
     visibility: 'public'
   });
   expect(getScenarioEntryById('movement-gym')).toMatchObject({
     source: 'gyms',
-    targetId: 'movement-gym-map',
     categories: ['movement'],
     visibility: 'developer'
   });

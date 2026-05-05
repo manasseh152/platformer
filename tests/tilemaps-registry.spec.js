@@ -23,11 +23,11 @@ test('tilemap registry owns parsed tilemap level definitions', () => {
 test('tilemap definitions are explicit assets rather than launch scenarios', () => {
   for (const definition of getAllTilemapLevelDefinitions()) {
     expect(definition).toMatchObject({
-      kind: 'tilemap-level',
       tileSize: expect.any(Number),
       cols: expect.any(Number),
       rows: expect.any(Number),
       tiles: expect.any(Object)
     });
+    expect(definition.kind).toBeUndefined();
   }
 });

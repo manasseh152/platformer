@@ -5,7 +5,6 @@ test('scenario registry composes tilemap definitions and executable gyms', () =>
   expect(getScenarioEntryById('act-01-level-1')).toMatchObject({
     id: 'act-01-level-1',
     source: 'campaigns',
-    targetId: 'act-01-level-1',
     composition: {
       type: 'tilemap-gameplay',
       stack: [expect.objectContaining({ scene: 'gameplay' })]
@@ -14,19 +13,16 @@ test('scenario registry composes tilemap definitions and executable gyms', () =>
   });
   expect(getScenarioEntryById('movement-gym')).toMatchObject({
     source: 'gyms',
-    targetId: 'movement-gym-map',
     composition: { type: 'tilemap-gameplay' }
   });
   expect(getScenarioEntryById('enemy-zoo')).toMatchObject({
     source: 'zoos',
-    targetId: 'enemy-zoo-map',
     composition: { type: 'tilemap-gameplay' },
     ci: false
   });
   expect(getScenarioEntryById('enemy-zoo')).toBeTruthy();
   expect(getScenarioEntryById('ui-navigation-gym')).toMatchObject({
     source: 'gyms',
-    targetId: 'level',
     composition: { type: 'executable-gym' },
     ci: true
   });

@@ -113,6 +113,10 @@ function scenarioTagNames(entry) {
     .join(', ');
 }
 
+function tilemapDefinitionIdForScenario(entry) {
+  return entry.composition?.stack?.find(layer => layer.props?.tilemapLevelDefinitionId)?.props?.tilemapLevelDefinitionId ?? null;
+}
+
 function renderScenarioBrowser(game, message = '') {
   const { ui } = game;
   if (!ui.levelSelectList) return;
@@ -131,7 +135,7 @@ function renderScenarioBrowser(game, message = '') {
       <h3>${group.name}</h3>
       <div class="settings-row-list">
         ${entries.map(entry => {
-          const isCurrent = entry.targetId === current.id || game.scenarios?.current?.id === entry.id;
+          const isCurrent = tilemapDefinitionIdForScenario(entry) === current.id || game.scenarios?.current?.id === entry.id;
           const tags = scenarioTagNames(entry);
           const docs = entry.docs?.length ? ` // Docs: ${entry.docs.join(', ')}` : '';
           const tests = entry.tests?.length ? ` // Tests: ${entry.tests.join(', ')}` : '';

@@ -21,7 +21,5 @@ export const movementGymScenario = {
         }
       }
     ]
-  },
-  // Deprecated compatibility during legacy ID migration.
-  targetId: 'movement-gym-map'
+  }
 };

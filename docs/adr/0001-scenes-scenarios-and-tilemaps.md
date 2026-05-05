@@ -436,17 +436,14 @@ Completed:
 
 ### Phase 8: Cleanup
 
-Status: complete for the ADR 0001 migration boundary.
+Status: complete.
 
 Completed:
 
-- New runtime/menu code no longer imports deprecated `src/campaign/registry.js`, `src/levels/registry.js`, or `src/scenes/registry.js` paths.
+- Removed deprecated adapter modules: `src/campaign/registry.js`, `src/levels/registry.js`, and `src/scenes/registry.js`.
+- Removed legacy tilemap definitions and compatibility zoo scenario IDs.
+- Removed source-as-category legacy tags and legacy/labs categories.
+- Removed scenario `kind` from scenario definitions and registries; `source` plus `composition.type` is canonical.
+- Replaced global `game.flags.started/paused/won` usage with app-shell state helpers and `GameplaySession.outcome`.
 - Static menu markup was removed from `index.html`; scene-owned DOM is now created by scene modules.
-- Clean scenario IDs remain canonical in the scenario browser and URL flow.
-- Legacy launch IDs remain unregistered as scenarios.
-- Compatibility mirrors and deprecated adapters are now isolated to existing tests and compatibility modules; no new feature code should depend on them.
-
-Deferred compatibility removals:
-
-- `game.flags.started/paused/won` remain as app-shell compatibility mirrors until the start/pause/win overlays are converted from menu-controller state to fully stacked runtime scenes.
-- Deprecated adapter files remain temporarily for existing external imports and regression tests, but they must not receive new business logic.
+- Clean scenario IDs are canonical in browser, tests, registries, and URL flow.

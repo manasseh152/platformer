@@ -65,8 +65,7 @@ export const act01Level1Definition = {
 
 export const act01Level1 = withLevelMeta(parseTilemap(act01Level1Definition), {
   id: 'act-01-level-1',
-  name: 'Act 01 Level 1',
-  kind: 'tilemap-level',
+  name: 'Act 01 Level 1',
   categories: ['levels', 'act-01'],
   visibility: 'public',
   description: 'Reach the glowing gate beyond the crumbling platforms and spike pit.'

@@ -37,7 +37,7 @@ test(`${gym.name}: developer mode exposes clean scenarios and loads Movement Gym
   const developerSnapshot = await captureCheckpoint(page, testInfo, '01-developer-mode-enabled');
   expect(developerSnapshot).toMatchObject({
     scene: { id: 'level', kind: 'level', levelId: 'act-01-level-1' },
-    level: { id: 'act-01-level-1', name: 'Act 01 Level 1', kind: 'tilemap-level', visibility: 'public' },
+    level: { id: 'act-01-level-1', name: 'Act 01 Level 1', visibility: 'public' },
     ui: { started: false, paused: false, menuPage: 'settings-category', menuOrigin: 'start' },
     settings: { developerMode: true }
   });
@@ -67,7 +67,7 @@ test(`${gym.name}: developer mode exposes clean scenarios and loads Movement Gym
 
   const movementGymSnapshot = await captureCheckpoint(page, testInfo, '03-movement-gym-selected');
   expect(movementGymSnapshot).toMatchObject({
-    level: { id: 'movement-gym-map', name: 'Movement Gym Map', kind: 'tilemap-level', visibility: 'developer' },
+    level: { id: 'movement-gym-map', name: 'Movement Gym Map', visibility: 'developer' },
     ui: { started: false, paused: false, menuPage: 'main' },
     settings: { developerMode: true }
   });

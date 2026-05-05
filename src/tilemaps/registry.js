@@ -13,7 +13,6 @@ function assertTilemapLevelDefinition(definition) {
 
 const registry = createCatalogRegistry({
   name: 'tilemaps',
-  allowedKinds: ['tilemap-level'],
   validateEntry: assertTilemapLevelDefinition
 });
 

@@ -49,8 +49,7 @@ export const enemyZooMapDefinition = {
 
 export const enemyZooMap = withLevelMeta(parseTilemap(enemyZooMapDefinition), {
   id: 'enemy-zoo-map',
-  name: 'Enemy Zoo Map',
-  kind: 'tilemap-level',
+  name: 'Enemy Zoo Map',
   categories: ['enemy'],
   visibility: 'developer',
   description: 'Tilemap fixture documenting enemy combinations.'
