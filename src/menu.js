@@ -7,6 +7,7 @@ import { syncGymApi } from './gym.js';
 import { browserRuntime } from './runtime.js';
 import { getAllCategories, primaryGroupCategoryFor } from './categories/registry.js';
 import { getDefaultLevel } from './campaign/registry.js';
+import { getVisibleLevelEntries, launchLevelEntry } from './levels/registry.js';
 
 const pageElement = (ui, page) => ({ main: ui.pauseMainPage, 'level-select': ui.levelSelectPage, settings: ui.settingsHubPage, 'settings-category': ui.settingsCategoryPage })[page];
 const backablePages = ['level-select', 'settings', 'settings-category'];
@@ -94,24 +95,24 @@ function renderLevelSelect(game, message = '') {
   const { ui } = game;
   if (!ui.levelSelectList) return;
   const current = game.levels.getCurrentLevel();
-  const levels = game.levels.getSelectableLevels();
+  const entries = getVisibleLevelEntries({ developerMode: game.settings.developerMode });
   const grouped = new Map();
-  for (const level of levels) {
-    const category = primaryGroupCategoryFor(level, { developerMode: game.settings.developerMode });
-    if (!grouped.has(category.id)) grouped.set(category.id, { category, levels: [] });
-    grouped.get(category.id).levels.push(level);
+  for (const entry of entries) {
+    const category = primaryGroupCategoryFor(entry, { developerMode: game.settings.developerMode });
+    if (!grouped.has(category.id)) grouped.set(category.id, { category, entries: [] });
+    grouped.get(category.id).entries.push(entry);
   }
   const orderedCategories = getAllCategories().filter(category => grouped.has(category.id));
   ui.levelSelectList.innerHTML = orderedCategories
     .map(category => `<section class="ds-section settings-section level-select-group">
       <h3>${category.name}</h3>
       <div class="settings-row-list">
-        ${grouped.get(category.id).levels.map(level => `<button type="button" class="ds-setting-row level-select-row${level.id === current.id ? ' is-current' : ''}" data-level-id="${level.id}">
+        ${grouped.get(category.id).entries.map(entry => `<button type="button" class="ds-setting-row level-select-row${entry.targetId === current.id ? ' is-current' : ''}" data-level-id="${entry.id}">
           <span class="ds-setting-row__copy">
-            <span class="ds-setting-row__label">${level.name}</span>
-            <span class="ds-setting-row__description">${level.description || ''}${level.categories?.includes('legacy') ? ' // Legacy' : ''}${level.visibility === 'developer' ? ' // Developer' : ''}</span>
+            <span class="ds-setting-row__label">${entry.name}</span>
+            <span class="ds-setting-row__description">${entry.description || ''}${entry.categories?.includes('legacy') ? ' // Legacy' : ''}${entry.visibility === 'developer' ? ' // Developer' : ''}</span>
           </span>
-          <span class="ds-setting-row__value">${level.id === current.id ? 'Selected' : 'Load'}</span>
+          <span class="ds-setting-row__value">${entry.targetId === current.id ? 'Selected' : 'Load'}</span>
         </button>`).join('')}
       </div>
     </section>`).join('');
@@ -353,14 +354,15 @@ function toggleDeveloperMode(game, runtime = browserRuntime) {
   });
 }
 
-function selectLevel(game, levelId) {
-  const result = game.levels.switchLevel(levelId);
+function selectLevel(game, entryId) {
+  const result = launchLevelEntry(game, entryId);
   if (!result.ok) {
     const message = result.reason === 'developer-only' ? 'Enable Developer Mode to load developer levels.' : 'Level not found.';
     renderLevelSelect(game, message);
     return;
   }
-  const message = game.menu.origin === 'start' ? `Selected ${result.level.name}.` : `Loaded ${result.level.name}.`;
+  const selectedName = result.level?.name || result.entry?.name || 'scene';
+  const message = game.menu.origin === 'start' ? `Selected ${selectedName}.` : `Loaded ${selectedName}.`;
   renderLevelSelect(game, message);
   if (game.menu.origin === 'start') closeLevelSelect(game);
 }

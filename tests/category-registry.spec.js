@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { getAllCategories, getCategoryById, primaryGroupCategoryFor } from '../src/categories/registry.js';
-import { getAllLevels, gymLevel, level } from '../src/campaign/registry.js';
+import { gymLevel, level } from '../src/campaign/registry.js';
+import { getAllLevelEntries } from '../src/levels/registry.js';
 
 test('category catalog provides group and filter tags with visibility metadata', () => {
   expect(getCategoryById('levels')).toMatchObject({ role: 'group', visibility: 'public' });
@@ -9,7 +10,7 @@ test('category catalog provides group and filter tags with visibility metadata',
 });
 
 test('levels only reference known centralized categories', () => {
-  for (const entry of getAllLevels()) {
+  for (const entry of getAllLevelEntries()) {
     expect(entry.categories.length).toBeGreaterThan(0);
     for (const categoryId of entry.categories) expect(getCategoryById(categoryId)).toBeTruthy();
   }
