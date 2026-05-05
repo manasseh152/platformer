@@ -264,3 +264,26 @@ test('keyboard and controller settings rows, binds, diagnostics, and pause flow'
   await expect(body).not.toHaveClass(/\bpaused\b/);
   await expect(pauseScreen).toBeHidden();
 });
+
+test('pause Main Menu button returns to start screen and can start a fresh run', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  const body = page.locator('body');
+
+  await page.locator('#startButton').click();
+  await expect(body).toHaveClass(/\bplaying\b/);
+
+  await page.keyboard.press('Escape');
+  await expect(body).toHaveClass(/\bpaused\b/);
+  await page.locator('#mainMenuButton').click();
+
+  await expect(body).not.toHaveClass(/\bpaused\b/);
+  await expect(body).not.toHaveClass(/\bplaying\b/);
+  await expect(page.locator('#startScreen')).toBeVisible();
+  await expect(page.locator('#pauseScreen')).toBeHidden();
+  expect(errors).toEqual([]);
+
+  await page.locator('#startButton').click();
+  await expect(body).toHaveClass(/\bplaying\b/);
+  await expect(page.locator('#startScreen')).toBeHidden();
+});

@@ -748,11 +748,12 @@ body.playing #message:not([hidden]) { opacity: 1; }
 /* === Modal state and transitions ========================================= */
 #startScreen,
 #pauseScreen { z-index: 10; transition: opacity .16s ease; }
-#pauseScreen { z-index: 9; opacity: 0; pointer-events: none; }
+#pauseScreen { z-index: 9; opacity: 0; pointer-events: none; visibility: hidden; }
 body[data-menu-origin="start"] #startScreen { opacity: 1; pointer-events: none; visibility: visible; transition-duration: 0s; }
 body[data-menu-origin="start"] #startScreen .menu-card { opacity: 0; pointer-events: none; visibility: hidden; }
 body[data-menu-origin="start"] #pauseScreen {
   opacity: 1;
+  visibility: visible;
   transition-duration: 0s;
   pointer-events: auto;
   z-index: 11;

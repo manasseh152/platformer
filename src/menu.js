@@ -307,7 +307,7 @@ export function startGame(game, runtime = browserRuntime) {
   updateMenuChrome(game);
 }
 
-export function returnToMainMenu(game) {
+export function returnToMainMenu(game, runtime = browserRuntime) {
   runDOMTransition(game, () => {
     game.resetGame();
     setStarted(game, false);
@@ -466,7 +466,7 @@ export function setupMenu(game, runtime = browserRuntime) {
   ui.startSettingsButton.addEventListener('click', () => openSettings(game, 'start'));
   ui.resumeButton.addEventListener('click', () => setPaused(game, false, runtime));
   ui.restartButton.addEventListener('click', () => game.resetGame());
-  ui.mainMenuButton.addEventListener('click', () => returnToMainMenu(game));
+  ui.mainMenuButton.addEventListener('click', () => returnToMainMenu(game, runtime));
   ui.levelSelectButton.addEventListener('click', () => openLevelSelect(game, 'pause'));
   ui.settingsButton.addEventListener('click', () => openSettings(game, 'pause'));
   ui.messageRestartButton.addEventListener('click', () => game.resetGame());
