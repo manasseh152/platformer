@@ -1,4 +1,5 @@
 import { createCatalogRegistry } from '../catalog/registry.js';
+import { enemyZooScenario } from './enemy-zoo.js';
 import { legacyEnemyZooScenario } from './legacy-enemy-zoo.js';
 
 function assertZooScenario(scenario) {
@@ -12,6 +13,7 @@ const registry = createCatalogRegistry({
   validateEntry: assertZooScenario
 });
 
+export const enemyZoo = registry.register(enemyZooScenario);
 export const legacyEnemyZoo = registry.register(legacyEnemyZooScenario);
 export const zooScenarios = Object.fromEntries(registry.getAll().map(entry => [entry.id, entry]));
 

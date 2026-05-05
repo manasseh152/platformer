@@ -17,6 +17,12 @@ test('scenario registry composes tilemap definitions and executable gyms', () =>
     targetId: 'legacy-movement-lab',
     composition: { type: 'tilemap-gameplay' }
   });
+  expect(getScenarioEntryById('enemy-zoo')).toMatchObject({
+    source: 'zoos',
+    targetId: 'enemy-zoo-map',
+    composition: { type: 'tilemap-gameplay' },
+    ci: false
+  });
   expect(getScenarioEntryById('legacy-enemy-zoo')).toMatchObject({
     source: 'zoos',
     targetId: 'legacy-enemy-zoo',
@@ -42,6 +48,7 @@ test('scenario registry filters developer scenarios', () => {
     'movement-gym',
     'hazard-gym',
     'finish-gate-gym',
-    'ui-navigation-gym'
+    'ui-navigation-gym',
+    'enemy-zoo'
   ]);
 });

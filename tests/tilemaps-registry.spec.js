@@ -19,7 +19,8 @@ test('tilemap registry owns parsed tilemap level definitions', () => {
     'gate-lab',
     'movement-gym-map',
     'hazard-gym-map',
-    'finish-gate-gym-map'
+    'finish-gate-gym-map',
+    'enemy-zoo-map'
   ]);
 });
 

@@ -2,6 +2,7 @@ import { createCatalogRegistry } from '../catalog/registry.js';
 import { getAllTilemapLevelDefinitions, getTilemapLevelDefinitionById } from '../tilemaps/registry.js';
 import { isVisibleToMode } from '../categories/registry.js';
 import { getAllGyms } from '../gyms/registry.js';
+import { getAllZooScenarios } from '../zoos/registry.js';
 
 function assertScenarioEntry(entry) {
   if (typeof entry.source !== 'string' || !entry.source.trim()) throw new Error(`${entry.id} must have a source`);
@@ -57,6 +58,20 @@ function tilemapDefinitionIdForScenario(entry) {
   return entry.composition?.stack?.find(layer => layer.props?.tilemapLevelDefinitionId)?.props?.tilemapLevelDefinitionId ?? entry.targetId ?? entry.id;
 }
 
+function registerSourceScenario(entry, defaultSource) {
+  return registry.register(defineScenarioEntry({
+    ...entry,
+    source: entry.source ?? defaultSource,
+    targetId: entry.targetId ?? tilemapDefinitionIdForScenario(entry),
+    artifacts: entry.artifacts ?? [...(entry.tests ?? []), ...(entry.docs ?? [])],
+    tests: entry.tests ?? [],
+    docs: entry.docs ?? [],
+    covers: entry.covers ?? [],
+    ci: entry.ci ?? false,
+    launch: game => game.levels.switchLevel(tilemapDefinitionIdForScenario(entry))
+  }));
+}
+
 function registerGymScenario(gym) {
   const sceneId = gym.sceneId ?? gym.composition?.stack?.[0]?.scene;
   const targetId = gym.targetId ?? sceneId ?? tilemapDefinitionIdForScenario(gym);
@@ -84,6 +99,9 @@ export const registeredTilemapScenarios = getAllTilemapLevelDefinitions()
   .filter(definition => !definition.id.endsWith('-map'))
   .map(registerTilemapLevelDefinition);
 export const registeredGymScenarios = getAllGyms().map(registerGymScenario);
+export const registeredZooScenarios = getAllZooScenarios()
+  .filter(zoo => zoo.id !== 'legacy-enemy-zoo')
+  .map(zoo => registerSourceScenario(zoo, 'zoos'));
 
 export const scenarioEntries = Object.fromEntries(registry.getAll().map(entry => [entry.id, entry]));
 

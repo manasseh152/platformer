@@ -7,6 +7,7 @@ import { gateLab } from './definitions/gate-lab.js';
 import { movementGymMap } from './definitions/movement-gym-map.js';
 import { hazardGymMap } from './definitions/hazard-gym-map.js';
 import { finishGateGymMap } from './definitions/finish-gate-gym-map.js';
+import { enemyZooMap } from './definitions/enemy-zoo-map.js';
 
 function assertTilemapLevelDefinition(definition) {
   if (!definition.tiles || !definition.tileSize || !definition.cols || !definition.rows) {
@@ -28,6 +29,7 @@ export const gateLabTilemapLevelDefinition = registry.register(gateLab);
 export const movementGymMapTilemapLevelDefinition = registry.register(movementGymMap);
 export const hazardGymMapTilemapLevelDefinition = registry.register(hazardGymMap);
 export const finishGateGymMapTilemapLevelDefinition = registry.register(finishGateGymMap);
+export const enemyZooMapTilemapLevelDefinition = registry.register(enemyZooMap);
 
 export const tilemapLevelDefinitions = Object.fromEntries(registry.getAll().map(entry => [entry.id, entry]));
 
