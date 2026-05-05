@@ -4,7 +4,7 @@ import { getScenarioEntryById, getVisibleScenarioEntries, scenarioEntries } from
 test('scenario registry composes tilemap definitions and executable gyms', () => {
   expect(getScenarioEntryById('act-01-level-1')).toMatchObject({
     id: 'act-01-level-1',
-    source: 'campaign',
+    source: 'campaigns',
     targetId: 'act-01-level-1',
     composition: {
       type: 'tilemap-gameplay',
@@ -12,9 +12,9 @@ test('scenario registry composes tilemap definitions and executable gyms', () =>
     },
     visibility: 'public'
   });
-  expect(getScenarioEntryById('legacy-movement-lab')).toMatchObject({
+  expect(getScenarioEntryById('movement-gym')).toMatchObject({
     source: 'gyms',
-    targetId: 'legacy-movement-lab',
+    targetId: 'movement-gym-map',
     composition: { type: 'tilemap-gameplay' }
   });
   expect(getScenarioEntryById('enemy-zoo')).toMatchObject({
@@ -23,28 +23,20 @@ test('scenario registry composes tilemap definitions and executable gyms', () =>
     composition: { type: 'tilemap-gameplay' },
     ci: false
   });
-  expect(getScenarioEntryById('legacy-enemy-zoo')).toMatchObject({
-    source: 'zoos',
-    targetId: 'legacy-enemy-zoo',
-    composition: { type: 'tilemap-gameplay' }
-  });
+  expect(getScenarioEntryById('legacy-enemy-zoo')).toBeNull();
   expect(getScenarioEntryById('ui-navigation-gym')).toMatchObject({
     source: 'gyms',
     targetId: 'level',
     composition: { type: 'executable-gym' },
     ci: true
   });
-  expect(Object.keys(scenarioEntries)).toEqual(expect.arrayContaining(['gate-lab', 'ui-navigation-gym']));
+  expect(Object.keys(scenarioEntries)).toEqual(expect.arrayContaining(['movement-gym', 'ui-navigation-gym']));
 });
 
 test('scenario registry filters developer scenarios', () => {
   expect(getVisibleScenarioEntries({ developerMode: false }).map(entry => entry.id)).toEqual(['act-01-level-1']);
   expect(getVisibleScenarioEntries({ developerMode: true }).map(entry => entry.id)).toEqual([
     'act-01-level-1',
-    'legacy-movement-lab',
-    'legacy-hazard-lab',
-    'legacy-enemy-zoo',
-    'gate-lab',
     'movement-gym',
     'hazard-gym',
     'finish-gate-gym',

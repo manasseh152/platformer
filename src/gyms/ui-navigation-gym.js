@@ -3,7 +3,7 @@ export const uiNavigationGym = {
   name: 'UI Navigation Gym',
   source: 'gyms',
   kind: 'gym-scenario',
-  categories: ['gyms'],
+  categories: ['ui'],
   visibility: 'developer',
   description: 'Executable browser gym for Developer Mode, Scenario Browser visibility, and scene/event snapshots.',
   docs: [],

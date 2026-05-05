@@ -51,7 +51,7 @@ export const finishGateGymMap = withLevelMeta(parseTilemap(finishGateGymMapDefin
   id: 'finish-gate-gym-map',
   name: 'Finish Gate Gym Map',
   kind: 'tilemap-level',
-  categories: ['gyms'],
+  categories: ['finish-gate'],
   visibility: 'developer',
   description: 'Tilemap fixture for finish gate trigger sizing, camera framing, and completion flow.'
 });

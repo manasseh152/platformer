@@ -51,7 +51,7 @@ export const hazardGymMap = withLevelMeta(parseTilemap(hazardGymMapDefinition), 
   id: 'hazard-gym-map',
   name: 'Hazard Gym Map',
   kind: 'tilemap-level',
-  categories: ['gyms'],
+  categories: ['hazards'],
   visibility: 'developer',
   description: 'Tilemap fixture for hazard validation scenarios.'
 });

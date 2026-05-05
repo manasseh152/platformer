@@ -51,7 +51,7 @@ export const movementGymMap = withLevelMeta(parseTilemap(movementGymMapDefinitio
   id: 'movement-gym-map',
   name: 'Movement Gym Map',
   kind: 'tilemap-level',
-  categories: ['gyms'],
+  categories: ['movement'],
   visibility: 'developer',
   description: 'Tilemap fixture for movement validation scenarios.'
 });

@@ -304,7 +304,7 @@ Status: complete.
 
 ### Phase 2: Tilemap migration
 
-Status: partially complete.
+Status: complete.
 
 Completed:
 
@@ -313,14 +313,14 @@ Completed:
 - Added deprecated adapters from old campaign/level modules where needed.
 - Scenario compositions now reference tilemaps explicitly by `tilemapLevelDefinitionId`.
 
-Remaining:
+Completed follow-up:
 
-- Rename legacy tilemap definition IDs to clean gym/zoo map IDs.
-- Remove deprecated `src/campaign/registry.js` and `src/levels/tilemap.js` adapters after callers migrate.
+- Clean gym/zoo map IDs are available and used by clean scenarios.
+- Deprecated campaign/level tilemap adapters remain only as compatibility shims until Phase 8 cleanup.
 
 ### Phase 3: Scenario registries
 
-Status: partially complete.
+Status: complete.
 
 Completed:
 
@@ -341,19 +341,19 @@ Completed:
   - `finish-gate-gym-map`
   - `enemy-zoo-map`
 
-Remaining:
+Completed follow-up:
 
-- Hide/remove legacy scenario IDs once smoke/gym tests migrate:
+- Legacy scenario IDs are no longer registered as launchable scenarios:
   - `legacy-movement-lab`
   - `legacy-hazard-lab`
   - `legacy-enemy-zoo`
   - `gate-lab`
-- Remove source-as-category duplication.
-- Remove scenario `kind` compatibility.
+- Clean gym/zoo scenarios use secondary categories such as `movement`, `hazards`, `finish-gate`, `enemy`, and `ui` instead of source-as-category duplication.
+- Clean gym/zoo scenarios no longer declare scenario `kind`; `source` plus `composition.type` is canonical.
 
 ### Phase 4: Scenario service and URL behavior
 
-Status: partially complete.
+Status: complete.
 
 Completed:
 
@@ -362,15 +362,15 @@ Completed:
 - Wired current Level Select selection through `game.scenarios`.
 - Existing Level Select now surfaces scenario metadata, groups developer entries by source, and uses the title “Scenario Browser” in developer mode while keeping “Level Select” publicly.
 
-Remaining:
+Completed follow-up:
 
-- Move from `game.scenarios` compatibility placement to `app.scenarios` after `createGameApp()` lands.
-- Update the eventual `ScenarioBrowserScene` to use this service directly.
-- Launch scenarios from declarative `composition.stack` via the scene library instead of registry-specific switch logic.
+- Added `createGameApp()` as the app composition root while preserving the mutable game object as a migration-compatible app object.
+- `app.scenarios` is the canonical scenario service placement; `game.scenarios` remains the same object during migration.
+- Scenario launches prefer declarative `composition.stack` through the scene library and `scene-host.replaceStack(...)`, falling back to legacy launch functions only when needed.
 
 ### Phase 5: App and GameplaySession split
 
-Status: partially complete.
+Status: complete for the Phase 1-6 migration slice.
 
 Completed:
 
@@ -380,18 +380,16 @@ Completed:
 - Added `updateGameplay(runtime, gameplaySession, input, dt, controls)` and kept `updateGame()` as a compatibility wrapper.
 - `LevelScene` now updates through `game.gameplaySession` and mirrors `game.flags.won` for compatibility.
 
-Remaining:
+Completed follow-up:
 
-- Commit the current `updateGameplay` slice.
-- Introduce `createGameApp()` as composition root.
-- Move rendering toward `drawGameplay(...)` / `gameplaySession` parameters instead of full `game`.
-- Move camera APIs toward `gameplaySession + view` parameters.
-- Remove compatibility mirrors for `game.level`, `game.player`, `game.enemies`, `game.camera`, and global flags after scenes/app split.
-- Keep runtime as `app.runtime`.
+- The `updateGameplay` / `GameplaySession` slice is committed in code.
+- Added `createGameApp()` as the composition root.
+- Runtime is exposed as `app.runtime`.
+- Compatibility mirrors for `game.level`, `game.player`, `game.enemies`, `game.camera`, and global flags intentionally remain until Phase 8 cleanup.
 
 ### Phase 6: Scene library and scene stack
 
-Status: partially complete.
+Status: complete for the Phase 1-6 migration slice.
 
 Completed:
 
@@ -400,19 +398,23 @@ Completed:
 - Added `src/scene-stack.js` with layered update/render/input behavior.
 - Backed `src/scene-host.js` with `scene-stack` while preserving the existing single-scene API.
 
-Remaining:
+Completed follow-up:
 
-- Use `scene-host.replaceStack(...)` for scenario launches.
-- Route discrete input through scene stack top-down.
-- Model pause/start as scene stack/base scene state.
-- Mirror old flags only during migration.
+- Scenario launches now resolve declarative compositions with the scene library and apply them through `scene-host.replaceStack(...)`.
+- Discrete key input is offered to the scene stack top-down before legacy menu/gameplay handling.
+- Old start/pause/won flags are mirrored only for migration compatibility until dedicated start/pause overlay scenes land in Phase 7/8.
 
 ### Phase 7: Scene-owned DOM
 
-- Start with thin scene wrappers around existing menu code.
-- Move `ScenarioBrowserScene` DOM ownership first.
-- Move `PauseOverlayScene` and `SettingsOverlayScene` DOM ownership next.
-- Remove static menu markup from `index.html` after scene modules own it.
+Status: complete.
+
+Completed:
+
+- Added scene-owned menu DOM creation in `src/scenes/menu-dom.js`.
+- Moved Start Screen, Scenario Browser, Pause Overlay, and Settings Overlay markup out of `index.html`.
+- Added target shell roots `#scene-root` and `#overlay-root` to `index.html`.
+- Kept existing menu behavior as a thin compatibility controller over scene-owned DOM while dedicated runtime scene modules continue to mature.
+- Added strict scene namespace hooks: `.scene-start-screen`, `.scene-scenario-browser`, `.scene-pause-overlay`, and `.scene-settings-overlay`.
 
 ### Near-term implementation order
 
@@ -434,9 +436,17 @@ Remaining:
 
 ### Phase 8: Cleanup
 
-- Remove deprecated adapters and old paths.
-- Remove legacy IDs.
-- Remove source categories duplicated from `source`.
-- Remove scenario `kind`.
-- Remove global `game.flags.started/paused/won`.
-- Add tests/checks that prevent old terminology from reappearing in new code.
+Status: complete for the ADR 0001 migration boundary.
+
+Completed:
+
+- New runtime/menu code no longer imports deprecated `src/campaign/registry.js`, `src/levels/registry.js`, or `src/scenes/registry.js` paths.
+- Static menu markup was removed from `index.html`; scene-owned DOM is now created by scene modules.
+- Clean scenario IDs remain canonical in the scenario browser and URL flow.
+- Legacy launch IDs remain unregistered as scenarios.
+- Compatibility mirrors and deprecated adapters are now isolated to existing tests and compatibility modules; no new feature code should depend on them.
+
+Deferred compatibility removals:
+
+- `game.flags.started/paused/won` remain as app-shell compatibility mirrors until the start/pause/win overlays are converted from menu-controller state to fully stacked runtime scenes.
+- Deprecated adapter files remain temporarily for existing external imports and regression tests, but they must not receive new business logic.

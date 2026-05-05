@@ -7,6 +7,7 @@ import { applySettingsToGame, loadSettings } from './settings.js';
 import { browserRuntime } from './runtime.js';
 import { createScenarioService } from './scenarios/service.js';
 import { createDefaultSceneLibrary } from './scenes/default-library.js';
+import { createAppState, setPausedState } from './app/app-state.js';
 
 /**
  * Creates the mutable game context shared by systems.
@@ -38,11 +39,7 @@ export function createGame(ui, runtime = browserRuntime) {
       resizeDebounce: 0,
       firstResizeDone: false
     },
-    flags: {
-      started: false,
-      paused: false,
-      won: false
-    },
+    appState: createAppState(),
     gameplaySession,
     level: gameplaySession.tilemapLevelDefinition,
     levels: null,
@@ -77,7 +74,7 @@ export function resetGame(game, runtime = browserRuntime) {
 }
 
 export function setPausedFlag(game, value, runtime = browserRuntime) {
-  game.flags.paused = value;
+  setPausedState(game, value);
   game.input.keys.clear();
   game.input.pressed.clear();
   document.body.classList.toggle('paused', value);

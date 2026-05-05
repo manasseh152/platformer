@@ -7,6 +7,11 @@ export const categories = {
   gyms: { id: 'gyms', name: 'Gyms', role: 'group', visibility: 'developer', order: 100 },
   zoos: { id: 'zoos', name: 'Zoos', role: 'group', visibility: 'developer', order: 110 },
   labs: { id: 'labs', name: 'Labs', role: 'group', visibility: 'developer', order: 120 },
+  movement: { id: 'movement', name: 'Movement', role: 'filter', visibility: 'developer', order: 200 },
+  hazards: { id: 'hazards', name: 'Hazards', role: 'filter', visibility: 'developer', order: 210 },
+  'finish-gate': { id: 'finish-gate', name: 'Finish Gate', role: 'filter', visibility: 'developer', order: 220 },
+  enemy: { id: 'enemy', name: 'Enemy', role: 'filter', visibility: 'developer', order: 230 },
+  ui: { id: 'ui', name: 'UI', role: 'filter', visibility: 'developer', order: 240 },
   legacy: { id: 'legacy', name: 'Legacy', role: 'filter', visibility: 'developer', order: 900 },
   uncategorized: { id: 'uncategorized', name: 'Other', role: 'group', visibility: 'public', order: 9999 }
 };

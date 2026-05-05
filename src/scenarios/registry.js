@@ -22,7 +22,7 @@ const registry = createCatalogRegistry({
 });
 
 function sourceForTilemapLevelDefinition(definition) {
-  if (definition.id === 'act-01-level-1') return 'campaign';
+  if (definition.id === 'act-01-level-1') return 'campaigns';
   if (definition.categories?.includes('zoos')) return 'zoos';
   return 'gyms';
 }
@@ -95,8 +95,10 @@ function registerGymScenario(gym) {
   }));
 }
 
+const deprecatedScenarioIds = new Set(['legacy-movement-lab', 'legacy-hazard-lab', 'legacy-enemy-zoo', 'gate-lab']);
+
 export const registeredTilemapScenarios = getAllTilemapLevelDefinitions()
-  .filter(definition => !definition.id.endsWith('-map'))
+  .filter(definition => !definition.id.endsWith('-map') && !deprecatedScenarioIds.has(definition.id))
   .map(registerTilemapLevelDefinition);
 export const registeredGymScenarios = getAllGyms().map(registerGymScenario);
 export const registeredZooScenarios = getAllZooScenarios()
@@ -124,6 +126,25 @@ export function getVisibleScenarioEntries({ developerMode = false } = {}) {
 export function launchScenarioEntry(game, entryId) {
   const entry = getScenarioEntryById(entryId);
   if (!entry) return { ok: false, reason: 'missing-scenario-entry', entry: null };
+
+  const composition = entry.composition;
+  if (composition?.stack?.length && game.sceneLibrary && game.runtime?.scenes?.replaceStack) {
+    const tilemapDefinitionId = composition.type === 'tilemap-gameplay' ? tilemapDefinitionIdForScenario(entry) : null;
+    const levelResult = tilemapDefinitionId ? game.levels?.switchLevel?.(tilemapDefinitionId) : { ok: true };
+    if (levelResult && levelResult.ok === false) return { entry, ...levelResult };
+
+    const { resolveSceneComposition } = game.sceneLibrary;
+    const resolved = typeof resolveSceneComposition === 'function'
+      ? resolveSceneComposition(game.sceneLibrary, game, composition)
+      : null;
+    if (resolved?.ok === false) return { entry, ...resolved };
+    const scenes = resolved?.scenes;
+    if (scenes?.length) {
+      const stack = game.runtime.scenes.replaceStack(scenes);
+      return { ok: true, reason: null, entry, level: levelResult?.level ?? game.level, stack };
+    }
+  }
+
   const result = entry.launch?.(game);
   return result && typeof result === 'object' ? { entry, ...result } : { ok: true, entry, result };
 }

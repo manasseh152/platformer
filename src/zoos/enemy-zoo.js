@@ -3,7 +3,7 @@ export const enemyZooScenario = {
   name: 'Enemy Zoo',
   source: 'zoos',
   kind: 'zoo-scenario',
-  categories: ['zoos'],
+  categories: ['enemy'],
   visibility: 'developer',
   description: 'Documents enemy combinations in a reusable tilemap fixture.',
   docs: [],

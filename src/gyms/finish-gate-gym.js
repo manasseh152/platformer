@@ -3,7 +3,7 @@ export const finishGateGymScenario = {
   name: 'Finish Gate Gym',
   source: 'gyms',
   kind: 'gym-scenario',
-  categories: ['gyms'],
+  categories: ['finish-gate'],
   visibility: 'developer',
   description: 'Validates finish gate trigger sizing, support blocks, camera framing, and completion flow.',
   docs: [],

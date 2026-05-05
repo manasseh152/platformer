@@ -43,10 +43,10 @@ test('scenario URL preselects without launching by default', () => {
 
 test('scenario URL autorun launches developer scenarios when mode override is set', () => {
   const game = makeGame();
-  const result = applyScenarioLaunchParams(game, readScenarioLaunchParams('?mode=developer&scenario=legacy-movement-lab&autorun=1'), game.runtime);
+  const result = applyScenarioLaunchParams(game, readScenarioLaunchParams('?mode=developer&scenario=movement-gym&autorun=1'), game.runtime);
 
-  expect(result).toMatchObject({ ok: true, scenario: { id: 'legacy-movement-lab' } });
+  expect(result).toMatchObject({ ok: true, scenario: { id: 'movement-gym' } });
   expect(game.session.developerModeOverride).toBe(true);
-  expect(game.scenarios.current).toMatchObject({ id: 'legacy-movement-lab', origin: 'url' });
-  expect(game.calls).toEqual(['legacy-movement-lab']);
+  expect(game.scenarios.current).toMatchObject({ id: 'movement-gym', origin: 'url' });
+  expect(game.calls).toEqual(['movement-gym-map']);
 });

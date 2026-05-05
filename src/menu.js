@@ -6,8 +6,8 @@ import { renderSettings, renderSettingsCategory, refreshDynamicRefs, selectedCat
 import { syncGymApi } from './gym.js';
 import { browserRuntime } from './runtime.js';
 import { getAllCategories, getCategoryById, primaryGroupCategoryFor } from './categories/registry.js';
-import { getDefaultLevel } from './campaign/registry.js';
-import { getVisibleLevelEntries } from './levels/registry.js';
+import { getDefaultTilemapLevelDefinition } from './tilemaps/registry.js';
+import { getVisibleScenarioEntries } from './scenarios/registry.js';
 
 const pageElement = (ui, page) => ({ main: ui.pauseMainPage, 'level-select': ui.levelSelectPage, settings: ui.settingsHubPage, 'settings-category': ui.settingsCategoryPage })[page];
 const backablePages = ['level-select', 'settings', 'settings-category'];
@@ -117,7 +117,7 @@ function renderScenarioBrowser(game, message = '') {
   if (!ui.levelSelectList) return;
   const current = game.levels.getCurrentLevel();
   const developerMode = Boolean(game.settings.developerMode || game.session?.developerModeOverride);
-  const entries = game.scenarios?.getVisible?.() ?? getVisibleLevelEntries({ developerMode });
+  const entries = game.scenarios?.getVisible?.() ?? getVisibleScenarioEntries({ developerMode });
   const grouped = new Map();
   for (const entry of entries) {
     const group = scenarioSourceGroupFor(entry, developerMode);
@@ -338,7 +338,7 @@ function handleReplaceSettings(game, runtime = browserRuntime) {
       updateMenuChrome(game);
     };
     const after = () => {
-      if (!game.settings.developerMode && game.level?.visibility === 'developer') game.levels.switchLevel(getDefaultLevel().id);
+      if (!game.settings.developerMode && game.level?.visibility === 'developer') game.levels.switchLevel(getDefaultTilemapLevelDefinition().id);
       ui.settingsJson.value = serializeSettings(game);
       ui.settingsJsonStatus.textContent = 'Replaced app settings.';
       renderSelectedLevelSummary(game);
@@ -375,7 +375,7 @@ function toggleDeveloperMode(game, runtime = browserRuntime) {
     game.settings = saveSettings(game.settings, runtime.storage);
     runtime.emit('settings.change', { key: 'developerMode', value: game.settings.developerMode });
     syncGymApi(game, runtime);
-    if (!game.settings.developerMode && game.level?.visibility === 'developer') game.levels.switchLevel(getDefaultLevel().id);
+    if (!game.settings.developerMode && game.level?.visibility === 'developer') game.levels.switchLevel(getDefaultTilemapLevelDefinition().id);
     renderSettingsCategory(game);
     updateMenuChrome(game);
     renderSelectedLevelSummary(game);

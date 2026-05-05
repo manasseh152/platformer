@@ -10,7 +10,7 @@ test('developer mode presents Level Select as Scenario Browser grouped by source
   await page.locator('#startLevelSelectButton').click();
 
   await expect(page.locator('#menuTitle')).toHaveText('Scenario Browser');
-  await expect(page.locator('#levelSelectList [data-scenario-source="campaign"] h3')).toHaveText('Campaigns');
+  await expect(page.locator('#levelSelectList [data-scenario-source="campaigns"] h3')).toHaveText('Campaigns');
   await expect(page.locator('#levelSelectList [data-scenario-source="gyms"] h3')).toHaveText('Gyms');
   await expect(page.locator('#levelSelectList [data-scenario-source="zoos"] h3')).toHaveText('Zoos');
   await expect(page.locator('button[data-scenario-id="ui-navigation-gym"]')).toContainText('CI');

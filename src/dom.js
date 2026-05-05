@@ -1,4 +1,7 @@
+import { ensureMenuDom } from './scenes/menu-dom.js';
+
 export function getUI() {
+  ensureMenuDom();
   const byId = id => document.getElementById(id);
   const pauseScreen = byId('pauseScreen');
   return {

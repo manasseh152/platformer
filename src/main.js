@@ -3,7 +3,8 @@ import { controlsText, hasPressed, pollGamepads, setInputScheme } from './input.
 import { handleGamepadMenuInput, handleListeningKey, activeMenuRoot, goBack, renderBinds, setupMenu, setPaused, startGame } from './menu.js';
 import { syncSettingsFromInput } from './settings.js';
 import { setupResize } from './resize.js';
-import { createGame, resetGame } from './state.js';
+import { resetGame } from './state.js';
+import { createGameApp } from './app/game-app.js';
 import { syncGymApi } from './gym.js';
 import { createRuntime } from './runtime.js';
 import { createSceneHost } from './scene-host.js';
@@ -12,7 +13,7 @@ import { applyScenarioLaunchParams, readScenarioLaunchParams } from './scenarios
 
 const runtime = createRuntime();
 const ui = getUI();
-const game = createGame(ui, runtime);
+const game = createGameApp(ui, runtime);
 const scenes = createSceneHost(runtime);
 runtime.scenes = scenes;
 game.controlsText = () => controlsText(game.input);
@@ -32,6 +33,12 @@ addEventListener('keydown', e => {
   if (input.listeningFor) {
     e.preventDefault();
     handleListeningKey(game, e.code, runtime);
+    return;
+  }
+
+  const sceneInput = scenes.handleInput({ type: 'keydown', code: e.code, repeat: e.repeat, originalEvent: e });
+  if (sceneInput?.handled) {
+    e.preventDefault();
     return;
   }
 

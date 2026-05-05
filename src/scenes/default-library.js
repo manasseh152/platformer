@@ -1,4 +1,4 @@
-import { createSceneLibrary } from './library.js';
+import { createSceneLibrary, resolveSceneComposition } from './library.js';
 import { createLevelScene } from './level-scene.js';
 
 export function createDefaultSceneLibrary() {
@@ -14,5 +14,6 @@ export function createDefaultSceneLibrary() {
     kind: 'base',
     create: app => createLevelScene(app)
   });
+  library.resolveSceneComposition = resolveSceneComposition;
   return library;
 }

@@ -47,6 +47,5 @@ export function syncGameplaySessionToGame(game, session) {
   game.dust = session.dust;
   game.particles = session.particles;
   game.camera = session.camera;
-  game.flags.won = session.outcome === 'completed';
   return game;
 }
