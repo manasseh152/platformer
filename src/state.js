@@ -6,6 +6,7 @@ import { createInputState } from './input.js';
 import { createPresenter } from './presenter.js';
 import { applySettingsToGame, loadSettings } from './settings.js';
 import { browserRuntime } from './runtime.js';
+import { createScenarioService } from './scenarios/service.js';
 
 /**
  * Creates the mutable game context shared by systems.
@@ -50,11 +51,15 @@ export function createGame(ui, runtime = browserRuntime) {
     camera: createCamera(),
     input: createInputState(),
     settings,
+    session: { developerModeOverride: false },
+    scenarios: null,
     menu: { page: 'main', origin: 'pause', direction: 'forward' },
     clock: { last: runtime.now() }
   };
   centerCameraOnPlayer(game.camera, game.player, game.view);
   game.levels = createLevelManager(game, runtime);
+  game.scenarios = createScenarioService(game, runtime);
+  game.scenarios.select(activeLevel.id);
   applySettingsToGame(game);
   document.body.dataset.levelId = game.level?.id || 'act-01-level-1';
   return game;

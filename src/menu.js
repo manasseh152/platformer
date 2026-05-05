@@ -7,7 +7,7 @@ import { syncGymApi } from './gym.js';
 import { browserRuntime } from './runtime.js';
 import { getAllCategories, primaryGroupCategoryFor } from './categories/registry.js';
 import { getDefaultLevel } from './campaign/registry.js';
-import { getVisibleLevelEntries, launchLevelEntry } from './levels/registry.js';
+import { getVisibleLevelEntries } from './levels/registry.js';
 
 const pageElement = (ui, page) => ({ main: ui.pauseMainPage, 'level-select': ui.levelSelectPage, settings: ui.settingsHubPage, 'settings-category': ui.settingsCategoryPage })[page];
 const backablePages = ['level-select', 'settings', 'settings-category'];
@@ -95,7 +95,7 @@ function renderLevelSelect(game, message = '') {
   const { ui } = game;
   if (!ui.levelSelectList) return;
   const current = game.levels.getCurrentLevel();
-  const entries = getVisibleLevelEntries({ developerMode: game.settings.developerMode });
+  const entries = game.scenarios?.getVisible?.() ?? getVisibleLevelEntries({ developerMode: game.settings.developerMode });
   const grouped = new Map();
   for (const entry of entries) {
     const category = primaryGroupCategoryFor(entry, { developerMode: game.settings.developerMode });
@@ -355,7 +355,7 @@ function toggleDeveloperMode(game, runtime = browserRuntime) {
 }
 
 function selectLevel(game, entryId) {
-  const result = launchLevelEntry(game, entryId);
+  const result = game.scenarios?.launch?.(entryId, { origin: game.menu.origin === 'start' ? 'start' : 'pause' }) ?? { ok: false, reason: 'missing-scenario' };
   if (!result.ok) {
     const message = result.reason === 'developer-only' ? 'Enable Developer Mode to load developer levels.' : 'Level not found.';
     renderLevelSelect(game, message);

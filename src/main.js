@@ -8,6 +8,7 @@ import { syncGymApi } from './gym.js';
 import { createRuntime } from './runtime.js';
 import { createSceneHost } from './scene-host.js';
 import { createLevelScene } from './scenes/level-scene.js';
+import { applyScenarioLaunchParams, readScenarioLaunchParams } from './scenarios/url.js';
 
 const runtime = createRuntime();
 const ui = getUI();
@@ -20,6 +21,9 @@ game.resetGame = () => resetGame(game, runtime);
 setupMenu(game, runtime);
 scenes.register(createLevelScene(game));
 scenes.switchScene('level');
+const launchParams = readScenarioLaunchParams();
+const urlLaunch = applyScenarioLaunchParams(game, launchParams, runtime);
+if (urlLaunch.ok && launchParams.autorun) startGame(game, runtime);
 syncGymApi(game, runtime);
 setupResize(game);
 

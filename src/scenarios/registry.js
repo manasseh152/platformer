@@ -89,6 +89,10 @@ export function getAllScenarioEntries() {
   return registry.getAll();
 }
 
+export function getDefaultScenarioEntry() {
+  return getScenarioEntryById('act-01-level-1');
+}
+
 export function getVisibleScenarioEntries({ developerMode = false } = {}) {
   return getAllScenarioEntries().filter(entry => isVisibleToMode(entry, developerMode));
 }
