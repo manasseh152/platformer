@@ -17,7 +17,7 @@ Object IDs share one scene namespace; duplicate IDs are rejected.
 ```js
 defineScene({
   id: 'scene-id',
-  kind: 'tilemap-scene',
+  kind: 'tilemap',
   worldWidth: 960,
   worldHeight: 540,
   objects: [

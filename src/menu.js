@@ -6,7 +6,7 @@ import { renderSettings, renderSettingsCategory, refreshDynamicRefs, selectedCat
 import { syncGymApi } from './gym.js';
 import { browserRuntime } from './runtime.js';
 import { getAllCategories, getCategoryById, primaryGroupCategoryFor } from './catalog/categories/registry.js';
-import { getDefaultTilemapScene } from './content/tilemaps/registry.js';
+import { getDefaultTilemap } from './content/tilemaps/registry.js';
 import { getVisibleScenarioEntries } from './catalog/scenarios/registry.js';
 import { isPaused, isStarted, isWon, setStarted } from './app/app-state.js';
 
@@ -85,12 +85,12 @@ function moveHorizontalGroupFocus(game, dx) {
   return true;
 }
 
-function renderSelectedTilemapSceneSummary(game) {
-  const tilemapScene = game.tilemapScenes.getCurrentTilemapScene();
-  if (game.ui.selectedLevelSummary) game.ui.selectedLevelSummary.textContent = `Selected level: ${tilemapScene.name}`;
+function renderSelectedTilemapSummary(game) {
+  const tilemap = game.tilemaps.getCurrentTilemap();
+  if (game.ui.selectedLevelSummary) game.ui.selectedLevelSummary.textContent = `Selected level: ${tilemap.name}`;
   const heroTitle = document.querySelector('.hero-scene__title');
-  if (heroTitle) heroTitle.textContent = tilemapScene.name;
-  if (game.ui.hudLevelName) game.ui.hudLevelName.textContent = tilemapScene.name;
+  if (heroTitle) heroTitle.textContent = tilemap.name;
+  if (game.ui.hudLevelName) game.ui.hudLevelName.textContent = tilemap.name;
 }
 
 const scenarioSourceGroups = {
@@ -114,13 +114,13 @@ function scenarioTagNames(entry) {
 }
 
 function tilemapDefinitionIdForScenario(entry) {
-  return entry.composition?.stack?.find(layer => layer.props?.tilemapSceneId)?.props?.tilemapSceneId ?? null;
+  return entry.composition?.stack?.find(layer => layer.props?.tilemapId)?.props?.tilemapId ?? null;
 }
 
 function renderScenarioBrowser(game, message = '') {
   const { ui } = game;
   if (!ui.levelSelectList) return;
-  const current = game.tilemapScenes.getCurrentTilemapScene();
+  const current = game.tilemaps.getCurrentTilemap();
   const currentScenarioId = game.scenarios?.current?.id ?? game.scenarios?.selectedScenarioId ?? null;
   const developerMode = Boolean(game.settings.developerMode || game.session?.developerModeOverride);
   const entries = game.scenarios?.getVisible?.() ?? getVisibleScenarioEntries({ developerMode });
@@ -152,7 +152,7 @@ function renderScenarioBrowser(game, message = '') {
       </div>
     </section>`).join('');
   if (ui.levelSelectStatus) ui.levelSelectStatus.textContent = message || `Current scenario: ${(game.scenarios?.current?.entry || game.scenarios?.getSelected?.() || current).name}.`;
-  renderSelectedTilemapSceneSummary(game);
+  renderSelectedTilemapSummary(game);
 }
 
 export function handleGamepadMenuInput(game) {
@@ -300,7 +300,7 @@ export function startGame(game, runtime = browserRuntime) {
   setStarted(game, true);
   game.clock.last = runtime.now();
   document.body.classList.add('playing');
-  runtime.emit('game.start', { tilemapSceneId: game.tilemapScene?.id || null });
+  runtime.emit('game.start', { tilemapId: game.tilemap?.id || null });
   game.canvas.focus?.({ preventScroll: true });
   updateMenuChrome(game);
 }
@@ -342,10 +342,10 @@ function handleReplaceSettings(game, runtime = browserRuntime) {
       updateMenuChrome(game);
     };
     const after = () => {
-      if (!game.settings.developerMode && game.tilemapScene?.visibility === 'developer') game.tilemapScenes.switchTilemapScene(getDefaultTilemapScene().id);
+      if (!game.settings.developerMode && game.tilemap?.visibility === 'developer') game.tilemaps.switchTilemap(getDefaultTilemap().id);
       ui.settingsJson.value = serializeSettings(game);
       ui.settingsJsonStatus.textContent = 'Replaced app settings.';
-      renderSelectedTilemapSceneSummary(game);
+      renderSelectedTilemapSummary(game);
       focusFirstMenuItem(game);
     };
     const developerChangesLayout = developerWasVisible !== game.settings.developerMode || normalized.developerMode !== game.settings.developerMode;
@@ -394,10 +394,10 @@ function toggleDeveloperMode(game, runtime = browserRuntime) {
     game.settings = saveSettings(game.settings, runtime.storage);
     runtime.emit('settings.change', { key: 'developerMode', value: game.settings.developerMode });
     syncGymApi(game, runtime);
-    if (!game.settings.developerMode && game.tilemapScene?.visibility === 'developer') game.tilemapScenes.switchTilemapScene(getDefaultTilemapScene().id);
+    if (!game.settings.developerMode && game.tilemap?.visibility === 'developer') game.tilemaps.switchTilemap(getDefaultTilemap().id);
     renderSettingsCategory(game);
     updateMenuChrome(game);
-    renderSelectedTilemapSceneSummary(game);
+    renderSelectedTilemapSummary(game);
   }, () => {
     const root = activeMenuRoot(game);
     if (!root?.contains(document.activeElement)) focusFirstMenuItem(game);
@@ -411,7 +411,7 @@ function selectScenario(game, entryId) {
     renderScenarioBrowser(game, message);
     return;
   }
-  const selectedName = result.tilemapScene?.name || result.entry?.name || 'scene';
+  const selectedName = result.tilemap?.name || result.entry?.name || 'scene';
   const message = game.menu.origin === 'start' ? `Selected ${selectedName}.` : `Loaded ${selectedName}.`;
   renderScenarioBrowser(game, message);
   if (game.menu.origin === 'start') closeScenarioBrowser(game);
@@ -473,7 +473,7 @@ export function setupMenu(game, runtime = browserRuntime) {
     document.querySelectorAll('.controller-focus').forEach(node => { if (node !== e.target) node.classList.remove('controller-focus'); });
   });
 
-  renderSelectedTilemapSceneSummary(game);
+  renderSelectedTilemapSummary(game);
 
   ui.startButton.addEventListener('click', () => startGame(game, runtime));
   ui.startLevelSelectButton.addEventListener('click', () => openScenarioBrowser(game, 'start'));
@@ -485,11 +485,11 @@ export function setupMenu(game, runtime = browserRuntime) {
   ui.settingsButton.addEventListener('click', () => openSettings(game, 'pause'));
   ui.messageRestartButton.addEventListener('click', () => game.resetGame());
   ui.messageNextLevelButton.addEventListener('click', () => {
-    const result = game.tilemapScenes.switchToNextTilemapScene();
+    const result = game.tilemaps.switchToNextTilemap();
     if (!result.ok) return;
     setPausedFlag(game, false, runtime);
     setStarted(game, true);
-    runtime.emit('game.next-level', { tilemapSceneId: game.tilemapScene?.id || null });
+    runtime.emit('game.next-level', { tilemapId: game.tilemap?.id || null });
     document.body.classList.add('playing');
     document.body.classList.remove('game-won', 'game-over');
     game.canvas.focus?.({ preventScroll: true });

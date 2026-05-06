@@ -11,7 +11,7 @@ export const act01Level1Scenario = {
       {
         scene: 'gameplay',
         props: {
-          tilemapSceneId: 'act-01-level-1',
+          tilemapId: 'act-01-level-1',
           goal: { type: 'finish-gate' }
         }
       }

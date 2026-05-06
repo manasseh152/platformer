@@ -1,4 +1,4 @@
-import { defineTilemapScene, gridLayer } from '../../../core/tilemaps/tilemap.js';
+import { defineTilemap, gridLayer } from '../../../core/tilemaps/tilemap.js';
 import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../objects.js';
 
 export const enemyZooMapDefinition = {
@@ -47,7 +47,7 @@ export const enemyZooMapDefinition = {
   ]
 };
 
-export const enemyZooMap = defineTilemapScene({
+export const enemyZooMap = defineTilemap({
   id: 'enemy-zoo-map',
   name: 'Enemy Zoo Map',
   categories: ['enemy'],

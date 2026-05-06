@@ -1,4 +1,4 @@
-import { defineTilemapScene, gridLayer } from '../../../core/tilemaps/tilemap.js';
+import { defineTilemap, gridLayer } from '../../../core/tilemaps/tilemap.js';
 import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../objects.js';
 
 export const movementGymMapDefinition = {
@@ -47,7 +47,7 @@ export const movementGymMapDefinition = {
   ]
 };
 
-export const movementGymMap = defineTilemapScene({
+export const movementGymMap = defineTilemap({
   id: 'movement-gym-map',
   name: 'Movement Gym Map',
   categories: ['movement'],

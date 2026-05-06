@@ -59,7 +59,7 @@ function objectFromCell(scene, layer, symbol, definition, col, row) {
   });
 }
 
-export function withTilemapSceneMeta(parsedScene, meta) { return Object.assign(parsedScene, meta); }
+export function withTilemapMeta(parsedScene, meta) { return Object.assign(parsedScene, meta); }
 
 export function parseTilemap(definition, tileSize = definition.tileSize ?? T) {
   const terrainRows = validateLegacyRows(definition.terrainRows, 'terrainRows');
@@ -69,7 +69,7 @@ export function parseTilemap(definition, tileSize = definition.tileSize ?? T) {
   const normalizedTerrainRows = terrainRows.map(row => row.replace(/[=B]/g, '#').replace(/\^/g, '.'));
   const spikeRows = terrainRows.map(row => row.replace(/[^\^]/g, EMPTY));
   if (!objectRows.some(row => row.includes('P'))) throw new Error('objectRows must contain a player spawn');
-  return defineTilemapScene({
+  return defineTilemap({
     tileSize,
     artTileSize: definition.artTileSize,
     theme: definition.theme,
@@ -99,12 +99,12 @@ function validateLegacyRows(rows, name, expectedRows = null, expectedCols = null
   });
 }
 
-export function defineTilemapScene(definition) {
+export function defineTilemap(definition) {
   const tileSize = definition.tileSize ?? T;
   const artTileSize = definition.artTileSize ?? (tileSize % DEFAULT_ART_TILE_SIZE === 0 ? DEFAULT_ART_TILE_SIZE : tileSize);
   const artTilesPerTile = tileSize / artTileSize;
   if (!Number.isInteger(artTilesPerTile)) throw new Error(`tileSize ${tileSize} must be an integer multiple of artTileSize ${artTileSize}`);
-  if (!Array.isArray(definition.layers) || definition.layers.length === 0) throw new Error('defineTilemapScene requires layers');
+  if (!Array.isArray(definition.layers) || definition.layers.length === 0) throw new Error('defineTilemap requires layers');
 
   const rows = definition.layers[0].rows.length;
   const cols = definition.layers[0].rows[0].length;
@@ -115,8 +115,8 @@ export function defineTilemapScene(definition) {
 
   const scene = {
     ...definition,
-    id: definition.id ?? 'anonymous-tilemap-scene',
-    kind: definition.kind ?? 'tilemap-scene',
+    id: definition.id ?? 'anonymous-tilemap',
+    kind: definition.kind ?? 'tilemap',
     tileSize,
     artTileSize,
     artTilesPerTile,

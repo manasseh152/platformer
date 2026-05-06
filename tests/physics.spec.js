@@ -4,7 +4,7 @@ import { createGameplaySession } from '../src/core/gameplay-session.js';
 import { parseTilemap } from '../src/core/tilemaps/tilemap.js';
 import { updateEnemy, updateGameplay } from '../src/core/physics.js';
 
-function makeTilemapScene(terrainRows) {
+function makeTilemap(terrainRows) {
   return parseTilemap({
     terrainRows,
     objectRows: [
@@ -20,16 +20,16 @@ function makeTilemapScene(terrainRows) {
   }, 10);
 }
 
-function makeGame(enemy, tilemapScene) {
+function makeGame(enemy, tilemap) {
   return {
-    tilemapScene,
+    tilemap,
     player: { x: -1000, y: -1000, w: 10, h: 10, inv: 0, dead: false },
     camera: { shake: 0 },
     particles: []
   };
 }
 
-function makeGameplayTilemapScene({ terrainRows, objectRows }) {
+function makeGameplayTilemap({ terrainRows, objectRows }) {
   return parseTilemap({
     terrainRows,
     objectRows,
@@ -56,7 +56,7 @@ function step(session, input = createInputState(), dt = 1 / 60) {
 }
 
 test('enemy horizontal collision uses pre-bounds movement direction and does not phase through a wall', () => {
-  const level = makeTilemapScene([
+  const level = makeTilemap([
     '..........#.....',
     '..........#.....',
     '..........#.....',
@@ -86,7 +86,7 @@ test('enemy horizontal collision uses pre-bounds movement direction and does not
 });
 
 test('enemy patrol bounds clamp at the edge instead of leaving overlap unresolved', () => {
-  const level = makeTilemapScene([
+  const level = makeTilemap([
     '................',
     '................',
     '................',
@@ -116,7 +116,7 @@ test('enemy patrol bounds clamp at the edge instead of leaving overlap unresolve
 });
 
 test('player can use coyote time to jump shortly after walking off a ledge', () => {
-  const level = makeGameplayTilemapScene({
+  const level = makeGameplayTilemap({
     terrainRows: [
       '............',
       '............',
@@ -150,7 +150,7 @@ test('player can use coyote time to jump shortly after walking off a ledge', () 
 });
 
 test('jump input buffers before landing and fires when the player touches ground', () => {
-  const level = makeGameplayTilemapScene({
+  const level = makeGameplayTilemap({
     terrainRows: [
       '............',
       '............',
@@ -186,7 +186,7 @@ test('jump input buffers before landing and fires when the player touches ground
 });
 
 test('spike hazards hurt once, apply invulnerability, and can kill after invulnerability expires', () => {
-  const level = makeGameplayTilemapScene({
+  const level = makeGameplayTilemap({
     terrainRows: [
       '............',
       '............',
@@ -224,7 +224,7 @@ test('spike hazards hurt once, apply invulnerability, and can kill after invulne
 });
 
 test('player slash damages enemies in front without requiring body contact', () => {
-  const level = makeGameplayTilemapScene({
+  const level = makeGameplayTilemap({
     terrainRows: [
       '............',
       '............',
@@ -268,7 +268,7 @@ test('player slash damages enemies in front without requiring body contact', () 
 });
 
 test('finish gate trigger completes the gameplay session and freezes later gameplay updates', () => {
-  const level = makeGameplayTilemapScene({
+  const level = makeGameplayTilemap({
     terrainRows: [
       '............',
       '............',

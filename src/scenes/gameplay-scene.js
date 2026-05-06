@@ -30,8 +30,8 @@ function snapshotCamera(camera) {
 }
 
 export function createGameplayScene(game, props = {}) {
-  if (props.tilemapSceneId && game.tilemapScenes?.current?.id !== props.tilemapSceneId) {
-    game.tilemapScenes.switchTilemapScene(props.tilemapSceneId);
+  if (props.tilemapId && game.tilemaps?.current?.id !== props.tilemapId) {
+    game.tilemaps.switchTilemap(props.tilemapId);
   }
 
   return {
@@ -48,7 +48,7 @@ export function createGameplayScene(game, props = {}) {
       return {
         id: 'gameplay',
         kind: 'gameplay',
-        tilemapSceneId: game.gameplaySession?.tilemapScene?.id || game.tilemapScene?.id || 'act-01-level-1',
+        tilemapId: game.gameplaySession?.tilemap?.id || game.tilemap?.id || 'act-01-level-1',
         player: snapshotPlayer(game.gameplaySession?.player || game.player),
         camera: snapshotCamera(game.gameplaySession?.camera || game.camera)
       };
@@ -56,7 +56,7 @@ export function createGameplayScene(game, props = {}) {
     dehydrate() {
       return {
         sceneId: 'gameplay',
-        tilemapSceneId: game.tilemapScene?.id || 'act-01-level-1',
+        tilemapId: game.tilemap?.id || 'act-01-level-1',
         flags: {
           started: isStarted(game),
           paused: isPaused(game),

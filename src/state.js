@@ -5,7 +5,7 @@
  */
 import { CAMERA_HEIGHT, CAMERA_WIDTH, CAMERA_WORLD_HEIGHT, CAMERA_WORLD_WIDTH } from './core/constants.js';
 import { createGameplaySession, resetGameplaySession, syncGameplaySessionToGame } from './core/gameplay-session.js';
-import { createTilemapSceneManager, resolveInitialTilemapScene } from './tilemap-scene-manager.js';
+import { createTilemapManager, resolveInitialTilemap } from './tilemap-manager.js';
 import { createInputState } from './input.js';
 import { createPresenter } from './presenter.js';
 import { applySettingsToGame, loadSettings } from './settings.js';
@@ -21,9 +21,9 @@ import { createGpuSystem } from './gpu/gpu-system.js';
 export function createGame(ui, runtime = browserRuntime) {
   const presenter = createPresenter(ui.canvas, CAMERA_WIDTH, CAMERA_HEIGHT);
   const settings = loadSettings(runtime.storage);
-  const activeLevel = resolveInitialTilemapScene(settings);
+  const activeTilemap = resolveInitialTilemap(settings);
   const gpu = createGpuSystem({ settings });
-  const gameplaySession = createGameplaySession(activeLevel, { view: null, scenarioId: activeLevel.id });
+  const gameplaySession = createGameplaySession(activeTilemap, { view: null, scenarioId: activeTilemap.id });
   const game = {
     runtime,
     canvas: ui.canvas,
@@ -49,8 +49,8 @@ export function createGame(ui, runtime = browserRuntime) {
     },
     appState: createAppState(),
     gameplaySession,
-    tilemapScene: gameplaySession.tilemapScene,
-    tilemapScenes: null,
+    tilemap: gameplaySession.tilemap,
+    tilemaps: null,
     player: gameplaySession.player,
     enemies: gameplaySession.enemies,
     dust: gameplaySession.dust,
@@ -64,27 +64,27 @@ export function createGame(ui, runtime = browserRuntime) {
     menu: { page: 'main', origin: 'pause', direction: 'forward' },
     clock: { last: runtime.now() }
   };
-  resetGameplaySession(gameplaySession, activeLevel, { view: game.view, scenarioId: activeLevel.id });
+  resetGameplaySession(gameplaySession, activeTilemap, { view: game.view, scenarioId: activeTilemap.id });
   syncGameplaySessionToGame(game, gameplaySession);
-  game.tilemapScenes = createTilemapSceneManager(game, runtime);
+  game.tilemaps = createTilemapManager(game, runtime);
   game.sceneLibrary = createDefaultSceneLibrary();
   game.scenarios = createScenarioService(game, runtime);
-  game.scenarios.select(activeLevel.id);
+  game.scenarios.select(activeTilemap.id);
   applySettingsToGame(game);
   if (game.settings.gpuExtras === 'auto') {
     game.presenter.tryEnableWebGpu?.(game.gpu).then(enabled => {
       if (enabled) runtime.emit('gpu.presenter-enabled', { mode: game.presenter.mode });
     });
   }
-  const tilemapSceneId = game.tilemapScene?.id || 'act-01-level-1';
-    document.body.dataset.tilemapSceneId = tilemapSceneId;
+  const tilemapId = game.tilemap?.id || 'act-01-level-1';
+  document.body.dataset.tilemapId = tilemapId;
   return game;
 }
 
 export function resetGame(game, runtime = browserRuntime) {
   setPausedFlag(game, false, runtime);
-  game.tilemapScenes.restartTilemapScene();
-  runtime.emit('game.reset', { tilemapSceneId: game.tilemapScene?.id || 'act-01-level-1' });
+  game.tilemaps.restartTilemap();
+  runtime.emit('game.reset', { tilemapId: game.tilemap?.id || 'act-01-level-1' });
 }
 
 export function setPausedFlag(game, value, runtime = browserRuntime) {

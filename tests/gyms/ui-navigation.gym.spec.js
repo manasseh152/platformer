@@ -36,8 +36,8 @@ test(`${gym.name}: developer mode exposes clean scenarios and loads Movement Gym
 
   const developerSnapshot = await captureCheckpoint(page, testInfo, '01-developer-mode-enabled');
   expect(developerSnapshot).toMatchObject({
-    scene: { id: 'gameplay', kind: 'gameplay', tilemapSceneId: 'act-01-level-1' },
-    tilemapScene: { id: 'act-01-level-1', name: 'Act 01 Level 1', visibility: 'public' },
+    scene: { id: 'gameplay', kind: 'gameplay', tilemapId: 'act-01-level-1' },
+    tilemap: { id: 'act-01-level-1', name: 'Act 01 Level 1', visibility: 'public' },
     ui: { started: false, paused: false, menuPage: 'settings-category', menuOrigin: 'start' },
     settings: { developerMode: true }
   });
@@ -55,22 +55,22 @@ test(`${gym.name}: developer mode exposes clean scenarios and loads Movement Gym
 
   const levelSelectSnapshot = await captureCheckpoint(page, testInfo, '02-level-select-with-gyms');
   expect(levelSelectSnapshot).toMatchObject({
-    tilemapScene: { id: 'act-01-level-1' },
+    tilemap: { id: 'act-01-level-1' },
     ui: { menuPage: 'level-select', menuOrigin: 'start' },
     settings: { developerMode: true }
   });
 
   await page.getByRole('button', { name: /Movement Gym/ }).click();
-  await expect(page.locator('body')).toHaveAttribute('data-tilemap-scene-id', 'movement-gym-map');
+  await expect(page.locator('body')).toHaveAttribute('data-tilemap-id', 'movement-gym-map');
   await expect(page.locator('#selectedLevelSummary')).toContainText('Movement Gym');
 
   const movementGymSnapshot = await captureCheckpoint(page, testInfo, '03-movement-gym-selected');
   expect(movementGymSnapshot).toMatchObject({
-    tilemapScene: { id: 'movement-gym-map', name: 'Movement Gym Map', visibility: 'developer' },
+    tilemap: { id: 'movement-gym-map', name: 'Movement Gym Map', visibility: 'developer' },
     ui: { started: false, paused: false, menuPage: 'main' },
     settings: { developerMode: true }
   });
-  expect(movementGymSnapshot.ui.bodyTilemapSceneId).toBe('movement-gym-map');
+  expect(movementGymSnapshot.ui.bodyTilemapId).toBe('movement-gym-map');
   expect(movementGymSnapshot.player.hp).toBeGreaterThan(0);
 
   const events = await page.evaluate(() => window.__gym.events());
@@ -78,7 +78,7 @@ test(`${gym.name}: developer mode exposes clean scenarios and loads Movement Gym
   expect(events.map(event => event.type)).toContain('scene.switch');
   expect(events.map(event => event.type)).toContain('settings.change');
   expect(events).toContainEqual(expect.objectContaining({
-    type: 'tilemap-scene.switch',
+    type: 'tilemap.switch',
     detail: { from: 'act-01-level-1', to: 'movement-gym-map' }
   }));
 });

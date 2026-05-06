@@ -4,33 +4,33 @@ import { movementGymMap } from './definitions/movement-gym-map.js';
 import { finishGateGymMap } from './definitions/finish-gate-gym-map.js';
 import { enemyZooMap } from './definitions/enemy-zoo-map.js';
 
-function assertTilemapScene(definition) {
-  if (definition.kind !== 'tilemap-scene' || !definition.layers || !definition.objects || !definition.tileSize || !definition.cols || !definition.rows) {
-    throw new Error(`${definition.id} must be a parsed tilemap scene`);
+function assertTilemap(definition) {
+  if (definition.kind !== 'tilemap' || !definition.layers || !definition.objects || !definition.tileSize || !definition.cols || !definition.rows) {
+    throw new Error(`${definition.id} must be a parsed tilemap`);
   }
 }
 
 const registry = createCatalogRegistry({
-  name: 'tilemap-scenes',
-  allowedKinds: ['tilemap-scene'],
-  validateEntry: assertTilemapScene
+  name: 'tilemaps',
+  allowedKinds: ['tilemap'],
+  validateEntry: assertTilemap
 });
 
-export const act01Level1TilemapScene = registry.register(act01Level1);
-export const movementGymMapTilemapScene = registry.register(movementGymMap);
-export const finishGateGymMapTilemapScene = registry.register(finishGateGymMap);
-export const enemyZooMapTilemapScene = registry.register(enemyZooMap);
+export const act01Level1Tilemap = registry.register(act01Level1);
+export const movementGymMapTilemap = registry.register(movementGymMap);
+export const finishGateGymMapTilemap = registry.register(finishGateGymMap);
+export const enemyZooMapTilemap = registry.register(enemyZooMap);
 
-export const tilemapScenes = Object.fromEntries(registry.getAll().map(entry => [entry.id, entry]));
+export const tilemaps = Object.fromEntries(registry.getAll().map(entry => [entry.id, entry]));
 
-export function getTilemapSceneById(id) {
+export function getTilemapById(id) {
   return registry.getById(id);
 }
 
-export function getAllTilemapScenes() {
+export function getAllTilemaps() {
   return registry.getAll();
 }
 
-export function getDefaultTilemapScene() {
-  return act01Level1TilemapScene;
+export function getDefaultTilemap() {
+  return act01Level1Tilemap;
 }

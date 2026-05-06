@@ -20,7 +20,7 @@ export const finishGateGymScenario = {
       {
         scene: 'gameplay',
         props: {
-          tilemapSceneId: 'finish-gate-gym-map',
+          tilemapId: 'finish-gate-gym-map',
           goal: { type: 'finish-gate' }
         }
       }

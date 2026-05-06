@@ -2,17 +2,17 @@ import { hasDown, hasPressed } from './input.js';
 import { getTransitionTriggerRect, hazardCollisionRectsOverlapping, rectsOverlap, solidCollisionRectsOverlapping } from './gameplay-scene-queries.js';
 export { rectsOverlap } from './gameplay-scene-queries.js';
 
-export function collideWithTilemapScene(entity, tilemapScene, dt) {
+export function collideWithTilemap(entity, tilemap, dt) {
   entity.wallDir = 0;
   entity.x += entity.vx * dt;
-  for (const p of solidCollisionRectsOverlapping(tilemapScene, entity)) if (rectsOverlap(entity, p)) {
+  for (const p of solidCollisionRectsOverlapping(tilemap, entity)) if (rectsOverlap(entity, p)) {
     if (entity.vx > 0) { entity.x = p.x - entity.w; entity.wallDir = 1; }
     if (entity.vx < 0) { entity.x = p.x + p.w; entity.wallDir = -1; }
     entity.vx = 0;
   }
   entity.y += entity.vy * dt;
   entity.grounded = false;
-  for (const p of solidCollisionRectsOverlapping(tilemapScene, entity)) if (rectsOverlap(entity, p)) {
+  for (const p of solidCollisionRectsOverlapping(tilemap, entity)) if (rectsOverlap(entity, p)) {
     if (entity.vy > 0) { entity.y = p.y - entity.h; entity.grounded = true; entity.coyote = .09; }
     if (entity.vy < 0) entity.y = p.y + p.h;
     entity.vy = 0;
@@ -34,7 +34,7 @@ export function hurtPlayer(runtime, game, amount, knockDir) {
   const { player } = game;
   if (player.inv > 0 || player.dead) return;
   player.hp -= amount; player.inv = 1.1; game.camera.shake = .18;
-  const scale = (game.tilemapScene?.tileSize ?? 36) / 70;
+  const scale = (game.tilemap?.tileSize ?? 36) / 70;
   player.vx = knockDir * 260 * scale; player.vy = -210 * scale;
   spawnBurst(runtime, game, player.x+player.w/2, player.y+20, '#ffffff', 14);
   if (player.hp <= 0) player.dead = true;
@@ -48,16 +48,16 @@ export function updateEnemy(runtime, game, enemy, dt) {
     runtime = { random: Math.random };
   }
   const { player } = game;
-  const tilemapScene = game.tilemapScene;
+  const tilemap = game.tilemap;
   enemy.hurt -= dt;
-  const scale = (tilemapScene?.tileSize ?? 36) / 70;
+  const scale = (tilemap?.tileSize ?? 36) / 70;
   enemy.vy = (enemy.vy || 0) + 1200 * scale * dt;
 
   const moveVx = enemy.vx;
   let turnAround = false;
   enemy.x += moveVx * dt;
 
-  for (const p of solidCollisionRectsOverlapping(tilemapScene, enemy)) if (rectsOverlap(enemy, p)) {
+  for (const p of solidCollisionRectsOverlapping(tilemap, enemy)) if (rectsOverlap(enemy, p)) {
     if (moveVx > 0) enemy.x = p.x - enemy.w;
     else if (moveVx < 0) enemy.x = p.x + p.w;
     turnAround = true;
@@ -74,7 +74,7 @@ export function updateEnemy(runtime, game, enemy, dt) {
   if (turnAround && moveVx !== 0) enemy.vx = -moveVx;
 
   enemy.y += enemy.vy * dt;
-  for (const p of solidCollisionRectsOverlapping(tilemapScene, enemy)) if (rectsOverlap(enemy, p)) {
+  for (const p of solidCollisionRectsOverlapping(tilemap, enemy)) if (rectsOverlap(enemy, p)) {
     if (enemy.vy > 0) enemy.y = p.y - enemy.h;
     if (enemy.vy < 0) enemy.y = p.y + p.h;
     enemy.vy = 0;
@@ -87,10 +87,10 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
   game.input = input;
   game.resetGame = controls.resetGame;
   const { player, enemies } = game;
-  const tilemapScene = game.tilemapScene;
+  const tilemap = game.tilemap;
   if (hasPressed(input, 'restart')) controls.resetGame?.();
   if (player.dead || gameplaySession.outcome === 'completed') { input.pressed.clear(); return; }
-  if (rectsOverlap(player, getTransitionTriggerRect(tilemapScene, 'finish'))) gameplaySession.outcome = 'completed';
+  if (rectsOverlap(player, getTransitionTriggerRect(tilemap, 'finish'))) gameplaySession.outcome = 'completed';
   if (gameplaySession.outcome === 'completed') { input.pressed.clear(); return; }
 
   const left = hasDown(input, 'left');
@@ -102,13 +102,13 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
 
   if (dashPressed && player.dashCooldown <= 0) {
     player.dash = .14; player.dashCooldown = .55;
-    const scale = tilemapScene.tileSize / 70;
+    const scale = tilemap.tileSize / 70;
     player.vx = player.dir * 560 * scale; player.vy = 0; game.camera.shake = .08;
     spawnBurst(runtime, game, player.x + player.w/2, player.y + player.h/2, '#cfffff', 14);
   }
 
   if (player.dash <= 0) {
-    const scale = tilemapScene.tileSize / 70;
+    const scale = tilemap.tileSize / 70;
     const accel = (player.grounded ? 2500 : 1500) * scale;
     const max = 245 * scale;
     if (left) { player.vx -= accel * dt; player.dir = -1; }
@@ -119,12 +119,12 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
 
   if (jumpPressed) player.jumpBuf = .12;
   if (player.jumpBuf > 0 && player.wallSlide) {
-    const scale = tilemapScene.tileSize / 70;
+    const scale = tilemap.tileSize / 70;
     player.vx = -player.wallDir * 335 * scale; player.vy = -505 * scale; player.dir = -player.wallDir;
     player.jumpBuf = 0; player.wallSlide = false;
     spawnBurst(runtime, game, player.x + player.w/2, player.y + 28, '#7ad7ff', 12);
   } else if (player.jumpBuf > 0 && (player.grounded || player.coyote > 0)) {
-    const scale = tilemapScene.tileSize / 70;
+    const scale = tilemap.tileSize / 70;
     player.vy = -535 * scale; player.grounded = false; player.coyote = 0; player.jumpBuf = 0;
     spawnBurst(runtime, game, player.x + player.w/2, player.y + player.h, '#7ad7ff', 8);
   }
@@ -132,7 +132,7 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
 
   if (attackPressed && player.attack <= 0) {
     player.attack = .22; game.camera.shake = .05;
-    const scale = tilemapScene.tileSize / 70;
+    const scale = tilemap.tileSize / 70;
     const slash = {x: player.x + (player.dir > 0 ? 24 : -48), y: player.y + 8, w: 58, h: 34};
     for (const e of enemies) if (e.hp > 0 && rectsOverlap(slash, e)) {
       e.hp--; e.hurt = .22; e.vx = player.dir * 180; game.camera.shake = .12;
@@ -141,18 +141,18 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
   }
 
   if (player.dash > 0) player.dash -= dt;
-  else player.vy += 1450 * (tilemapScene.tileSize / 70) * dt;
+  else player.vy += 1450 * (tilemap.tileSize / 70) * dt;
   player.coyote -= dt; player.jumpBuf -= dt; player.inv -= dt; player.attack -= dt; player.dashCooldown -= dt;
-  collideWithTilemapScene(player, tilemapScene, dt);
-  const [hazard] = hazardCollisionRectsOverlapping(tilemapScene, player);
+  collideWithTilemap(player, tilemap, dt);
+  const [hazard] = hazardCollisionRectsOverlapping(tilemap, player);
   if (hazard) hurtPlayer(runtime, game, hazard.damage, player.dir > 0 ? -1 : 1);
   const pushingWall = (player.wallDir === -1 && left) || (player.wallDir === 1 && right);
   player.wallSlide = !player.grounded && player.wallDir !== 0 && pushingWall && player.vy >= 0 && player.dash <= 0;
-  if (player.wallSlide) player.vy = Math.min(player.vy, 95 * (tilemapScene.tileSize / 70));
+  if (player.wallSlide) player.vy = Math.min(player.vy, 95 * (tilemap.tileSize / 70));
 
   for (const e of enemies) if (e.hp > 0) updateEnemy(runtime, game, e, dt);
 
-  if (rectsOverlap(player, getTransitionTriggerRect(tilemapScene, 'finish'))) {
+  if (rectsOverlap(player, getTransitionTriggerRect(tilemap, 'finish'))) {
     gameplaySession.outcome = 'completed';
   }
 
@@ -160,8 +160,8 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
     const p = game.particles[i]; p.life -= dt; p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 500*dt;
     if (p.life <= 0) game.particles.splice(i,1);
   }
-  if (player.grounded && Math.abs(player.vx) > 90 * (tilemapScene.tileSize / 70) && runtime.random() < .35) game.dust.push({x:player.x+player.w/2,y:player.y+player.h,vx:-player.dir*30*(tilemapScene.tileSize/70),life:.25});
-  if (player.wallSlide && runtime.random() < .45) game.dust.push({x:player.x+(player.wallDir>0?player.w:0),y:player.y+28*(tilemapScene.tileSize/70),vx:-player.wallDir*45*(tilemapScene.tileSize/70),life:.22});
+  if (player.grounded && Math.abs(player.vx) > 90 * (tilemap.tileSize / 70) && runtime.random() < .35) game.dust.push({x:player.x+player.w/2,y:player.y+player.h,vx:-player.dir*30*(tilemap.tileSize/70),life:.25});
+  if (player.wallSlide && runtime.random() < .45) game.dust.push({x:player.x+(player.wallDir>0?player.w:0),y:player.y+28*(tilemap.tileSize/70),vx:-player.wallDir*45*(tilemap.tileSize/70),life:.22});
   for (let i=game.dust.length-1;i>=0;i--) { game.dust[i].life -= dt; game.dust[i].x += game.dust[i].vx*dt; if (game.dust[i].life<=0) game.dust.splice(i,1); }
   input.pressed.clear();
 }

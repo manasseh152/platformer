@@ -3,7 +3,7 @@ import { defineObject, sceneObject } from '../src/engine/scene/objects.js';
 import { defineScene } from '../src/engine/scene/scene.js';
 import { getComponent, getComponents, findObjectsWithComponent, findOneObjectWithComponent } from '../src/engine/scene/queries.js';
 import { renderLayer, renderParallax, renderProcedural, renderTexture, solid } from '../src/engine/scene/components.js';
-import { defineTilemapScene, gridLayer } from '../src/core/tilemaps/tilemap.js';
+import { defineTilemap, gridLayer } from '../src/core/tilemaps/tilemap.js';
 import { solidTerrain } from '../src/content/tilemaps/objects.js';
 
 test('defineScene normalizes objects, clones components, and builds component index', () => {
@@ -35,8 +35,8 @@ test('defineObject and sceneObject validate basic object shape', () => {
   expect(() => sceneObject({ id: 'bad', components: null })).toThrow(/components must be an array/);
 });
 
-test('defineTilemapScene merges authored scene objects into the core scene index', () => {
-  const scene = defineTilemapScene({
+test('defineTilemap merges authored scene objects into the core scene index', () => {
+  const scene = defineTilemap({
     id: 'with-authored-object',
     layers: [gridLayer({ id: 'terrain', symbols: { '#': solidTerrain }, rows: ['#.'] })],
     objects: [sceneObject({ id: 'far-sky', components: [renderLayer({ order: -200 }), renderProcedural({ shader: 'sky-bands' })] })]

@@ -31,12 +31,12 @@ test('exponential approach is frame-rate independent style smoothing toward targ
   expect(approachExp(0, 100, 8, 1)).toBeCloseTo(99.966, 2);
 });
 
-test('follow camera clamps against the active tilemap scene bounds', () => {
+test('follow camera clamps against the active tilemap bounds', () => {
   const camera = createCamera({ x: 0, y: 0, targetX: 0, targetY: 0, smoothingX: 1000, smoothingY: 1000 });
   const game = {
     camera,
     view: { width: 100, height: 80 },
-    tilemapScene: { worldWidth: 220, worldHeight: 140 },
+    tilemap: { worldWidth: 220, worldHeight: 140 },
     player: { x: 1000, y: 1000, w: 20, h: 20, dir: 1 }
   };
 

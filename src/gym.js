@@ -21,12 +21,12 @@ export function snapshotGame(game) {
       id: 'gameplay',
       kind: 'gameplay'
     },
-    tilemapScene: game.tilemapScene ? {
-      id: game.tilemapScene.id,
-      name: game.tilemapScene.name,
-      kind: game.tilemapScene.kind || 'tilemap-scene',
-      visibility: game.tilemapScene.visibility || 'public',
-      categories: [...(game.tilemapScene.categories || [])]
+    tilemap: game.tilemap ? {
+      id: game.tilemap.id,
+      name: game.tilemap.name,
+      kind: game.tilemap.kind || 'tilemap',
+      visibility: game.tilemap.visibility || 'public',
+      categories: [...(game.tilemap.categories || [])]
     } : null,
     ui: {
       started: isStarted(game),
@@ -34,7 +34,7 @@ export function snapshotGame(game) {
       won: isWon(game),
       menuPage: game.menu.page,
       menuOrigin: game.menu.origin,
-      bodyTilemapSceneId: document.body.dataset.tilemapSceneId || null,
+      bodyTilemapId: document.body.dataset.tilemapId || null,
       bodyMenuOrigin: document.body.dataset.menuOrigin || null,
       focused: activeElementSnapshot()
     },

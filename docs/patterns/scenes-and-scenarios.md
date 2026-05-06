@@ -7,14 +7,14 @@
 - **Scene**: reusable runtime component with lifecycle methods. Examples: gameplay, start screen, pause overlay, settings overlay, scenario browser.
 - **Scene stack**: ordered runtime scene composition. Base scene first, overlays after it.
 - **Scenario**: launchable catalog entry. Campaigns, gyms, and zoos are scenarios.
-- **Tilemap scene definition**: parsed tilemap data asset used by gameplay scenarios.
-- **Gameplay session**: mutable runtime state for one gameplay run: tilemap scene, player, enemies, camera, particles, dust, and outcome.
+- **Tilemap definition**: parsed tilemap data asset used by gameplay scenarios.
+- **Gameplay session**: mutable runtime state for one gameplay run: tilemap, player, enemies, camera, particles, dust, and outcome.
 
 ## Core rule
 
-Scenes are runtime components. Scenarios are catalog entries. Tilemap scenes are data assets.
+Scenes are runtime components. Scenarios are catalog entries. Tilemaps are data assets.
 
-Do not infer one from another by ID. A scenario may reference a tilemap scene, but the scenario remains the launchable thing.
+Do not infer one from another by ID. A scenario may reference a tilemap, but the scenario remains the launchable thing.
 
 ## Scenario shape
 
@@ -35,7 +35,7 @@ Do not infer one from another by ID. A scenario may reference a tilemap scene, b
       {
         scene: 'gameplay',
         props: {
-          tilemapSceneId: 'movement-gym-map',
+          tilemapId: 'movement-gym-map',
           goal: { type: 'finish-gate' }
         }
       }
@@ -44,7 +44,7 @@ Do not infer one from another by ID. A scenario may reference a tilemap scene, b
 }
 ```
 
-`tilemapSceneId` is still accepted in scenario props while gameplay code finishes moving to scene terminology. New core code should prefer tilemap scene naming.
+`tilemapId` is still accepted in scenario props while gameplay code finishes moving to scene terminology. New core code should prefer tilemap naming.
 
 ## Sources
 
@@ -77,7 +77,7 @@ Gameplay systems should receive a `gameplaySession`, not the full app shell.
 
 Session-owned state:
 
-- tilemap scene definition
+- tilemap definition
 - player
 - enemies
 - camera

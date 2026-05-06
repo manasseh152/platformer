@@ -124,7 +124,7 @@ test('settings hub, accessibility motion, advanced JSON, and start flow', async 
 
 test('developer maps are only available in the normal Level Select when Developer Mode is enabled', async ({ page }) => {
   await page.goto('/?level=movement-gym');
-  await expect(page.locator('body')).toHaveAttribute('data-tilemap-scene-id', 'act-01-level-1');
+  await expect(page.locator('body')).toHaveAttribute('data-tilemap-id', 'act-01-level-1');
 
   await page.locator('#startLevelSelectButton').click();
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'level-select');
@@ -146,20 +146,20 @@ test('developer maps are only available in the normal Level Select when Develope
   await expect(page.getByRole('button', { name: /Movement Gym/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Enemy Zoo/ })).toBeVisible();
   await page.getByRole('button', { name: /Enemy Zoo/ }).click();
-  await expect(page.locator('body')).toHaveAttribute('data-tilemap-scene-id', 'enemy-zoo-map');
+  await expect(page.locator('body')).toHaveAttribute('data-tilemap-id', 'enemy-zoo-map');
   await expect(page.locator('#selectedLevelSummary')).toContainText('Enemy Zoo');
 
   await openStartSettings(page);
   await openCategory(page, 'advanced', 'Advanced');
   await page.locator('[data-setting-row="developer-mode"]').click();
-  await expect(page.locator('body')).toHaveAttribute('data-tilemap-scene-id', 'act-01-level-1');
+  await expect(page.locator('body')).toHaveAttribute('data-tilemap-id', 'act-01-level-1');
   await expect(page.locator('#developerTools')).toBeHidden();
 
   const settings = await page.evaluate(() => JSON.parse(localStorage.getItem('chibi.settings')));
   settings.developerMode = true;
   await page.evaluate(value => localStorage.setItem('chibi.settings', JSON.stringify(value)), settings);
   await page.goto('/?level=movement-gym');
-  await expect(page.locator('body')).toHaveAttribute('data-tilemap-scene-id', 'act-01-level-1');
+  await expect(page.locator('body')).toHaveAttribute('data-tilemap-id', 'act-01-level-1');
 });
 
 test('controller can navigate and choose levels in Level Select', async ({ page }) => {
@@ -180,7 +180,7 @@ test('controller can navigate and choose levels in Level Select', async ({ page 
   await expectFocusedLevelRow(page, 'movement-gym');
 
   await pressPadButtonFrom(page, 0, 'button[data-scenario-id="movement-gym"]');
-  await expect(page.locator('body')).toHaveAttribute('data-tilemap-scene-id', 'movement-gym-map');
+  await expect(page.locator('body')).toHaveAttribute('data-tilemap-id', 'movement-gym-map');
   await expect(page.locator('#selectedLevelSummary')).toContainText('Movement Gym');
 });
 

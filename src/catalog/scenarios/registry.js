@@ -4,8 +4,8 @@ import { getAllCampaignScenarios } from '../../content/campaigns/registry.js';
 import { getAllGyms } from '../../content/gyms/registry.js';
 import { getAllZooScenarios } from '../../content/zoos/registry.js';
 
-function tilemapSceneIdForScenario(entry) {
-  return entry.composition?.stack?.find(layer => layer.props?.tilemapSceneId)?.props?.tilemapSceneId ?? null;
+function tilemapIdForScenario(entry) {
+  return entry.composition?.stack?.find(layer => layer.props?.tilemapId)?.props?.tilemapId ?? null;
 }
 
 function assertScenarioEntry(entry) {
@@ -74,5 +74,5 @@ export function launchScenarioEntry(game, entryId) {
   if (!scenes?.length) return { ok: false, reason: 'empty-resolved-composition', entry };
 
   const stack = game.runtime.scenes.replaceStack(scenes);
-  return { ok: true, reason: null, entry, tilemapScene: game.tilemapScene, tilemapSceneId: tilemapSceneIdForScenario(entry), stack };
+  return { ok: true, reason: null, entry, tilemap: game.tilemap, tilemapId: tilemapIdForScenario(entry), stack };
 }

@@ -10,7 +10,7 @@ The project currently has several generations of architecture living side by sid
 Examples of current boundary drift:
 
 - Campaigns, gyms, zoos, scenarios, categories, and catalog registries live under `src/core`, even though they are app/content/catalog concepts.
-- Tilemap scene definitions and compatibility `level` APIs coexist with newer scene/scenario terminology.
+- Tilemap definitions and compatibility `level` APIs coexist with newer scene/scenario terminology.
 - Gameplay systems still use helper functions and tilemap/layer concepts where they should increasingly query scene objects/components.
 - Browser/app code, runtime wrappers, settings, input, menu, render, and gameplay code are spread across top-level `src` files without a clear ownership model.
 
@@ -28,7 +28,7 @@ gameplay
   Platformer-specific gameplay session, rules, physics, player/enemy systems, goals, assembly.
 
 content
-  Authored campaigns, gyms, zoos, tilemap scene definitions, reusable authored objects.
+  Authored campaigns, gyms, zoos, tilemap definitions, reusable authored objects.
 
 catalog
   Generic catalog registry, categories, scenario entries, scenario service, URL launch helpers.
@@ -76,7 +76,7 @@ src/core/scenarios   -> src/catalog/scenarios
 
 Update imports, docs, and boundary tests in the same commit.
 
-Progress: done in `8908706`. Also moved the tilemap scene registry to `src/content/tilemaps/registry.js` so `src/core` does not import catalog modules. Full test suite passed: `75 passed`.
+Progress: done in `8908706`. Also moved the tilemap registry to `src/content/tilemaps/registry.js` so `src/core` does not import catalog modules. Full test suite passed: `75 passed`.
 
 ### Stage 2: Split authored tilemap content from tilemap/runtime helpers
 
@@ -108,14 +108,14 @@ Progress: done. Generic scene primitives, runtime, scene stack, and viewport now
 
 ### Stage 4: Remove legacy `level` terminology and compatibility APIs
 
-Replace level-centric flow with scenario/tilemap-scene terminology:
+Replace level-centric flow with scenario/tilemap terminology:
 
-- `level-manager` becomes scenario/tilemap scene selection flow or disappears into scenario service/app shell.
-- `tilemapSceneDefinition` aliases are removed.
-- Gameplay session consistently receives a tilemap scene definition.
-- User-facing UI may still say “Level Select” where appropriate, but internal code should use scenario/tilemap scene names.
+- `level-manager` becomes scenario/tilemap selection flow or disappears into scenario service/app shell.
+- `tilemapDefinition` aliases are removed.
+- Gameplay session consistently receives a tilemap definition.
+- User-facing UI may still say “Level Select” where appropriate, but internal code should use scenario/tilemap names.
 
-Progress: done. The app registers and launches the gameplay scene instead of a legacy level scene, scenario compositions reference `gameplay`, menu internals select scenarios while preserving user-facing “Level Select” copy, browser DOM mirrors use `data-tilemap-scene-id`/`data-scenario-id`, the gym snapshot exposes `tilemapScene`, and the old `withLevelMeta` helper was replaced by tilemap-scene terminology. Full Playwright suite passed: `74 passed`.
+Progress: done. The app registers and launches the gameplay scene instead of a legacy level scene, scenario compositions reference `gameplay`, menu internals select scenarios while preserving user-facing “Level Select” copy, browser DOM mirrors use `data-tilemap-id`/`data-scenario-id`, the gym snapshot exposes `tilemap`, and the old `withLevelMeta` helper was replaced by tilemap terminology. Full Playwright suite passed: `74 passed`.
 
 ### Stage 5: Migrate gameplay systems to scene object/component queries
 

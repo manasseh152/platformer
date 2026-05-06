@@ -1,20 +1,20 @@
-# Tilemap scenes
+# Tilemaps
 
-Tilemap scenes are one authoring format for core scenes.
+Tilemaps are one authoring format for core scenes.
 
 Related:
 
 - [Scene model](./scene.md)
 - [Scene components](./scene-components.md)
 
-Tilemaps are composable scene data, not hard-coded `terrainRows/objectRows/decorRows` blobs. `defineTilemapScene()` compiles grid layers into core scene objects and then delegates generic object/index work to the core scene model.
+Tilemaps are composable scene data, not hard-coded `terrainRows/objectRows/decorRows` blobs. `defineTilemap()` compiles grid layers into core scene objects and then delegates generic object/index work to the core scene model.
 
 ## Authoring API
 
 Use one canonical pattern:
 
 ```js
-import { defineTilemapScene, gridLayer } from '../tilemap.js';
+import { defineTilemap, gridLayer } from '../tilemap.js';
 import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../objects.js';
 
 export const movementGymMapDefinition = {
@@ -47,7 +47,7 @@ export const movementGymMapDefinition = {
   ]
 };
 
-export const movementGymMap = defineTilemapScene({
+export const movementGymMap = defineTilemap({
   id: 'movement-gym-map',
   name: 'Movement Gym Map',
   categories: ['movement'],
@@ -102,7 +102,7 @@ One concept is used for both static objects and spawnable runtime objects: `defi
 
 ## Parser output
 
-`defineTilemapScene()` validates and compiles layers into:
+`defineTilemap()` validates and compiles layers into:
 
 - `layers`: authoring grids and symbol mappings
 - `objects`: one scene object per non-empty cell, plus authored scene objects

@@ -16,7 +16,7 @@ export const movementGymScenario = {
       {
         scene: 'gameplay',
         props: {
-          tilemapSceneId: 'movement-gym-map',
+          tilemapId: 'movement-gym-map',
           goal: { type: 'finish-gate' }
         }
       }

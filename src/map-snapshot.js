@@ -1,5 +1,5 @@
 import { assets } from './assets.js';
-import { getDefaultTilemapScene } from './content/tilemaps/registry.js';
+import { getDefaultTilemap } from './content/tilemaps/registry.js';
 import { createEnemies, createPlayer, getGoalRect, getSpawnPoint } from './core/tilemaps/tilemap.js';
 import { drawBackdropLayer, drawDecorLayer, drawGoal, drawSpikeLayer, drawTilemap } from './render.js';
 
@@ -47,30 +47,30 @@ function drawSnapshotEnemy(ctx, enemy) {
   ctx.restore();
 }
 
-export async function renderMapToCanvas(sourceTilemapScene = getDefaultTilemapScene()) {
+export async function renderMapToCanvas(sourceTilemap = getDefaultTilemap()) {
   await waitForMapAssets();
 
   const canvas = document.createElement('canvas');
-  canvas.width = sourceTilemapScene.worldWidth;
-  canvas.height = sourceTilemapScene.worldHeight;
+  canvas.width = sourceTilemap.worldWidth;
+  canvas.height = sourceTilemap.worldHeight;
 
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
 
   ctx.fillStyle = '#080b11';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  drawBackdropLayer(ctx, sourceTilemapScene);
-  drawDecorLayer(ctx, sourceTilemapScene);
-  drawTilemap(ctx, sourceTilemapScene);
-  drawGoal(ctx, getGoalRect(sourceTilemapScene));
-  drawSpikeLayer(ctx, sourceTilemapScene);
+  drawBackdropLayer(ctx, sourceTilemap);
+  drawDecorLayer(ctx, sourceTilemap);
+  drawTilemap(ctx, sourceTilemap);
+  drawGoal(ctx, getGoalRect(sourceTilemap));
+  drawSpikeLayer(ctx, sourceTilemap);
 
-  for (const enemy of createEnemies(sourceTilemapScene)) drawSnapshotEnemy(ctx, enemy);
-  drawSnapshotPlayer(ctx, createPlayer(getSpawnPoint(sourceTilemapScene)));
+  for (const enemy of createEnemies(sourceTilemap)) drawSnapshotEnemy(ctx, enemy);
+  drawSnapshotPlayer(ctx, createPlayer(getSpawnPoint(sourceTilemap)));
 
   return canvas;
 }
 
-export async function renderMapToDataUrl(sourceTilemapScene = getDefaultTilemapScene()) {
-  return (await renderMapToCanvas(sourceTilemapScene)).toDataURL('image/png');
+export async function renderMapToDataUrl(sourceTilemap = getDefaultTilemap()) {
+  return (await renderMapToCanvas(sourceTilemap)).toDataURL('image/png');
 }

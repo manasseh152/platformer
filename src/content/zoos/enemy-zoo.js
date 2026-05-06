@@ -16,7 +16,7 @@ export const enemyZooScenario = {
       {
         scene: 'gameplay',
         props: {
-          tilemapSceneId: 'enemy-zoo-map',
+          tilemapId: 'enemy-zoo-map',
           goal: { type: 'finish-gate' }
         }
       }
