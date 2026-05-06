@@ -75,7 +75,7 @@ test('settings hub, accessibility motion, advanced JSON, and start flow', async 
 
   await openStartSettings(page);
   await expect(page.locator('#menuTitle')).toHaveText('Settings');
-  await expect(page.locator('.settings-category-card__title')).toHaveText(['Keyboard', 'Controller', 'Accessibility', 'Graphics', 'Advanced']);
+  await expect(page.locator('.settings-category-card__title')).toHaveText(['Keyboard', 'Controller', 'Gameplay', 'Accessibility', 'Graphics', 'Advanced']);
 
   await openCategory(page, 'accessibility', 'Accessibility');
   await expect(page.locator('[data-setting-row="motion"]')).toContainText('System');

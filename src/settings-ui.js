@@ -1,10 +1,12 @@
 import { bindLabels, bindText, controllerBindText, controllerName, defaultBinds, defaultGamepadBinds } from './input.js';
 import { motionStatusText } from './transitions.js';
 import { browserRuntime } from './runtime.js';
+import { formatRunTime, getBestTime } from './speedrun.js';
 
 const categoryDescriptions = {
   keyboard: 'Remap keyboard controls. Selecting a binding replaces that action’s current keys. Reset defaults restores alternate keys.',
   controller: 'Enable controller input, test detection, and remap controller buttons.',
+  gameplay: 'Tune optional run tracking and gameplay-facing helpers.',
   accessibility: 'Adjust motion and comfort options.',
   graphics: 'Optional GPU-backed render and shader extras.',
   advanced: 'Developer tools and raw settings.'
@@ -13,6 +15,7 @@ const categoryDescriptions = {
 export const settingsCategories = [
   { id: 'keyboard', title: 'Keyboard', description: categoryDescriptions.keyboard },
   { id: 'controller', title: 'Controller', description: categoryDescriptions.controller },
+  { id: 'gameplay', title: 'Gameplay', description: categoryDescriptions.gameplay },
   { id: 'accessibility', title: 'Accessibility', description: categoryDescriptions.accessibility },
   { id: 'graphics', title: 'Graphics', description: categoryDescriptions.graphics },
   { id: 'advanced', title: 'Advanced', description: categoryDescriptions.advanced }
@@ -82,6 +85,15 @@ function renderController(game) {
     <div class="settings-actions ds-action-row"><button type="button" class="secondary ds-button ds-button--secondary" data-settings-action="reset-controller">Reset Controller Defaults</button></div>`;
 }
 
+function renderGameplay(game) {
+  const bestMs = getBestTime(game.speedRun, game.tilemap?.id || '');
+  return `${section('Speed Run', `<div class="settings-row-list">
+    ${valueRow({ id: 'speed-run-mode', label: 'Speed Run Mode', value: onOff(game.settings.speedRunMode), description: 'Shows an in-game timer and saves your best Any% time per level.', kind: 'toggle' })}
+    ${infoRow('Current Level Best Any%', bestMs === null ? '--:--.---' : formatRunTime(bestMs))}
+  </div>`)}
+  <div class="settings-actions ds-action-row"><button type="button" class="secondary ds-button ds-button--secondary" data-settings-action="clear-speedrun-records">Clear Speed Run Records</button></div>`;
+}
+
 function renderAccessibility(game) {
   const labels = { system: 'System', on: 'On', off: 'Off' };
   return section('Comfort', `<div class="settings-row-list">
@@ -146,7 +158,7 @@ export function renderSettingsCategory(game, runtime = browserRuntime) {
   if (!category) return;
   ui.settingsCategoryDescription.textContent = category.description;
   if (game.input.bindError && runtime.now() > game.input.bindError.until) game.input.bindError = null;
-  const renderers = { keyboard: renderKeyboard, controller: renderController, accessibility: renderAccessibility, graphics: renderGraphics, advanced: renderAdvanced };
+  const renderers = { keyboard: renderKeyboard, controller: renderController, gameplay: renderGameplay, accessibility: renderAccessibility, graphics: renderGraphics, advanced: renderAdvanced };
   ui.settingsCategoryBody.innerHTML = renderers[category.id](game);
   refreshDynamicRefs(game);
 }

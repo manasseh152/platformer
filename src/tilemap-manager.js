@@ -7,6 +7,8 @@ import { resetGameplaySession, syncGameplaySessionToGame } from './core/gameplay
 import { getAllTilemaps as getRegisteredTilemaps, getDefaultTilemap, getTilemapById } from './content/tilemaps/registry.js';
 import { isVisibleToMode } from './catalog/categories/registry.js';
 import { browserRuntime } from './runtime.js';
+import { isStarted } from './app/app-state.js';
+import { prepareSpeedRunAttempt } from './speedrun.js';
 
 function syncActiveTilemapDataset(game) {
   const id = game.tilemap?.id || getDefaultTilemap().id;
@@ -48,6 +50,7 @@ export function createTilemapManager(game, runtime = browserRuntime) {
     }
     game.tilemap = nextTilemap;
     resetRuntimeForTilemap();
+    if (isStarted(game)) prepareSpeedRunAttempt(game);
     runtime.emit('tilemap.switch', { from: previousTilemap?.id || null, to: nextTilemap.id });
     return { ok: true, reason: null, tilemap: nextTilemap, previousTilemap };
   }

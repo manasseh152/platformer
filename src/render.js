@@ -5,6 +5,7 @@ import { forEachLayerTile, getDecorType } from './core/tilemaps/tilemap.js';
 import { drawCollisionDebugOverlay, drawPhysicsBodyDebugOverlay } from './devtools/debug-render.js';
 import { isWon } from './app/app-state.js';
 import { findObjectsWithComponent, getComponent } from './engine/scene/queries.js';
+import { formatRunTime, getBestTime } from './speedrun.js';
 
 function roundedRect(ctx, x,y,w,h,r) {
   ctx.beginPath(); ctx.roundRect(x,y,w,h,r); ctx.fill();
@@ -262,10 +263,24 @@ export function syncHtmlHud(game) {
   if (ui.hudLevelName) ui.hudLevelName.textContent = game.tilemap?.name || 'Unknown Level';
   [...ui.heartsEl.children].forEach((heart, i) => heart.classList.toggle('full', i < player.hp));
   ui.dashStatusEl.classList.toggle('ready', player.dashCooldown <= 0);
+  const speedRunEnabled = Boolean(game.settings?.speedRunMode);
+  if (ui.speedRunHud) ui.speedRunHud.hidden = !speedRunEnabled;
+  if (speedRunEnabled) {
+    const attempt = game.speedRun?.attempt;
+    const elapsed = game.speedRun?.lastResult?.bestMs ?? attempt?.elapsedMs ?? 0;
+    const bestMs = getBestTime(game.speedRun, game.tilemap?.id || '');
+    if (ui.speedRunTimer) ui.speedRunTimer.textContent = formatRunTime(elapsed);
+    if (ui.speedRunBest) ui.speedRunBest.textContent = `Best ${bestMs === null ? '--:--.---' : formatRunTime(bestMs)}`;
+  }
   const won = isWon(game);
   const showingEndMessage = player.dead || won;
   ui.messageEl.hidden = !showingEndMessage;
   ui.messageTitleEl.textContent = won ? 'Gate Reached!' : 'You Faded';
+  if (ui.messageSpeedRun) {
+    const result = speedRunEnabled && won ? game.speedRun?.lastResult : null;
+    ui.messageSpeedRun.hidden = !result;
+    ui.messageSpeedRun.textContent = result ? `Speed Run: ${formatRunTime(result.bestMs)} — ${result.isNewBest ? 'New Best!' : `Best ${formatRunTime(result.previousBestMs)}`}` : '';
+  }
   if (ui.messageNextLevelButton) {
     const nextLevel = won ? game.tilemaps.getNextTilemap() : null;
     ui.messageNextLevelButton.hidden = !nextLevel;

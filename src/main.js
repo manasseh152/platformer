@@ -12,6 +12,7 @@ import { createGameplayScene } from './scenes/gameplay-scene.js';
 import { applyScenarioLaunchParams, readScenarioLaunchParams } from './catalog/scenarios/url.js';
 import { isPaused, isStarted, isWon } from './app/app-state.js';
 import { handleDevToolsKeydown, setupDevTools, syncDevTools } from './devtools/toolbox-dom.js';
+import { updateSpeedRun } from './speedrun.js';
 
 const runtime = createRuntime();
 const ui = getUI();
@@ -101,6 +102,7 @@ function frame(now = runtime.now()) {
   }
   if (isStarted(game) && !isPaused(game)) {
     scenes.update(dt);
+    updateSpeedRun(game, dt, runtime);
   } else {
     game.input.pressed.clear();
     game.input.gamepadPressed.clear();

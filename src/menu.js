@@ -9,6 +9,7 @@ import { getAllCategories, getCategoryById, primaryGroupCategoryFor } from './ca
 import { getDefaultTilemap } from './content/tilemaps/registry.js';
 import { getVisibleScenarioEntries } from './catalog/scenarios/registry.js';
 import { isPaused, isStarted, isWon, setStarted } from './app/app-state.js';
+import { clearSpeedRunRecords, markSpeedRunPaused, prepareSpeedRunAttempt } from './speedrun.js';
 
 const pageElement = (ui, page) => ({ main: ui.pauseMainPage, 'level-select': ui.levelSelectPage, settings: ui.settingsHubPage, 'settings-category': ui.settingsCategoryPage })[page];
 const backablePages = ['level-select', 'settings', 'settings-category'];
@@ -279,6 +280,7 @@ export function goBack(game) {
 }
 
 export function setPaused(game, value, runtime = browserRuntime) {
+  if (value) markSpeedRunPaused(game);
   const change = () => {
     game.menu.origin = 'pause';
     game.menu.page = 'main';
@@ -300,6 +302,7 @@ export function startGame(game, runtime = browserRuntime) {
   setStarted(game, true);
   game.clock.last = runtime.now();
   document.body.classList.add('playing');
+  prepareSpeedRunAttempt(game);
   runtime.emit('game.start', { tilemapId: game.tilemap?.id || null });
   game.canvas.focus?.({ preventScroll: true });
   updateMenuChrome(game);
@@ -336,7 +339,7 @@ function handleReplaceSettings(game, runtime = browserRuntime) {
   try {
     const apply = () => {
       replaceSettings(game, JSON.stringify(normalized), runtime.storage);
-      runtime.emit('settings.replace', { developerMode: game.settings.developerMode, motion: game.settings.motion, gpuExtras: game.settings.gpuExtras, controllerEnabled: game.settings.controllerEnabled });
+      runtime.emit('settings.replace', { developerMode: game.settings.developerMode, motion: game.settings.motion, gpuExtras: game.settings.gpuExtras, controllerEnabled: game.settings.controllerEnabled, speedRunMode: game.settings.speedRunMode });
       syncGymApi(game, runtime);
       renderSettings(game);
       updateMenuChrome(game);
@@ -375,6 +378,23 @@ function cycleGpuExtras(game, runtime = browserRuntime) {
     });
   }
   renderSettingsCategory(game);
+}
+
+function toggleSpeedRunMode(game, runtime = browserRuntime) {
+  game.settings.speedRunMode = !game.settings.speedRunMode;
+  game.settings = saveSettings(game.settings, runtime.storage);
+  if (game.settings.speedRunMode && isStarted(game) && !isWon(game) && !game.player.dead) prepareSpeedRunAttempt(game);
+  else if (!game.settings.speedRunMode && game.speedRun?.attempt) game.speedRun.attempt.status = 'idle';
+  runtime.emit('settings.change', { key: 'speedRunMode', value: game.settings.speedRunMode });
+  renderSettingsCategory(game);
+}
+
+function clearRecords(game, runtime = browserRuntime) {
+  if (!confirm('Clear all speed run records?')) return;
+  clearSpeedRunRecords(game.speedRun, runtime.storage);
+  runtime.emit('speedrun.records-clear', {});
+  renderSettingsCategory(game);
+  if (game.ui.settingsStatus) game.ui.settingsStatus.textContent = 'Speed run records cleared.';
 }
 
 function toggleController(game, runtime = browserRuntime) {
@@ -446,12 +466,14 @@ function handleSettingsClick(game, e, runtime = browserRuntime) {
   if (row) {
     if (row.dataset.settingRow === 'motion') return cycleMotion(game, runtime);
     if (row.dataset.settingRow === 'controller-enabled') return toggleController(game, runtime);
+    if (row.dataset.settingRow === 'speed-run-mode') return toggleSpeedRunMode(game, runtime);
     if (row.dataset.settingRow === 'gpu-extras') return cycleGpuExtras(game, runtime);
     if (row.dataset.settingRow === 'developer-mode') return toggleDeveloperMode(game, runtime);
   }
   const action = e.target.closest('[data-settings-action]')?.dataset.settingsAction;
   if (action === 'reset-keyboard') return resetBinds(game, 'keyboard', runtime);
   if (action === 'reset-controller') return resetBinds(game, 'controller', runtime);
+  if (action === 'clear-speedrun-records') return clearRecords(game, runtime);
   if (action === 'dump-settings') return dumpSettings(game);
   if (action === 'replace-settings') return handleReplaceSettings(game, runtime);
 }

@@ -613,7 +613,8 @@ body.playing #message:not([hidden]) { opacity: 1; }
 .hud-topline,
 .hud-health-row,
 .hud-objective-card,
-.hud-dash-card { position: relative; z-index: 1; }
+.hud-dash-card,
+.hud-speedrun-card { position: relative; z-index: 1; }
 .hud-topline { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 4px 5px 12px 10px; }
 #hud .title { margin-bottom: 7px; font-size: 10px; }
 .hud-zone { color: var(--color-cream); font: 900 24px/.88 var(--font-display); letter-spacing: -.04em; text-transform: uppercase; }
@@ -652,7 +653,8 @@ body.playing #message:not([hidden]) { opacity: 1; }
 }
 .heart.full { background: linear-gradient(135deg, #ff9b79, var(--color-danger)); border-color: #ffd6c8; box-shadow: inset -2px -2px 0 rgba(80,32,18,.22), 0 0 18px rgba(255,94,80,.30); }
 .hud-objective-card,
-.hud-dash-card {
+.hud-dash-card,
+.hud-speedrun-card {
   display: grid;
   grid-template-columns: 82px minmax(0, 1fr);
   gap: 10px;
@@ -665,8 +667,16 @@ body.playing #message:not([hidden]) { opacity: 1; }
 .hud-dash-card {
   margin-top: 7px;
   overflow: hidden;
+  border-radius: 10px;
+}
+.hud-speedrun-card {
+  margin-top: 7px;
   border-radius: 10px 10px 20px 20px;
 }
+.hud-speedrun-card[hidden] { display: none; }
+#speedRunTimer { display: block; color: var(--color-cream); font: 900 18px/1 var(--font-mono); letter-spacing: -.04em; }
+#speedRunBest { display: block; margin-top: 4px; color: var(--color-faint); font: 900 10px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+.speedrun-result { margin-top: 8px; color: var(--color-good); font-weight: 900; }
 .hud-dash-card::after {
   content: "";
   position: absolute;

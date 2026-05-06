@@ -16,6 +16,7 @@ import { createAppState, setPausedState } from './app/app-state.js';
 import { createGpuSystem } from './gpu/gpu-system.js';
 import { createDevToolsState, registerBuiltInDevTools } from './devtools/toolbox.js';
 import { registerDebugRenderDevTools } from './devtools/debug-render.js';
+import { createSpeedRunState, prepareSpeedRunAttempt } from './speedrun.js';
 
 /**
  * Creates the mutable game context shared by systems.
@@ -60,6 +61,7 @@ export function createGame(ui, runtime = browserRuntime) {
     camera: gameplaySession.camera,
     input: createInputState(),
     settings,
+    speedRun: createSpeedRunState(runtime.storage),
     devTools: createDevToolsState(),
     session: { developerModeOverride: false },
     scenarios: null,
@@ -87,8 +89,9 @@ export function createGame(ui, runtime = browserRuntime) {
 }
 
 export function resetGame(game, runtime = browserRuntime) {
-  setPausedFlag(game, false, runtime);
+  if (!game.appState?.paused) setPausedFlag(game, false, runtime);
   game.tilemaps.restartTilemap();
+  prepareSpeedRunAttempt(game);
   runtime.emit('game.reset', { tilemapId: game.tilemap?.id || 'act-01-level-1' });
 }
 

@@ -20,6 +20,7 @@ game.settings = {
   motion: 'system',
   developerMode: false,
   controllerEnabled: true,
+  speedRunMode: false,
   keyboardBinds: {},
   gamepadBinds: {}
 };
@@ -50,6 +51,7 @@ Normal setting commits include:
 - motion preference
 - developer mode
 - controller enabled
+- speed run mode
 - keyboard bind commit/reset
 - controller bind commit/reset
 - valid app-settings JSON replacement
@@ -153,8 +155,10 @@ Recommended order:
 
 1. Keyboard
 2. Controller
-3. Accessibility
-4. Advanced
+3. Gameplay
+4. Accessibility
+5. Graphics
+6. Advanced
 
 Category pages use the same row/section primitives. Add new settings by adding category metadata and renderers, not by inventing new page mechanics.
 

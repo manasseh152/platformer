@@ -30,11 +30,16 @@
         <span class="hud-label">Skill</span>
         <div id="dashStatus">Dash</div>
       </div>
+      <div id="speedRunHud" class="hud-speedrun-card" hidden>
+        <span class="hud-label">Speed Run</span>
+        <div><span id="speedRunTimer">0:00.000</span><span id="speedRunBest">Best --:--.---</span></div>
+      </div>
     </section>
     <section id="controls"></section>
     <section id="message" class="ds-toast" hidden>
       <div id="messageTitle" class="big"></div>
       <div class="small"><span class="input-hint input-hint--inline" data-input-hint="restart"></span></div>
+      <div id="messageSpeedRun" class="small speedrun-result" hidden></div>
       <div class="message-actions ds-action-row">
         <button id="messageNextLevelButton" class="ds-button ds-button--primary" type="button">Play Next</button>
         <button id="messageLevelSelectButton" class="secondary ds-button ds-button--secondary" type="button">Level Select</button>

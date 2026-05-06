@@ -11,6 +11,7 @@ Use these docs when adding or changing code:
 - `patterns/tilemaps.md` — composable tilemap authoring with objects, layers, and components.
 - `patterns/terrain.md` — contained terrain authoring, render, and collision derivation pipeline.
 - `patterns/settings-and-ui.md` — settings/menu UI state, persistence, and motion rules.
+- `patterns/speedrun.md` — Speed Run Mode timing, local records, attempt lifecycle, and UI rules.
 - `patterns/devtools.md` — Developer Mode toolbox registry, runtime UI, debug overlays, and playbook boundaries.
 
 ## Documentation rules
