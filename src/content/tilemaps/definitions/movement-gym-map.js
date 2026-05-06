@@ -43,6 +43,7 @@ export const movementGymMapDefinition = {
     }),
     gridLayer({
       id: 'entities',
+      cellSize: CELL_SIZE.GRID,
       symbols: { P: playerSpawner, E: slimeSpawner, G: finishGateObject },
       rows: [
     '........................',
