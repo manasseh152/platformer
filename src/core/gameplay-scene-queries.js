@@ -1,13 +1,7 @@
-import { ACTOR_SIZE } from './constants.js';
+import { ACTOR_SIZE, CELL_SIZE } from './constants.js';
 import { getComponent, findObjectsWithComponent } from '../engine/scene/queries.js';
 
 export const rectsOverlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-
-function hasComponent(object, type) { return object.components?.some(component => component.type === type); }
-function terrainKey(col, row) { return `${col},${row}`; }
-function solidTerrainObjects(scene) { return findObjectsWithComponent(scene, 'collision:solid').filter(object => hasComponent(object, 'terrain')); }
-function solidTerrainSet(scene) { return new Set(solidTerrainObjects(scene).map(object => terrainKey(object.transform.col, object.transform.row))); }
-function isSolidAt(scene, col, row) { return solidTerrainSet(scene).has(terrainKey(col, row)); }
 
 function spawnAtObject(object, tileSize) { return { x: object.transform.x + tileSize / 2, y: object.transform.y + tileSize - ACTOR_SIZE.PLAYER.h }; }
 
@@ -26,21 +20,58 @@ export function createPlayerFromScene(scene) {
   return { x: spawn.x, y: spawn.y, ...ACTOR_SIZE.PLAYER, vx: 0, vy: 0, dir: 1, grounded: false, hp: 5, inv: 0, attack: 0, coyote: 0, jumpBuf: 0, dash: 0, dashCooldown: 0, wallDir: 0, wallSlide: false, dead: false };
 }
 
-function deriveEnemyPatrol(scene, col, row) {
-  const floorRow = row + 1;
-  let minCol = col;
-  while (minCol > 0 && !isSolidAt(scene, minCol - 1, row) && isSolidAt(scene, minCol - 1, floorRow)) minCol--;
-  let maxExclusiveCol = col + 1;
-  while (maxExclusiveCol < scene.cols && !isSolidAt(scene, maxExclusiveCol, row) && isSolidAt(scene, maxExclusiveCol, floorRow)) maxExclusiveCol++;
-  return { floorRow, minCol, maxExclusiveCol };
+const ENEMY_SPAWN_OFFSET_X = 12;
+const PATROL_STEP = CELL_SIZE.TERRAIN_PRIMITIVE;
+const FLOOR_PROBE_HEIGHT = 2;
+const FLOOR_PROBE_INSET = 2;
+
+function hasSolidOverlap(scene, rect) { return solidCollisionRectsOverlapping(scene, rect).length > 0; }
+function supportedFootRect(rect) { return { x: rect.x + FLOOR_PROBE_INSET, y: rect.y + rect.h, w: Math.max(1, rect.w - FLOOR_PROBE_INSET * 2), h: FLOOR_PROBE_HEIGHT }; }
+function hasFloorSupport(scene, rect) { return hasSolidOverlap(scene, supportedFootRect(rect)); }
+function actorRectAt(x, y, actorSize) { return { x, y, w: actorSize.w, h: actorSize.h }; }
+
+function findGroundBelow(scene, rect) {
+  const probe = { x: rect.x, y: rect.y, w: rect.w, h: scene.worldHeight - rect.y };
+  return solidCollisionRectsOverlapping(scene, probe)
+    .filter(hit => hit.y >= rect.y)
+    .sort((a, b) => a.y - b.y)[0] ?? null;
+}
+
+function deriveEnemyPatrol(scene, object, actorSize) {
+  const x = object.transform.x + ENEMY_SPAWN_OFFSET_X;
+  const spawnRect = actorRectAt(x, object.transform.y, actorSize);
+  const ground = findGroundBelow(scene, spawnRect);
+  const y = ground ? ground.y - actorSize.h : object.transform.y;
+  const start = actorRectAt(x, y, actorSize);
+
+  let min = x;
+  while (min - PATROL_STEP >= 0) {
+    const candidate = actorRectAt(min - PATROL_STEP, y, actorSize);
+    if (hasSolidOverlap(scene, candidate) || !hasFloorSupport(scene, candidate)) break;
+    min -= PATROL_STEP;
+  }
+
+  let max = x + actorSize.w;
+  while (max + PATROL_STEP <= scene.worldWidth) {
+    const candidate = actorRectAt(max + PATROL_STEP - actorSize.w, y, actorSize);
+    if (hasSolidOverlap(scene, candidate) || !hasFloorSupport(scene, candidate)) break;
+    max += PATROL_STEP;
+  }
+
+  if (max - min < actorSize.w) {
+    min = start.x;
+    max = start.x + actorSize.w;
+  }
+
+  return { x, y, min, max };
 }
 
 export function createEnemiesFromScene(scene) {
   return findSpawnerObjects(scene, 'slime').map((object, index) => {
-    const patrol = deriveEnemyPatrol(scene, object.transform.col, object.transform.row);
+    const patrol = deriveEnemyPatrol(scene, object, ACTOR_SIZE.SLIME);
     const dir = index % 2 === 0 ? 1 : -1;
     const hp = index === 0 ? 2 : 3;
-    return { x: object.transform.x + 12, y: patrol.floorRow * scene.tileSize - ACTOR_SIZE.SLIME.h, ...ACTOR_SIZE.SLIME, vx: dir * 55, hp, hurt: 0, min: patrol.minCol * scene.tileSize, max: patrol.maxExclusiveCol * scene.tileSize };
+    return { x: patrol.x, y: patrol.y, ...ACTOR_SIZE.SLIME, vx: dir * 55, hp, hurt: 0, min: patrol.min, max: patrol.max };
   });
 }
 

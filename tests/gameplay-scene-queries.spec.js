@@ -1,0 +1,95 @@
+import { expect, test } from '@playwright/test';
+import { ACTOR_SIZE, CELL_SIZE } from '../src/core/constants.js';
+import { createEnemiesFromScene } from '../src/core/gameplay-scene-queries.js';
+import { defineTilemap, gridLayer, parseTilemap } from '../src/core/tilemaps/tilemap.js';
+import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../src/content/tilemaps/objects.js';
+import { enemyZooMap } from '../src/content/tilemaps/definitions/enemy-zoo-map.js';
+
+function containedEnemyMap() {
+  return defineTilemap({
+    id: 'contained-enemy-patrol-test',
+    cols: 8,
+    rows: 5,
+    artTileSize: CELL_SIZE.BUILD,
+    terrainRenderMode: 'contained-autotile',
+    layers: [
+      gridLayer({
+        id: 'buildTerrain',
+        cellSize: CELL_SIZE.BUILD,
+        symbols: { '#': solidTerrain },
+        rows: [
+          '................',
+          '................',
+          '................',
+          '................',
+          '................',
+          '................',
+          '..##########....',
+          '..##########....',
+          '................',
+          '................'
+        ]
+      }),
+      gridLayer({
+        id: 'entities',
+        cellSize: CELL_SIZE.GRID,
+        symbols: { P: playerSpawner, E: slimeSpawner, G: finishGateObject },
+        rows: [
+          '........',
+          '........',
+          '...E.G..',
+          '.P......',
+          '........'
+        ]
+      })
+    ]
+  });
+}
+
+test('contained terrain enemy patrols use AABB collision support instead of matching terrain grid cells', () => {
+  const [enemy] = createEnemiesFromScene(containedEnemyMap());
+
+  expect(enemy.y + enemy.h).toBe(96);
+  expect(enemy.max - enemy.min).toBeGreaterThanOrEqual(ACTOR_SIZE.SLIME.w);
+  expect(enemy.min).toBeLessThan(enemy.x);
+  expect(enemy.max).toBeGreaterThan(enemy.x + enemy.w);
+});
+
+test('enemy zoo enemies all spawn on terrain collision tops with usable patrol ranges', () => {
+  for (const enemy of createEnemiesFromScene(enemyZooMap)) {
+    expect(enemy.max - enemy.min).toBeGreaterThanOrEqual(enemy.w);
+    expect(enemy.y + enemy.h).toBeGreaterThan(0);
+    expect(enemy.y + enemy.h).toBeLessThanOrEqual(enemyZooMap.worldHeight);
+  }
+});
+
+test('legacy terrain enemy patrols still derive from collision AABBs', () => {
+  const legacy = parseTilemap({
+    terrainRows: [
+      '########',
+      '#......#',
+      '#......#',
+      '#.====.#',
+      '########'
+    ],
+    objectRows: [
+      '........',
+      '.....G..',
+      '...E....',
+      '.P......',
+      '........'
+    ],
+    decorRows: [
+      '........',
+      '........',
+      '........',
+      '........',
+      '........'
+    ]
+  });
+
+  const [enemy] = createEnemiesFromScene(legacy);
+
+  expect(enemy.y + enemy.h).toBe(96);
+  expect(enemy.max - enemy.min).toBeGreaterThanOrEqual(enemy.w);
+});

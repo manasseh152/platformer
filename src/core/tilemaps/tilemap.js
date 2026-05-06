@@ -1,5 +1,6 @@
 import { ACTOR_SIZE, CELL_SIZE, GRID_SIZE, TERRAIN_PRIMITIVE_SIZE } from '../constants.js';
 import { defineScene } from '../../engine/scene/scene.js';
+import { createEnemiesFromScene } from '../gameplay-scene-queries.js';
 import { defineObject, sceneObject } from '../../engine/scene/objects.js';
 import { getComponent, findObjectsWithComponent } from '../../engine/scene/queries.js';
 import { enemyController, hazard, health, patrol, physicsBody, playerController, renderGoal, renderTerrain, solid, spawner, terrain, transition, velocity } from '../../engine/scene/components.js';
@@ -259,7 +260,6 @@ function buildContainedTerrainCollisionLayers(scene) { const terrainPrimitives =
 function buildTerrainNeighborMask(scene, col, row) { let mask = 0; const bit = (dx, dy, value) => isSolidTerrainCellAt(scene, col + dx, row + dy) ? value : 0; mask |= bit(0, -1, 1); mask |= bit(1, -1, 2); mask |= bit(1, 0, 4); mask |= bit(1, 1, 8); mask |= bit(0, 1, 16); mask |= bit(-1, 1, 32); mask |= bit(-1, 0, 64); mask |= bit(-1, -1, 128); return mask; }
 function buildContainedTerrainTiles(scene) { return terrainObjects(scene).map(object => ({ layer: 'buildTerrain', x: object.transform.x, y: object.transform.y, w: object.transform.w, h: object.transform.h, col: object.transform.col, row: object.transform.row, mask: buildTerrainNeighborMask(scene, object.transform.col, object.transform.row) })); }
 
-function deriveEnemyPatrol(scene, col, row) { const floorRow = row + 1; let minCol = col; while (minCol > 0 && !isSolidTileAt(scene, minCol - 1, row) && isSolidTileAt(scene, minCol - 1, floorRow)) minCol--; let maxExclusiveCol = col + 1; while (maxExclusiveCol < scene.cols && !isSolidTileAt(scene, maxExclusiveCol, row) && isSolidTileAt(scene, maxExclusiveCol, floorRow)) maxExclusiveCol++; return { floorRow, minCol, maxExclusiveCol }; }
 export function createPlayer(spawn) { if (!spawn) throw new Error('createPlayer requires a spawn point'); return { x: spawn.x, y: spawn.y, ...ACTOR_SIZE.PLAYER, vx: 0, vy: 0, dir: 1, grounded: false, hp: 5, inv: 0, attack: 0, coyote: 0, jumpBuf: 0, dash: 0, dashCooldown: 0, wallDir: 0, wallSlide: false, dead: false }; }
-export function createEnemies(scene) { return instantiatedObjects(scene, 'slime').map((object, index) => { const patrol = deriveEnemyPatrol(scene, object.transform.col, object.transform.row); const dir = index % 2 === 0 ? 1 : -1; const hp = index === 0 ? 2 : 3; return { x: object.transform.x + 12, y: patrol.floorRow * scene.tileSize - ACTOR_SIZE.SLIME.h, ...ACTOR_SIZE.SLIME, vx: dir * 55, hp, hurt: 0, min: patrol.minCol * scene.tileSize, max: patrol.maxExclusiveCol * scene.tileSize }; }); }
+export function createEnemies(scene) { return createEnemiesFromScene(scene); }
 export const createEnemySpawns = createEnemies;
