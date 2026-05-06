@@ -102,7 +102,7 @@ Recommended shape:
 - The toggle writes to `game.devTools.flags` or another session-only devtools namespace.
 - The renderer reads that flag and calls a focused debug draw helper.
 
-For world-space overlays such as AABB collision boxes, draw inside the game canvas while the world camera transform is active. Add DOM or overlay-canvas inspection only when mouse/selection tools need it.
+For world-space overlays such as AABB collision boxes, draw inside the game canvas while the world camera transform is active. Use `drawPixelRect` from `src/rendering/pixel-outline.js` for crisp rect fills/outlines instead of raw `strokeRect`. Add DOM or overlay-canvas inspection only when mouse/selection tools need it.
 
 Current terrain/physics overlays:
 

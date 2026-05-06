@@ -1,3 +1,28 @@
+import { drawPixelRect } from '../rendering/pixel-outline.js';
+
+const DEBUG_RECT_STYLES = {
+  buildTerrainCell: {
+    fill: 'rgba(255, 220, 0, 0.08)',
+    outline: 'rgba(255, 220, 0, 0.75)',
+    thickness: 1
+  },
+  collisionCell: {
+    fill: 'rgba(0, 220, 255, 0.16)',
+    outline: 'rgba(0, 220, 255, 0.72)',
+    thickness: 1
+  },
+  collisionRect: {
+    fill: 'rgba(255, 80, 80, 0.12)',
+    outline: 'rgba(255, 80, 80, 0.95)',
+    thickness: 2
+  },
+  physicsBody: {
+    fill: 'rgba(180, 90, 255, 0.12)',
+    outline: 'rgba(180, 90, 255, 0.95)',
+    thickness: 2
+  }
+};
+
 export function registerDebugRenderDevTools(game) {
   game.devTools.registry.registerSection({
     id: 'render',
@@ -43,41 +68,19 @@ export function drawCollisionDebugOverlay(ctx, tilemap, flags = {}) {
   const showRects = Boolean(flags.showCollisionRects);
   if (!showBuildCells && !showCells && !showRects) return;
 
-  ctx.save();
-
   if (showBuildCells) {
-    ctx.fillStyle = 'rgba(255, 220, 0, 0.08)';
-    ctx.strokeStyle = 'rgba(255, 220, 0, 0.75)';
-    ctx.lineWidth = 1;
-    for (const cell of tilemap.renderLayers?.containedTerrainTiles ?? []) {
-      ctx.fillRect(cell.x, cell.y, cell.w, cell.h);
-      ctx.strokeRect(cell.x + 0.5, cell.y + 0.5, Math.max(0, cell.w - 1), Math.max(0, cell.h - 1));
-    }
+    drawPixelRect(ctx, tilemap.renderLayers?.containedTerrainTiles ?? [], DEBUG_RECT_STYLES.buildTerrainCell);
   }
 
   if (showCells) {
-    ctx.fillStyle = 'rgba(0, 220, 255, 0.16)';
-    ctx.strokeStyle = 'rgba(0, 220, 255, 0.72)';
-    ctx.lineWidth = 1;
     const cells = tilemap.collisionLayers?.terrainPrimitives ?? [];
-    for (const cell of cells) {
-      ctx.fillRect(cell.x, cell.y, cell.w, cell.h);
-      ctx.strokeRect(cell.x + 0.5, cell.y + 0.5, Math.max(0, cell.w - 1), Math.max(0, cell.h - 1));
-    }
+    drawPixelRect(ctx, cells, DEBUG_RECT_STYLES.collisionCell);
   }
 
   if (showRects) {
-    ctx.fillStyle = 'rgba(255, 80, 80, 0.12)';
-    ctx.strokeStyle = 'rgba(255, 80, 80, 0.95)';
-    ctx.lineWidth = 2;
     const rects = tilemap.collisionLayers?.terrainRects ?? [];
-    for (const rect of rects) {
-      ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-      ctx.strokeRect(rect.x + 1, rect.y + 1, Math.max(0, rect.w - 2), Math.max(0, rect.h - 2));
-    }
+    drawPixelRect(ctx, rects, DEBUG_RECT_STYLES.collisionRect);
   }
-
-  ctx.restore();
 }
 
 function isDrawableRect(rect) {
@@ -96,13 +99,5 @@ export function drawPhysicsBodyDebugOverlay(ctx, game, flags = game?.devTools?.f
   const rects = physicsBodyDebugRects(game);
   if (!rects.length) return;
 
-  ctx.save();
-  ctx.fillStyle = 'rgba(180, 90, 255, 0.12)';
-  ctx.strokeStyle = 'rgba(180, 90, 255, 0.95)';
-  ctx.lineWidth = 2;
-  for (const rect of rects) {
-    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-    ctx.strokeRect(rect.x + 1, rect.y + 1, Math.max(0, rect.w - 2), Math.max(0, rect.h - 2));
-  }
-  ctx.restore();
+  drawPixelRect(ctx, rects, DEBUG_RECT_STYLES.physicsBody);
 }
