@@ -1,4 +1,4 @@
-import { assertKnownCategories, VISIBILITY } from '../categories/registry.js';
+import { assertKnownCategories, VISIBILITY } from './categories/registry.js';
 
 const KEBAB_CASE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 

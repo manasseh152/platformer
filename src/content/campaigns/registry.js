@@ -1,4 +1,4 @@
-import { createCatalogRegistry } from '../catalog/registry.js';
+import { createCatalogRegistry } from '../../catalog/registry.js';
 import { act01Level1Scenario } from './act-01-level-1.js';
 
 function assertScenario(scenario) {

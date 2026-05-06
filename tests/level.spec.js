@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import {
   act01Level1TilemapLevelDefinition as level,
   getDefaultTilemapLevelDefinition as getDefaultLevel
-} from '../src/core/tilemaps/registry.js';
+} from '../src/content/tilemaps/registry.js';
 import {
   createEnemies,
   createEnemySpawns,

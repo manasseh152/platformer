@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { createRuntime } from '../src/runtime.js';
-import { createScenarioService } from '../src/core/scenarios/service.js';
+import { createScenarioService } from '../src/catalog/scenarios/service.js';
 
 function makeGame({ developerMode = false } = {}) {
   const runtime = createRuntime({ now: () => 100 });

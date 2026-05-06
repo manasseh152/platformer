@@ -6,6 +6,7 @@ const categoryDescriptions = {
   keyboard: 'Remap keyboard controls. Selecting a binding replaces that action’s current keys. Reset defaults restores alternate keys.',
   controller: 'Enable controller input, test detection, and remap controller buttons.',
   accessibility: 'Adjust motion and comfort options.',
+  graphics: 'Optional GPU-backed render and shader extras.',
   advanced: 'Developer tools and raw settings.'
 };
 
@@ -13,6 +14,7 @@ export const settingsCategories = [
   { id: 'keyboard', title: 'Keyboard', description: categoryDescriptions.keyboard },
   { id: 'controller', title: 'Controller', description: categoryDescriptions.controller },
   { id: 'accessibility', title: 'Accessibility', description: categoryDescriptions.accessibility },
+  { id: 'graphics', title: 'Graphics', description: categoryDescriptions.graphics },
   { id: 'advanced', title: 'Advanced', description: categoryDescriptions.advanced }
 ];
 
@@ -87,6 +89,14 @@ function renderAccessibility(game) {
   </div><div id="motionStatus" class="status-line">${motionStatusText(game)}</div>`);
 }
 
+function renderGraphics(game) {
+  const labels = { auto: 'Auto', off: 'Off' };
+  return section('GPU Extras', `<div class="settings-row-list">
+    ${valueRow({ id: 'gpu-extras', label: 'GPU Extras', value: labels[game.settings.gpuExtras], description: 'Enables optional WebGPU-backed render, compute, and shader features when supported. Turning off takes effect after reload.', kind: 'cycle' })}
+    ${infoRow('Active Presenter', game.presenter?.mode?.toUpperCase?.() || 'Unknown')}
+  </div>`);
+}
+
 function renderAdvanced(game) {
   return `${section('Developer', `<div class="settings-row-list">
     ${valueRow({ id: 'developer-mode', label: 'Developer Mode', value: onOff(game.settings.developerMode), description: 'Shows raw settings tools.', kind: 'toggle' })}
@@ -136,7 +146,7 @@ export function renderSettingsCategory(game, runtime = browserRuntime) {
   if (!category) return;
   ui.settingsCategoryDescription.textContent = category.description;
   if (game.input.bindError && runtime.now() > game.input.bindError.until) game.input.bindError = null;
-  const renderers = { keyboard: renderKeyboard, controller: renderController, accessibility: renderAccessibility, advanced: renderAdvanced };
+  const renderers = { keyboard: renderKeyboard, controller: renderController, accessibility: renderAccessibility, graphics: renderGraphics, advanced: renderAdvanced };
   ui.settingsCategoryBody.innerHTML = renderers[category.id](game);
   refreshDynamicRefs(game);
 }

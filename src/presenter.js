@@ -150,6 +150,23 @@ export function createPresenter(canvas, width, height) {
     renderCtx,
     viewport: { scale: 1, offsetX: 0, offsetY: 0 },
     mode: output.mode,
+    async tryEnableWebGpu(gpuSystem) {
+      if (this.mode === 'webgpu') return true;
+      try {
+        const gpuContext = await gpuSystem?.ready;
+        if (!gpuContext?.enabled) return false;
+        const { createWebGpuPresenter } = await import('./gpu/presenters/webgpu-presenter.js');
+        const webgpu = await createWebGpuPresenter(canvas, gpuContext);
+        if (!webgpu) return false;
+        output.destroy?.();
+        output = webgpu;
+        this.mode = output.mode;
+        return true;
+      } catch (error) {
+        console.warn('WebGPU presenter unavailable; keeping current presenter.', error);
+        return false;
+      }
+    },
     resize(displayWidth, displayHeight) {
       this.viewport = calculateViewport(displayWidth, displayHeight, width, height);
     },

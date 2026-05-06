@@ -4,8 +4,8 @@
  * and mirrors active level identity to browser DOM state.
  */
 import { resetGameplaySession, syncGameplaySessionToGame } from './core/gameplay-session.js';
-import { getAllTilemapLevelDefinitions as getRegisteredLevels, getDefaultTilemapLevelDefinition as getDefaultLevel, getTilemapLevelDefinitionById as getLevelById } from './core/tilemaps/registry.js';
-import { isVisibleToMode } from './core/categories/registry.js';
+import { getAllTilemapLevelDefinitions as getRegisteredLevels, getDefaultTilemapLevelDefinition as getDefaultLevel, getTilemapLevelDefinitionById as getLevelById } from './content/tilemaps/registry.js';
+import { isVisibleToMode } from './catalog/categories/registry.js';
 import { browserRuntime } from './runtime.js';
 
 function syncActiveLevelDataset(game) {

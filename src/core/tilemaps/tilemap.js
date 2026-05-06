@@ -1,5 +1,12 @@
 import { TILE_SIZE } from '../constants.js';
+import { defineScene } from '../scene/scene.js';
+import { sceneObject } from '../scene/objects.js';
+import { getComponent, findObjectsWithComponent } from '../scene/queries.js';
 import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from './objects.js';
+
+const DECOR_TYPES = { r: 'bannerRed', g: 'bannerGreen', f: 'flag', t: 'torch' };
+const BACKDROP_SYMBOLS = new Set(['.', 'a', 'k', 'c', 'd']);
+const markerObject = id => ({ id, components: [] });
 
 const T = TILE_SIZE;
 const DEFAULT_ART_TILE_SIZE = 18;
@@ -17,45 +24,56 @@ export function gridLayer({ id, symbols = {}, rows }) {
   return { id, type: 'grid', symbols, rows: [...rows] };
 }
 
-function componentTypes(components) { return components.map(component => component.type); }
 function hasComponent(object, type) { return object.components.some(component => component.type === type); }
-export function getComponent(object, type) { return object.components.find(component => component.type === type) ?? null; }
-export function getComponents(object, type) { return object.components.filter(component => component.type === type); }
 
 function objectFromCell(scene, layer, symbol, definition, col, row) {
-  return {
+  return sceneObject({
     id: `${layer.id}:${col},${row}`,
     layerId: layer.id,
     symbol,
     definitionId: definition.id,
     transform: { col, row, x: col * scene.tileSize, y: row * scene.tileSize, w: scene.tileSize, h: scene.tileSize },
-    components: definition.components.map(component => ({ ...component }))
-  };
-}
-
-function buildIndexes(objects) {
-  const componentIndex = {};
-  for (const object of objects) {
-    for (const type of new Set(componentTypes(object.components))) {
-      (componentIndex[type] ??= []).push(object);
-    }
-  }
-  return componentIndex;
+    components: definition.components
+  });
 }
 
 export function withLevelMeta(parsedScene, meta) { return Object.assign(parsedScene, meta); }
 
 export function parseTilemap(definition, tileSize = definition.tileSize ?? T) {
-  const terrainRows = definition.terrainRows.map(row => row.replace(/[=B]/g, '#').replace(/\^/g, '.'));
-  const objectRows = definition.objectRows.map(row => row.replace(/<G>/g, 'GGG'));
+  const terrainRows = validateLegacyRows(definition.terrainRows, 'terrainRows');
+  const objectRows = validateLegacyRows(definition.objectRows, 'objectRows', terrainRows.length, terrainRows[0].length).map(row => row.replace(/<G>/g, 'GGG'));
+  const decorRows = validateLegacyRows(definition.decorRows ?? terrainRows.map(row => EMPTY.repeat(row.length)), 'decorRows', terrainRows.length, terrainRows[0].length);
+  const backdropRows = validateLegacyRows(definition.backdropRows ?? terrainRows.map(row => EMPTY.repeat(row.length)), 'backdropRows', terrainRows.length, terrainRows[0].length, BACKDROP_SYMBOLS);
+  const normalizedTerrainRows = terrainRows.map(row => row.replace(/[=B]/g, '#').replace(/\^/g, '.'));
+  const spikeRows = terrainRows.map(row => row.replace(/[^\^]/g, EMPTY));
+  if (!objectRows.some(row => row.includes('P'))) throw new Error('objectRows must contain a player spawn');
   return defineTilemapScene({
     tileSize,
     artTileSize: definition.artTileSize,
     theme: definition.theme,
+    collisionMode: definition.collisionMode,
     layers: [
-      gridLayer({ id: 'terrain', symbols: { '#': solidTerrain }, rows: terrainRows }),
-      gridLayer({ id: 'entities', symbols: { P: playerSpawner, E: slimeSpawner, G: finishGateObject }, rows: objectRows })
+      gridLayer({ id: 'backdrop', symbols: Object.fromEntries([...BACKDROP_SYMBOLS].filter(symbol => symbol !== EMPTY).map(symbol => [symbol, markerObject(`backdrop-${symbol}`)])), rows: backdropRows }),
+      gridLayer({ id: 'terrain', symbols: { '#': solidTerrain }, rows: normalizedTerrainRows }),
+      gridLayer({ id: 'entities', symbols: { P: playerSpawner, E: slimeSpawner, G: finishGateObject }, rows: objectRows }),
+      gridLayer({ id: 'decor', symbols: Object.fromEntries(Object.keys(DECOR_TYPES).map(symbol => [symbol, markerObject(`decor-${symbol}`)])), rows: decorRows }),
+      gridLayer({ id: 'hazards', symbols: { '^': markerObject('spike-hazard') }, rows: spikeRows })
     ]
+  });
+}
+
+function validateLegacyRows(rows, name, expectedRows = null, expectedCols = null, allowedSymbols = null) {
+  if (!Array.isArray(rows)) throw new Error(`${name} must be rows`);
+  if (expectedRows !== null && rows.length !== expectedRows) throw new Error(`${name} must contain ${expectedRows} rows`);
+  if (rows.length === 0) throw new Error(`${name} must contain at least one row`);
+  const cols = expectedCols ?? rows[0].length;
+  return rows.map((row, index) => {
+    if (typeof row !== 'string') throw new Error(`${name} row ${index} must be a string`);
+    if (row.length !== cols) throw new Error(`${name} row ${index} must be ${cols} chars wide`);
+    if (allowedSymbols) for (const symbol of row) if (!allowedSymbols.has(symbol)) throw new Error(`${name} contains unknown tile '${symbol}'`);
+    if (name === 'terrainRows' && /[^#.=B^]/.test(row)) throw new Error(`${name} contains unknown tile`);
+    if (name === 'decorRows' && [...row].some(symbol => symbol !== EMPTY && !DECOR_TYPES[symbol])) throw new Error(`${name} contains unknown tile`);
+    return row;
   });
 }
 
@@ -75,6 +93,7 @@ export function defineTilemapScene(definition) {
 
   const scene = {
     ...definition,
+    id: definition.id ?? 'anonymous-tilemap-scene',
     kind: definition.kind ?? 'tilemap-scene',
     tileSize,
     artTileSize,
@@ -94,10 +113,11 @@ export function defineTilemapScene(definition) {
       objects.push(objectFromCell(scene, layer, symbol, layer.symbols[symbol], col, row));
     }));
   }
-  scene.objects = objects;
-  scene.componentIndex = buildIndexes(objects);
+  Object.assign(scene, defineScene({ ...scene, objects: [...objects, ...(definition.objects ?? [])] }));
 
   const terrainPrimitives = buildTerrainPrimitives(scene);
+  // Compatibility fields for current gameplay/render systems.
+  // New systems should prefer scene.objects + components + core/scene queries.
   scene.renderLayers = {
     terrainVisuals: buildTerrainVisuals(scene),
     terrainPrimitives,
@@ -106,9 +126,6 @@ export function defineTilemapScene(definition) {
   scene.tiles = Object.fromEntries(scene.layers.map(layer => [`${layer.id}Rows`, layer.rows]));
   return scene;
 }
-
-export const findObjectsWithComponent = (scene, type) => scene.componentIndex?.[type] ?? [];
-export const findOneObjectWithComponent = (scene, type) => findObjectsWithComponent(scene, type)[0] ?? null;
 
 function terrainObjects(scene) { return findObjectsWithComponent(scene, 'collision:solid').filter(object => hasComponent(object, 'terrain')); }
 function terrainKey(col, row) { return `${col},${row}`; }
@@ -121,15 +138,28 @@ export function getTile(scene, layerId, col, row) { return scene.layers?.find(la
 export function forEachLayerTile(scene, layerId, callback) { scene.layers?.find(layer => layer.id === layerId)?.rows.forEach((line, row) => [...line].forEach((tile, col) => callback(tile, col, row))); }
 export function isSolidTileAt(scene, col, row) { return terrainSet(scene).has(terrainKey(col, row)); }
 export function isSolidTile(tile) { return tile === '#'; }
-export function getDecorType() { return null; }
+export function getDecorType(tile) { return DECOR_TYPES[tile] ?? null; }
 
 export function solidTileRectsOverlapping(scene, rect) {
-  const primitiveRects = scene.renderLayers?.terrainCollisionRects;
-  if (primitiveRects?.length) return primitiveRects.filter(hit => rectsOverlap(rect, hit));
-  return findObjectsWithComponent(scene, 'collision:solid').map(object => ({ ...object.transform, kind: 'solid' })).filter(hit => rectsOverlap(rect, hit));
+  if (scene.collisionMode === 'dual-grid') {
+    const primitiveRects = scene.renderLayers?.terrainCollisionRects;
+    if (primitiveRects?.length) return primitiveRects.filter(hit => rectsOverlap(rect, hit));
+  }
+  return terrainObjects(scene).map(object => ({ ...object.transform, kind: 'solid' })).filter(hit => rectsOverlap(rect, hit));
 }
 
-export function spikeHazardRectsOverlapping() { return []; }
+export function spikeHazardRectsOverlapping(scene, rect) {
+  const layer = scene.layers?.find(layer => layer.id === 'hazards');
+  if (!layer) return [];
+  const hits = [];
+  layer.rows.forEach((line, row) => [...line].forEach((tile, col) => {
+    if (tile === '^') {
+      const hit = tileRect(col, row, 1, 1, 'spike', scene.tileSize);
+      if (rectsOverlap(rect, hit)) hits.push(hit);
+    }
+  }));
+  return hits;
+}
 
 export function getGoalRect(scene) {
   const goals = instantiatedObjects(scene, 'finish-gate');
@@ -143,7 +173,7 @@ export function getGoalRect(scene) {
 
 export function getGoalTriggerRect(scene) { const goal = getGoalRect(scene); const pad = scene.tileSize / 2; return { ...goal, x: goal.x - pad, w: goal.w + pad * 2, h: goal.h + scene.tileSize, kind: 'gate-trigger' }; }
 
-function spawnAtObject(object, tileSize) { return { x: object.transform.x + tileSize / 2 - 17, y: object.transform.y + tileSize - 50 }; }
+function spawnAtObject(object, tileSize) { return { x: object.transform.x + tileSize / 2, y: object.transform.y + tileSize - 50 }; }
 export function getSpawnPoint(scene) { const [spawn] = instantiatedObjects(scene, 'player'); return spawn ? spawnAtObject(spawn, scene.tileSize) : null; }
 
 function instantiatedObjects(scene, definitionId) {

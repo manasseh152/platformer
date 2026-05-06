@@ -1,4 +1,4 @@
-import { createCatalogRegistry } from '../catalog/registry.js';
+import { createCatalogRegistry } from '../../catalog/registry.js';
 import { uiNavigationGym } from './ui-navigation-gym.js';
 import { movementGymScenario } from './movement-gym.js';
 import { finishGateGymScenario } from './finish-gate-gym.js';

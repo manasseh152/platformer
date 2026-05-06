@@ -10,9 +10,10 @@ import { createInputState } from './input.js';
 import { createPresenter } from './presenter.js';
 import { applySettingsToGame, loadSettings } from './settings.js';
 import { browserRuntime } from './runtime.js';
-import { createScenarioService } from './core/scenarios/service.js';
+import { createScenarioService } from './catalog/scenarios/service.js';
 import { createDefaultSceneLibrary } from './scenes/default-library.js';
 import { createAppState, setPausedState } from './app/app-state.js';
+import { createGpuSystem } from './gpu/gpu-system.js';
 
 /**
  * Creates the mutable game context shared by systems.
@@ -21,6 +22,7 @@ export function createGame(ui, runtime = browserRuntime) {
   const presenter = createPresenter(ui.canvas, CAMERA_WIDTH, CAMERA_HEIGHT);
   const settings = loadSettings(runtime.storage);
   const activeLevel = resolveInitialLevel(settings);
+  const gpu = createGpuSystem({ settings });
   const gameplaySession = createGameplaySession(activeLevel, { view: null, scenarioId: activeLevel.id });
   const game = {
     runtime,
@@ -28,6 +30,7 @@ export function createGame(ui, runtime = browserRuntime) {
     renderCanvas: presenter.renderCanvas,
     ctx: presenter.renderCtx,
     presenter,
+    gpu,
     ui,
     view: {
       width: CAMERA_WORLD_WIDTH,
@@ -68,6 +71,11 @@ export function createGame(ui, runtime = browserRuntime) {
   game.scenarios = createScenarioService(game, runtime);
   game.scenarios.select(activeLevel.id);
   applySettingsToGame(game);
+  if (game.settings.gpuExtras === 'auto') {
+    game.presenter.tryEnableWebGpu?.(game.gpu).then(enabled => {
+      if (enabled) runtime.emit('gpu.presenter-enabled', { mode: game.presenter.mode });
+    });
+  }
   document.body.dataset.levelId = game.level?.id || 'act-01-level-1';
   return game;
 }

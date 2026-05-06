@@ -4,7 +4,7 @@ import {
   getScenarioEntryById,
   getVisibleScenarioEntries,
   scenarioEntries
-} from '../src/core/scenarios/registry.js';
+} from '../src/catalog/scenarios/registry.js';
 
 test('scenario registry is a curated selectable catalog over multiple sources', () => {
   expect(getScenarioEntryById('act-01-level-1')).toMatchObject({
@@ -27,7 +27,6 @@ test('scenario registry filters visibility independent of source catalog', () =>
   expect(getVisibleScenarioEntries({ developerMode: true }).map(entry => entry.id)).toEqual([
     'act-01-level-1',
     'movement-gym',
-    'hazard-gym',
     'finish-gate-gym',
     'ui-navigation-gym',
     'enemy-zoo'

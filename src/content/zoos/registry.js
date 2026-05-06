@@ -1,4 +1,4 @@
-import { createCatalogRegistry } from '../catalog/registry.js';
+import { createCatalogRegistry } from '../../catalog/registry.js';
 import { enemyZooScenario } from './enemy-zoo.js';
 
 function assertZooScenario(scenario) {

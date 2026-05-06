@@ -1,6 +1,13 @@
 # Tilemap scenes
 
-Tilemaps are composable scene data, not hard-coded `terrainRows/objectRows/decorRows` blobs.
+Tilemap scenes are one authoring format for core scenes.
+
+Related:
+
+- [Scene model](./scene.md)
+- [Scene components](./scene-components.md)
+
+Tilemaps are composable scene data, not hard-coded `terrainRows/objectRows/decorRows` blobs. `defineTilemapScene()` compiles grid layers into core scene objects and then delegates generic object/index work to the core scene model.
 
 ## Authoring API
 
@@ -70,8 +77,6 @@ Entities layer:
 | `E` | spawns slime object |
 | `G` | finish-gate footprint cell |
 
-Removed from the core model for now: spikes, platforms, block variants, decor, backdrop, and `<G>` gate side markers.
-
 Use `GGG` for a three-cell finish gate. One character should represent one occupied grid cell.
 
 ## Object definitions
@@ -79,6 +84,9 @@ Use `GGG` for a three-cell finish gate. One character should represent one occup
 Layer symbols point to reusable object definitions. Avoid inline component lists in map files.
 
 ```js
+import { defineObject } from '../../scene/objects.js';
+import { renderTerrain, solid, spawner, terrain } from '../../scene/components.js';
+
 export const solidTerrain = defineObject({
   id: 'solid-terrain',
   components: [solid(), terrain(), renderTerrain({ strategy: 'dual-grid' })]
@@ -92,17 +100,15 @@ export const playerSpawner = defineObject({
 
 One concept is used for both static objects and spawnable runtime objects: `defineObject()`.
 
-A `spawner(otherObject)` component means “instantiate that object at this placement during gameplay scene assembly.” Static terrain does not need to spawn anything; it is already a scene object.
-
 ## Parser output
 
 `defineTilemapScene()` validates and compiles layers into:
 
 - `layers`: authoring grids and symbol mappings
-- `objects`: one scene object per non-empty cell
+- `objects`: one scene object per non-empty cell, plus authored scene objects
 - `componentIndex`: cached lookup by component type
 - `worldWidth/worldHeight`, `cols/rows`, `tileSize`
-- derived render/collision artifacts
+- derived tilemap render/collision artifacts
 
 Scene object shape:
 
@@ -120,23 +126,20 @@ Scene object shape:
 Systems query components, not layer names or symbols:
 
 ```js
-findObjectsWithComponent(scene, 'collision:solid')
-findObjectsWithComponent(scene, 'spawner')
-findObjectsWithComponent(scene, 'render:terrain')
+findObjectsWithComponent(scene, 'collision:solid');
+findObjectsWithComponent(scene, 'spawner');
+findObjectsWithComponent(scene, 'render:terrain');
 ```
+
+## Compatibility fields
+
+Compatibility fields such as `renderLayers` and `tiles` exist for the current renderer and gameplay helpers. New systems should query scene objects/components through `src/core/scene` instead.
 
 ## Dual-grid rendering
 
 Map symbols express semantic occupancy, not final art tiles.
 
 `#` means “solid terrain.” The renderer derives terrain primitives from neighboring solid terrain cells. Dual-grid should remain a render/collision strategy over scene objects, not a special authored layer format.
-
-Current rule:
-
-- authored grid remains normal
-- solid terrain objects are indexed
-- dual-grid primitives are derived from neighbor masks
-- collision rects are derived from the same terrain occupancy
 
 Longer-term direction:
 

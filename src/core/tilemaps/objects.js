@@ -1,22 +1,9 @@
 import { TILE_SIZE } from '../constants.js';
+import { defineObject } from '../scene/objects.js';
+import { enemyController, health, patrol, physicsBody, playerController, renderGoal, renderTerrain, solid, spawner, terrain, transition, velocity } from '../scene/components.js';
 
-export function defineObject({ id, components = [] }) {
-  if (!id) throw new Error('defineObject requires an id');
-  return Object.freeze({ id, components: Object.freeze([...components]) });
-}
-
-export const solid = () => ({ type: 'collision:solid' });
-export const terrain = (props = {}) => ({ type: 'terrain', material: props.material ?? 'grass' });
-export const renderTerrain = (props = {}) => ({ type: 'render:terrain', strategy: props.strategy ?? 'dual-grid' });
-export const spawner = object => ({ type: 'spawner', object });
-export const physicsBody = props => ({ type: 'physics:body', ...props });
-export const velocity = (props = {}) => ({ type: 'physics:velocity', ...props });
-export const health = props => ({ type: 'health', ...props });
-export const playerController = () => ({ type: 'controller:player' });
-export const enemyController = () => ({ type: 'controller:enemy' });
-export const patrol = (props = {}) => ({ type: 'ai:patrol', strategy: props.strategy ?? 'auto-platform' });
-export const transition = (props = {}) => ({ type: 'transition', kind: props.kind ?? 'finish' });
-export const renderGoal = () => ({ type: 'render:goal' });
+export { defineObject } from '../scene/objects.js';
+export { enemyController, health, patrol, physicsBody, playerController, renderGoal, renderTerrain, solid, spawner, terrain, transition, velocity } from '../scene/components.js';
 
 export const solidTerrain = defineObject({
   id: 'solid-terrain',

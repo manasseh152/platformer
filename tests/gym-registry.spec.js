@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { getAllGyms, getGymById } from '../src/core/gyms/registry.js';
+import { getAllGyms, getGymById } from '../src/content/gyms/registry.js';
 
 test('gym scenarios use shared scenario metadata conventions', () => {
   expect(getGymById('ui-navigation-gym')).toMatchObject({

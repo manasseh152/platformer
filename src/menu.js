@@ -5,9 +5,9 @@ import { applyMotionPreference, runDOMTransition, shouldReduceMotion, setupMotio
 import { renderSettings, renderSettingsCategory, refreshDynamicRefs, selectedCategory } from './settings-ui.js';
 import { syncGymApi } from './gym.js';
 import { browserRuntime } from './runtime.js';
-import { getAllCategories, getCategoryById, primaryGroupCategoryFor } from './core/categories/registry.js';
-import { getDefaultTilemapLevelDefinition } from './core/tilemaps/registry.js';
-import { getVisibleScenarioEntries } from './core/scenarios/registry.js';
+import { getAllCategories, getCategoryById, primaryGroupCategoryFor } from './catalog/categories/registry.js';
+import { getDefaultTilemapLevelDefinition } from './content/tilemaps/registry.js';
+import { getVisibleScenarioEntries } from './catalog/scenarios/registry.js';
 import { isPaused, isStarted, isWon, setStarted } from './app/app-state.js';
 
 const pageElement = (ui, page) => ({ main: ui.pauseMainPage, 'level-select': ui.levelSelectPage, settings: ui.settingsHubPage, 'settings-category': ui.settingsCategoryPage })[page];
@@ -338,7 +338,7 @@ function handleReplaceSettings(game, runtime = browserRuntime) {
   try {
     const apply = () => {
       replaceSettings(game, JSON.stringify(normalized), runtime.storage);
-      runtime.emit('settings.replace', { developerMode: game.settings.developerMode, motion: game.settings.motion, controllerEnabled: game.settings.controllerEnabled });
+      runtime.emit('settings.replace', { developerMode: game.settings.developerMode, motion: game.settings.motion, gpuExtras: game.settings.gpuExtras, controllerEnabled: game.settings.controllerEnabled });
       syncGymApi(game, runtime);
       renderSettings(game);
       updateMenuChrome(game);
@@ -362,6 +362,21 @@ function cycleMotion(game, runtime = browserRuntime) {
   runtime.emit('settings.change', { key: 'motion', value: game.settings.motion });
   renderSettingsCategory(game);
   updateMenuChrome(game);
+}
+
+function cycleGpuExtras(game, runtime = browserRuntime) {
+  game.settings.gpuExtras = game.settings.gpuExtras === 'auto' ? 'off' : 'auto';
+  game.settings = saveSettings(game.settings, runtime.storage);
+  runtime.emit('settings.change', { key: 'gpuExtras', value: game.settings.gpuExtras });
+  if (game.settings.gpuExtras === 'auto') {
+    game.presenter.tryEnableWebGpu?.(game.gpu).then(enabled => {
+      if (enabled) {
+        runtime.emit('gpu.presenter-enabled', { mode: game.presenter.mode });
+        if (game.menu.page === 'settings-category') renderSettingsCategory(game);
+      }
+    });
+  }
+  renderSettingsCategory(game);
 }
 
 function toggleController(game, runtime = browserRuntime) {
@@ -432,6 +447,7 @@ function handleSettingsClick(game, e, runtime = browserRuntime) {
   if (row) {
     if (row.dataset.settingRow === 'motion') return cycleMotion(game, runtime);
     if (row.dataset.settingRow === 'controller-enabled') return toggleController(game, runtime);
+    if (row.dataset.settingRow === 'gpu-extras') return cycleGpuExtras(game, runtime);
     if (row.dataset.settingRow === 'developer-mode') return toggleDeveloperMode(game, runtime);
   }
   const action = e.target.closest('[data-settings-action]')?.dataset.settingsAction;

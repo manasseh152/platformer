@@ -1,8 +1,8 @@
-import { createCatalogRegistry } from '../catalog/registry.js';
+import { createCatalogRegistry } from '../registry.js';
 import { isVisibleToMode } from '../categories/registry.js';
-import { getAllCampaignScenarios } from '../campaigns/registry.js';
-import { getAllGyms } from '../gyms/registry.js';
-import { getAllZooScenarios } from '../zoos/registry.js';
+import { getAllCampaignScenarios } from '../../content/campaigns/registry.js';
+import { getAllGyms } from '../../content/gyms/registry.js';
+import { getAllZooScenarios } from '../../content/zoos/registry.js';
 
 function tilemapDefinitionIdForScenario(entry) {
   return entry.composition?.stack?.find(layer => layer.props?.tilemapLevelDefinitionId)?.props?.tilemapLevelDefinitionId ?? null;

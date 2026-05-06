@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
-import { getGymById } from '../../src/core/gyms/registry.js';
+import { getGymById } from '../../src/content/gyms/registry.js';
 
 async function writeSnapshot(testInfo, name, snapshot) {
   await writeFile(testInfo.outputPath(`${name}.json`), `${JSON.stringify(snapshot, null, 2)}\n`);
@@ -52,7 +52,6 @@ test(`${gym.name}: developer mode exposes clean scenarios and loads Movement Gym
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'level-select');
   await expect(page.getByRole('button', { name: /Act 01 Level 1/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Movement Gym/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Hazard Gym/ })).toBeVisible();
 
   const levelSelectSnapshot = await captureCheckpoint(page, testInfo, '02-level-select-with-gyms');
   expect(levelSelectSnapshot).toMatchObject({

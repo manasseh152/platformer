@@ -5,7 +5,7 @@ import {
   getDefaultTilemapLevelDefinition,
   getTilemapLevelDefinitionById,
   movementGymMapTilemapLevelDefinition
-} from '../src/core/tilemaps/registry.js';
+} from '../src/content/tilemaps/registry.js';
 
 test('tilemap registry owns parsed tilemap level definitions', () => {
   expect(getDefaultTilemapLevelDefinition()).toBe(act01Level1TilemapLevelDefinition);
@@ -14,7 +14,6 @@ test('tilemap registry owns parsed tilemap level definitions', () => {
   expect(getAllTilemapLevelDefinitions().map(definition => definition.id)).toEqual([
     'act-01-level-1',
     'movement-gym-map',
-    'hazard-gym-map',
     'finish-gate-gym-map',
     'enemy-zoo-map'
   ]);
@@ -28,6 +27,6 @@ test('tilemap definitions are explicit assets rather than launch scenarios', () 
       rows: expect.any(Number),
       tiles: expect.any(Object)
     });
-    expect(definition.kind).toBeUndefined();
+    expect(definition.kind).toBe('tilemap-scene');
   }
 });

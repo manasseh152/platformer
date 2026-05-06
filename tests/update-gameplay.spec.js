@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { updateGameplay } from '../src/core/physics.js';
 import { createGameplaySession } from '../src/core/gameplay-session.js';
-import { getTilemapLevelDefinitionById } from '../src/core/tilemaps/registry.js';
+import { getTilemapLevelDefinitionById } from '../src/content/tilemaps/registry.js';
 import { createInputState } from '../src/input.js';
 import { getGoalTriggerRect } from '../src/core/tilemaps/tilemap.js';
 

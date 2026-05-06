@@ -9,7 +9,7 @@ import { syncGymApi } from './gym.js';
 import { createRuntime } from './runtime.js';
 import { createSceneHost } from './scene-host.js';
 import { createLevelScene } from './scenes/level-scene.js';
-import { applyScenarioLaunchParams, readScenarioLaunchParams } from './core/scenarios/url.js';
+import { applyScenarioLaunchParams, readScenarioLaunchParams } from './catalog/scenarios/url.js';
 import { isPaused, isStarted, isWon } from './app/app-state.js';
 
 const runtime = createRuntime();
@@ -98,7 +98,9 @@ function frame(now = runtime.now()) {
     game.input.pressed.clear();
     game.input.gamepadPressed.clear();
   }
+  game.gpu?.update?.(dt);
   scenes.render();
+  game.gpu?.render?.({ game, presenter: game.presenter });
 }
 
 function loop(now) {

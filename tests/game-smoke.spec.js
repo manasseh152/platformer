@@ -75,7 +75,7 @@ test('settings hub, accessibility motion, advanced JSON, and start flow', async 
 
   await openStartSettings(page);
   await expect(page.locator('#menuTitle')).toHaveText('Settings');
-  await expect(page.locator('.settings-category-card__title')).toHaveText(['Keyboard', 'Controller', 'Accessibility', 'Advanced']);
+  await expect(page.locator('.settings-category-card__title')).toHaveText(['Keyboard', 'Controller', 'Accessibility', 'Graphics', 'Advanced']);
 
   await openCategory(page, 'accessibility', 'Accessibility');
   await expect(page.locator('[data-setting-row="motion"]')).toContainText('System');
@@ -144,7 +144,6 @@ test('developer maps are only available in the normal Level Select when Develope
   await page.locator('#startLevelSelectButton').click();
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'level-select');
   await expect(page.getByRole('button', { name: /Movement Gym/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Hazard Gym/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Enemy Zoo/ })).toBeVisible();
   await page.getByRole('button', { name: /Enemy Zoo/ }).click();
   await expect(page.locator('body')).toHaveAttribute('data-level-id', 'enemy-zoo-map');
