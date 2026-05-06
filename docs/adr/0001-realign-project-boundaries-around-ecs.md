@@ -59,7 +59,7 @@ A commit is too mixed if it combines unrelated invariants, even if each individu
 - Add/update boundary tests before or during code moves.
 - Prefer docs that describe current intended shape over historical notes.
 
-Progress: not started.
+Progress: done. ADR created, docs index links it, and the existing `tests/core-boundary.spec.js` now passes with `src/core` free of catalog/content imports.
 
 ### Stage 1: Extract catalog/content/scenarios from `core`
 
@@ -76,7 +76,7 @@ src/core/scenarios   -> src/catalog/scenarios
 
 Update imports, docs, and boundary tests in the same commit.
 
-Progress: done. Also moved the tilemap scene registry to `src/content/tilemaps/registry.js` so `src/core` does not import catalog modules.
+Progress: done in `8908706`. Also moved the tilemap scene registry to `src/content/tilemaps/registry.js` so `src/core` does not import catalog modules. Full test suite passed: `75 passed`.
 
 ### Stage 2: Split authored tilemap content from tilemap/runtime helpers
 
