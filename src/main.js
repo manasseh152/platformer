@@ -8,7 +8,7 @@ import { createGameApp } from './app/game-app.js';
 import { syncGymApi } from './gym.js';
 import { createRuntime } from './runtime.js';
 import { createSceneHost } from './scene-host.js';
-import { createLevelScene } from './scenes/level-scene.js';
+import { createGameplayScene } from './scenes/gameplay-scene.js';
 import { applyScenarioLaunchParams, readScenarioLaunchParams } from './catalog/scenarios/url.js';
 import { isPaused, isStarted, isWon } from './app/app-state.js';
 
@@ -21,8 +21,8 @@ game.controlsText = () => controlsText(game.input);
 game.resetGame = () => resetGame(game, runtime);
 
 setupMenu(game, runtime);
-scenes.register(createLevelScene(game));
-scenes.switchScene('level');
+scenes.register(createGameplayScene(game));
+scenes.switchScene('gameplay');
 const launchParams = readScenarioLaunchParams();
 const urlLaunch = applyScenarioLaunchParams(game, launchParams, runtime);
 if (urlLaunch.ok && launchParams.autorun) startGame(game, runtime);

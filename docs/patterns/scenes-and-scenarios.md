@@ -35,7 +35,7 @@ Do not infer one from another by ID. A scenario may reference a tilemap scene, b
       {
         scene: 'gameplay',
         props: {
-          tilemapLevelDefinitionId: 'movement-gym-map',
+          tilemapSceneId: 'movement-gym-map',
           goal: { type: 'finish-gate' }
         }
       }
@@ -44,7 +44,7 @@ Do not infer one from another by ID. A scenario may reference a tilemap scene, b
 }
 ```
 
-`tilemapLevelDefinitionId` is still accepted in scenario props while gameplay code finishes moving to scene terminology. New core code should prefer tilemap scene naming.
+`tilemapSceneId` is still accepted in scenario props while gameplay code finishes moving to scene terminology. New core code should prefer tilemap scene naming.
 
 ## Sources
 

@@ -1,5 +1,5 @@
 import { assets } from './assets.js';
-import { getDefaultTilemapLevelDefinition as getDefaultLevel } from './content/tilemaps/registry.js';
+import { getDefaultTilemapScene } from './content/tilemaps/registry.js';
 import { createEnemies, createPlayer, getGoalRect, getSpawnPoint } from './core/tilemaps/tilemap.js';
 import { drawBackdropLayer, drawDecorLayer, drawGoal, drawSpikeLayer, drawTilemap } from './render.js';
 
@@ -47,30 +47,30 @@ function drawSnapshotEnemy(ctx, enemy) {
   ctx.restore();
 }
 
-export async function renderMapToCanvas(sourceLevel = getDefaultLevel()) {
+export async function renderMapToCanvas(sourceTilemapScene = getDefaultTilemapScene()) {
   await waitForMapAssets();
 
   const canvas = document.createElement('canvas');
-  canvas.width = sourceLevel.worldWidth;
-  canvas.height = sourceLevel.worldHeight;
+  canvas.width = sourceTilemapScene.worldWidth;
+  canvas.height = sourceTilemapScene.worldHeight;
 
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
 
   ctx.fillStyle = '#080b11';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  drawBackdropLayer(ctx, sourceLevel);
-  drawDecorLayer(ctx, sourceLevel);
-  drawTilemap(ctx, sourceLevel);
-  drawGoal(ctx, getGoalRect(sourceLevel));
-  drawSpikeLayer(ctx, sourceLevel);
+  drawBackdropLayer(ctx, sourceTilemapScene);
+  drawDecorLayer(ctx, sourceTilemapScene);
+  drawTilemap(ctx, sourceTilemapScene);
+  drawGoal(ctx, getGoalRect(sourceTilemapScene));
+  drawSpikeLayer(ctx, sourceTilemapScene);
 
-  for (const enemy of createEnemies(sourceLevel)) drawSnapshotEnemy(ctx, enemy);
-  drawSnapshotPlayer(ctx, createPlayer(getSpawnPoint(sourceLevel)));
+  for (const enemy of createEnemies(sourceTilemapScene)) drawSnapshotEnemy(ctx, enemy);
+  drawSnapshotPlayer(ctx, createPlayer(getSpawnPoint(sourceTilemapScene)));
 
   return canvas;
 }
 
-export async function renderMapToDataUrl(sourceLevel = getDefaultLevel()) {
-  return (await renderMapToCanvas(sourceLevel)).toDataURL('image/png');
+export async function renderMapToDataUrl(sourceTilemapScene = getDefaultTilemapScene()) {
+  return (await renderMapToCanvas(sourceTilemapScene)).toDataURL('image/png');
 }

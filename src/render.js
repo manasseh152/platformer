@@ -299,7 +299,7 @@ export function drawDungeonBackdrop(ctx, view, camera) {
 
 export function syncHtmlHud(game) {
   const { ui, player } = game;
-  if (ui.hudLevelName) ui.hudLevelName.textContent = game.level?.name || 'Unknown Level';
+  if (ui.hudLevelName) ui.hudLevelName.textContent = game.tilemapScene?.name || 'Unknown Level';
   [...ui.heartsEl.children].forEach((heart, i) => heart.classList.toggle('full', i < player.hp));
   ui.dashStatusEl.classList.toggle('ready', player.dashCooldown <= 0);
   const won = isWon(game);
@@ -307,7 +307,7 @@ export function syncHtmlHud(game) {
   ui.messageEl.hidden = !showingEndMessage;
   ui.messageTitleEl.textContent = won ? 'Gate Reached!' : 'You Faded';
   if (ui.messageNextLevelButton) {
-    const nextLevel = won ? game.levels.getNextLevel() : null;
+    const nextLevel = won ? game.tilemapScenes.getNextTilemapScene() : null;
     ui.messageNextLevelButton.hidden = !nextLevel;
     ui.messageNextLevelButton.textContent = nextLevel ? `Play ${nextLevel.name}` : 'Play Next';
   }
@@ -384,7 +384,8 @@ export function drawGame(runtime, game) {
     game = runtime;
     runtime = { now: () => performance.now(), random: Math.random };
   }
-  const { ctx, renderCanvas, view, level, ui } = game;
+  const { ctx, renderCanvas, view, ui } = game;
+  const level = game.tilemapScene;
   ctx.imageSmoothingEnabled = false;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, renderCanvas.width, renderCanvas.height);

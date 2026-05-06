@@ -15,6 +15,6 @@ export const uiNavigationGym = {
   ci: true,
   composition: {
     type: 'executable-gym',
-    stack: [{ scene: 'level', props: { gymId: 'ui-navigation-gym', tilemapLevelDefinitionId: 'act-01-level-1' } }]
+    stack: [{ scene: 'gameplay', props: { gymId: 'ui-navigation-gym', tilemapSceneId: 'act-01-level-1' } }]
   }
 };

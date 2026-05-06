@@ -2,19 +2,16 @@ import { centerCameraOnPlayer } from './camera.js';
 import { createEnemies, createPlayer, getSpawnPoint } from './tilemaps/tilemap.js';
 import { createCamera } from './camera.js';
 
-export function createGameplaySession(tilemapSceneDefinition, { view, scenarioId = null, goal = { type: 'finish-gate' } } = {}) {
-  if (!tilemapSceneDefinition) throw new Error('createGameplaySession requires a tilemap scene definition');
-  const player = createPlayer(getSpawnPoint(tilemapSceneDefinition), tilemapSceneDefinition.tileSize);
+export function createGameplaySession(tilemapScene, { view, scenarioId = null, goal = { type: 'finish-gate' } } = {}) {
+  if (!tilemapScene) throw new Error('createGameplaySession requires a tilemap scene');
+  const player = createPlayer(getSpawnPoint(tilemapScene), tilemapScene.tileSize);
   const session = {
     scenarioId,
-    tilemapSceneDefinition,
-    tilemapLevelDefinition: tilemapSceneDefinition,
-    levelDefinition: tilemapSceneDefinition,
-    level: tilemapSceneDefinition,
+    tilemapScene,
     goal,
     outcome: 'active',
     player,
-    enemies: createEnemies(tilemapSceneDefinition),
+    enemies: createEnemies(tilemapScene),
     dust: [],
     particles: [],
     camera: createCamera()
@@ -23,13 +20,10 @@ export function createGameplaySession(tilemapSceneDefinition, { view, scenarioId
   return session;
 }
 
-export function resetGameplaySession(session, tilemapSceneDefinition = session.tilemapSceneDefinition ?? session.tilemapLevelDefinition, { view, scenarioId = session.scenarioId, goal = session.goal } = {}) {
-  const next = createGameplaySession(tilemapSceneDefinition, { view, scenarioId, goal });
+export function resetGameplaySession(session, tilemapScene = session.tilemapScene, { view, scenarioId = session.scenarioId, goal = session.goal } = {}) {
+  const next = createGameplaySession(tilemapScene, { view, scenarioId, goal });
   session.scenarioId = next.scenarioId;
-  session.tilemapSceneDefinition = next.tilemapSceneDefinition;
-  session.tilemapLevelDefinition = next.tilemapSceneDefinition;
-  session.levelDefinition = next.levelDefinition;
-  session.level = next.level;
+  session.tilemapScene = next.tilemapScene;
   session.goal = next.goal;
   session.outcome = next.outcome;
   Object.assign(session.player, next.player);
@@ -43,7 +37,7 @@ export function resetGameplaySession(session, tilemapSceneDefinition = session.t
 
 export function syncGameplaySessionToGame(game, session) {
   game.gameplaySession = session;
-  game.level = session.tilemapSceneDefinition;
+  game.tilemapScene = session.tilemapScene;
   game.player = session.player;
   game.enemies = session.enemies;
   game.dust = session.dust;

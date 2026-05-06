@@ -29,14 +29,14 @@ function snapshotCamera(camera) {
   };
 }
 
-export function createLevelScene(game, props = {}) {
-  if (props.tilemapLevelDefinitionId && game.levels?.current?.id !== props.tilemapLevelDefinitionId) {
-    game.levels.switchLevel(props.tilemapLevelDefinitionId);
+export function createGameplayScene(game, props = {}) {
+  if (props.tilemapSceneId && game.tilemapScenes?.current?.id !== props.tilemapSceneId) {
+    game.tilemapScenes.switchTilemapScene(props.tilemapSceneId);
   }
 
   return {
-    id: 'level',
-    kind: 'level',
+    id: 'gameplay',
+    kind: 'gameplay',
     update(runtime, dt) {
       updateGameplay(runtime, game.gameplaySession, game.input, dt, { resetGame: game.resetGame });
       updateCamera(game, dt);
@@ -46,17 +46,17 @@ export function createLevelScene(game, props = {}) {
     },
     snapshot() {
       return {
-        id: 'level',
-        kind: 'level',
-        levelId: game.gameplaySession?.tilemapLevelDefinition?.id || game.level?.id || 'act-01-level-1',
+        id: 'gameplay',
+        kind: 'gameplay',
+        tilemapSceneId: game.gameplaySession?.tilemapScene?.id || game.tilemapScene?.id || 'act-01-level-1',
         player: snapshotPlayer(game.gameplaySession?.player || game.player),
         camera: snapshotCamera(game.gameplaySession?.camera || game.camera)
       };
     },
     dehydrate() {
       return {
-        sceneId: 'level',
-        levelId: game.level?.id || 'act-01-level-1',
+        sceneId: 'gameplay',
+        tilemapSceneId: game.tilemapScene?.id || 'act-01-level-1',
         flags: {
           started: isStarted(game),
           paused: isPaused(game),

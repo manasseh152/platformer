@@ -1,17 +1,17 @@
 import { expect, test } from '@playwright/test';
 import {
-  act01Level1TilemapLevelDefinition,
-  getAllTilemapLevelDefinitions,
-  getDefaultTilemapLevelDefinition,
-  getTilemapLevelDefinitionById,
-  movementGymMapTilemapLevelDefinition
+  act01Level1TilemapScene,
+  getAllTilemapScenes,
+  getDefaultTilemapScene,
+  getTilemapSceneById,
+  movementGymMapTilemapScene
 } from '../src/content/tilemaps/registry.js';
 
 test('tilemap registry owns parsed tilemap level definitions', () => {
-  expect(getDefaultTilemapLevelDefinition()).toBe(act01Level1TilemapLevelDefinition);
-  expect(getTilemapLevelDefinitionById('act-01-level-1')).toBe(act01Level1TilemapLevelDefinition);
-  expect(getTilemapLevelDefinitionById('movement-gym-map')).toBe(movementGymMapTilemapLevelDefinition);
-  expect(getAllTilemapLevelDefinitions().map(definition => definition.id)).toEqual([
+  expect(getDefaultTilemapScene()).toBe(act01Level1TilemapScene);
+  expect(getTilemapSceneById('act-01-level-1')).toBe(act01Level1TilemapScene);
+  expect(getTilemapSceneById('movement-gym-map')).toBe(movementGymMapTilemapScene);
+  expect(getAllTilemapScenes().map(definition => definition.id)).toEqual([
     'act-01-level-1',
     'movement-gym-map',
     'finish-gate-gym-map',
@@ -20,7 +20,7 @@ test('tilemap registry owns parsed tilemap level definitions', () => {
 });
 
 test('tilemap definitions are explicit assets rather than launch scenarios', () => {
-  for (const definition of getAllTilemapLevelDefinitions()) {
+  for (const definition of getAllTilemapScenes()) {
     expect(definition).toMatchObject({
       tileSize: expect.any(Number),
       cols: expect.any(Number),

@@ -59,7 +59,7 @@ function objectFromCell(scene, layer, symbol, definition, col, row) {
   });
 }
 
-export function withLevelMeta(parsedScene, meta) { return Object.assign(parsedScene, meta); }
+export function withTilemapSceneMeta(parsedScene, meta) { return Object.assign(parsedScene, meta); }
 
 export function parseTilemap(definition, tileSize = definition.tileSize ?? T) {
   const terrainRows = validateLegacyRows(definition.terrainRows, 'terrainRows');

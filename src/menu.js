@@ -6,7 +6,7 @@ import { renderSettings, renderSettingsCategory, refreshDynamicRefs, selectedCat
 import { syncGymApi } from './gym.js';
 import { browserRuntime } from './runtime.js';
 import { getAllCategories, getCategoryById, primaryGroupCategoryFor } from './catalog/categories/registry.js';
-import { getDefaultTilemapLevelDefinition } from './content/tilemaps/registry.js';
+import { getDefaultTilemapScene } from './content/tilemaps/registry.js';
 import { getVisibleScenarioEntries } from './catalog/scenarios/registry.js';
 import { isPaused, isStarted, isWon, setStarted } from './app/app-state.js';
 
@@ -85,12 +85,12 @@ function moveHorizontalGroupFocus(game, dx) {
   return true;
 }
 
-function renderSelectedLevelSummary(game) {
-  const level = game.levels.getCurrentLevel();
-  if (game.ui.selectedLevelSummary) game.ui.selectedLevelSummary.textContent = `Selected level: ${level.name}`;
+function renderSelectedTilemapSceneSummary(game) {
+  const tilemapScene = game.tilemapScenes.getCurrentTilemapScene();
+  if (game.ui.selectedLevelSummary) game.ui.selectedLevelSummary.textContent = `Selected level: ${tilemapScene.name}`;
   const heroTitle = document.querySelector('.hero-scene__title');
-  if (heroTitle) heroTitle.textContent = level.name;
-  if (game.ui.hudLevelName) game.ui.hudLevelName.textContent = level.name;
+  if (heroTitle) heroTitle.textContent = tilemapScene.name;
+  if (game.ui.hudLevelName) game.ui.hudLevelName.textContent = tilemapScene.name;
 }
 
 const scenarioSourceGroups = {
@@ -114,13 +114,13 @@ function scenarioTagNames(entry) {
 }
 
 function tilemapDefinitionIdForScenario(entry) {
-  return entry.composition?.stack?.find(layer => layer.props?.tilemapLevelDefinitionId)?.props?.tilemapLevelDefinitionId ?? null;
+  return entry.composition?.stack?.find(layer => layer.props?.tilemapSceneId)?.props?.tilemapSceneId ?? null;
 }
 
 function renderScenarioBrowser(game, message = '') {
   const { ui } = game;
   if (!ui.levelSelectList) return;
-  const current = game.levels.getCurrentLevel();
+  const current = game.tilemapScenes.getCurrentTilemapScene();
   const currentScenarioId = game.scenarios?.current?.id ?? game.scenarios?.selectedScenarioId ?? null;
   const developerMode = Boolean(game.settings.developerMode || game.session?.developerModeOverride);
   const entries = game.scenarios?.getVisible?.() ?? getVisibleScenarioEntries({ developerMode });
@@ -141,7 +141,7 @@ function renderScenarioBrowser(game, message = '') {
           const docs = entry.docs?.length ? ` // Docs: ${entry.docs.join(', ')}` : '';
           const tests = entry.tests?.length ? ` // Tests: ${entry.tests.join(', ')}` : '';
           const covers = entry.covers?.length ? ` // Covers: ${entry.covers.join(', ')}` : '';
-          return `<button type="button" class="ds-setting-row level-select-row${isCurrent ? ' is-current' : ''}" data-level-id="${entry.id}" data-scenario-id="${entry.id}" data-scenario-source="${entry.source || group.id}">
+          return `<button type="button" class="ds-setting-row level-select-row${isCurrent ? ' is-current' : ''}" data-scenario-id="${entry.id}" data-scenario-id="${entry.id}" data-scenario-source="${entry.source || group.id}">
           <span class="ds-setting-row__copy">
             <span class="ds-setting-row__label">${entry.name}</span>
             <span class="ds-setting-row__description">${entry.description || ''}${tags ? ` // ${tags}` : ''}${entry.visibility === 'developer' ? ' // Developer' : ''}${entry.ci ? ' // CI' : ''}${docs}${tests}${covers}</span>
@@ -152,10 +152,8 @@ function renderScenarioBrowser(game, message = '') {
       </div>
     </section>`).join('');
   if (ui.levelSelectStatus) ui.levelSelectStatus.textContent = message || `Current scenario: ${(game.scenarios?.current?.entry || game.scenarios?.getSelected?.() || current).name}.`;
-  renderSelectedLevelSummary(game);
+  renderSelectedTilemapSceneSummary(game);
 }
-
-const renderLevelSelect = renderScenarioBrowser;
 
 export function handleGamepadMenuInput(game) {
   const { input, ui } = game;
@@ -224,7 +222,7 @@ export function setMenuPage(game, page, direction = 'forward', category = null) 
     game.menu.direction = direction;
     game.menu.settingsCategory = category;
     renderSettings(game);
-    if (page === 'level-select') renderLevelSelect(game);
+    if (page === 'level-select') renderScenarioBrowser(game);
     updateMenuChrome(game);
   }, () => focusFirstMenuItem(game));
 }
@@ -240,18 +238,18 @@ export function openSettings(game, origin) {
   }, () => focusFirstMenuItem(game));
 }
 
-export function openLevelSelect(game, origin) {
+export function openScenarioBrowser(game, origin) {
   commitMenuPageChange(game, () => {
     game.menu.origin = origin;
     game.menu.page = 'level-select';
     game.menu.settingsCategory = null;
     game.menu.direction = 'forward';
-    renderLevelSelect(game);
+    renderScenarioBrowser(game);
     updateMenuChrome(game);
   }, () => focusFirstMenuItem(game));
 }
 
-function closeLevelSelect(game) {
+function closeScenarioBrowser(game) {
   const origin = game.menu.origin;
   commitMenuPageChange(game, () => {
     game.menu.page = 'main';
@@ -277,7 +275,7 @@ export function closeSettings(game) {
 export function goBack(game) {
   if (game.menu.page === 'settings-category') return setMenuPage(game, 'settings', 'back', null);
   if (game.menu.page === 'settings') return closeSettings(game);
-  if (game.menu.page === 'level-select') return closeLevelSelect(game);
+  if (game.menu.page === 'level-select') return closeScenarioBrowser(game);
 }
 
 export function setPaused(game, value, runtime = browserRuntime) {
@@ -302,7 +300,7 @@ export function startGame(game, runtime = browserRuntime) {
   setStarted(game, true);
   game.clock.last = runtime.now();
   document.body.classList.add('playing');
-  runtime.emit('game.start', { levelId: game.level?.id || null });
+  runtime.emit('game.start', { tilemapSceneId: game.tilemapScene?.id || null });
   game.canvas.focus?.({ preventScroll: true });
   updateMenuChrome(game);
 }
@@ -344,10 +342,10 @@ function handleReplaceSettings(game, runtime = browserRuntime) {
       updateMenuChrome(game);
     };
     const after = () => {
-      if (!game.settings.developerMode && game.level?.visibility === 'developer') game.levels.switchLevel(getDefaultTilemapLevelDefinition().id);
+      if (!game.settings.developerMode && game.tilemapScene?.visibility === 'developer') game.tilemapScenes.switchTilemapScene(getDefaultTilemapScene().id);
       ui.settingsJson.value = serializeSettings(game);
       ui.settingsJsonStatus.textContent = 'Replaced app settings.';
-      renderSelectedLevelSummary(game);
+      renderSelectedTilemapSceneSummary(game);
       focusFirstMenuItem(game);
     };
     const developerChangesLayout = developerWasVisible !== game.settings.developerMode || normalized.developerMode !== game.settings.developerMode;
@@ -396,27 +394,27 @@ function toggleDeveloperMode(game, runtime = browserRuntime) {
     game.settings = saveSettings(game.settings, runtime.storage);
     runtime.emit('settings.change', { key: 'developerMode', value: game.settings.developerMode });
     syncGymApi(game, runtime);
-    if (!game.settings.developerMode && game.level?.visibility === 'developer') game.levels.switchLevel(getDefaultTilemapLevelDefinition().id);
+    if (!game.settings.developerMode && game.tilemapScene?.visibility === 'developer') game.tilemapScenes.switchTilemapScene(getDefaultTilemapScene().id);
     renderSettingsCategory(game);
     updateMenuChrome(game);
-    renderSelectedLevelSummary(game);
+    renderSelectedTilemapSceneSummary(game);
   }, () => {
     const root = activeMenuRoot(game);
     if (!root?.contains(document.activeElement)) focusFirstMenuItem(game);
   });
 }
 
-function selectLevel(game, entryId) {
+function selectScenario(game, entryId) {
   const result = game.scenarios?.launch?.(entryId, { origin: game.menu.origin === 'start' ? 'start' : 'pause' }) ?? { ok: false, reason: 'missing-scenario' };
   if (!result.ok) {
-    const message = result.reason === 'developer-only' ? 'Enable Developer Mode to load developer levels.' : 'Level not found.';
-    renderLevelSelect(game, message);
+    const message = result.reason === 'developer-only' ? 'Enable Developer Mode to launch developer scenarios.' : 'Scenario not found.';
+    renderScenarioBrowser(game, message);
     return;
   }
-  const selectedName = result.level?.name || result.entry?.name || 'scene';
+  const selectedName = result.tilemapScene?.name || result.entry?.name || 'scene';
   const message = game.menu.origin === 'start' ? `Selected ${selectedName}.` : `Loaded ${selectedName}.`;
-  renderLevelSelect(game, message);
-  if (game.menu.origin === 'start') closeLevelSelect(game);
+  renderScenarioBrowser(game, message);
+  if (game.menu.origin === 'start') closeScenarioBrowser(game);
 }
 
 function resetBinds(game, device, runtime = browserRuntime) {
@@ -434,8 +432,8 @@ function resetBinds(game, device, runtime = browserRuntime) {
 }
 
 function handleSettingsClick(game, e, runtime = browserRuntime) {
-  const levelButton = e.target.closest('button[data-level-id]');
-  if (levelButton) return selectLevel(game, levelButton.dataset.levelId);
+  const scenarioButton = e.target.closest('button[data-scenario-id]');
+  if (scenarioButton) return selectScenario(game, scenarioButton.dataset.scenarioId);
   if (e.target.closest('[data-level-select-back]')) return goBack(game);
   const categoryButton = e.target.closest('[data-settings-category]');
   if (categoryButton) return setMenuPage(game, 'settings-category', 'forward', categoryButton.dataset.settingsCategory);
@@ -475,30 +473,30 @@ export function setupMenu(game, runtime = browserRuntime) {
     document.querySelectorAll('.controller-focus').forEach(node => { if (node !== e.target) node.classList.remove('controller-focus'); });
   });
 
-  renderSelectedLevelSummary(game);
+  renderSelectedTilemapSceneSummary(game);
 
   ui.startButton.addEventListener('click', () => startGame(game, runtime));
-  ui.startLevelSelectButton.addEventListener('click', () => openLevelSelect(game, 'start'));
+  ui.startLevelSelectButton.addEventListener('click', () => openScenarioBrowser(game, 'start'));
   ui.startSettingsButton.addEventListener('click', () => openSettings(game, 'start'));
   ui.resumeButton.addEventListener('click', () => setPaused(game, false, runtime));
   ui.restartButton.addEventListener('click', () => game.resetGame());
   ui.mainMenuButton.addEventListener('click', () => returnToMainMenu(game, runtime));
-  ui.levelSelectButton.addEventListener('click', () => openLevelSelect(game, 'pause'));
+  ui.levelSelectButton.addEventListener('click', () => openScenarioBrowser(game, 'pause'));
   ui.settingsButton.addEventListener('click', () => openSettings(game, 'pause'));
   ui.messageRestartButton.addEventListener('click', () => game.resetGame());
   ui.messageNextLevelButton.addEventListener('click', () => {
-    const result = game.levels.switchToNextLevel();
+    const result = game.tilemapScenes.switchToNextTilemapScene();
     if (!result.ok) return;
     setPausedFlag(game, false, runtime);
     setStarted(game, true);
-    runtime.emit('game.next-level', { levelId: game.level?.id || null });
+    runtime.emit('game.next-level', { tilemapSceneId: game.tilemapScene?.id || null });
     document.body.classList.add('playing');
     document.body.classList.remove('game-won', 'game-over');
     game.canvas.focus?.({ preventScroll: true });
   });
   ui.messageLevelSelectButton.addEventListener('click', () => {
     setPausedFlag(game, true, runtime);
-    openLevelSelect(game, 'pause');
+    openScenarioBrowser(game, 'pause');
   });
   ui.menuPages.addEventListener('click', e => handleSettingsClick(game, e, runtime));
 

@@ -5,7 +5,7 @@
  */
 import { CAMERA_HEIGHT, CAMERA_WIDTH, CAMERA_WORLD_HEIGHT, CAMERA_WORLD_WIDTH } from './core/constants.js';
 import { createGameplaySession, resetGameplaySession, syncGameplaySessionToGame } from './core/gameplay-session.js';
-import { createLevelManager, resolveInitialLevel } from './level-manager.js';
+import { createTilemapSceneManager, resolveInitialTilemapScene } from './tilemap-scene-manager.js';
 import { createInputState } from './input.js';
 import { createPresenter } from './presenter.js';
 import { applySettingsToGame, loadSettings } from './settings.js';
@@ -21,7 +21,7 @@ import { createGpuSystem } from './gpu/gpu-system.js';
 export function createGame(ui, runtime = browserRuntime) {
   const presenter = createPresenter(ui.canvas, CAMERA_WIDTH, CAMERA_HEIGHT);
   const settings = loadSettings(runtime.storage);
-  const activeLevel = resolveInitialLevel(settings);
+  const activeLevel = resolveInitialTilemapScene(settings);
   const gpu = createGpuSystem({ settings });
   const gameplaySession = createGameplaySession(activeLevel, { view: null, scenarioId: activeLevel.id });
   const game = {
@@ -49,8 +49,8 @@ export function createGame(ui, runtime = browserRuntime) {
     },
     appState: createAppState(),
     gameplaySession,
-    level: gameplaySession.tilemapLevelDefinition,
-    levels: null,
+    tilemapScene: gameplaySession.tilemapScene,
+    tilemapScenes: null,
     player: gameplaySession.player,
     enemies: gameplaySession.enemies,
     dust: gameplaySession.dust,
@@ -66,7 +66,7 @@ export function createGame(ui, runtime = browserRuntime) {
   };
   resetGameplaySession(gameplaySession, activeLevel, { view: game.view, scenarioId: activeLevel.id });
   syncGameplaySessionToGame(game, gameplaySession);
-  game.levels = createLevelManager(game, runtime);
+  game.tilemapScenes = createTilemapSceneManager(game, runtime);
   game.sceneLibrary = createDefaultSceneLibrary();
   game.scenarios = createScenarioService(game, runtime);
   game.scenarios.select(activeLevel.id);
@@ -76,14 +76,15 @@ export function createGame(ui, runtime = browserRuntime) {
       if (enabled) runtime.emit('gpu.presenter-enabled', { mode: game.presenter.mode });
     });
   }
-  document.body.dataset.levelId = game.level?.id || 'act-01-level-1';
+  const tilemapSceneId = game.tilemapScene?.id || 'act-01-level-1';
+    document.body.dataset.tilemapSceneId = tilemapSceneId;
   return game;
 }
 
 export function resetGame(game, runtime = browserRuntime) {
   setPausedFlag(game, false, runtime);
-  game.levels.restartLevel();
-  runtime.emit('game.reset', { levelId: game.level?.id || 'act-01-level-1' });
+  game.tilemapScenes.restartTilemapScene();
+  runtime.emit('game.reset', { tilemapSceneId: game.tilemapScene?.id || 'act-01-level-1' });
 }
 
 export function setPausedFlag(game, value, runtime = browserRuntime) {

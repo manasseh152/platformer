@@ -4,41 +4,33 @@ import { movementGymMap } from './definitions/movement-gym-map.js';
 import { finishGateGymMap } from './definitions/finish-gate-gym-map.js';
 import { enemyZooMap } from './definitions/enemy-zoo-map.js';
 
-function assertTilemapSceneDefinition(definition) {
+function assertTilemapScene(definition) {
   if (definition.kind !== 'tilemap-scene' || !definition.layers || !definition.objects || !definition.tileSize || !definition.cols || !definition.rows) {
-    throw new Error(`${definition.id} must be a parsed tilemap scene definition`);
+    throw new Error(`${definition.id} must be a parsed tilemap scene`);
   }
 }
 
 const registry = createCatalogRegistry({
   name: 'tilemap-scenes',
   allowedKinds: ['tilemap-scene'],
-  validateEntry: assertTilemapSceneDefinition
+  validateEntry: assertTilemapScene
 });
 
-export const act01Level1TilemapSceneDefinition = registry.register(act01Level1);
-export const movementGymMapTilemapSceneDefinition = registry.register(movementGymMap);
-export const finishGateGymMapTilemapSceneDefinition = registry.register(finishGateGymMap);
-export const enemyZooMapTilemapSceneDefinition = registry.register(enemyZooMap);
+export const act01Level1TilemapScene = registry.register(act01Level1);
+export const movementGymMapTilemapScene = registry.register(movementGymMap);
+export const finishGateGymMapTilemapScene = registry.register(finishGateGymMap);
+export const enemyZooMapTilemapScene = registry.register(enemyZooMap);
 
-export const tilemapSceneDefinitions = Object.fromEntries(registry.getAll().map(entry => [entry.id, entry]));
+export const tilemapScenes = Object.fromEntries(registry.getAll().map(entry => [entry.id, entry]));
 
-export function getTilemapSceneDefinitionById(id) {
+export function getTilemapSceneById(id) {
   return registry.getById(id);
 }
 
-export function getAllTilemapSceneDefinitions() {
+export function getAllTilemapScenes() {
   return registry.getAll();
 }
 
-export function getDefaultTilemapSceneDefinition() {
-  return act01Level1TilemapSceneDefinition;
+export function getDefaultTilemapScene() {
+  return act01Level1TilemapScene;
 }
-
-// Deprecated aliases while application code finishes moving to scene terminology.
-export const act01Level1TilemapLevelDefinition = act01Level1TilemapSceneDefinition;
-export const movementGymMapTilemapLevelDefinition = movementGymMapTilemapSceneDefinition;
-export const tilemapLevelDefinitions = tilemapSceneDefinitions;
-export const getTilemapLevelDefinitionById = getTilemapSceneDefinitionById;
-export const getAllTilemapLevelDefinitions = getAllTilemapSceneDefinitions;
-export const getDefaultTilemapLevelDefinition = getDefaultTilemapSceneDefinition;

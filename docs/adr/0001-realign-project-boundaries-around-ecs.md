@@ -111,11 +111,11 @@ Progress: done. Generic scene primitives, runtime, scene stack, and viewport now
 Replace level-centric flow with scenario/tilemap-scene terminology:
 
 - `level-manager` becomes scenario/tilemap scene selection flow or disappears into scenario service/app shell.
-- `tilemapLevelDefinition` aliases are removed.
+- `tilemapSceneDefinition` aliases are removed.
 - Gameplay session consistently receives a tilemap scene definition.
 - User-facing UI may still say “Level Select” where appropriate, but internal code should use scenario/tilemap scene names.
 
-Progress: not started.
+Progress: done. The app registers and launches the gameplay scene instead of a legacy level scene, scenario compositions reference `gameplay`, menu internals select scenarios while preserving user-facing “Level Select” copy, browser DOM mirrors use `data-tilemap-scene-id`/`data-scenario-id`, the gym snapshot exposes `tilemapScene`, and the old `withLevelMeta` helper was replaced by tilemap-scene terminology. Full Playwright suite passed: `74 passed`.
 
 ### Stage 5: Migrate gameplay systems to scene object/component queries
 

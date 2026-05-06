@@ -14,19 +14,19 @@ function makeGame({ developerMode = false } = {}) {
     session: { developerModeOverride: false },
     input: {},
     menu: {},
-    levels: {
+    tilemapScenes: {
       current: { id: 'act-01-level-1' },
-      switchLevel: id => {
-        calls.push(['switchLevel', id]);
-        game.levels.current = { id, name: id };
-        game.level = game.levels.current;
-        return { ok: true, level: game.levels.current };
+      switchTilemapScene: id => {
+        calls.push(['switchTilemapScene', id]);
+        game.tilemapScenes.current = { id, name: id };
+        game.tilemapScene = game.tilemapScenes.current;
+        return { ok: true, tilemapScene: game.tilemapScenes.current };
       }
     }
   };
   game.sceneLibrary = {
     create(id, app, props = {}) {
-      if (props.tilemapLevelDefinitionId) app.levels.switchLevel(props.tilemapLevelDefinitionId);
+      if (props.tilemapSceneId) app.tilemapScenes.switchTilemapScene(props.tilemapSceneId);
       return { ok: true, scene: { id }, factory: { id } };
     },
     resolveSceneComposition(library, app, composition) {
@@ -45,7 +45,7 @@ test('scenario service selects and launches public scenarios', () => {
   expect(scenarios.select('act-01-level-1')).toMatchObject({ ok: true });
   expect(scenarios.launch('act-01-level-1', { origin: 'start' })).toMatchObject({ ok: true, scenario: { id: 'act-01-level-1' } });
   expect(scenarios.current).toMatchObject({ id: 'act-01-level-1', source: 'campaigns', origin: 'start' });
-  expect(game.scenarioCalls).toEqual([['switchLevel', 'act-01-level-1']]);
+  expect(game.scenarioCalls).toEqual([['switchTilemapScene', 'act-01-level-1']]);
   expect(game.runtime.events().map(event => event.type)).toEqual(['scenario.select', 'scenario.launch']);
 });
 
@@ -60,7 +60,7 @@ test('scenario service enforces developer visibility and supports restart', () =
   expect(scenarios.launch('movement-gym', { origin: 'url' })).toMatchObject({ ok: true });
   expect(scenarios.restartCurrent()).toMatchObject({ ok: true, scenario: { id: 'movement-gym' } });
   expect(game.scenarioCalls).toEqual([
-    ['switchLevel', 'movement-gym-map'],
-    ['switchLevel', 'movement-gym-map']
+    ['switchTilemapScene', 'movement-gym-map'],
+    ['switchTilemapScene', 'movement-gym-map']
   ]);
 });

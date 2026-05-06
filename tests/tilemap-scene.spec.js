@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import {
-  act01Level1TilemapLevelDefinition as level,
-  getDefaultTilemapLevelDefinition as getDefaultLevel
+  act01Level1TilemapScene as level,
+  getDefaultTilemapScene as getDefaultTilemapScene
 } from '../src/content/tilemaps/registry.js';
 import {
   createEnemies,
@@ -20,9 +20,9 @@ import {
   tileToWorld,
   worldToTile
 } from '../src/core/tilemaps/tilemap.js';
-import { resolveInitialLevel } from '../src/level-manager.js';
+import { resolveInitialTilemapScene } from '../src/tilemap-scene-manager.js';
 
-test('level exposes world dimensions derived from tile dimensions', () => {
+test('tilemap scene exposes world dimensions derived from tile dimensions', () => {
   expect(level.worldWidth).toBe(level.cols * level.tileSize);
   expect(level.worldHeight).toBe(level.rows * level.tileSize);
 });
@@ -89,9 +89,9 @@ test('tilemap parser exposes layered tiles and direct query helpers derive gamep
   ]));
 });
 
-test('initial level resolution ignores URL selection and uses the default level', () => {
-  expect(resolveInitialLevel()).toBe(getDefaultLevel());
-  expect(resolveInitialLevel({ developerMode: true }, '?level=movement-gym')).toBe(getDefaultLevel());
+test('initial tilemap scene resolution ignores URL selection and uses the default level', () => {
+  expect(resolveInitialTilemapScene()).toBe(getDefaultTilemapScene());
+  expect(resolveInitialTilemapScene({ developerMode: true }, '?level=movement-gym')).toBe(getDefaultTilemapScene());
 });
 
 test('default gate is completable from solid support blocks', () => {
@@ -222,7 +222,7 @@ test('tilemap parser rejects invalid layers and missing required markers', () =>
 });
 
 test('enemy runtime state is cloned from tilemap-owned enemy definitions', () => {
-  const customLevel = parseTilemap({
+  const customTilemapScene = parseTilemap({
     terrainRows: [
       '#####',
       '#...#',
@@ -246,8 +246,8 @@ test('enemy runtime state is cloned from tilemap-owned enemy definitions', () =>
     ]
   });
 
-  const enemies = createEnemies(customLevel);
+  const enemies = createEnemies(customTilemapScene);
   enemies[0].hp = 0;
 
-  expect(createEnemies(customLevel)[0].hp).toBe(2);
+  expect(createEnemies(customTilemapScene)[0].hp).toBe(2);
 });

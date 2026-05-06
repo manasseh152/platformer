@@ -49,8 +49,8 @@ export function centerCameraOnPlayer(camera, player, view, worldWidth = WORLD_WI
 
 export function updateFollowCamera(game, dt) {
   const { camera, player, view } = game;
-  const worldWidth = game.level?.worldWidth ?? WORLD_WIDTH;
-  const worldHeight = game.level?.worldHeight ?? WORLD_HEIGHT;
+  const worldWidth = game.tilemapScene?.worldWidth ?? WORLD_WIDTH;
+  const worldHeight = game.tilemapScene?.worldHeight ?? WORLD_HEIGHT;
   const deadzone = camera.deadzone;
   const playerX = player.x + player.w / 2 + player.dir * camera.lookAheadX;
   const playerY = player.y + player.h / 2;

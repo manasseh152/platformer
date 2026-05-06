@@ -18,15 +18,15 @@ function round(value) {
 export function snapshotGame(game) {
   return {
     scene: game.runtime?.scenes?.snapshot?.() ?? {
-      id: 'level',
-      kind: 'level'
+      id: 'gameplay',
+      kind: 'gameplay'
     },
-    level: game.level ? {
-      id: game.level.id,
-      name: game.level.name,
-      kind: game.level.kind || 'tilemap-level',
-      visibility: game.level.visibility || 'public',
-      categories: [...(game.level.categories || [])]
+    tilemapScene: game.tilemapScene ? {
+      id: game.tilemapScene.id,
+      name: game.tilemapScene.name,
+      kind: game.tilemapScene.kind || 'tilemap-scene',
+      visibility: game.tilemapScene.visibility || 'public',
+      categories: [...(game.tilemapScene.categories || [])]
     } : null,
     ui: {
       started: isStarted(game),
@@ -34,7 +34,7 @@ export function snapshotGame(game) {
       won: isWon(game),
       menuPage: game.menu.page,
       menuOrigin: game.menu.origin,
-      bodyLevelId: document.body.dataset.levelId || null,
+      bodyTilemapSceneId: document.body.dataset.tilemapSceneId || null,
       bodyMenuOrigin: document.body.dataset.menuOrigin || null,
       focused: activeElementSnapshot()
     },

@@ -15,19 +15,19 @@ function makeGame() {
     session: { developerModeOverride: false },
     input: {},
     menu: {},
-    levels: {
+    tilemapScenes: {
       current: { id: 'act-01-level-1' },
-      switchLevel: id => {
+      switchTilemapScene: id => {
         calls.push(id);
-        game.levels.current = { id };
-        game.level = game.levels.current;
-        return { ok: true, level: game.levels.current };
+        game.tilemapScenes.current = { id };
+        game.tilemapScene = game.tilemapScenes.current;
+        return { ok: true, tilemapScene: game.tilemapScenes.current };
       }
     }
   };
   game.sceneLibrary = {
     create(id, app, props = {}) {
-      if (props.tilemapLevelDefinitionId) app.levels.switchLevel(props.tilemapLevelDefinitionId);
+      if (props.tilemapSceneId) app.tilemapScenes.switchTilemapScene(props.tilemapSceneId);
       return { ok: true, scene: { id }, factory: { id } };
     },
     resolveSceneComposition(library, app, composition) {
