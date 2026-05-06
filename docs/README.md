@@ -9,6 +9,7 @@ Use these docs when adding or changing code:
 - `patterns/scenes-and-scenarios.md` — runtime scenes, launchable scenarios, gyms, zoos, and app/session boundaries.
 - `patterns/tilemaps.md` — composable tilemap authoring with objects, layers, and components.
 - `patterns/settings-and-ui.md` — settings/menu UI state, persistence, and motion rules.
+- `patterns/devtools.md` — Developer Mode toolbox registry, runtime UI, debug overlays, and playbook boundaries.
 
 ## Documentation rules
 
