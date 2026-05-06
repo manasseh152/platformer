@@ -85,7 +85,29 @@ function drawStoneTile(ctx, level, ch, col, row, asset) {
   }
 }
 
+function shouldUseRawTerrainDebugRender(level) {
+  return Boolean(level.devToolsFlags?.useRawTerrainDebugRender || level.devToolsFlags?.showCollisionCells || level.devToolsFlags?.showCollisionRects);
+}
+
+function drawRawTerrainDebugTilemap(ctx, level) {
+  const cells = level.renderLayers?.terrainCollisionCells;
+  if (!cells?.length) return false;
+  ctx.save();
+  for (const cell of cells) {
+    const above = cells.some(other => other.col === cell.col && other.row === cell.row - 1);
+    ctx.fillStyle = above ? '#9b683f' : '#5cba47';
+    ctx.fillRect(cell.x, cell.y, cell.w, cell.h);
+    ctx.strokeStyle = 'rgba(0,0,0,.28)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(cell.x + 0.5, cell.y + 0.5, Math.max(0, cell.w - 1), Math.max(0, cell.h - 1));
+  }
+  ctx.restore();
+  return true;
+}
+
 export function drawTilemap(ctx, level) {
+  if (shouldUseRawTerrainDebugRender(level) && drawRawTerrainDebugTilemap(ctx, level)) return;
+
   const terrainPrimitives = level.renderLayers?.terrainPrimitives;
   if (terrainPrimitives?.length) {
     ctx.save();
@@ -440,7 +462,9 @@ export function drawGame(runtime, game) {
 
   drawDecorLayer(ctx, level);
 
+  level.devToolsFlags = game.devTools?.flags;
   drawTilemap(ctx, level);
+  level.devToolsFlags = null;
 
   drawGoals(ctx, level);
 

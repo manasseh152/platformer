@@ -24,6 +24,13 @@ export function registerDebugRenderDevTools(game) {
         label: 'Show physics body rects',
         get: game => Boolean(game.devTools.flags.showPhysicsBodyRects),
         set: (game, value) => { game.devTools.flags.showPhysicsBodyRects = value; }
+      },
+      {
+        id: 'use-raw-terrain-debug-render',
+        kind: 'toggle',
+        label: 'Use raw terrain debug render',
+        get: game => Boolean(game.devTools.flags.useRawTerrainDebugRender),
+        set: (game, value) => { game.devTools.flags.useRawTerrainDebugRender = value; }
       }
     ]
   });
