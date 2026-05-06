@@ -56,6 +56,11 @@ export function snapshotGame(game) {
       developerMode: Boolean(game.settings.developerMode),
       motion: game.settings.motion,
       controllerEnabled: Boolean(game.settings.controllerEnabled)
+    },
+    devTools: {
+      open: Boolean(game.devTools?.open),
+      visible: Boolean(game.devTools?.visible),
+      sections: game.devTools?.registry?.snapshot?.() ?? []
     }
   };
 }

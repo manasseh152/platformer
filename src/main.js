@@ -11,6 +11,7 @@ import { createSceneHost } from './scene-host.js';
 import { createGameplayScene } from './scenes/gameplay-scene.js';
 import { applyScenarioLaunchParams, readScenarioLaunchParams } from './catalog/scenarios/url.js';
 import { isPaused, isStarted, isWon } from './app/app-state.js';
+import { handleDevToolsKeydown, setupDevTools, syncDevTools } from './devtools/toolbox-dom.js';
 
 const runtime = createRuntime();
 const ui = getUI();
@@ -21,6 +22,7 @@ game.controlsText = () => controlsText(game.input);
 game.resetGame = () => resetGame(game, runtime);
 
 setupMenu(game, runtime);
+setupDevTools(game);
 scenes.register(createGameplayScene(game));
 scenes.switchScene('gameplay');
 const launchParams = readScenarioLaunchParams();
@@ -34,6 +36,11 @@ addEventListener('keydown', e => {
   if (input.listeningFor) {
     e.preventDefault();
     handleListeningKey(game, e.code, runtime);
+    return;
+  }
+
+  if (handleDevToolsKeydown(game, e)) {
+    e.preventDefault();
     return;
   }
 
@@ -99,6 +106,7 @@ function frame(now = runtime.now()) {
     game.input.gamepadPressed.clear();
   }
   game.gpu?.update?.(dt);
+  syncDevTools(game);
   scenes.render();
   game.gpu?.render?.({ game, presenter: game.presenter });
 }

@@ -397,6 +397,7 @@ function toggleDeveloperMode(game, runtime = browserRuntime) {
     if (!game.settings.developerMode && game.tilemap?.visibility === 'developer') game.tilemaps.switchTilemap(getDefaultTilemap().id);
     renderSettingsCategory(game);
     updateMenuChrome(game);
+    game.devTools?.sync?.();
     renderSelectedTilemapSummary(game);
   }, () => {
     const root = activeMenuRoot(game);
