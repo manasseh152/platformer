@@ -4,7 +4,7 @@ import { defineScene } from '../src/core/scene/scene.js';
 import { getComponent, getComponents, findObjectsWithComponent, findOneObjectWithComponent } from '../src/core/scene/queries.js';
 import { renderLayer, renderParallax, renderProcedural, renderTexture, solid } from '../src/core/scene/components.js';
 import { defineTilemapScene, gridLayer } from '../src/core/tilemaps/tilemap.js';
-import { solidTerrain } from '../src/core/tilemaps/objects.js';
+import { solidTerrain } from '../src/content/tilemaps/objects.js';
 
 test('defineScene normalizes objects, clones components, and builds component index', () => {
   const sourceComponent = { type: 'tag:test', value: 1 };

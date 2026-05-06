@@ -1,7 +1,7 @@
-import { defineTilemapScene, gridLayer } from '../tilemap.js';
+import { defineTilemapScene, gridLayer } from '../../../core/tilemaps/tilemap.js';
 import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../objects.js';
 
-export const movementGymMapDefinition = {
+export const finishGateGymMapDefinition = {
   tileSize: 36,
   artTileSize: 18,
   theme: 'kenney-pixel-platformer:grass',
@@ -13,14 +13,14 @@ export const movementGymMapDefinition = {
     '########################',
     '#......................#',
     '#......................#',
-    '#.................###..#',
-    '#.............###......#',
-    '#.........###..........#',
-    '#.....###..............#',
+    '#................###...#',
+    '#.............######...#',
     '#......................#',
-    '#..###....###....###...#',
+    '#......###.............#',
+    '#..###.###.....###.....#',
     '#......................#',
-    '#.###..............##..#',
+    '#..###...........###...#',
+    '#......................#',
     '########################'
   
       ]
@@ -31,8 +31,8 @@ export const movementGymMapDefinition = {
       rows: [
     '........................',
     '........................',
-    '..................GGG...',
     '........................',
+    '.................GGG....',
     '........................',
     '........................',
     '........................',
@@ -47,11 +47,11 @@ export const movementGymMapDefinition = {
   ]
 };
 
-export const movementGymMap = defineTilemapScene({
-  id: 'movement-gym-map',
-  name: 'Movement Gym Map',
-  categories: ['movement'],
+export const finishGateGymMap = defineTilemapScene({
+  id: 'finish-gate-gym-map',
+  name: 'Finish Gate Gym Map',
+  categories: ['finish-gate'],
   visibility: 'developer',
-  description: 'Tilemap fixture for movement validation scenarios.',
-  ...movementGymMapDefinition
+  description: 'Tilemap fixture for finish gate trigger sizing, camera framing, and completion flow.',
+  ...finishGateGymMapDefinition
 });

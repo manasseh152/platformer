@@ -1,8 +1,8 @@
 import { createCatalogRegistry } from '../../catalog/registry.js';
-import { act01Level1 } from '../../core/tilemaps/definitions/act-01-level-1.js';
-import { movementGymMap } from '../../core/tilemaps/definitions/movement-gym-map.js';
-import { finishGateGymMap } from '../../core/tilemaps/definitions/finish-gate-gym-map.js';
-import { enemyZooMap } from '../../core/tilemaps/definitions/enemy-zoo-map.js';
+import { act01Level1 } from './definitions/act-01-level-1.js';
+import { movementGymMap } from './definitions/movement-gym-map.js';
+import { finishGateGymMap } from './definitions/finish-gate-gym-map.js';
+import { enemyZooMap } from './definitions/enemy-zoo-map.js';
 
 function assertTilemapSceneDefinition(definition) {
   if (definition.kind !== 'tilemap-scene' || !definition.layers || !definition.objects || !definition.tileSize || !definition.cols || !definition.rows) {

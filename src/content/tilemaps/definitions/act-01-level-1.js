@@ -1,4 +1,4 @@
-import { defineTilemapScene, gridLayer } from '../tilemap.js';
+import { defineTilemapScene, gridLayer } from '../../../core/tilemaps/tilemap.js';
 import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../objects.js';
 
 export const act01Level1Definition = {

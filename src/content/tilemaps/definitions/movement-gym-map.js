@@ -1,7 +1,7 @@
-import { defineTilemapScene, gridLayer } from '../tilemap.js';
+import { defineTilemapScene, gridLayer } from '../../../core/tilemaps/tilemap.js';
 import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../objects.js';
 
-export const enemyZooMapDefinition = {
+export const movementGymMapDefinition = {
   tileSize: 36,
   artTileSize: 18,
   theme: 'kenney-pixel-platformer:grass',
@@ -12,15 +12,15 @@ export const enemyZooMapDefinition = {
       rows: [
     '########################',
     '#......................#',
-    '#...............#####..#',
     '#......................#',
-    '#.......#####..........#',
+    '#.................###..#',
+    '#.............###......#',
+    '#.........###..........#',
+    '#.....###..............#',
     '#......................#',
-    '#..#####......#####....#',
+    '#..###....###....###...#',
     '#......................#',
-    '#......####............#',
-    '#......................#',
-    '#.#####.....#####..##..#',
+    '#.###..............##..#',
     '########################'
   
       ]
@@ -30,15 +30,15 @@ export const enemyZooMapDefinition = {
       symbols: { P: playerSpawner, E: slimeSpawner, G: finishGateObject },
       rows: [
     '........................',
-    '.................E.E....',
     '........................',
-    '........GGG.............',
-    '........................',
-    '...E...........E........',
+    '..................GGG...',
     '........................',
     '........................',
     '........................',
-    '...E.........E..........',
+    '........................',
+    '........................',
+    '........................',
+    '........................',
     '..P.....................',
     '........................'
   
@@ -47,11 +47,11 @@ export const enemyZooMapDefinition = {
   ]
 };
 
-export const enemyZooMap = defineTilemapScene({
-  id: 'enemy-zoo-map',
-  name: 'Enemy Zoo Map',
-  categories: ['enemy'],
+export const movementGymMap = defineTilemapScene({
+  id: 'movement-gym-map',
+  name: 'Movement Gym Map',
+  categories: ['movement'],
   visibility: 'developer',
-  description: 'Tilemap fixture documenting enemy combinations.',
-  ...enemyZooMapDefinition
+  description: 'Tilemap fixture for movement validation scenarios.',
+  ...movementGymMapDefinition
 });

@@ -1,7 +1,7 @@
-import { defineTilemapScene, gridLayer } from '../tilemap.js';
+import { defineTilemapScene, gridLayer } from '../../../core/tilemaps/tilemap.js';
 import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../objects.js';
 
-export const finishGateGymMapDefinition = {
+export const enemyZooMapDefinition = {
   tileSize: 36,
   artTileSize: 18,
   theme: 'kenney-pixel-platformer:grass',
@@ -12,15 +12,15 @@ export const finishGateGymMapDefinition = {
       rows: [
     '########################',
     '#......................#',
+    '#...............#####..#',
     '#......................#',
-    '#................###...#',
-    '#.............######...#',
+    '#.......#####..........#',
     '#......................#',
-    '#......###.............#',
-    '#..###.###.....###.....#',
+    '#..#####......#####....#',
     '#......................#',
-    '#..###...........###...#',
+    '#......####............#',
     '#......................#',
+    '#.#####.....#####..##..#',
     '########################'
   
       ]
@@ -30,15 +30,15 @@ export const finishGateGymMapDefinition = {
       symbols: { P: playerSpawner, E: slimeSpawner, G: finishGateObject },
       rows: [
     '........................',
+    '.................E.E....',
+    '........................',
+    '........GGG.............',
+    '........................',
+    '...E...........E........',
     '........................',
     '........................',
-    '.................GGG....',
     '........................',
-    '........................',
-    '........................',
-    '........................',
-    '........................',
-    '........................',
+    '...E.........E..........',
     '..P.....................',
     '........................'
   
@@ -47,11 +47,11 @@ export const finishGateGymMapDefinition = {
   ]
 };
 
-export const finishGateGymMap = defineTilemapScene({
-  id: 'finish-gate-gym-map',
-  name: 'Finish Gate Gym Map',
-  categories: ['finish-gate'],
+export const enemyZooMap = defineTilemapScene({
+  id: 'enemy-zoo-map',
+  name: 'Enemy Zoo Map',
+  categories: ['enemy'],
   visibility: 'developer',
-  description: 'Tilemap fixture for finish gate trigger sizing, camera framing, and completion flow.',
-  ...finishGateGymMapDefinition
+  description: 'Tilemap fixture documenting enemy combinations.',
+  ...enemyZooMapDefinition
 });

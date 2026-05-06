@@ -89,7 +89,7 @@ src/core/tilemaps/objects     -> src/content/tilemaps/objects.js
 
 Keep the tilemap compiler/helper module in place temporarily if that reduces breakage. Decide later whether generic tilemap authoring belongs in `engine`, `content`, or `gameplay`.
 
-Progress: not started.
+Progress: done. Authored tilemap definitions and reusable tilemap objects now live under `src/content/tilemaps`; the tilemap registry imports content-local definitions, while `src/core/tilemaps/tilemap.js` remains as the temporary compiler/helper module with only core-local imports. Full test suite passed: `75 passed`.
 
 ### Stage 3: Rename/extract real generic core into engine
 

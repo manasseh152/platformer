@@ -1,12 +1,34 @@
 import { TILE_SIZE } from '../constants.js';
 import { defineScene } from '../scene/scene.js';
-import { sceneObject } from '../scene/objects.js';
+import { defineObject, sceneObject } from '../scene/objects.js';
 import { getComponent, findObjectsWithComponent } from '../scene/queries.js';
-import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from './objects.js';
+import { enemyController, health, patrol, physicsBody, playerController, renderGoal, renderTerrain, solid, spawner, terrain, transition, velocity } from '../scene/components.js';
 
 const DECOR_TYPES = { r: 'bannerRed', g: 'bannerGreen', f: 'flag', t: 'torch' };
 const BACKDROP_SYMBOLS = new Set(['.', 'a', 'k', 'c', 'd']);
 const markerObject = id => ({ id, components: [] });
+
+// Compatibility symbols for legacy row-based tilemap definitions. Authored tilemap
+// content should prefer passing explicit layer symbols via gridLayer().
+const legacySolidTerrain = defineObject({
+  id: 'solid-terrain',
+  components: [solid(), terrain(), renderTerrain({ strategy: 'dual-grid' })]
+});
+const legacyPlayer = defineObject({
+  id: 'player',
+  components: [physicsBody({ w: 34, h: 50 }), velocity(), health({ hp: 5 }), playerController()]
+});
+const legacySlime = defineObject({
+  id: 'slime',
+  components: [physicsBody({ w: 42, h: 38 }), velocity(), health({ hp: 3 }), enemyController(), patrol({ strategy: 'auto-platform' })]
+});
+const legacyFinishGate = defineObject({
+  id: 'finish-gate',
+  components: [transition({ kind: 'finish' }), renderGoal()]
+});
+const legacyPlayerSpawner = defineObject({ id: 'player-spawner', components: [spawner(legacyPlayer)] });
+const legacySlimeSpawner = defineObject({ id: 'slime-spawner', components: [spawner(legacySlime)] });
+const legacyFinishGateObject = defineObject({ id: 'finish-gate-object', components: [spawner(legacyFinishGate)] });
 
 const T = TILE_SIZE;
 const DEFAULT_ART_TILE_SIZE = 18;
@@ -54,8 +76,8 @@ export function parseTilemap(definition, tileSize = definition.tileSize ?? T) {
     collisionMode: definition.collisionMode,
     layers: [
       gridLayer({ id: 'backdrop', symbols: Object.fromEntries([...BACKDROP_SYMBOLS].filter(symbol => symbol !== EMPTY).map(symbol => [symbol, markerObject(`backdrop-${symbol}`)])), rows: backdropRows }),
-      gridLayer({ id: 'terrain', symbols: { '#': solidTerrain }, rows: normalizedTerrainRows }),
-      gridLayer({ id: 'entities', symbols: { P: playerSpawner, E: slimeSpawner, G: finishGateObject }, rows: objectRows }),
+      gridLayer({ id: 'terrain', symbols: { '#': legacySolidTerrain }, rows: normalizedTerrainRows }),
+      gridLayer({ id: 'entities', symbols: { P: legacyPlayerSpawner, E: legacySlimeSpawner, G: legacyFinishGateObject }, rows: objectRows }),
       gridLayer({ id: 'decor', symbols: Object.fromEntries(Object.keys(DECOR_TYPES).map(symbol => [symbol, markerObject(`decor-${symbol}`)])), rows: decorRows }),
       gridLayer({ id: 'hazards', symbols: { '^': markerObject('spike-hazard') }, rows: spikeRows })
     ]
