@@ -35,33 +35,36 @@ const DEFAULT_ART_TILE_SIZE = 18;
 const DEFAULT_THEME = 'kenney-pixel-platformer:grass';
 const EMPTY = '.';
 
-export function gridLayer({ id, symbols = {}, rows }) {
+export function gridLayer({ id, resolution = 1, symbols = {}, rows }) {
   if (!id) throw new Error('gridLayer requires an id');
+  if (!Number.isInteger(resolution) || resolution < 1) throw new Error(`${id} layer resolution must be a positive integer`);
   if (!Array.isArray(rows) || rows.length === 0) throw new Error(`${id} layer rows must contain at least one row`);
   const width = rows[0].length;
   rows.forEach((row, rowIndex) => {
     if (typeof row !== 'string' || row.length !== width) throw new Error(`${id} layer row ${rowIndex} must be ${width} chars wide`);
     for (const symbol of row) if (symbol !== EMPTY && !symbols[symbol]) throw new Error(`${id} layer contains unknown symbol '${symbol}'`);
   });
-  return { id, type: 'grid', symbols, rows: [...rows] };
+  return { id, type: 'grid', resolution, symbols, rows: [...rows] };
 }
 
 function hasComponent(object, type) { return object.components.some(component => component.type === type); }
+function layerCellSize(scene, layer) { return scene.tileSize / layer.resolution; }
 
 function objectFromCell(scene, layer, symbol, definition, col, row) {
+  const cellSize = layerCellSize(scene, layer);
   return sceneObject({
     id: `${layer.id}:${col},${row}`,
     layerId: layer.id,
     symbol,
     definitionId: definition.id,
-    transform: { col, row, x: col * scene.tileSize, y: row * scene.tileSize, w: scene.tileSize, h: scene.tileSize },
+    transform: { col, row, resolution: layer.resolution, x: col * cellSize, y: row * cellSize, w: cellSize, h: cellSize },
     components: definition.components
   });
 }
 
 export function withTilemapMeta(parsedScene, meta) { return Object.assign(parsedScene, meta); }
 
-export function parseTilemap(definition, tileSize = definition.tileSize ?? T) {
+export function parseTilemap(definition) {
   const terrainRows = validateLegacyRows(definition.terrainRows, 'terrainRows');
   const objectRows = validateLegacyRows(definition.objectRows, 'objectRows', terrainRows.length, terrainRows[0].length).map(row => row.replace(/<G>/g, 'GGG'));
   const decorRows = validateLegacyRows(definition.decorRows ?? terrainRows.map(row => EMPTY.repeat(row.length)), 'decorRows', terrainRows.length, terrainRows[0].length);
@@ -70,7 +73,8 @@ export function parseTilemap(definition, tileSize = definition.tileSize ?? T) {
   const spikeRows = terrainRows.map(row => row.replace(/[^\^]/g, EMPTY));
   if (!objectRows.some(row => row.includes('P'))) throw new Error('objectRows must contain a player spawn');
   return defineTilemap({
-    tileSize,
+    cols: terrainRows[0].length,
+    rows: terrainRows.length,
     artTileSize: definition.artTileSize,
     theme: definition.theme,
     collisionMode: definition.collisionMode,
@@ -100,17 +104,24 @@ function validateLegacyRows(rows, name, expectedRows = null, expectedCols = null
 }
 
 export function defineTilemap(definition) {
-  const tileSize = definition.tileSize ?? T;
+  const tileSize = T;
   const artTileSize = definition.artTileSize ?? (tileSize % DEFAULT_ART_TILE_SIZE === 0 ? DEFAULT_ART_TILE_SIZE : tileSize);
   const artTilesPerTile = tileSize / artTileSize;
   if (!Number.isInteger(artTilesPerTile)) throw new Error(`tileSize ${tileSize} must be an integer multiple of artTileSize ${artTileSize}`);
+  if (!Number.isInteger(definition.cols) || definition.cols < 1) throw new Error('defineTilemap requires positive integer cols');
+  if (!Number.isInteger(definition.rows) || definition.rows < 1) throw new Error('defineTilemap requires positive integer rows');
   if (!Array.isArray(definition.layers) || definition.layers.length === 0) throw new Error('defineTilemap requires layers');
 
-  const rows = definition.layers[0].rows.length;
-  const cols = definition.layers[0].rows[0].length;
+  const cols = definition.cols;
+  const rows = definition.rows;
   for (const layer of definition.layers) {
-    if (layer.rows.length !== rows) throw new Error(`${layer.id} layer must contain ${rows} rows`);
-    layer.rows.forEach((row, index) => { if (row.length !== cols) throw new Error(`${layer.id} layer row ${index} must be ${cols} chars wide`); });
+    const resolution = layer.resolution ?? 1;
+    if (!Number.isInteger(resolution) || resolution < 1) throw new Error(`${layer.id} layer resolution must be a positive integer`);
+    if (!Number.isInteger(tileSize / resolution)) throw new Error(`${layer.id} layer resolution ${resolution} must divide tileSize ${tileSize}`);
+    const expectedRows = rows * resolution;
+    const expectedCols = cols * resolution;
+    if (layer.rows.length !== expectedRows) throw new Error(`${layer.id} layer must contain ${expectedRows} rows`);
+    layer.rows.forEach((row, index) => { if (row.length !== expectedCols) throw new Error(`${layer.id} layer row ${index} must be ${expectedCols} chars wide`); });
   }
 
   const scene = {
@@ -125,7 +136,7 @@ export function defineTilemap(definition) {
     rows,
     worldWidth: cols * tileSize,
     worldHeight: rows * tileSize,
-    layers: definition.layers.map(layer => ({ ...layer, rows: [...layer.rows], symbols: { ...layer.symbols } }))
+    layers: definition.layers.map(layer => ({ ...layer, resolution: layer.resolution ?? 1, rows: [...layer.rows], symbols: { ...layer.symbols } }))
   };
 
   const objects = [];
@@ -150,6 +161,11 @@ export function defineTilemap(definition) {
 }
 
 function terrainObjects(scene) { return findObjectsWithComponent(scene, 'collision:solid').filter(object => hasComponent(object, 'terrain')); }
+function terrainLayer(scene) { return scene.layers?.find(layer => layer.id === 'terrain') ?? null; }
+function terrainResolution(scene) { return terrainLayer(scene)?.resolution ?? terrainObjects(scene)[0]?.transform?.resolution ?? 1; }
+function terrainGridCols(scene) { return (terrainLayer(scene)?.rows[0]?.length) ?? scene.cols * terrainResolution(scene); }
+function terrainGridRows(scene) { return terrainLayer(scene)?.rows.length ?? scene.rows * terrainResolution(scene); }
+function terrainCellSize(scene) { return scene.tileSize / terrainResolution(scene); }
 function terrainKey(col, row) { return `${col},${row}`; }
 function terrainSet(scene) { return new Set(terrainObjects(scene).map(object => terrainKey(object.transform.col, object.transform.row))); }
 
@@ -199,10 +215,10 @@ function instantiatedObjects(scene, definitionId) {
 function rectsOverlap(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
 function clippedWorldRect(rect, scene) { const x = Math.max(0, rect.x); const y = Math.max(0, rect.y); const right = Math.min(scene.worldWidth, rect.x + rect.w); const bottom = Math.min(scene.worldHeight, rect.y + rect.h); return right <= x || bottom <= y ? null : { ...rect, x, y, w: right - x, h: bottom - y }; }
 function terrainNoise(col, row, subCol, subRow) { const n = Math.sin((col * 127.1 + row * 311.7 + subCol * 43.3 + subRow * 91.9)) * 43758.5453; return n - Math.floor(n); }
-function terrainAssetForSubtile(scene, col, row, subCol, subRow) { const above = isSolidTileAt(scene, col, row - 1); const below = isSolidTileAt(scene, col, row + 1); const left = isSolidTileAt(scene, col - 1, row); const right = isSolidTileAt(scene, col + 1, row); if (!above && !left && subCol === 0 && subRow === 0) return 'topLeft'; if (!above && !right && subCol === 1 && subRow === 0) return 'topRight'; if (!below && !left && subCol === 0 && subRow === 1) return 'bottomLeft'; if (!below && !right && subCol === 1 && subRow === 1) return 'bottomRight'; if (!above && subRow === 0) return 'top'; if (!below && subRow === 1) return 'bottom'; if (!left && subCol === 0) return 'left'; if (!right && subCol === 1) return 'right'; return terrainNoise(col, row, subCol, subRow) > 0.52 ? 'fillAlt' : 'fill'; }
-function buildTerrainVisuals(scene) { const visuals = []; const art = scene.artTileSize; for (const object of terrainObjects(scene)) { const { col, row } = object.transform; for (let subRow = 0; subRow < scene.artTilesPerTile; subRow++) for (let subCol = 0; subCol < scene.artTilesPerTile; subCol++) visuals.push({ layer: 'terrain', theme: scene.theme, assetKey: terrainAssetForSubtile(scene, col, row, subCol, subRow), x: col * scene.tileSize + subCol * art, y: row * scene.tileSize + subRow * art, w: art, h: art, col, row, subCol, subRow }); } return visuals; }
+function terrainAssetForSubtile(scene, col, row, subCol, subRow, subCols = scene.artTilesPerTile, subRows = scene.artTilesPerTile) { const above = isSolidTileAt(scene, col, row - 1); const below = isSolidTileAt(scene, col, row + 1); const left = isSolidTileAt(scene, col - 1, row); const right = isSolidTileAt(scene, col + 1, row); const lastSubCol = subCols - 1; const lastSubRow = subRows - 1; if (!above && !left && subCol === 0 && subRow === 0) return 'topLeft'; if (!above && !right && subCol === lastSubCol && subRow === 0) return 'topRight'; if (!below && !left && subCol === 0 && subRow === lastSubRow) return 'bottomLeft'; if (!below && !right && subCol === lastSubCol && subRow === lastSubRow) return 'bottomRight'; if (!above && subRow === 0) return 'top'; if (!below && subRow === lastSubRow) return 'bottom'; if (!left && subCol === 0) return 'left'; if (!right && subCol === lastSubCol) return 'right'; return terrainNoise(col, row, subCol, subRow) > 0.52 ? 'fillAlt' : 'fill'; }
+function buildTerrainVisuals(scene) { const visuals = []; const art = scene.artTileSize; for (const object of terrainObjects(scene)) { const { col, row, x, y, w, h } = object.transform; const subCols = Math.max(1, Math.floor(w / art)); const subRows = Math.max(1, Math.floor(h / art)); for (let subRow = 0; subRow < subRows; subRow++) for (let subCol = 0; subCol < subCols; subCol++) visuals.push({ layer: 'terrain', theme: scene.theme, assetKey: terrainAssetForSubtile(scene, col, row, subCol, subRow, subCols, subRows), x: x + subCol * art, y: y + subRow * art, w: art, h: art, col, row, subCol, subRow }); } return visuals; }
 function terrainPrimitiveAssetForMask(mask) { if (mask === 15) return 'fill'; if (mask === 1) return 'bottomRight'; if (mask === 2) return 'bottomLeft'; if (mask === 4) return 'topRight'; if (mask === 8) return 'topLeft'; if ((mask & 3) === 3 && (mask & 12) === 0) return 'bottom'; if ((mask & 12) === 12 && (mask & 3) === 0) return 'top'; if ((mask & 5) === 5 && (mask & 10) === 0) return 'right'; if ((mask & 10) === 10 && (mask & 5) === 0) return 'left'; if (mask === 7) return 'bottomRight'; if (mask === 11) return 'bottomLeft'; if (mask === 13) return 'topRight'; if (mask === 14) return 'topLeft'; return terrainNoise(mask, mask, 0, 0) > 0.5 ? 'fillAlt' : 'fill'; }
-function buildTerrainPrimitives(scene) { const primitives = []; for (let row = 0; row <= scene.rows; row++) for (let col = 0; col <= scene.cols; col++) { const nw = isSolidTileAt(scene, col - 1, row - 1) ? 1 : 0; const ne = isSolidTileAt(scene, col, row - 1) ? 2 : 0; const sw = isSolidTileAt(scene, col - 1, row) ? 4 : 0; const se = isSolidTileAt(scene, col, row) ? 8 : 0; const mask = nw | ne | sw | se; if (mask === 0) continue; primitives.push({ layer: 'terrain', theme: scene.theme, mask, assetKey: terrainPrimitiveAssetForMask(mask), x: (col - 0.5) * scene.tileSize, y: (row - 0.5) * scene.tileSize, w: scene.tileSize, h: scene.tileSize, col, row, offsetGrid: true }); } return primitives; }
+function buildTerrainPrimitives(scene) { const primitives = []; const cell = terrainCellSize(scene); for (let row = 0; row <= terrainGridRows(scene); row++) for (let col = 0; col <= terrainGridCols(scene); col++) { const nw = isSolidTileAt(scene, col - 1, row - 1) ? 1 : 0; const ne = isSolidTileAt(scene, col, row - 1) ? 2 : 0; const sw = isSolidTileAt(scene, col - 1, row) ? 4 : 0; const se = isSolidTileAt(scene, col, row) ? 8 : 0; const mask = nw | ne | sw | se; if (mask === 0) continue; primitives.push({ layer: 'terrain', theme: scene.theme, mask, assetKey: terrainPrimitiveAssetForMask(mask), x: (col - 0.5) * cell, y: (row - 0.5) * cell, w: cell, h: cell, col, row, offsetGrid: true }); } return primitives; }
 function buildTerrainCollisionRects(scene, primitives) { return primitives.map(primitive => clippedWorldRect({ x: primitive.x, y: primitive.y, w: primitive.w, h: primitive.h, col: primitive.col, row: primitive.row, mask: primitive.mask, kind: 'dual-grid-solid' }, scene)).filter(Boolean); }
 
 function deriveEnemyPatrol(scene, col, row) { const floorRow = row + 1; let minCol = col; while (minCol > 0 && !isSolidTileAt(scene, minCol - 1, row) && isSolidTileAt(scene, minCol - 1, floorRow)) minCol--; let maxExclusiveCol = col + 1; while (maxExclusiveCol < scene.cols && !isSolidTileAt(scene, maxExclusiveCol, row) && isSolidTileAt(scene, maxExclusiveCol, floorRow)) maxExclusiveCol++; return { floorRow, minCol, maxExclusiveCol }; }

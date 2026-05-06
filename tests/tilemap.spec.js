@@ -6,12 +6,14 @@ import {
 import {
   createEnemies,
   createEnemySpawns,
+  defineTilemap,
   forEachLayerTile,
   getDecorType,
   getGoalRect,
   getGoalTriggerRect,
   getTile,
   getSpawnPoint,
+  gridLayer,
   isSolidTileAt,
   parseTilemap,
   solidTileRectsOverlapping,
@@ -20,6 +22,7 @@ import {
   tileToWorld,
   worldToTile
 } from '../src/core/tilemaps/tilemap.js';
+import { solidTerrain } from '../src/content/tilemaps/objects.js';
 import { resolveInitialTilemap } from '../src/tilemap-manager.js';
 
 test('tilemap exposes world dimensions derived from tile dimensions', () => {
@@ -31,6 +34,22 @@ test('tile helpers convert between tile and world coordinates', () => {
   expect(tileToWorld(3, 2)).toEqual({ x: 108, y: 72 });
   expect(worldToTile(117, 73)).toEqual({ col: 3, row: 2 });
   expect(tileRect(2, 4, 3, 1)).toMatchObject({ x: 72, y: 144, w: 108, h: 36 });
+});
+
+test('defineTilemap requires explicit dimensions and validates layer resolution', () => {
+  const parsed = defineTilemap({
+    id: 'half-grid-validation',
+    cols: 2,
+    rows: 1,
+    layers: [gridLayer({ id: 'terrain', resolution: 2, symbols: { '#': solidTerrain }, rows: ['#...', '####'] })]
+  });
+
+  expect(parsed.worldWidth).toBe(72);
+  expect(parsed.worldHeight).toBe(36);
+  expect(parsed.layers[0].resolution).toBe(2);
+  expect(parsed.objects[0].transform).toMatchObject({ col: 0, row: 0, resolution: 2, x: 0, y: 0, w: 18, h: 18 });
+  expect(() => defineTilemap({ id: 'missing-dimensions', layers: [gridLayer({ id: 'terrain', symbols: { '#': solidTerrain }, rows: ['#'] })] })).toThrow(/cols/);
+  expect(() => defineTilemap({ id: 'bad-resolution-size', cols: 2, rows: 1, layers: [gridLayer({ id: 'terrain', resolution: 2, symbols: { '#': solidTerrain }, rows: ['##'] })] })).toThrow(/terrain layer must contain 2 rows/);
 });
 
 test('tilemap parser exposes layered tiles and direct query helpers derive gameplay data', () => {

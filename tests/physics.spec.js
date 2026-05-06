@@ -57,12 +57,12 @@ function step(session, input = createInputState(), dt = 1 / 60) {
 
 test('enemy horizontal collision uses pre-bounds movement direction and does not phase through a wall', () => {
   const level = makeTilemap([
-    '..........#.....',
-    '..........#.....',
-    '..........#.....',
-    '..........#.....',
-    '..........#.....',
-    '..........#.....',
+    '...#............',
+    '...#............',
+    '...#............',
+    '...#............',
+    '...#............',
+    '...#............',
     '################'
   ]);
   const enemy = {
@@ -80,9 +80,9 @@ test('enemy horizontal collision uses pre-bounds movement direction and does not
 
   updateEnemy(makeGame(enemy, level), enemy, 0.033);
 
-  expect(enemy.x).toBe(90);
+  expect(enemy.x).toBe(98);
   expect(enemy.vx).toBe(-200);
-  expect(enemy.x + enemy.w).toBeLessThanOrEqual(100);
+  expect(enemy.x + enemy.w).toBeLessThanOrEqual(108);
 });
 
 test('enemy patrol bounds clamp at the edge instead of leaving overlap unresolved', () => {

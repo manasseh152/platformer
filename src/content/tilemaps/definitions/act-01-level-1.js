@@ -2,7 +2,8 @@ import { defineTilemap, gridLayer } from '../../../core/tilemaps/tilemap.js';
 import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../objects.js';
 
 export const act01Level1Definition = {
-  tileSize: 36,
+  cols: 36,
+  rows: 16,
   artTileSize: 18,
   theme: 'kenney-pixel-platformer:grass',
   layers: [

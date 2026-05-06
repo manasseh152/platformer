@@ -38,6 +38,8 @@ test('defineObject and sceneObject validate basic object shape', () => {
 test('defineTilemap merges authored scene objects into the core scene index', () => {
   const scene = defineTilemap({
     id: 'with-authored-object',
+    cols: 2,
+    rows: 1,
     layers: [gridLayer({ id: 'terrain', symbols: { '#': solidTerrain }, rows: ['#.'] })],
     objects: [sceneObject({ id: 'far-sky', components: [renderLayer({ order: -200 }), renderProcedural({ shader: 'sky-bands' })] })]
   });
