@@ -17,6 +17,13 @@ export function registerDebugRenderDevTools(game) {
         label: 'Show collision rects',
         get: game => Boolean(game.devTools.flags.showCollisionRects),
         set: (game, value) => { game.devTools.flags.showCollisionRects = value; }
+      },
+      {
+        id: 'show-physics-body-rects',
+        kind: 'toggle',
+        label: 'Show physics body rects',
+        get: game => Boolean(game.devTools.flags.showPhysicsBodyRects),
+        set: (game, value) => { game.devTools.flags.showPhysicsBodyRects = value; }
       }
     ]
   });
@@ -50,5 +57,32 @@ export function drawCollisionDebugOverlay(ctx, tilemap, flags = {}) {
     }
   }
 
+  ctx.restore();
+}
+
+function isDrawableRect(rect) {
+  return rect && Number.isFinite(rect.x) && Number.isFinite(rect.y) && Number.isFinite(rect.w) && Number.isFinite(rect.h) && rect.w > 0 && rect.h > 0;
+}
+
+function physicsBodyDebugRects(game) {
+  return [
+    game?.player,
+    ...(game?.enemies ?? []).filter(enemy => enemy.hp === undefined || enemy.hp > 0)
+  ].filter(isDrawableRect);
+}
+
+export function drawPhysicsBodyDebugOverlay(ctx, game, flags = game?.devTools?.flags ?? {}) {
+  if (!flags.showPhysicsBodyRects) return;
+  const rects = physicsBodyDebugRects(game);
+  if (!rects.length) return;
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(180, 90, 255, 0.12)';
+  ctx.strokeStyle = 'rgba(180, 90, 255, 0.95)';
+  ctx.lineWidth = 2;
+  for (const rect of rects) {
+    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+    ctx.strokeRect(rect.x + 1, rect.y + 1, Math.max(0, rect.w - 2), Math.max(0, rect.h - 2));
+  }
   ctx.restore();
 }

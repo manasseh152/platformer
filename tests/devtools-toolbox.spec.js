@@ -38,7 +38,7 @@ test('developer toolbox is gated by Developer Mode and gameplay state', async ({
   expect(snapshot.open).toBe(true);
   expect(snapshot.visible).toBe(true);
   expect(snapshot.sections.find(section => section.id === 'session').items.map(item => item.kind)).toContain('value');
-  expect(snapshot.sections.find(section => section.id === 'render').items.map(item => item.id)).toEqual(expect.arrayContaining(['show-collision-cells', 'show-collision-rects']));
+  expect(snapshot.sections.find(section => section.id === 'render').items.map(item => item.id)).toEqual(expect.arrayContaining(['show-collision-cells', 'show-collision-rects', 'show-physics-body-rects']));
 });
 
 test('developer toolbox collision toggles update session-only debug flags', async ({ page }) => {
@@ -48,13 +48,16 @@ test('developer toolbox collision toggles update session-only debug flags', asyn
 
   await page.locator('[data-devtool-toggle="render.show-collision-cells"]').check();
   await page.locator('[data-devtool-toggle="render.show-collision-rects"]').check();
+  await page.locator('[data-devtool-toggle="render.show-physics-body-rects"]').check();
   await expect(page.locator('[data-devtool-toggle="render.show-collision-cells"]')).toBeChecked();
   await expect(page.locator('[data-devtool-toggle="render.show-collision-rects"]')).toBeChecked();
+  await expect(page.locator('[data-devtool-toggle="render.show-physics-body-rects"]')).toBeChecked();
 
   await page.keyboard.press('Backquote');
   await page.keyboard.press('Backquote');
   await expect(page.locator('[data-devtool-toggle="render.show-collision-cells"]')).toBeChecked();
   await expect(page.locator('[data-devtool-toggle="render.show-collision-rects"]')).toBeChecked();
+  await expect(page.locator('[data-devtool-toggle="render.show-physics-body-rects"]')).toBeChecked();
 });
 
 test('developer toolbox button and keyboard close behavior are accessible', async ({ page }) => {
