@@ -102,10 +102,9 @@ test('tilemap parser exposes layered tiles and direct query helpers derive gamep
     { type: 'torch', col: 3, row: 1 }
   ]);
   expect(createEnemySpawns(parsed)).toHaveLength(1);
-  expect(solidTileRectsOverlapping(parsed, { x: 36, y: 108, w: 72, h: 36 })).toEqual(expect.arrayContaining([
-    expect.objectContaining({ x: 36, y: 108, w: 36, h: 36 }),
-    expect.objectContaining({ x: 72, y: 108, w: 36, h: 36 })
-  ]));
+  expect(solidTileRectsOverlapping(parsed, { x: 36, y: 108, w: 72, h: 36 })).toEqual([
+    expect.objectContaining({ x: 36, y: 108, w: 72, h: 72, cols: 2, rows: 2, kind: 'terrain-solid' })
+  ]);
 });
 
 test('initial tilemap resolution ignores URL selection and uses the default level', () => {
@@ -128,7 +127,7 @@ test('default gate is completable from solid support blocks', () => {
   });
 });
 
-test('tilemap can opt into dual-grid collision rects that match offset primitives', () => {
+test('tilemap collision rects are greedy-merged from authored terrain cells, not visual primitives', () => {
   const parsed = parseTilemap({
     collisionMode: 'dual-grid',
     terrainRows: ['###', '#.#', '###'],
@@ -137,9 +136,16 @@ test('tilemap can opt into dual-grid collision rects that match offset primitive
   });
 
   expect(parsed.collisionMode).toBe('dual-grid');
-  expect(solidTileRectsOverlapping(parsed, { x: 16, y: 0, w: 4, h: 4 })).toEqual(expect.arrayContaining([
-    expect.objectContaining({ x: 18, y: 0, w: 36, h: 18, kind: 'dual-grid-solid' })
+  expect(parsed.renderLayers.terrainCollisionCells).toHaveLength(8);
+  expect(parsed.renderLayers.terrainCollisionRects).toEqual(expect.arrayContaining([
+    expect.objectContaining({ x: 0, y: 0, w: 108, h: 36, kind: 'terrain-solid' }),
+    expect.objectContaining({ x: 0, y: 36, w: 36, h: 72, kind: 'terrain-solid' }),
+    expect.objectContaining({ x: 72, y: 36, w: 36, h: 72, kind: 'terrain-solid' }),
+    expect.objectContaining({ x: 36, y: 72, w: 36, h: 36, kind: 'terrain-solid' })
   ]));
+  expect(solidTileRectsOverlapping(parsed, { x: 16, y: 0, w: 4, h: 4 })).toEqual([
+    expect.objectContaining({ x: 0, y: 0, w: 108, h: 36, kind: 'terrain-solid' })
+  ]);
 });
 
 test('tilemap supports block tiles and three-tile gates', () => {
@@ -169,7 +175,7 @@ test('tilemap supports block tiles and three-tile gates', () => {
 
   expect(getGoalRect(parsed)).toMatchObject({ x: 36, y: 36, w: 108, h: 36, cols: 3 });
   expect(solidTileRectsOverlapping(parsed, { x: 72, y: 72, w: 36, h: 36 })).toEqual([
-    expect.objectContaining({ x: 72, y: 72, w: 36, h: 36 })
+    expect.objectContaining({ x: 36, y: 72, w: 108, h: 36, cols: 3, rows: 1, kind: 'terrain-solid' })
   ]);
 });
 

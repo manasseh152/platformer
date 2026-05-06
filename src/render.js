@@ -2,6 +2,7 @@ import { assets, isLoaded } from './assets.js';
 import { DEBUG_CAMERA, TILE_SIZE } from './core/constants.js';
 import { controlsText } from './input.js';
 import { forEachLayerTile, getDecorType, getTile, isSolidTile } from './core/tilemaps/tilemap.js';
+import { drawCollisionDebugOverlay } from './devtools/debug-render.js';
 import { isWon } from './app/app-state.js';
 import { findObjectsWithComponent, getComponent } from './engine/scene/queries.js';
 
@@ -449,6 +450,8 @@ export function drawGame(runtime, game) {
   for (const e of game.enemies) drawEnemy(game, e);
   drawPlayer(runtime, game);
   for (const p of game.particles) { ctx.globalAlpha = Math.max(0,p.life*2); ctx.fillStyle = p.color; ctx.fillRect(snapRenderX(game,p.x),snapRenderY(game,p.y),4,4); ctx.globalAlpha = 1; }
+
+  drawCollisionDebugOverlay(ctx, level, game.devTools?.flags);
 
   if (DEBUG_CAMERA) {
     ctx.strokeStyle = 'rgba(255,255,0,.8)';

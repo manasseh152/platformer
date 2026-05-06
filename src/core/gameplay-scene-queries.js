@@ -44,10 +44,8 @@ export function createEnemiesFromScene(scene) {
 }
 
 export function solidCollisionRectsOverlapping(scene, rect) {
-  if (scene.collisionMode === 'dual-grid') {
-    const primitiveRects = scene.renderLayers?.terrainCollisionRects;
-    if (primitiveRects?.length) return primitiveRects.filter(hit => rectsOverlap(rect, hit));
-  }
+  const collisionRects = scene.renderLayers?.terrainCollisionRects;
+  if (collisionRects?.length) return collisionRects.filter(hit => rectsOverlap(rect, hit));
   return findObjectsWithComponent(scene, 'collision:solid').map(object => ({ ...object.transform, kind: 'solid' })).filter(hit => rectsOverlap(rect, hit));
 }
 

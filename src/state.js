@@ -15,6 +15,7 @@ import { createDefaultSceneLibrary } from './scenes/default-library.js';
 import { createAppState, setPausedState } from './app/app-state.js';
 import { createGpuSystem } from './gpu/gpu-system.js';
 import { createDevToolsState, registerBuiltInDevTools } from './devtools/toolbox.js';
+import { registerDebugRenderDevTools } from './devtools/debug-render.js';
 
 /**
  * Creates the mutable game context shared by systems.
@@ -73,6 +74,7 @@ export function createGame(ui, runtime = browserRuntime) {
   game.scenarios = createScenarioService(game, runtime);
   game.scenarios.select(activeTilemap.id);
   registerBuiltInDevTools(game);
+  registerDebugRenderDevTools(game);
   applySettingsToGame(game);
   if (game.settings.gpuExtras === 'auto') {
     game.presenter.tryEnableWebGpu?.(game.gpu).then(enabled => {

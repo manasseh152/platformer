@@ -154,7 +154,8 @@ export function defineTilemap(definition) {
   scene.renderLayers = {
     terrainVisuals: buildTerrainVisuals(scene),
     terrainPrimitives,
-    terrainCollisionRects: buildTerrainCollisionRects(scene, terrainPrimitives)
+    terrainCollisionCells: buildTerrainCollisionCells(scene),
+    terrainCollisionRects: buildTerrainCollisionRects(scene)
   };
   scene.tiles = Object.fromEntries(scene.layers.map(layer => [`${layer.id}Rows`, layer.rows]));
   return scene;
@@ -179,10 +180,8 @@ export function isSolidTile(tile) { return tile === '#'; }
 export function getDecorType(tile) { return DECOR_TYPES[tile] ?? null; }
 
 export function solidTileRectsOverlapping(scene, rect) {
-  if (scene.collisionMode === 'dual-grid') {
-    const primitiveRects = scene.renderLayers?.terrainCollisionRects;
-    if (primitiveRects?.length) return primitiveRects.filter(hit => rectsOverlap(rect, hit));
-  }
+  const collisionRects = scene.renderLayers?.terrainCollisionRects;
+  if (collisionRects?.length) return collisionRects.filter(hit => rectsOverlap(rect, hit));
   return terrainObjects(scene).map(object => ({ ...object.transform, kind: 'solid' })).filter(hit => rectsOverlap(rect, hit));
 }
 
@@ -219,7 +218,9 @@ function terrainAssetForSubtile(scene, col, row, subCol, subRow, subCols = scene
 function buildTerrainVisuals(scene) { const visuals = []; const art = scene.artTileSize; for (const object of terrainObjects(scene)) { const { col, row, x, y, w, h } = object.transform; const subCols = Math.max(1, Math.floor(w / art)); const subRows = Math.max(1, Math.floor(h / art)); for (let subRow = 0; subRow < subRows; subRow++) for (let subCol = 0; subCol < subCols; subCol++) visuals.push({ layer: 'terrain', theme: scene.theme, assetKey: terrainAssetForSubtile(scene, col, row, subCol, subRow, subCols, subRows), x: x + subCol * art, y: y + subRow * art, w: art, h: art, col, row, subCol, subRow }); } return visuals; }
 function terrainPrimitiveAssetForMask(mask) { if (mask === 15) return 'fill'; if (mask === 1) return 'bottomRight'; if (mask === 2) return 'bottomLeft'; if (mask === 4) return 'topRight'; if (mask === 8) return 'topLeft'; if ((mask & 3) === 3 && (mask & 12) === 0) return 'bottom'; if ((mask & 12) === 12 && (mask & 3) === 0) return 'top'; if ((mask & 5) === 5 && (mask & 10) === 0) return 'right'; if ((mask & 10) === 10 && (mask & 5) === 0) return 'left'; if (mask === 7) return 'bottomRight'; if (mask === 11) return 'bottomLeft'; if (mask === 13) return 'topRight'; if (mask === 14) return 'topLeft'; return terrainNoise(mask, mask, 0, 0) > 0.5 ? 'fillAlt' : 'fill'; }
 function buildTerrainPrimitives(scene) { const primitives = []; const cell = terrainCellSize(scene); for (let row = 0; row <= terrainGridRows(scene); row++) for (let col = 0; col <= terrainGridCols(scene); col++) { const nw = isSolidTileAt(scene, col - 1, row - 1) ? 1 : 0; const ne = isSolidTileAt(scene, col, row - 1) ? 2 : 0; const sw = isSolidTileAt(scene, col - 1, row) ? 4 : 0; const se = isSolidTileAt(scene, col, row) ? 8 : 0; const mask = nw | ne | sw | se; if (mask === 0) continue; primitives.push({ layer: 'terrain', theme: scene.theme, mask, assetKey: terrainPrimitiveAssetForMask(mask), x: (col - 0.5) * cell, y: (row - 0.5) * cell, w: cell, h: cell, col, row, offsetGrid: true }); } return primitives; }
-function buildTerrainCollisionRects(scene, primitives) { return primitives.map(primitive => clippedWorldRect({ x: primitive.x, y: primitive.y, w: primitive.w, h: primitive.h, col: primitive.col, row: primitive.row, mask: primitive.mask, kind: 'dual-grid-solid' }, scene)).filter(Boolean); }
+function buildTerrainCollisionCells(scene) { return terrainObjects(scene).map(object => ({ ...object.transform, kind: 'terrain-cell' })); }
+function greedyMergeAabbs2D(width, height, isSolid) { const visited = new Uint8Array(width * height); const boxes = []; const index = (x, y) => y * width + x; const canUse = (x, y) => x >= 0 && x < width && y >= 0 && y < height && visited[index(x, y)] === 0 && isSolid(x, y); for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) { if (!canUse(x, y)) continue; let boxWidth = 1; while (canUse(x + boxWidth, y)) boxWidth++; let boxHeight = 1; while (y + boxHeight < height) { let rowMatches = true; for (let xx = x; xx < x + boxWidth; xx++) if (!canUse(xx, y + boxHeight)) { rowMatches = false; break; } if (!rowMatches) break; boxHeight++; } for (let yy = y; yy < y + boxHeight; yy++) for (let xx = x; xx < x + boxWidth; xx++) visited[index(xx, yy)] = 1; boxes.push({ x, y, w: boxWidth, h: boxHeight }); } return boxes; }
+function buildTerrainCollisionRects(scene) { const solids = terrainSet(scene); const cell = terrainCellSize(scene); return greedyMergeAabbs2D(terrainGridCols(scene), terrainGridRows(scene), (col, row) => solids.has(terrainKey(col, row))).map(box => clippedWorldRect({ x: box.x * cell, y: box.y * cell, w: box.w * cell, h: box.h * cell, col: box.x, row: box.y, cols: box.w, rows: box.h, kind: 'terrain-solid' }, scene)).filter(Boolean); }
 
 function deriveEnemyPatrol(scene, col, row) { const floorRow = row + 1; let minCol = col; while (minCol > 0 && !isSolidTileAt(scene, minCol - 1, row) && isSolidTileAt(scene, minCol - 1, floorRow)) minCol--; let maxExclusiveCol = col + 1; while (maxExclusiveCol < scene.cols && !isSolidTileAt(scene, maxExclusiveCol, row) && isSolidTileAt(scene, maxExclusiveCol, floorRow)) maxExclusiveCol++; return { floorRow, minCol, maxExclusiveCol }; }
 export function createPlayer(spawn) { if (!spawn) throw new Error('createPlayer requires a spawn point'); return { x: spawn.x, y: spawn.y, w: 34, h: 50, vx: 0, vy: 0, dir: 1, grounded: false, hp: 5, inv: 0, attack: 0, coyote: 0, jumpBuf: 0, dash: 0, dashCooldown: 0, wallDir: 0, wallSlide: false, dead: false }; }
