@@ -96,13 +96,25 @@ Values refresh on a throttled interval while the toolbox is open. Prefer updatin
 
 Debug drawing should be registered as toolbox state first, then rendered by normal render code.
 
-Recommended future shape:
+Recommended shape:
 
 - A system registers a toggle item.
 - The toggle writes to `game.devTools.flags` or another session-only devtools namespace.
 - The renderer reads that flag and calls a focused debug draw helper.
 
-For world-space overlays such as AABB collision boxes, start by drawing inside the game canvas while the world camera transform is active. Add DOM or overlay-canvas inspection only when mouse/selection tools need it.
+For world-space overlays such as AABB collision boxes, draw inside the game canvas while the world camera transform is active. Add DOM or overlay-canvas inspection only when mouse/selection tools need it.
+
+Current terrain/physics overlays:
+
+| Toggle | Meaning |
+| --- | --- |
+| Show build terrain cells | 16px `buildTerrain` cells used for contained-autotile visuals |
+| Show collision cells | 8px derived terrain primitives for contained terrain, or legacy terrain cells for old maps |
+| Show collision rects | greedy-merged terrain collision rects used by physics queries |
+| Show physics body rects | runtime actor body AABBs |
+| Use raw terrain debug render | legacy-only terrain replacement render; do not use for contained-autotile maps |
+
+Collision overlays must not force raw terrain rendering. Visual terrain debugging should be additive so artists/developers can compare visuals, collision primitives, merged rects, and actor bodies independently.
 
 ## Automation and playbooks
 

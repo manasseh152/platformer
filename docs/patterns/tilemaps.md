@@ -6,26 +6,27 @@ Related:
 
 - [Scene model](./scene.md)
 - [Scene components](./scene-components.md)
+- [Terrain pipeline](./terrain.md)
 
 Tilemaps are composable scene data, not hard-coded `terrainRows/objectRows/decorRows` blobs. `defineTilemap()` compiles grid layers into core scene objects and then delegates generic object/index work to the core scene model.
 
 ## Authoring API
 
-Use one canonical pattern:
+Use explicit layer `cellSize` values from `CELL_SIZE`:
 
 ```js
+import { CELL_SIZE } from '../../../core/constants.js';
 import { defineTilemap, gridLayer } from '../tilemap.js';
 import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../objects.js';
 
 export const movementGymMapDefinition = {
   cols: 8,
   rows: 3,
-  artTileSize: 18,
-  theme: 'kenney-pixel-platformer:grass',
+  terrainRenderMode: 'contained-autotile',
   layers: [
     gridLayer({
-      id: 'terrain',
-      resolution: 2,
+      id: 'buildTerrain',
+      cellSize: CELL_SIZE.BUILD,
       symbols: { '#': solidTerrain },
       rows: [
         '################',
@@ -38,6 +39,7 @@ export const movementGymMapDefinition = {
     }),
     gridLayer({
       id: 'entities',
+      cellSize: CELL_SIZE.GRID,
       symbols: {
         P: playerSpawner,
         E: slimeSpawner,
@@ -62,11 +64,30 @@ export const movementGymMap = defineTilemap({
 });
 ```
 
+## Cell sizes
+
+Canonical cell sizes live in `src/core/constants.js`:
+
+| Constant | Size | Meaning |
+| --- | ---: | --- |
+| `CELL_SIZE.GRID` | 32px | macro gameplay/entity grid |
+| `CELL_SIZE.BUILD` | 16px | terrain authoring and visual autotile grid |
+| `CELL_SIZE.TERRAIN_PRIMITIVE` | 8px | derived terrain collision primitive grid |
+
+`gridLayer()` accepts only these values. Do not use raw numeric sizes in map definitions. The old public `resolution` field is removed for new code.
+
+Layer dimensions must match map bounds:
+
+```txt
+layer columns = cols * CELL_SIZE.GRID / cellSize
+layer rows    = rows * CELL_SIZE.GRID / cellSize
+```
+
 ## Symbols
 
 Current minimal vocabulary:
 
-Terrain layer:
+Build terrain layer:
 
 | Symbol | Meaning |
 | --- | --- |
@@ -82,7 +103,7 @@ Entities layer:
 | `E` | spawns slime object |
 | `G` | finish-gate footprint cell |
 
-Use `GGG` for a three-cell finish gate. One character represents one occupied cell at that layer's resolution.
+Use `GGG` for a three-cell finish gate. One character represents one occupied cell at that layer's cell size.
 
 ## Object definitions
 
@@ -112,19 +133,20 @@ One concept is used for both static objects and spawnable runtime objects: `defi
 - `layers`: authoring grids and symbol mappings
 - `objects`: one scene object per non-empty cell, plus authored scene objects
 - `componentIndex`: cached lookup by component type
-- `worldWidth/worldHeight`, `cols/rows`, `tileSize`
-- layer `resolution` and per-object cell-sized transforms
-- derived tilemap render/collision artifacts
+- `worldWidth/worldHeight`, `cols/rows`, `tileSize`/`gridSize`
+- per-layer `cellSize` and per-object cell-sized transforms
+- derived render artifacts in `renderLayers`
+- derived collision artifacts in `collisionLayers` for contained terrain
 
 Scene object shape:
 
 ```js
 {
-  id: 'terrain:4,8',
-  layerId: 'terrain',
+  id: 'buildTerrain:4,8',
+  layerId: 'buildTerrain',
   symbol: '#',
   definitionId: 'solid-terrain',
-  transform: { col: 4, row: 8, resolution: 1, x: 144, y: 288, w: 36, h: 36 },
+  transform: { col: 4, row: 8, cellSize: 16, x: 64, y: 128, w: 16, h: 16 },
   components: [...]
 }
 ```
@@ -137,56 +159,21 @@ findObjectsWithComponent(scene, 'spawner');
 findObjectsWithComponent(scene, 'render:terrain');
 ```
 
+## Terrain render modes
+
+New maps should use:
+
+```js
+terrainRenderMode: 'contained-autotile'
+```
+
+Contained terrain reads `buildTerrain`, derives 8px collision primitives, greedy-merges physics rects, and draws 16px visual tiles inside their cells.
+
+Legacy maps may temporarily use `terrainRenderMode: 'legacy-dual-grid'` and `terrain` layers. Legacy code should be marked with `@deprecated TODO(new-terrain)` and should not receive new features.
+
 ## Compatibility fields
 
-Compatibility fields such as `renderLayers` and `tiles` exist for the current renderer and gameplay helpers. New systems should query scene objects/components through `src/engine/scene` instead.
-
-## Dimensions and layer resolution
-
-Tilemaps declare base full-grid dimensions explicitly:
-
-```js
-defineTilemap({
-  cols: 20,
-  rows: 10,
-  layers: [/* ... */]
-});
-```
-
-`tileSize` comes from the project `TILE_SIZE` constant. Authored tilemaps should not set per-map `tileSize`.
-
-Each grid layer may declare `resolution`, meaning cells per full tile along each axis:
-
-| Resolution | Meaning | Cell size with `TILE_SIZE = 36` |
-| --- | --- | --- |
-| `1` | full grid | 36px |
-| `2` | half grid | 18px |
-| `4` | quarter grid | 9px |
-
-`resolution` defaults to `1`. Layer dimensions must match the tilemap bounds:
-
-```txt
-layer columns = cols * resolution
-layer rows    = rows * resolution
-cellSize      = TILE_SIZE / resolution
-```
-
-## Dual-grid rendering
-
-Map symbols express semantic occupancy, not final art tiles.
-
-`#` means “solid terrain.” The renderer derives terrain primitives from neighboring solid terrain cells. Dual-grid should remain a render/collision strategy over scene objects, not a special authored layer format.
-
-Longer-term direction:
-
-```js
-solidTerrain = defineObject({
-  id: 'solid-terrain',
-  components: [solid(), terrain({ material: 'grass' })]
-});
-```
-
-A terrain render system chooses `dual-grid` for grass terrain. Objects say what they are; systems choose how to render them.
+Compatibility fields such as `renderLayers` and `tiles` exist for current renderer and gameplay helpers. New collision-aware systems should prefer public query helpers and `scene.collisionLayers` rather than reading render-layer collision data directly.
 
 ## Validation philosophy
 
@@ -195,8 +182,8 @@ Generic tilemap parsing should validate structure only:
 - layers exist
 - rows are rectangular
 - `cols` and `rows` are explicit positive integers
-- layer dimensions match `cols * resolution` and `rows * resolution`
-- each layer `resolution` divides `TILE_SIZE`
+- layer dimensions match `cols * CELL_SIZE.GRID / cellSize` and `rows * CELL_SIZE.GRID / cellSize`
+- `cellSize` is one of the supported `CELL_SIZE` values
 - non-empty symbols are defined
 
 Gameplay requirements belong to gameplay assembly or editor checks, not the generic parser. Examples: “must have a player,” “spawn should stand on ground,” or “gate should be contiguous.”
