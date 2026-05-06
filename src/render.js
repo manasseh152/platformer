@@ -1,7 +1,7 @@
 import { assets, isLoaded } from './assets.js';
-import { DEBUG_CAMERA, TILE_SIZE } from './core/constants.js';
+import { ACTOR_DRAW, DEBUG_CAMERA, TILE_SIZE } from './core/constants.js';
 import { controlsText } from './input.js';
-import { forEachLayerTile, getDecorType, getTile, isSolidTile } from './core/tilemaps/tilemap.js';
+import { forEachLayerTile, getDecorType } from './core/tilemaps/tilemap.js';
 import { drawCollisionDebugOverlay, drawPhysicsBodyDebugOverlay } from './devtools/debug-render.js';
 import { isWon } from './app/app-state.js';
 import { findObjectsWithComponent, getComponent } from './engine/scene/queries.js';
@@ -17,98 +17,9 @@ function drawAsset(ctx, asset, x, y, w = TILE_SIZE, h = TILE_SIZE) {
   return true;
 }
 
-/**
- * @deprecated TODO(new-terrain): delete with Kenney/legacy dual-grid terrain renderer.
- */
-function getPixelPlatformerTerrainAsset(level, key) {
-  const [, themeName = 'grass'] = (level.theme || 'kenney-pixel-platformer:grass').split(':');
-  return assets.pixelPlatformer?.[themeName]?.terrain?.[key] || null;
-}
-
 function tileNoise(col, row, salt = 0) {
   const n = Math.sin((col * 127.1 + row * 311.7 + salt * 74.7)) * 43758.5453;
   return n - Math.floor(n);
-}
-
-function drawStoneTile(ctx, level, ch, col, row, asset) {
-  const x = col * TILE_SIZE;
-  const y = row * TILE_SIZE;
-  if (!drawAsset(ctx, asset, x, y)) {
-    const grad = ctx.createLinearGradient(0, y, 0, y + TILE_SIZE);
-    grad.addColorStop(0, '#b8cdd0'); grad.addColorStop(1, '#8fa7a9');
-    ctx.fillStyle = grad;
-    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-  }
-
-  if (ch === '#') {
-    ctx.fillStyle = 'rgba(0, 0, 0, .36)';
-    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-  }
-
-  const shade = tileNoise(col, row) > .55 ? 'rgba(255,255,255,.045)' : 'rgba(0,0,0,.08)';
-  ctx.fillStyle = shade;
-  ctx.fillRect(x + 4, y + 5, TILE_SIZE - 8, TILE_SIZE - 10);
-
-  const above = isSolidTile(getTile(level, 'terrain', col, row - 1));
-  const below = isSolidTile(getTile(level, 'terrain', col, row + 1));
-  const left = isSolidTile(getTile(level, 'terrain', col - 1, row));
-  const right = isSolidTile(getTile(level, 'terrain', col + 1, row));
-
-  if (ch === '=' || (!above && ch !== '#' && row > 0)) {
-    ctx.fillStyle = 'rgba(255, 245, 198, .30)';
-    ctx.fillRect(x + 4, y + 4, TILE_SIZE - 8, 6);
-  }
-  if (!below) {
-    ctx.fillStyle = 'rgba(0, 0, 0, .28)';
-    ctx.fillRect(x + 6, y + TILE_SIZE - 10, TILE_SIZE - 12, 7);
-  }
-  if (!left) {
-    ctx.fillStyle = 'rgba(0, 0, 0, .18)';
-    ctx.fillRect(x, y + 6, 6, TILE_SIZE - 12);
-  }
-  if (!right) {
-    ctx.fillStyle = 'rgba(255, 255, 255, .08)';
-    ctx.fillRect(x + TILE_SIZE - 6, y + 6, 4, TILE_SIZE - 12);
-  }
-
-  if (ch === 'B') {
-    ctx.strokeStyle = 'rgba(36, 45, 45, .55)';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
-  }
-
-  if (tileNoise(col, row, 1) > .72) {
-    ctx.strokeStyle = 'rgba(49, 67, 66, .36)';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(x + 18, y + 18);
-    ctx.lineTo(x + 30 + tileNoise(col, row, 2) * 18, y + 24);
-    ctx.lineTo(x + 26, y + 38);
-    ctx.stroke();
-  }
-}
-
-function shouldUseRawTerrainDebugRender(level) {
-  return Boolean(level.devToolsFlags?.useRawTerrainDebugRender);
-}
-
-/**
- * @deprecated TODO(new-terrain): legacy-only raw terrain debug render; new terrain uses overlays.
- */
-function drawRawTerrainDebugTilemap(ctx, level) {
-  const cells = level.renderLayers?.terrainCollisionCells;
-  if (!cells?.length) return false;
-  ctx.save();
-  for (const cell of cells) {
-    const above = cells.some(other => other.col === cell.col && other.row === cell.row - 1);
-    ctx.fillStyle = above ? '#9b683f' : '#5cba47';
-    ctx.fillRect(cell.x, cell.y, cell.w, cell.h);
-    ctx.strokeStyle = 'rgba(0,0,0,.28)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(cell.x + 0.5, cell.y + 0.5, Math.max(0, cell.w - 1), Math.max(0, cell.h - 1));
-  }
-  ctx.restore();
-  return true;
 }
 
 function drawContainedTerrainTile(ctx, tile, level) {
@@ -140,45 +51,7 @@ function drawContainedTerrainTilemap(ctx, level) {
 }
 
 export function drawTilemap(ctx, level) {
-  if (level.terrainRenderMode === 'contained-autotile' && drawContainedTerrainTilemap(ctx, level)) return;
-  if (shouldUseRawTerrainDebugRender(level) && drawRawTerrainDebugTilemap(ctx, level)) return;
-
-  /** @deprecated TODO(new-terrain): delete terrainPrimitives legacy render branch with dual-grid terrain. */
-  const terrainPrimitives = level.renderLayers?.terrainPrimitives;
-  if (terrainPrimitives?.length) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, 0, level.worldWidth, level.worldHeight);
-    ctx.clip();
-    for (const primitive of terrainPrimitives) {
-      const asset = getPixelPlatformerTerrainAsset(level, primitive.assetKey);
-      if (!drawAsset(ctx, asset, primitive.x, primitive.y, primitive.w, primitive.h)) {
-        ctx.fillStyle = primitive.assetKey.includes('top') ? '#5cba47' : '#9b683f';
-        ctx.fillRect(primitive.x, primitive.y, primitive.w, primitive.h);
-      }
-    }
-    ctx.restore();
-    return;
-  }
-
-  /** @deprecated TODO(new-terrain): delete terrainVisuals legacy render branch with Kenney terrain. */
-  const terrainVisuals = level.renderLayers?.terrainVisuals;
-  if (terrainVisuals?.length) {
-    for (const visual of terrainVisuals) {
-      const asset = getPixelPlatformerTerrainAsset(level, visual.assetKey);
-      if (!drawAsset(ctx, asset, visual.x, visual.y, visual.w, visual.h)) {
-        ctx.fillStyle = visual.assetKey.includes('top') ? '#5cba47' : '#9b683f';
-        ctx.fillRect(visual.x, visual.y, visual.w, visual.h);
-      }
-    }
-    return;
-  }
-
-  forEachLayerTile(level, 'terrain', (ch, col, row) => {
-    if (ch !== '#' && ch !== '=' && ch !== 'B') return;
-    const asset = ch === '=' ? assets.stoneTop : ch === 'B' ? assets.stoneBlock : assets.stoneFill;
-    drawStoneTile(ctx, level, ch, col, row, asset);
-  });
+  drawContainedTerrainTilemap(ctx, level);
 }
 
 function drawBackdropGlyph(ctx, ch, x, y, col, row) {
@@ -426,10 +299,11 @@ function drawPlayer(runtime, game) {
   const { ctx, player } = game;
   const flicker = player.inv > 0 && Math.floor(runtime.now()/70)%2 === 0;
   if (flicker) return;
-  const x = snapRenderX(game, player.x), y = snapRenderY(game, player.y), d = player.dir;
+  const draw = ACTOR_DRAW.PLAYER;
+  const x = snapRenderX(game, player.x + draw.offsetX), y = snapRenderY(game, player.y + player.h - draw.h + draw.offsetY), d = player.dir;
   ctx.save();
-  ctx.translate(x + player.w/2, y + player.h/2);
-  ctx.scale(d * (player.w / 34), player.h / 50);
+  ctx.translate(x + draw.w/2, y + draw.h/2);
+  ctx.scale(d * (draw.w / 34), draw.h / 50);
   ctx.translate(-17, -25);
 
   ctx.fillStyle = '#171729'; roundedRect(ctx, 4, 18, 26, 31, 10);
@@ -457,8 +331,9 @@ function drawEnemy(game, e) {
   if (e.hp <= 0) return;
   const { ctx } = game;
   ctx.save();
-  ctx.translate(snapRenderX(game, e.x), snapRenderY(game, e.y));
-  ctx.fillStyle = e.hurt > 0 ? '#ffffff' : '#4a183f'; roundedRect(ctx, 0, 8, e.w, e.h-4, 13);
+  const draw = ACTOR_DRAW.SLIME;
+  ctx.translate(snapRenderX(game, e.x + draw.offsetX), snapRenderY(game, e.y + e.h - draw.h + draw.offsetY));
+  ctx.fillStyle = e.hurt > 0 ? '#ffffff' : '#4a183f'; roundedRect(ctx, 0, 8, draw.w, draw.h-4, 13);
   ctx.fillStyle = '#ff7bd5'; ctx.fillRect(10, 20, 5, 5); ctx.fillRect(27, 20, 5, 5);
   ctx.strokeStyle = '#8e497b'; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.moveTo(8, 12); ctx.quadraticCurveTo(2, 0, 17, 8); ctx.stroke();

@@ -1,5 +1,6 @@
 import { assets } from './assets.js';
 import { getDefaultTilemap } from './content/tilemaps/registry.js';
+import { ACTOR_DRAW } from './core/constants.js';
 import { createEnemies, createPlayer, getGoalRect, getSpawnPoint } from './core/tilemaps/tilemap.js';
 import { drawBackdropLayer, drawDecorLayer, drawGoal, drawSpikeLayer, drawTilemap } from './render.js';
 
@@ -22,8 +23,10 @@ function roundedRect(ctx, x, y, w, h, r) {
 }
 
 function drawSnapshotPlayer(ctx, player) {
+  const draw = ACTOR_DRAW.PLAYER;
   ctx.save();
-  ctx.translate(player.x, player.y);
+  ctx.translate(player.x + draw.offsetX, player.y + player.h - draw.h + draw.offsetY);
+  ctx.scale(draw.w / 34, draw.h / 50);
   ctx.fillStyle = '#171729';
   roundedRect(ctx, 4, 18, 26, 31, 10);
   ctx.fillStyle = '#f4f1ff';
@@ -37,10 +40,11 @@ function drawSnapshotPlayer(ctx, player) {
 }
 
 function drawSnapshotEnemy(ctx, enemy) {
+  const draw = ACTOR_DRAW.SLIME;
   ctx.save();
-  ctx.translate(enemy.x, enemy.y);
+  ctx.translate(enemy.x + draw.offsetX, enemy.y + enemy.h - draw.h + draw.offsetY);
   ctx.fillStyle = '#4a183f';
-  roundedRect(ctx, 0, 8, enemy.w, enemy.h - 4, 13);
+  roundedRect(ctx, 0, 8, draw.w, draw.h - 4, 13);
   ctx.fillStyle = '#ff7bd5';
   ctx.fillRect(10, 20, 5, 5);
   ctx.fillRect(27, 20, 5, 5);

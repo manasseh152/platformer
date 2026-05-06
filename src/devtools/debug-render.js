@@ -31,13 +31,6 @@ export function registerDebugRenderDevTools(game) {
         label: 'Show physics body rects',
         get: game => Boolean(game.devTools.flags.showPhysicsBodyRects),
         set: (game, value) => { game.devTools.flags.showPhysicsBodyRects = value; }
-      },
-      {
-        id: 'use-raw-terrain-debug-render',
-        kind: 'toggle',
-        label: 'Use raw terrain debug render',
-        get: game => Boolean(game.devTools.flags.useRawTerrainDebugRender),
-        set: (game, value) => { game.devTools.flags.useRawTerrainDebugRender = value; }
       }
     ]
   });
@@ -66,7 +59,7 @@ export function drawCollisionDebugOverlay(ctx, tilemap, flags = {}) {
     ctx.fillStyle = 'rgba(0, 220, 255, 0.16)';
     ctx.strokeStyle = 'rgba(0, 220, 255, 0.72)';
     ctx.lineWidth = 1;
-    const cells = tilemap.collisionLayers?.terrainPrimitives ?? tilemap.renderLayers?.terrainCollisionCells ?? [];
+    const cells = tilemap.collisionLayers?.terrainPrimitives ?? [];
     for (const cell of cells) {
       ctx.fillRect(cell.x, cell.y, cell.w, cell.h);
       ctx.strokeRect(cell.x + 0.5, cell.y + 0.5, Math.max(0, cell.w - 1), Math.max(0, cell.h - 1));
@@ -77,7 +70,7 @@ export function drawCollisionDebugOverlay(ctx, tilemap, flags = {}) {
     ctx.fillStyle = 'rgba(255, 80, 80, 0.12)';
     ctx.strokeStyle = 'rgba(255, 80, 80, 0.95)';
     ctx.lineWidth = 2;
-    const rects = tilemap.collisionLayers?.terrainRects ?? tilemap.renderLayers?.terrainCollisionRects ?? [];
+    const rects = tilemap.collisionLayers?.terrainRects ?? [];
     for (const rect of rects) {
       ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
       ctx.strokeRect(rect.x + 1, rect.y + 1, Math.max(0, rect.w - 2), Math.max(0, rect.h - 2));

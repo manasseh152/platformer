@@ -76,11 +76,8 @@ export function createEnemiesFromScene(scene) {
 }
 
 export function solidCollisionRectsOverlapping(scene, rect) {
-  const collisionRects = scene.collisionLayers?.terrainRects;
-  if (collisionRects?.length) return collisionRects.filter(hit => rectsOverlap(rect, hit));
-  /** @deprecated TODO(new-terrain): delete legacy renderLayers collision fallback after all terrain modes use collisionLayers. */
-  const legacyCollisionRects = scene.renderLayers?.terrainCollisionRects;
-  if (legacyCollisionRects?.length) return legacyCollisionRects.filter(hit => rectsOverlap(rect, hit));
+  const collisionRects = scene.collisionLayers?.terrainRects ?? [];
+  if (collisionRects.length) return collisionRects.filter(hit => rectsOverlap(rect, hit));
   return findObjectsWithComponent(scene, 'collision:solid').map(object => ({ ...object.transform, kind: 'solid' })).filter(hit => rectsOverlap(rect, hit));
 }
 

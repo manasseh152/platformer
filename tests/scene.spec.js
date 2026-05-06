@@ -40,13 +40,13 @@ test('defineTilemap merges authored scene objects into the core scene index', ()
     id: 'with-authored-object',
     cols: 2,
     rows: 1,
-    layers: [gridLayer({ id: 'terrain', symbols: { '#': solidTerrain }, rows: ['#.'] })],
+    layers: [gridLayer({ id: 'buildTerrain', cellSize: 16, symbols: { '#': solidTerrain }, rows: ['#...', '....'] })],
     objects: [sceneObject({ id: 'far-sky', components: [renderLayer({ order: -200 }), renderProcedural({ shader: 'sky-bands' })] })]
   });
 
-  expect(scene.objects.map(object => object.id)).toEqual(['terrain:0,0', 'far-sky']);
+  expect(scene.objects.map(object => object.id)).toEqual(['buildTerrain:0,0', 'far-sky']);
   expect(findObjectsWithComponent(scene, 'render:layer').map(object => object.id)).toEqual(['far-sky']);
-  expect(findObjectsWithComponent(scene, 'collision:solid').map(object => object.id)).toEqual(['terrain:0,0']);
+  expect(findObjectsWithComponent(scene, 'collision:solid').map(object => object.id)).toEqual(['buildTerrain:0,0']);
 });
 
 test('render components normalize pixel-perfect layer data', () => {

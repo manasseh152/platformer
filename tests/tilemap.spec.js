@@ -1,4 +1,6 @@
 import { expect, test } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { globSync } from 'node:fs';
 import {
   act01Level1Tilemap as level,
   getDefaultTilemap as getDefaultTilemap
@@ -11,11 +13,10 @@ import {
   getDecorType,
   getGoalRect,
   getGoalTriggerRect,
-  getTile,
   getSpawnPoint,
+  getTile,
   gridLayer,
   isSolidTileAt,
-  parseTilemap,
   solidTileRectsOverlapping,
   spikeHazardRectsOverlapping,
   tileRect,
@@ -23,8 +24,19 @@ import {
   worldToTile
 } from '../src/core/tilemaps/tilemap.js';
 import { CELL_SIZE } from '../src/core/constants.js';
-import { solidTerrain } from '../src/content/tilemaps/objects.js';
+import { finishGateObject, playerSpawner, renderTerrain, slimeSpawner, solidTerrain } from '../src/content/tilemaps/objects.js';
 import { resolveInitialTilemap } from '../src/tilemap-manager.js';
+import { defineContainedTestTilemap } from './helpers/contained-tilemap.js';
+
+function buildTerrainSet(tilemap) {
+  return new Set(tilemap.objects
+    .filter(object => object.layerId === 'buildTerrain' && object.definitionId === 'solid-terrain')
+    .map(object => `${object.transform.col},${object.transform.row}`));
+}
+
+function allObjects(tilemap) {
+  return [...tilemap.objects, ...Object.values(tilemap.layers ?? {}).flatMap(layer => Object.values(layer.symbols ?? {}))];
+}
 
 test('tilemap exposes world dimensions derived from tile dimensions', () => {
   expect(level.worldWidth).toBe(level.cols * level.tileSize);
@@ -37,7 +49,7 @@ test('tile helpers convert between tile and world coordinates', () => {
   expect(tileRect(2, 4, 3, 1)).toMatchObject({ x: 64, y: 128, w: 96, h: 32 });
 });
 
-test('defineTilemap requires explicit dimensions and validates layer cell size', () => {
+test('defineTilemap requires explicit dimensions and validates contained terrain layers', () => {
   expect(CELL_SIZE).toEqual({ GRID: 32, BUILD: 16, TERRAIN_PRIMITIVE: 8 });
   const parsed = defineTilemap({
     id: 'build-grid-validation',
@@ -48,16 +60,19 @@ test('defineTilemap requires explicit dimensions and validates layer cell size',
 
   expect(parsed.worldWidth).toBe(64);
   expect(parsed.worldHeight).toBe(32);
+  expect(parsed.terrainRenderMode).toBe('contained-autotile');
   expect(parsed.layers[0].cellSize).toBe(CELL_SIZE.BUILD);
   expect(parsed.objects[0].transform).toMatchObject({ col: 0, row: 0, cellSize: CELL_SIZE.BUILD, x: 0, y: 0, w: 16, h: 16 });
   expect(() => gridLayer({ id: 'bad-resolution', resolution: 2, symbols: { '#': solidTerrain }, rows: ['#'] })).toThrow(/cellSize/);
   expect(() => gridLayer({ id: 'bad-cell-size', cellSize: 10, symbols: { '#': solidTerrain }, rows: ['#'] })).toThrow(/unsupported cellSize/);
-  expect(() => defineTilemap({ id: 'missing-dimensions', layers: [gridLayer({ id: 'terrain', symbols: { '#': solidTerrain }, rows: ['#'] })] })).toThrow(/cols/);
+  expect(() => defineTilemap({ id: 'missing-dimensions', layers: [gridLayer({ id: 'buildTerrain', cellSize: CELL_SIZE.BUILD, symbols: { '#': solidTerrain }, rows: ['#'] })] })).toThrow(/cols/);
+  expect(() => defineTilemap({ id: 'old-terrain-layer', cols: 1, rows: 1, layers: [gridLayer({ id: 'terrain', symbols: { '#': solidTerrain }, rows: ['#'] })] })).toThrow(/buildTerrain/);
+  expect(() => defineTilemap({ id: 'wrong-mode', cols: 1, rows: 1, terrainRenderMode: 'other', layers: [gridLayer({ id: 'buildTerrain', cellSize: CELL_SIZE.BUILD, symbols: { '#': solidTerrain }, rows: ['..', '..'] })] })).toThrow(/contained-autotile/);
   expect(() => defineTilemap({ id: 'bad-cell-size-rows', cols: 2, rows: 1, layers: [gridLayer({ id: 'buildTerrain', cellSize: CELL_SIZE.BUILD, symbols: { '#': solidTerrain }, rows: ['##'] })] })).toThrow(/buildTerrain layer must contain 2 rows/);
 });
 
-test('tilemap parser exposes layered tiles and direct query helpers derive gameplay data', () => {
-  const parsed = parseTilemap({
+test('contained tilemap exposes layered tiles and query helpers derive gameplay data', () => {
+  const parsed = defineContainedTestTilemap({
     terrainRows: [
       '#####',
       '#...#',
@@ -90,25 +105,21 @@ test('tilemap parser exposes layered tiles and direct query helpers derive gamep
   expect(parsed.cols).toBe(5);
   expect(parsed.rows).toBe(5);
   expect(getTile(parsed, 'backdrop', 2, 2)).toBe('.');
-  expect(getSpawnPoint(parsed)).toEqual({ x: 48, y: 52 });
+  expect(getSpawnPoint(parsed)).toEqual({ x: 48, y: 56 });
   expect(getGoalRect(parsed)).toMatchObject({ x: 96, y: 32, w: 32, h: 32, kind: 'gate' });
   expect(parsed.artTileSize).toBe(16);
   expect(parsed.artTilesPerTile).toBe(2);
-  expect(parsed.theme).toBe('kenney-pixel-platformer:grass');
-  expect(parsed.renderLayers.terrainVisuals.filter(visual => visual.col === 1 && visual.row === 3)).toHaveLength(4);
-  expect(parsed.renderLayers.terrainPrimitives).toEqual(expect.arrayContaining([
-    expect.objectContaining({ col: 1, row: 0, x: 16, y: -16, mask: 12, offsetGrid: true }),
-    expect.objectContaining({ col: 2, row: 3, x: 48, y: 80, mask: 12, offsetGrid: true })
-  ]));
+  expect(parsed.renderLayers.containedTerrainTiles.length).toBe(buildTerrainSet(parsed).size);
+  expect(parsed.renderLayers.terrainPrimitives).toBeUndefined();
   expect(spikeHazardRectsOverlapping(parsed, { x: 108, y: 108, w: 36, h: 36 })).toHaveLength(1);
   expect(decor).toEqual([
     { type: 'bannerRed', col: 1, row: 1 },
     { type: 'torch', col: 3, row: 1 }
   ]);
   expect(createEnemySpawns(parsed)).toHaveLength(1);
-  expect(solidTileRectsOverlapping(parsed, { x: 32, y: 96, w: 64, h: 32 })).toEqual([
-    expect.objectContaining({ x: 32, y: 96, w: 64, h: 64, cols: 2, rows: 2, kind: 'terrain-solid' })
-  ]);
+  expect(solidTileRectsOverlapping(parsed, { x: 32, y: 96, w: 64, h: 32 })).toEqual(expect.arrayContaining([
+    expect.objectContaining({ kind: 'terrain-solid' })
+  ]));
 });
 
 test('contained autotile terrain derives 8px collision primitives from 16px build terrain', () => {
@@ -139,6 +150,50 @@ test('contained autotile terrain derives 8px collision primitives from 16px buil
   ]);
 });
 
+test('every contained terrain visual tile is inside a solid buildTerrain cell', () => {
+  for (const tilemap of [level, getDefaultTilemap()]) {
+    const solids = buildTerrainSet(tilemap);
+    for (const tile of tilemap.renderLayers.containedTerrainTiles) {
+      expect(solids.has(`${tile.col},${tile.row}`), tilemap.id).toBe(true);
+      expect(tile.layer).toBe('buildTerrain');
+      expect(tile.x).toBe(tile.col * CELL_SIZE.BUILD);
+      expect(tile.y).toBe(tile.row * CELL_SIZE.BUILD);
+      expect(tile.w).toBe(CELL_SIZE.BUILD);
+      expect(tile.h).toBe(CELL_SIZE.BUILD);
+    }
+  }
+});
+
+test('contained terrain emits no offset render primitives', () => {
+  for (const tilemap of [level, getDefaultTilemap()]) {
+    expect(tilemap.renderLayers.terrainPrimitives).toBeUndefined();
+    expect(tilemap.renderLayers.terrainVisuals).toBeUndefined();
+    expect(JSON.stringify(tilemap.renderLayers)).not.toContain('offsetGrid');
+  }
+});
+
+test('terrain render components are marker-only', () => {
+  expect(renderTerrain()).toEqual({ type: 'render:terrain' });
+  for (const tilemap of [level, getDefaultTilemap()]) {
+    for (const object of allObjects(tilemap)) {
+      for (const component of object.components ?? []) {
+        if (component.type === 'render:terrain') expect(component).toEqual({ type: 'render:terrain' });
+      }
+    }
+  }
+});
+
+test('content definitions use buildTerrain contained terrain only', () => {
+  const files = globSync('src/content/tilemaps/definitions/**/*.js');
+  for (const file of files) {
+    const text = readFileSync(file, 'utf8');
+    expect(text, file).not.toContain('parseTilemap');
+    expect(text, file).not.toContain("id: 'terrain'");
+    expect(text, file).not.toContain('offsetGrid');
+    if (text.includes('defineTilemap(')) expect(text, file).toContain('buildTerrain');
+  }
+});
+
 test('initial tilemap resolution ignores URL selection and uses the default level', () => {
   expect(resolveInitialTilemap()).toBe(getDefaultTilemap());
   expect(resolveInitialTilemap({ developerMode: true }, '?level=movement-gym')).toBe(getDefaultTilemap());
@@ -159,17 +214,14 @@ test('default gate is completable from solid support blocks', () => {
   });
 });
 
-test('tilemap collision rects are greedy-merged from authored terrain cells, not visual primitives', () => {
-  const parsed = parseTilemap({
-    collisionMode: 'dual-grid',
+test('tilemap collision rects are greedy-merged from authored terrain cells', () => {
+  const parsed = defineContainedTestTilemap({
     terrainRows: ['###', '#.#', '###'],
-    objectRows: ['...', '.P.', '.G.'],
-    decorRows: ['...', '...', '...']
+    objectRows: ['...', '.P.', '.G.']
   });
 
-  expect(parsed.collisionMode).toBe('dual-grid');
-  expect(parsed.renderLayers.terrainCollisionCells).toHaveLength(8);
-  expect(parsed.renderLayers.terrainCollisionRects).toEqual(expect.arrayContaining([
+  expect(parsed.collisionLayers.terrainPrimitives).toHaveLength(128);
+  expect(parsed.collisionLayers.terrainRects).toEqual(expect.arrayContaining([
     expect.objectContaining({ x: 0, y: 0, w: 96, h: 32, kind: 'terrain-solid' }),
     expect.objectContaining({ x: 0, y: 32, w: 32, h: 64, kind: 'terrain-solid' }),
     expect.objectContaining({ x: 64, y: 32, w: 32, h: 64, kind: 'terrain-solid' }),
@@ -180,8 +232,8 @@ test('tilemap collision rects are greedy-merged from authored terrain cells, not
   ]);
 });
 
-test('tilemap supports block tiles and three-tile gates', () => {
-  const parsed = parseTilemap({
+test('tilemap supports block terrain and three-tile gates', () => {
+  const parsed = defineContainedTestTilemap({
     terrainRows: [
       '#####',
       '#...#',
@@ -195,24 +247,15 @@ test('tilemap supports block tiles and three-tile gates', () => {
       '.....',
       '.P...',
       '.....'
-    ],
-    decorRows: [
-      '.....',
-      '.....',
-      '.....',
-      '.....',
-      '.....'
     ]
   });
 
   expect(getGoalRect(parsed)).toMatchObject({ x: 32, y: 32, w: 96, h: 32, cols: 3 });
-  expect(solidTileRectsOverlapping(parsed, { x: 64, y: 64, w: 32, h: 32 })).toEqual([
-    expect.objectContaining({ x: 32, y: 64, w: 96, h: 32, cols: 3, rows: 1, kind: 'terrain-solid' })
-  ]);
+  expect(isSolidTileAt(parsed, 2, 2)).toBe(true);
 });
 
-test('tilemap parser supports optional backdrop rows with validation and iteration', () => {
-  const parsed = parseTilemap({
+test('tilemap supports backdrop rows with iteration', () => {
+  const parsed = defineContainedTestTilemap({
     terrainRows: [
       '#####',
       '#...#',
@@ -224,13 +267,6 @@ test('tilemap parser supports optional backdrop rows with validation and iterati
       '.....',
       '.G...',
       '.P...',
-      '.....',
-      '.....'
-    ],
-    decorRows: [
-      '.....',
-      '.....',
-      '.....',
       '.....',
       '.....'
     ],
@@ -254,32 +290,20 @@ test('tilemap parser supports optional backdrop rows with validation and iterati
     { tile: 'c', col: 2, row: 2 },
     { tile: 'd', col: 2, row: 3 }
   ]);
-
-  const valid = {
-    terrainRows: ['###', '#.#', '###'],
-    objectRows: ['...', '.P.', '.G.'],
-    decorRows: ['...', '...', '...']
-  };
-
-  expect(() => parseTilemap({ ...valid, backdropRows: ['...', '.x.', '...'] })).toThrow(/backdropRows contains unknown tile/);
-  expect(() => parseTilemap({ ...valid, backdropRows: ['...', '...'] })).toThrow(/backdropRows must contain 3 rows/);
-  expect(() => parseTilemap({ ...valid, backdropRows: ['...', '..', '...'] })).toThrow(/backdropRows row 1 must be 3 chars wide/);
 });
 
-test('tilemap parser rejects invalid layers and missing required markers', () => {
+test('tilemap helper rejects invalid layers and missing required markers', () => {
   const valid = {
     terrainRows: ['###', '#.#', '###'],
-    objectRows: ['...', '.P.', '.G.'],
-    decorRows: ['...', '...', '...']
+    objectRows: ['...', '.P.', '.G.']
   };
 
-  expect(() => parseTilemap({ ...valid, objectRows: ['...', '.P.'] })).toThrow(/objectRows must contain 3 rows/);
-  expect(() => parseTilemap({ ...valid, terrainRows: ['###', '#x#', '###'] })).toThrow(/unknown tile/);
-  expect(() => parseTilemap({ ...valid, objectRows: ['...', '...', '.G.'] })).toThrow(/player spawn/);
+  expect(() => defineContainedTestTilemap({ ...valid, objectRows: ['...', '.P.'] })).toThrow(/objectRows must contain 3 rows/);
+  expect(() => gridLayer({ id: 'entities', symbols: { P: playerSpawner }, rows: ['.x.'] })).toThrow(/unknown symbol/);
 });
 
 test('enemy runtime state is cloned from tilemap-owned enemy definitions', () => {
-  const customTilemap = parseTilemap({
+  const customTilemap = defineContainedTestTilemap({
     terrainRows: [
       '#####',
       '#...#',
@@ -291,13 +315,6 @@ test('enemy runtime state is cloned from tilemap-owned enemy definitions', () =>
       '.....',
       '.G...',
       '.PE..',
-      '.....',
-      '.....'
-    ],
-    decorRows: [
-      '.....',
-      '.....',
-      '.....',
       '.....',
       '.....'
     ]

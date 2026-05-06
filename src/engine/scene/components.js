@@ -33,7 +33,7 @@ function normalizeOverscan(value = 0) {
 export const solid = () => ({ type: 'collision:solid' });
 export const hazard = (props = {}) => ({ type: 'collision:hazard', kind: props.kind ?? 'spike', damage: props.damage ?? 1 });
 export const terrain = (props = {}) => ({ type: 'terrain', material: props.material ?? 'grass' });
-export const renderTerrain = (props = {}) => ({ type: 'render:terrain', strategy: props.strategy ?? 'dual-grid' });
+export const renderTerrain = () => ({ type: 'render:terrain' });
 export const spawner = object => ({ type: 'spawner', object });
 export const physicsBody = props => ({ type: 'physics:body', ...props });
 export const velocity = (props = {}) => ({ type: 'physics:velocity', ...props });

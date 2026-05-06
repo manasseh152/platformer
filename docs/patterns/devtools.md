@@ -109,12 +109,11 @@ Current terrain/physics overlays:
 | Toggle | Meaning |
 | --- | --- |
 | Show build terrain cells | 16px `buildTerrain` cells used for contained-autotile visuals |
-| Show collision cells | 8px derived terrain primitives for contained terrain, or legacy terrain cells for old maps |
+| Show collision cells | 8px derived terrain primitives |
 | Show collision rects | greedy-merged terrain collision rects used by physics queries |
 | Show physics body rects | runtime actor body AABBs |
-| Use raw terrain debug render | legacy-only terrain replacement render; do not use for contained-autotile maps |
 
-Collision overlays must not force raw terrain rendering. Visual terrain debugging should be additive so artists/developers can compare visuals, collision primitives, merged rects, and actor bodies independently.
+Visual terrain debugging should be additive so artists/developers can compare visuals, collision primitives, merged rects, and actor bodies independently.
 
 ## Automation and playbooks
 

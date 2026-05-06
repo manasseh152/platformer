@@ -7,7 +7,7 @@ export { enemyController, hazard, health, patrol, physicsBody, playerController,
 
 export const solidTerrain = defineObject({
   id: 'solid-terrain',
-  components: [solid(), terrain(), renderTerrain({ strategy: 'dual-grid' })]
+  components: [solid(), terrain(), renderTerrain()]
 });
 
 export const player = defineObject({

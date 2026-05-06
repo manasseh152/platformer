@@ -8,7 +8,7 @@ Related:
 - [Scene components](./scene-components.md)
 - [Terrain pipeline](./terrain.md)
 
-Tilemaps are composable scene data, not hard-coded `terrainRows/objectRows/decorRows` blobs. `defineTilemap()` compiles grid layers into core scene objects and then delegates generic object/index work to the core scene model.
+`defineTilemap()` compiles explicit grid layers into core scene objects and then delegates generic object/index work to the core scene model.
 
 ## Authoring API
 
@@ -19,10 +19,15 @@ import { CELL_SIZE } from '../../../core/constants.js';
 import { defineTilemap, gridLayer } from '../tilemap.js';
 import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../objects.js';
 
-export const movementGymMapDefinition = {
+export const movementGymMap = defineTilemap({
+  id: 'movement-gym-map',
+  name: 'Movement Gym Map',
   cols: 8,
   rows: 3,
   terrainRenderMode: 'contained-autotile',
+  categories: ['movement'],
+  visibility: 'developer',
+  description: 'Movement validation fixture.',
   layers: [
     gridLayer({
       id: 'buildTerrain',
@@ -52,15 +57,6 @@ export const movementGymMapDefinition = {
       ]
     })
   ]
-};
-
-export const movementGymMap = defineTilemap({
-  id: 'movement-gym-map',
-  name: 'Movement Gym Map',
-  categories: ['movement'],
-  visibility: 'developer',
-  description: 'Movement validation fixture.',
-  ...movementGymMapDefinition
 });
 ```
 
@@ -70,11 +66,11 @@ Canonical cell sizes live in `src/core/constants.js`:
 
 | Constant | Size | Meaning |
 | --- | ---: | --- |
-| `CELL_SIZE.GRID` | 32px | macro gameplay/entity grid |
+| `CELL_SIZE.GRID` | 32px | gameplay/entity grid |
 | `CELL_SIZE.BUILD` | 16px | terrain authoring and visual autotile grid |
 | `CELL_SIZE.TERRAIN_PRIMITIVE` | 8px | derived terrain collision primitive grid |
 
-`gridLayer()` accepts only these values. Do not use raw numeric sizes in map definitions. The old public `resolution` field is removed for new code.
+`gridLayer()` accepts only these values.
 
 Layer dimensions must match map bounds:
 
@@ -84,8 +80,6 @@ layer rows    = rows * CELL_SIZE.GRID / cellSize
 ```
 
 ## Symbols
-
-Current minimal vocabulary:
 
 Build terrain layer:
 
@@ -115,7 +109,7 @@ import { renderTerrain, solid, spawner, terrain } from '../../../engine/scene/co
 
 export const solidTerrain = defineObject({
   id: 'solid-terrain',
-  components: [solid(), terrain(), renderTerrain({ strategy: 'dual-grid' })]
+  components: [solid(), terrain(), renderTerrain()]
 });
 
 export const playerSpawner = defineObject({
@@ -135,8 +129,8 @@ One concept is used for both static objects and spawnable runtime objects: `defi
 - `componentIndex`: cached lookup by component type
 - `worldWidth/worldHeight`, `cols/rows`, `tileSize`/`gridSize`
 - per-layer `cellSize` and per-object cell-sized transforms
-- derived render artifacts in `renderLayers`
-- derived collision artifacts in `collisionLayers` for contained terrain
+- derived render artifacts in `renderLayers.containedTerrainTiles`
+- derived collision artifacts in `collisionLayers`
 
 Scene object shape:
 
@@ -159,9 +153,9 @@ findObjectsWithComponent(scene, 'spawner');
 findObjectsWithComponent(scene, 'render:terrain');
 ```
 
-## Terrain render modes
+## Terrain mode
 
-New maps should use:
+Tilemaps use:
 
 ```js
 terrainRenderMode: 'contained-autotile'
@@ -169,15 +163,13 @@ terrainRenderMode: 'contained-autotile'
 
 Contained terrain reads `buildTerrain`, derives 8px collision primitives, greedy-merges physics rects, and draws 16px visual tiles inside their cells.
 
-Legacy maps may temporarily use `terrainRenderMode: 'legacy-dual-grid'` and `terrain` layers. Legacy code should be marked with `@deprecated TODO(new-terrain)` and should not receive new features.
-
 ## Compatibility fields
 
-Compatibility fields such as `renderLayers` and `tiles` exist for current renderer and gameplay helpers. New collision-aware systems should prefer public query helpers and `scene.collisionLayers` rather than reading render-layer collision data directly.
+`renderLayers` and `tiles` exist for current renderer and gameplay helpers. Collision-aware systems should prefer public query helpers and `scene.collisionLayers`.
 
 ## Validation philosophy
 
-Generic tilemap parsing should validate structure only:
+Generic tilemap parsing validates structure only:
 
 - layers exist
 - rows are rectangular
@@ -185,5 +177,6 @@ Generic tilemap parsing should validate structure only:
 - layer dimensions match `cols * CELL_SIZE.GRID / cellSize` and `rows * CELL_SIZE.GRID / cellSize`
 - `cellSize` is one of the supported `CELL_SIZE` values
 - non-empty symbols are defined
+- solid terrain is authored in `buildTerrain` at `CELL_SIZE.BUILD`
 
 Gameplay requirements belong to gameplay assembly or editor checks, not the generic parser. Examples: “must have a player,” “spawn should stand on ground,” or “gate should be contiguous.”

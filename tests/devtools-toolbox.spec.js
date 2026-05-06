@@ -38,7 +38,7 @@ test('developer toolbox is gated by Developer Mode and gameplay state', async ({
   expect(snapshot.open).toBe(true);
   expect(snapshot.visible).toBe(true);
   expect(snapshot.sections.find(section => section.id === 'session').items.map(item => item.kind)).toContain('value');
-  expect(snapshot.sections.find(section => section.id === 'render').items.map(item => item.id)).toEqual(expect.arrayContaining(['show-build-terrain-cells', 'show-collision-cells', 'show-collision-rects', 'show-physics-body-rects', 'use-raw-terrain-debug-render']));
+  expect(snapshot.sections.find(section => section.id === 'render').items.map(item => item.id)).toEqual(expect.arrayContaining(['show-build-terrain-cells', 'show-collision-cells', 'show-collision-rects', 'show-physics-body-rects']));
 });
 
 test('developer toolbox collision toggles update session-only debug flags', async ({ page }) => {
@@ -50,12 +50,10 @@ test('developer toolbox collision toggles update session-only debug flags', asyn
   await page.locator('[data-devtool-toggle="render.show-collision-cells"]').check();
   await page.locator('[data-devtool-toggle="render.show-collision-rects"]').check();
   await page.locator('[data-devtool-toggle="render.show-physics-body-rects"]').check();
-  await page.locator('[data-devtool-toggle="render.use-raw-terrain-debug-render"]').check();
   await expect(page.locator('[data-devtool-toggle="render.show-build-terrain-cells"]')).toBeChecked();
   await expect(page.locator('[data-devtool-toggle="render.show-collision-cells"]')).toBeChecked();
   await expect(page.locator('[data-devtool-toggle="render.show-collision-rects"]')).toBeChecked();
   await expect(page.locator('[data-devtool-toggle="render.show-physics-body-rects"]')).toBeChecked();
-  await expect(page.locator('[data-devtool-toggle="render.use-raw-terrain-debug-render"]')).toBeChecked();
 
   await page.keyboard.press('Backquote');
   await page.keyboard.press('Backquote');
@@ -63,53 +61,6 @@ test('developer toolbox collision toggles update session-only debug flags', asyn
   await expect(page.locator('[data-devtool-toggle="render.show-collision-cells"]')).toBeChecked();
   await expect(page.locator('[data-devtool-toggle="render.show-collision-rects"]')).toBeChecked();
   await expect(page.locator('[data-devtool-toggle="render.show-physics-body-rects"]')).toBeChecked();
-  await expect(page.locator('[data-devtool-toggle="render.use-raw-terrain-debug-render"]')).toBeChecked();
-});
-
-test('collision overlays do not force raw terrain rendering when raw terrain toggle is off', async ({ page }) => {
-  await page.goto('/');
-
-  const renderModes = await page.evaluate(async () => {
-    const { drawTilemap } = await import('/src/render.js');
-    function createContextRecorder() {
-      let currentFillStyle = '';
-      const fillStyles = [];
-      return {
-        get fillStyle() { return currentFillStyle; },
-        set fillStyle(value) { currentFillStyle = value; },
-        fillStyles,
-        save() {},
-        restore() {},
-        beginPath() {},
-        rect() {},
-        clip() {},
-        fillRect() { fillStyles.push(currentFillStyle); },
-        strokeRect() {},
-        drawImage() {}
-      };
-    }
-    function createLevel(useRawTerrainDebugRender) {
-      return {
-        worldWidth: 10,
-        worldHeight: 10,
-        devToolsFlags: { showCollisionCells: true, showCollisionRects: true, useRawTerrainDebugRender },
-        renderLayers: {
-          terrainCollisionCells: [{ x: 0, y: 0, w: 10, h: 10, col: 0, row: 0 }],
-          terrainPrimitives: [{ x: 0, y: 0, w: 10, h: 10, assetKey: 'dirt-center' }]
-        }
-      };
-    }
-
-    const normalCtx = createContextRecorder();
-    drawTilemap(normalCtx, createLevel(false));
-    const rawCtx = createContextRecorder();
-    drawTilemap(rawCtx, createLevel(true));
-    return { normal: normalCtx.fillStyles, raw: rawCtx.fillStyles };
-  });
-
-  expect(renderModes.normal).toContain('#9b683f');
-  expect(renderModes.normal).not.toContain('#5cba47');
-  expect(renderModes.raw).toContain('#5cba47');
 });
 
 test('developer toolbox button and keyboard close behavior are accessible', async ({ page }) => {

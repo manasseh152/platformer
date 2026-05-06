@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { createInputState } from '../src/input.js';
 import { createGameplaySession } from '../src/core/gameplay-session.js';
-import { parseTilemap } from '../src/core/tilemaps/tilemap.js';
 import { updateEnemy, updateGameplay } from '../src/core/physics.js';
+import { defineContainedTestTilemap } from './helpers/contained-tilemap.js';
 
 function makeTilemap(terrainRows) {
-  return parseTilemap({
+  return defineContainedTestTilemap({
     terrainRows,
     objectRows: [
       '................',
@@ -15,9 +15,8 @@ function makeTilemap(terrainRows) {
       '................',
       '.P..............',
       '................'
-    ],
-    decorRows: Array.from({ length: 7 }, () => '................')
-  }, 10);
+    ]
+  });
 }
 
 function makeGame(enemy, tilemap) {
@@ -30,11 +29,7 @@ function makeGame(enemy, tilemap) {
 }
 
 function makeGameplayTilemap({ terrainRows, objectRows }) {
-  return parseTilemap({
-    terrainRows,
-    objectRows,
-    decorRows: Array.from({ length: terrainRows.length }, () => '.'.repeat(terrainRows[0].length))
-  });
+  return defineContainedTestTilemap({ terrainRows, objectRows });
 }
 
 function makeRuntime() {
@@ -247,10 +242,10 @@ test('player slash damages enemies in front without requiring body contact', () 
   session.player.y = 4 * level.tileSize - session.player.h;
   session.player.dir = 1;
   session.enemies.push({
-    x: session.player.x + 60,
+    x: session.player.x + 56,
     y: session.player.y + 8,
     w: 32,
-    h: 32,
+    h: 24,
     vx: 0,
     vy: 0,
     hp: 2,

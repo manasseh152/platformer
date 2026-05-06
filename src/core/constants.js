@@ -7,12 +7,16 @@ export const GRID_SIZE = CELL_SIZE.GRID;
 export const BUILD_TILE_SIZE = CELL_SIZE.BUILD;
 export const TERRAIN_PRIMITIVE_SIZE = CELL_SIZE.TERRAIN_PRIMITIVE;
 export const ACTOR_SIZE = Object.freeze({
-  PLAYER: Object.freeze({ w: 30, h: 44 }),
-  SLIME: Object.freeze({ w: 37, h: 34 })
+  PLAYER: Object.freeze({ w: 28, h: 40 }),
+  SLIME: Object.freeze({ w: 32, h: 24 })
 });
-/**
- * @deprecated TODO(new-terrain): use GRID_SIZE/CELL_SIZE.GRID; delete after legacy terrain naming is removed.
- */
+export const ACTOR_DRAW = Object.freeze({
+  PLAYER: Object.freeze({ w: 30, h: 42, offsetX: -1, offsetY: -2 }),
+  SLIME: Object.freeze({ w: 32, h: 24, offsetX: 0, offsetY: 0 })
+});
+export const ATTACK_HITBOX = Object.freeze({
+  SLASH: Object.freeze({ w: 42, h: 24, offsetX: 22, offsetY: 8 })
+});
 export const TILE_SIZE = GRID_SIZE;
 export const WORLD_COLS = 18;
 export const WORLD_ROWS = 10;

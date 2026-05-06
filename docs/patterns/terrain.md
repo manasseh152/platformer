@@ -2,105 +2,66 @@
 
 Terrain uses explicit cell sizes and separates authored terrain, visual terrain, and collision terrain.
 
-Related:
-
-- [Tilemaps](./tilemaps.md)
-- [Developer toolbox patterns](./devtools.md)
-- [ADR 0003](../adr/0003-contained-terrain-scale.md)
-
 ## Cell sizes
 
-Import cell sizes from `src/core/constants.js`:
+| Constant | Size | Use |
+| --- | ---: | --- |
+| `CELL_SIZE.GRID` | 32px | gameplay placement grid |
+| `CELL_SIZE.BUILD` | 16px | authored terrain and visual autotile grid |
+| `CELL_SIZE.TERRAIN_PRIMITIVE` | 8px | derived collision primitive grid |
+
+## Authoring terrain
+
+Solid terrain is authored as `buildTerrain` at `CELL_SIZE.BUILD`:
 
 ```js
-export const CELL_SIZE = Object.freeze({
-  GRID: 32,
-  BUILD: 16,
-  TERRAIN_PRIMITIVE: 8
-});
-```
-
-Use names, not raw numbers, in tilemap definitions.
-
-| Cell size | Meaning |
-| --- | --- |
-| `CELL_SIZE.GRID` | 32px macro gameplay/entity grid |
-| `CELL_SIZE.BUILD` | 16px authored terrain and visual autotile grid |
-| `CELL_SIZE.TERRAIN_PRIMITIVE` | 8px derived terrain collision primitive grid |
-
-## Authoring new terrain
-
-New terrain should be authored as `buildTerrain` at `CELL_SIZE.BUILD`:
-
-```js
-import { CELL_SIZE } from '../../../core/constants.js';
-import { defineTilemap, gridLayer } from '../../../core/tilemaps/tilemap.js';
-import { playerSpawner, solidTerrain } from '../objects.js';
-
-export const exampleMap = defineTilemap({
-  id: 'example-map',
-  cols: 4,
-  rows: 2,
-  terrainRenderMode: 'contained-autotile',
-  layers: [
-    gridLayer({
-      id: 'buildTerrain',
-      cellSize: CELL_SIZE.BUILD,
-      symbols: { '#': solidTerrain },
-      rows: [
-        '........',
-        '..####..',
-        '..####..',
-        '########'
-      ]
-    }),
-    gridLayer({
-      id: 'entities',
-      cellSize: CELL_SIZE.GRID,
-      symbols: { P: playerSpawner },
-      rows: [
-        '.P..',
-        '....'
-      ]
-    })
+gridLayer({
+  id: 'buildTerrain',
+  cellSize: CELL_SIZE.BUILD,
+  symbols: { '#': solidTerrain },
+  rows: [
+    '................',
+    '....########....'
   ]
-});
+})
 ```
 
-Layer dimensions derive from map `cols`/`rows` and each layer's `cellSize`:
+Use `#` for solid build cells and `.` for empty cells.
 
-```txt
-layer columns = cols * CELL_SIZE.GRID / layer.cellSize
-layer rows    = rows * CELL_SIZE.GRID / layer.cellSize
+Tilemaps declare the terrain mode:
+
+```js
+terrainRenderMode: 'contained-autotile'
 ```
 
-For example, a `24x12` map has:
+`defineTilemap()` validates that authored solid terrain uses `buildTerrain`; a `terrain` layer is not supported.
 
-- `entities`: `24x12` cells
-- `buildTerrain`: `48x24` cells
-- derived terrain primitives: `96x48` cells
+## Rendering
 
-## Contained-autotile rendering
+Contained terrain reads `renderLayers.containedTerrainTiles`.
 
-`terrainRenderMode: 'contained-autotile'` means:
+Each solid `buildTerrain` cell produces one 16px visual tile:
 
-- Visual terrain is drawn from `renderLayers.containedTerrainTiles`.
-- Each solid `buildTerrain` cell draws one contained 16px tile.
-- Visual terrain must stay inside the build cell and therefore inside collision solids.
-- Deterministic neighbor masks choose exposed edges/corners.
-- Interior seams should be absent or subtle.
+```js
+{
+  layer: 'buildTerrain',
+  x, y, w: 16, h: 16,
+  col, row,
+  mask
+}
+```
 
-The current procedural terrain art is intentionally debug-like. It exists to validate scale, collision, and border continuity before custom PNG tiles are introduced.
+The visual tile stays inside its build cell. The neighbor `mask` describes adjacent solid build cells and is used by the renderer to draw grass/edge/fill details.
 
-## Collision derivation
+## Collision
 
 Collision derives from `buildTerrain`:
 
-```txt
+```text
 one 16px # build cell => four 8px terrain primitives
 ```
 
-Runtime collision data lives in `scene.collisionLayers`:
+The compiled tilemap exposes:
 
 ```js
 scene.collisionLayers = {
@@ -109,16 +70,15 @@ scene.collisionLayers = {
 };
 ```
 
-Physics and gameplay systems should use public collision query helpers such as `solidTileRectsOverlapping()` rather than reading render data directly.
+Physics and gameplay queries use `collisionLayers.terrainRects`.
 
-## Legacy terrain
+## Debugging
 
-Legacy maps may still use `terrainRenderMode: 'legacy-dual-grid'` and `terrain` layers during migration. Legacy render and collision fallbacks must be marked in code with:
+Current terrain/physics overlays:
 
-```js
-/**
- * @deprecated TODO(new-terrain): explain the replacement and deletion condition.
- */
-```
+- show build terrain cells
+- show collision cells
+- show collision rects
+- show physics body rects
 
-Do not add new features to the legacy Kenney/dual-grid terrain path.
+These overlays are additive and can be combined to compare authored terrain, derived collision, merged physics shapes, and actor bodies.

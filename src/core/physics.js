@@ -1,4 +1,5 @@
 import { hasDown, hasPressed } from './input.js';
+import { getSlashHitbox } from './combat.js';
 import { getTransitionTriggerRect, hazardCollisionRectsOverlapping, rectsOverlap, solidCollisionRectsOverlapping } from './gameplay-scene-queries.js';
 export { rectsOverlap } from './gameplay-scene-queries.js';
 
@@ -132,8 +133,7 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
 
   if (attackPressed && player.attack <= 0) {
     player.attack = .22; game.camera.shake = .05;
-    const scale = tilemap.tileSize / 70;
-    const slash = {x: player.x + (player.dir > 0 ? 24 : -48), y: player.y + 8, w: 58, h: 34};
+    const slash = getSlashHitbox(player);
     for (const e of enemies) if (e.hp > 0 && rectsOverlap(slash, e)) {
       e.hp--; e.hurt = .22; e.vx = player.dir * 180; game.camera.shake = .12;
       spawnBurst(runtime, game, e.x+e.w/2, e.y+e.h/2, '#bfffff', 16);

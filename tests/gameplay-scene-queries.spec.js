@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { ACTOR_SIZE, CELL_SIZE } from '../src/core/constants.js';
 import { createEnemiesFromScene } from '../src/core/gameplay-scene-queries.js';
-import { defineTilemap, gridLayer, parseTilemap } from '../src/core/tilemaps/tilemap.js';
+import { defineTilemap, gridLayer } from '../src/core/tilemaps/tilemap.js';
 import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../src/content/tilemaps/objects.js';
 import { enemyZooMap } from '../src/content/tilemaps/definitions/enemy-zoo-map.js';
+import { defineContainedTestTilemap } from './helpers/contained-tilemap.js';
 
 function containedEnemyMap() {
   return defineTilemap({
@@ -63,8 +64,8 @@ test('enemy zoo enemies all spawn on terrain collision tops with usable patrol r
   }
 });
 
-test('legacy terrain enemy patrols still derive from collision AABBs', () => {
-  const legacy = parseTilemap({
+test('enemy patrols derive from contained collision AABBs on full-grid authored platforms', () => {
+  const tilemap = defineContainedTestTilemap({
     terrainRows: [
       '########',
       '#......#',
@@ -78,17 +79,10 @@ test('legacy terrain enemy patrols still derive from collision AABBs', () => {
       '...E....',
       '.P......',
       '........'
-    ],
-    decorRows: [
-      '........',
-      '........',
-      '........',
-      '........',
-      '........'
     ]
   });
 
-  const [enemy] = createEnemiesFromScene(legacy);
+  const [enemy] = createEnemiesFromScene(tilemap);
 
   expect(enemy.y + enemy.h).toBe(96);
   expect(enemy.max - enemy.min).toBeGreaterThanOrEqual(enemy.w);
