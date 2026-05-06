@@ -5,6 +5,13 @@ export function registerDebugRenderDevTools(game) {
     order: 200,
     items: [
       {
+        id: 'show-build-terrain-cells',
+        kind: 'toggle',
+        label: 'Show build terrain cells',
+        get: game => Boolean(game.devTools.flags.showBuildTerrainCells),
+        set: (game, value) => { game.devTools.flags.showBuildTerrainCells = value; }
+      },
+      {
         id: 'show-collision-cells',
         kind: 'toggle',
         label: 'Show collision cells',
@@ -37,18 +44,30 @@ export function registerDebugRenderDevTools(game) {
 }
 
 export function drawCollisionDebugOverlay(ctx, tilemap, flags = {}) {
-  if (!tilemap?.renderLayers) return;
+  if (!tilemap) return;
+  const showBuildCells = Boolean(flags.showBuildTerrainCells);
   const showCells = Boolean(flags.showCollisionCells);
   const showRects = Boolean(flags.showCollisionRects);
-  if (!showCells && !showRects) return;
+  if (!showBuildCells && !showCells && !showRects) return;
 
   ctx.save();
+
+  if (showBuildCells) {
+    ctx.fillStyle = 'rgba(255, 220, 0, 0.08)';
+    ctx.strokeStyle = 'rgba(255, 220, 0, 0.75)';
+    ctx.lineWidth = 1;
+    for (const cell of tilemap.renderLayers?.containedTerrainTiles ?? []) {
+      ctx.fillRect(cell.x, cell.y, cell.w, cell.h);
+      ctx.strokeRect(cell.x + 0.5, cell.y + 0.5, Math.max(0, cell.w - 1), Math.max(0, cell.h - 1));
+    }
+  }
 
   if (showCells) {
     ctx.fillStyle = 'rgba(0, 220, 255, 0.16)';
     ctx.strokeStyle = 'rgba(0, 220, 255, 0.72)';
     ctx.lineWidth = 1;
-    for (const cell of tilemap.renderLayers.terrainCollisionCells ?? []) {
+    const cells = tilemap.collisionLayers?.terrainPrimitives ?? tilemap.renderLayers?.terrainCollisionCells ?? [];
+    for (const cell of cells) {
       ctx.fillRect(cell.x, cell.y, cell.w, cell.h);
       ctx.strokeRect(cell.x + 0.5, cell.y + 0.5, Math.max(0, cell.w - 1), Math.max(0, cell.h - 1));
     }
@@ -58,7 +77,8 @@ export function drawCollisionDebugOverlay(ctx, tilemap, flags = {}) {
     ctx.fillStyle = 'rgba(255, 80, 80, 0.12)';
     ctx.strokeStyle = 'rgba(255, 80, 80, 0.95)';
     ctx.lineWidth = 2;
-    for (const rect of tilemap.renderLayers.terrainCollisionRects ?? []) {
+    const rects = tilemap.collisionLayers?.terrainRects ?? tilemap.renderLayers?.terrainCollisionRects ?? [];
+    for (const rect of rects) {
       ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
       ctx.strokeRect(rect.x + 1, rect.y + 1, Math.max(0, rect.w - 2), Math.max(0, rect.h - 2));
     }

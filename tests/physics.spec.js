@@ -80,9 +80,9 @@ test('enemy horizontal collision uses pre-bounds movement direction and does not
 
   updateEnemy(makeGame(enemy, level), enemy, 0.033);
 
-  expect(enemy.x).toBe(98);
+  expect(enemy.x).toBe(86);
   expect(enemy.vx).toBe(-200);
-  expect(enemy.x + enemy.w).toBeLessThanOrEqual(108);
+  expect(enemy.x + enemy.w).toBeLessThanOrEqual(96);
 });
 
 test('enemy patrol bounds clamp at the edge instead of leaving overlap unresolved', () => {
@@ -145,7 +145,7 @@ test('player can use coyote time to jump shortly after walking off a ledge', () 
   press(input, 'jump');
   step(session, input, 1 / 60);
 
-  expect(session.player.vy).toBeLessThan(-240);
+  expect(session.player.vy).toBeLessThan(-220);
   expect(session.player.coyote).toBeLessThan(0);
 });
 
@@ -181,7 +181,7 @@ test('jump input buffers before landing and fires when the player touches ground
   step(session, createInputState(), 1 / 60);
 
   expect(session.player.grounded).toBe(false);
-  expect(session.player.vy).toBeLessThan(-240);
+  expect(session.player.vy).toBeLessThan(-220);
   expect(session.player.jumpBuf).toBeLessThanOrEqual(0);
 });
 

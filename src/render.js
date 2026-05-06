@@ -17,6 +17,9 @@ function drawAsset(ctx, asset, x, y, w = TILE_SIZE, h = TILE_SIZE) {
   return true;
 }
 
+/**
+ * @deprecated TODO(new-terrain): delete with Kenney/legacy dual-grid terrain renderer.
+ */
 function getPixelPlatformerTerrainAsset(level, key) {
   const [, themeName = 'grass'] = (level.theme || 'kenney-pixel-platformer:grass').split(':');
   return assets.pixelPlatformer?.[themeName]?.terrain?.[key] || null;
@@ -86,9 +89,12 @@ function drawStoneTile(ctx, level, ch, col, row, asset) {
 }
 
 function shouldUseRawTerrainDebugRender(level) {
-  return Boolean(level.devToolsFlags?.useRawTerrainDebugRender || level.devToolsFlags?.showCollisionCells || level.devToolsFlags?.showCollisionRects);
+  return Boolean(level.devToolsFlags?.useRawTerrainDebugRender);
 }
 
+/**
+ * @deprecated TODO(new-terrain): legacy-only raw terrain debug render; new terrain uses overlays.
+ */
 function drawRawTerrainDebugTilemap(ctx, level) {
   const cells = level.renderLayers?.terrainCollisionCells;
   if (!cells?.length) return false;
@@ -105,9 +111,39 @@ function drawRawTerrainDebugTilemap(ctx, level) {
   return true;
 }
 
+function drawContainedTerrainTile(ctx, tile, level) {
+  const top = !(tile.mask & 1);
+  const right = !(tile.mask & 4);
+  const bottom = !(tile.mask & 16);
+  const left = !(tile.mask & 64);
+  ctx.fillStyle = '#a7643b';
+  ctx.fillRect(tile.x, tile.y, tile.w, tile.h);
+  ctx.fillStyle = '#4f9f3a';
+  if (top) ctx.fillRect(tile.x, tile.y, tile.w, 4);
+  if (right) ctx.fillRect(tile.x + tile.w - 4, tile.y, 4, tile.h);
+  if (bottom) ctx.fillRect(tile.x, tile.y + tile.h - 4, tile.w, 4);
+  if (left) ctx.fillRect(tile.x, tile.y, 4, tile.h);
+  if (level.devToolsFlags?.showBuildTerrainCells) {
+    ctx.strokeStyle = 'rgba(0,0,0,.26)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(tile.x + 0.5, tile.y + 0.5, Math.max(0, tile.w - 1), Math.max(0, tile.h - 1));
+  }
+}
+
+function drawContainedTerrainTilemap(ctx, level) {
+  const tiles = level.renderLayers?.containedTerrainTiles;
+  if (!tiles?.length) return false;
+  ctx.save();
+  for (const tile of tiles) drawContainedTerrainTile(ctx, tile, level);
+  ctx.restore();
+  return true;
+}
+
 export function drawTilemap(ctx, level) {
+  if (level.terrainRenderMode === 'contained-autotile' && drawContainedTerrainTilemap(ctx, level)) return;
   if (shouldUseRawTerrainDebugRender(level) && drawRawTerrainDebugTilemap(ctx, level)) return;
 
+  /** @deprecated TODO(new-terrain): delete terrainPrimitives legacy render branch with dual-grid terrain. */
   const terrainPrimitives = level.renderLayers?.terrainPrimitives;
   if (terrainPrimitives?.length) {
     ctx.save();
@@ -125,6 +161,7 @@ export function drawTilemap(ctx, level) {
     return;
   }
 
+  /** @deprecated TODO(new-terrain): delete terrainVisuals legacy render branch with Kenney terrain. */
   const terrainVisuals = level.renderLayers?.terrainVisuals;
   if (terrainVisuals?.length) {
     for (const visual of terrainVisuals) {
@@ -392,8 +429,8 @@ function drawPlayer(runtime, game) {
   const x = snapRenderX(game, player.x), y = snapRenderY(game, player.y), d = player.dir;
   ctx.save();
   ctx.translate(x + player.w/2, y + player.h/2);
-  ctx.scale(d, 1);
-  ctx.translate(-player.w/2, -player.h/2);
+  ctx.scale(d * (player.w / 34), player.h / 50);
+  ctx.translate(-17, -25);
 
   ctx.fillStyle = '#171729'; roundedRect(ctx, 4, 18, 26, 31, 10);
   ctx.fillStyle = '#f4f1ff'; roundedRect(ctx, 1, 0, 32, 27, 13);

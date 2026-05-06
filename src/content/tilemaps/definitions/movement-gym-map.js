@@ -1,15 +1,17 @@
+import { CELL_SIZE } from '../../../core/constants.js';
 import { defineTilemap, gridLayer } from '../../../core/tilemaps/tilemap.js';
 import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../objects.js';
 
 export const movementGymMapDefinition = {
   cols: 24,
   rows: 12,
-  artTileSize: 18,
+  artTileSize: CELL_SIZE.BUILD,
+  terrainRenderMode: 'contained-autotile',
   theme: 'kenney-pixel-platformer:grass',
   layers: [
     gridLayer({
-      id: 'terrain',
-      resolution: 2,
+      id: 'buildTerrain',
+      cellSize: CELL_SIZE.BUILD,
       symbols: { '#': solidTerrain },
       rows: [
     '################################################',

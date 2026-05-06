@@ -22,6 +22,7 @@ import {
   tileToWorld,
   worldToTile
 } from '../src/core/tilemaps/tilemap.js';
+import { CELL_SIZE } from '../src/core/constants.js';
 import { solidTerrain } from '../src/content/tilemaps/objects.js';
 import { resolveInitialTilemap } from '../src/tilemap-manager.js';
 
@@ -31,25 +32,28 @@ test('tilemap exposes world dimensions derived from tile dimensions', () => {
 });
 
 test('tile helpers convert between tile and world coordinates', () => {
-  expect(tileToWorld(3, 2)).toEqual({ x: 108, y: 72 });
+  expect(tileToWorld(3, 2)).toEqual({ x: 96, y: 64 });
   expect(worldToTile(117, 73)).toEqual({ col: 3, row: 2 });
-  expect(tileRect(2, 4, 3, 1)).toMatchObject({ x: 72, y: 144, w: 108, h: 36 });
+  expect(tileRect(2, 4, 3, 1)).toMatchObject({ x: 64, y: 128, w: 96, h: 32 });
 });
 
-test('defineTilemap requires explicit dimensions and validates layer resolution', () => {
+test('defineTilemap requires explicit dimensions and validates layer cell size', () => {
+  expect(CELL_SIZE).toEqual({ GRID: 32, BUILD: 16, TERRAIN_PRIMITIVE: 8 });
   const parsed = defineTilemap({
-    id: 'half-grid-validation',
+    id: 'build-grid-validation',
     cols: 2,
     rows: 1,
-    layers: [gridLayer({ id: 'terrain', resolution: 2, symbols: { '#': solidTerrain }, rows: ['#...', '####'] })]
+    layers: [gridLayer({ id: 'buildTerrain', cellSize: CELL_SIZE.BUILD, symbols: { '#': solidTerrain }, rows: ['#...', '####'] })]
   });
 
-  expect(parsed.worldWidth).toBe(72);
-  expect(parsed.worldHeight).toBe(36);
-  expect(parsed.layers[0].resolution).toBe(2);
-  expect(parsed.objects[0].transform).toMatchObject({ col: 0, row: 0, resolution: 2, x: 0, y: 0, w: 18, h: 18 });
+  expect(parsed.worldWidth).toBe(64);
+  expect(parsed.worldHeight).toBe(32);
+  expect(parsed.layers[0].cellSize).toBe(CELL_SIZE.BUILD);
+  expect(parsed.objects[0].transform).toMatchObject({ col: 0, row: 0, cellSize: CELL_SIZE.BUILD, x: 0, y: 0, w: 16, h: 16 });
+  expect(() => gridLayer({ id: 'bad-resolution', resolution: 2, symbols: { '#': solidTerrain }, rows: ['#'] })).toThrow(/cellSize/);
+  expect(() => gridLayer({ id: 'bad-cell-size', cellSize: 10, symbols: { '#': solidTerrain }, rows: ['#'] })).toThrow(/unsupported cellSize/);
   expect(() => defineTilemap({ id: 'missing-dimensions', layers: [gridLayer({ id: 'terrain', symbols: { '#': solidTerrain }, rows: ['#'] })] })).toThrow(/cols/);
-  expect(() => defineTilemap({ id: 'bad-resolution-size', cols: 2, rows: 1, layers: [gridLayer({ id: 'terrain', resolution: 2, symbols: { '#': solidTerrain }, rows: ['##'] })] })).toThrow(/terrain layer must contain 2 rows/);
+  expect(() => defineTilemap({ id: 'bad-cell-size-rows', cols: 2, rows: 1, layers: [gridLayer({ id: 'buildTerrain', cellSize: CELL_SIZE.BUILD, symbols: { '#': solidTerrain }, rows: ['##'] })] })).toThrow(/buildTerrain layer must contain 2 rows/);
 });
 
 test('tilemap parser exposes layered tiles and direct query helpers derive gameplay data', () => {
@@ -86,15 +90,15 @@ test('tilemap parser exposes layered tiles and direct query helpers derive gamep
   expect(parsed.cols).toBe(5);
   expect(parsed.rows).toBe(5);
   expect(getTile(parsed, 'backdrop', 2, 2)).toBe('.');
-  expect(getSpawnPoint(parsed)).toEqual({ x: 54, y: 58 });
-  expect(getGoalRect(parsed)).toMatchObject({ x: 108, y: 36, w: 36, h: 36, kind: 'gate' });
-  expect(parsed.artTileSize).toBe(18);
+  expect(getSpawnPoint(parsed)).toEqual({ x: 48, y: 52 });
+  expect(getGoalRect(parsed)).toMatchObject({ x: 96, y: 32, w: 32, h: 32, kind: 'gate' });
+  expect(parsed.artTileSize).toBe(16);
   expect(parsed.artTilesPerTile).toBe(2);
   expect(parsed.theme).toBe('kenney-pixel-platformer:grass');
   expect(parsed.renderLayers.terrainVisuals.filter(visual => visual.col === 1 && visual.row === 3)).toHaveLength(4);
   expect(parsed.renderLayers.terrainPrimitives).toEqual(expect.arrayContaining([
-    expect.objectContaining({ col: 1, row: 0, x: 18, y: -18, mask: 12, offsetGrid: true }),
-    expect.objectContaining({ col: 2, row: 3, x: 54, y: 90, mask: 12, offsetGrid: true })
+    expect.objectContaining({ col: 1, row: 0, x: 16, y: -16, mask: 12, offsetGrid: true }),
+    expect.objectContaining({ col: 2, row: 3, x: 48, y: 80, mask: 12, offsetGrid: true })
   ]));
   expect(spikeHazardRectsOverlapping(parsed, { x: 108, y: 108, w: 36, h: 36 })).toHaveLength(1);
   expect(decor).toEqual([
@@ -102,8 +106,36 @@ test('tilemap parser exposes layered tiles and direct query helpers derive gamep
     { type: 'torch', col: 3, row: 1 }
   ]);
   expect(createEnemySpawns(parsed)).toHaveLength(1);
-  expect(solidTileRectsOverlapping(parsed, { x: 36, y: 108, w: 72, h: 36 })).toEqual([
-    expect.objectContaining({ x: 36, y: 108, w: 72, h: 72, cols: 2, rows: 2, kind: 'terrain-solid' })
+  expect(solidTileRectsOverlapping(parsed, { x: 32, y: 96, w: 64, h: 32 })).toEqual([
+    expect.objectContaining({ x: 32, y: 96, w: 64, h: 64, cols: 2, rows: 2, kind: 'terrain-solid' })
+  ]);
+});
+
+test('contained autotile terrain derives 8px collision primitives from 16px build terrain', () => {
+  const parsed = defineTilemap({
+    id: 'contained-terrain',
+    cols: 2,
+    rows: 1,
+    terrainRenderMode: 'contained-autotile',
+    layers: [
+      gridLayer({ id: 'buildTerrain', cellSize: CELL_SIZE.BUILD, symbols: { '#': solidTerrain }, rows: ['#...', '....'] })
+    ]
+  });
+
+  expect(parsed.collisionLayers.terrainPrimitives).toEqual([
+    expect.objectContaining({ x: 0, y: 0, w: 8, h: 8, col: 0, row: 0, kind: 'terrain-primitive' }),
+    expect.objectContaining({ x: 8, y: 0, w: 8, h: 8, col: 1, row: 0, kind: 'terrain-primitive' }),
+    expect.objectContaining({ x: 0, y: 8, w: 8, h: 8, col: 0, row: 1, kind: 'terrain-primitive' }),
+    expect.objectContaining({ x: 8, y: 8, w: 8, h: 8, col: 1, row: 1, kind: 'terrain-primitive' })
+  ]);
+  expect(parsed.collisionLayers.terrainRects).toEqual([
+    expect.objectContaining({ x: 0, y: 0, w: 16, h: 16, kind: 'terrain-solid' })
+  ]);
+  expect(parsed.renderLayers.containedTerrainTiles).toEqual([
+    expect.objectContaining({ x: 0, y: 0, w: 16, h: 16, col: 0, row: 0, mask: expect.any(Number) })
+  ]);
+  expect(solidTileRectsOverlapping(parsed, { x: 7, y: 7, w: 2, h: 2 })).toEqual([
+    expect.objectContaining({ x: 0, y: 0, w: 16, h: 16, kind: 'terrain-solid' })
   ]);
 });
 
@@ -138,13 +170,13 @@ test('tilemap collision rects are greedy-merged from authored terrain cells, not
   expect(parsed.collisionMode).toBe('dual-grid');
   expect(parsed.renderLayers.terrainCollisionCells).toHaveLength(8);
   expect(parsed.renderLayers.terrainCollisionRects).toEqual(expect.arrayContaining([
-    expect.objectContaining({ x: 0, y: 0, w: 108, h: 36, kind: 'terrain-solid' }),
-    expect.objectContaining({ x: 0, y: 36, w: 36, h: 72, kind: 'terrain-solid' }),
-    expect.objectContaining({ x: 72, y: 36, w: 36, h: 72, kind: 'terrain-solid' }),
-    expect.objectContaining({ x: 36, y: 72, w: 36, h: 36, kind: 'terrain-solid' })
+    expect.objectContaining({ x: 0, y: 0, w: 96, h: 32, kind: 'terrain-solid' }),
+    expect.objectContaining({ x: 0, y: 32, w: 32, h: 64, kind: 'terrain-solid' }),
+    expect.objectContaining({ x: 64, y: 32, w: 32, h: 64, kind: 'terrain-solid' }),
+    expect.objectContaining({ x: 32, y: 64, w: 32, h: 32, kind: 'terrain-solid' })
   ]));
   expect(solidTileRectsOverlapping(parsed, { x: 16, y: 0, w: 4, h: 4 })).toEqual([
-    expect.objectContaining({ x: 0, y: 0, w: 108, h: 36, kind: 'terrain-solid' })
+    expect.objectContaining({ x: 0, y: 0, w: 96, h: 32, kind: 'terrain-solid' })
   ]);
 });
 
@@ -173,9 +205,9 @@ test('tilemap supports block tiles and three-tile gates', () => {
     ]
   });
 
-  expect(getGoalRect(parsed)).toMatchObject({ x: 36, y: 36, w: 108, h: 36, cols: 3 });
-  expect(solidTileRectsOverlapping(parsed, { x: 72, y: 72, w: 36, h: 36 })).toEqual([
-    expect.objectContaining({ x: 36, y: 72, w: 108, h: 36, cols: 3, rows: 1, kind: 'terrain-solid' })
+  expect(getGoalRect(parsed)).toMatchObject({ x: 32, y: 32, w: 96, h: 32, cols: 3 });
+  expect(solidTileRectsOverlapping(parsed, { x: 64, y: 64, w: 32, h: 32 })).toEqual([
+    expect.objectContaining({ x: 32, y: 64, w: 96, h: 32, cols: 3, rows: 1, kind: 'terrain-solid' })
   ]);
 });
 

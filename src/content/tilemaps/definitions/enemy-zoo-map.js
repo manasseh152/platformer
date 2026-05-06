@@ -4,7 +4,7 @@ import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../
 export const enemyZooMapDefinition = {
   cols: 24,
   rows: 12,
-  artTileSize: 18,
+  artTileSize: 16,
   theme: 'kenney-pixel-platformer:grass',
   layers: [
     gridLayer({

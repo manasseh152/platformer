@@ -1,4 +1,4 @@
-import { TILE_SIZE } from '../../core/constants.js';
+import { ACTOR_SIZE, TILE_SIZE } from '../../core/constants.js';
 import { defineObject } from '../../engine/scene/objects.js';
 import { enemyController, hazard, health, patrol, physicsBody, playerController, renderGoal, renderTerrain, solid, spawner, terrain, transition, velocity } from '../../engine/scene/components.js';
 
@@ -12,12 +12,12 @@ export const solidTerrain = defineObject({
 
 export const player = defineObject({
   id: 'player',
-  components: [physicsBody({ w: 34, h: 50 }), velocity(), health({ hp: 5 }), playerController()]
+  components: [physicsBody(ACTOR_SIZE.PLAYER), velocity(), health({ hp: 5 }), playerController()]
 });
 
 export const slime = defineObject({
   id: 'slime',
-  components: [physicsBody({ w: 42, h: 38 }), velocity(), health({ hp: 3 }), enemyController(), patrol({ strategy: 'auto-platform' })]
+  components: [physicsBody(ACTOR_SIZE.SLIME), velocity(), health({ hp: 3 }), enemyController(), patrol({ strategy: 'auto-platform' })]
 });
 
 export const finishGate = defineObject({

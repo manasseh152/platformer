@@ -1,3 +1,4 @@
+import { ACTOR_SIZE } from './constants.js';
 import { getComponent, findObjectsWithComponent } from '../engine/scene/queries.js';
 
 export const rectsOverlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
@@ -8,7 +9,7 @@ function solidTerrainObjects(scene) { return findObjectsWithComponent(scene, 'co
 function solidTerrainSet(scene) { return new Set(solidTerrainObjects(scene).map(object => terrainKey(object.transform.col, object.transform.row))); }
 function isSolidAt(scene, col, row) { return solidTerrainSet(scene).has(terrainKey(col, row)); }
 
-function spawnAtObject(object, tileSize) { return { x: object.transform.x + tileSize / 2, y: object.transform.y + tileSize - 50 }; }
+function spawnAtObject(object, tileSize) { return { x: object.transform.x + tileSize / 2, y: object.transform.y + tileSize - ACTOR_SIZE.PLAYER.h }; }
 
 export function findSpawnerObjects(scene, definitionId) {
   return findObjectsWithComponent(scene, 'spawner').filter(object => getComponent(object, 'spawner')?.object?.id === definitionId);
@@ -22,7 +23,7 @@ export function getPlayerSpawnPoint(scene) {
 export function createPlayerFromScene(scene) {
   const spawn = getPlayerSpawnPoint(scene);
   if (!spawn) throw new Error('createPlayerFromScene requires a player spawner');
-  return { x: spawn.x, y: spawn.y, w: 34, h: 50, vx: 0, vy: 0, dir: 1, grounded: false, hp: 5, inv: 0, attack: 0, coyote: 0, jumpBuf: 0, dash: 0, dashCooldown: 0, wallDir: 0, wallSlide: false, dead: false };
+  return { x: spawn.x, y: spawn.y, ...ACTOR_SIZE.PLAYER, vx: 0, vy: 0, dir: 1, grounded: false, hp: 5, inv: 0, attack: 0, coyote: 0, jumpBuf: 0, dash: 0, dashCooldown: 0, wallDir: 0, wallSlide: false, dead: false };
 }
 
 function deriveEnemyPatrol(scene, col, row) {
@@ -39,13 +40,16 @@ export function createEnemiesFromScene(scene) {
     const patrol = deriveEnemyPatrol(scene, object.transform.col, object.transform.row);
     const dir = index % 2 === 0 ? 1 : -1;
     const hp = index === 0 ? 2 : 3;
-    return { x: object.transform.x + 14, y: patrol.floorRow * scene.tileSize - 38, w: 42, h: 38, vx: dir * 55, hp, hurt: 0, min: patrol.minCol * scene.tileSize, max: patrol.maxExclusiveCol * scene.tileSize };
+    return { x: object.transform.x + 12, y: patrol.floorRow * scene.tileSize - ACTOR_SIZE.SLIME.h, ...ACTOR_SIZE.SLIME, vx: dir * 55, hp, hurt: 0, min: patrol.minCol * scene.tileSize, max: patrol.maxExclusiveCol * scene.tileSize };
   });
 }
 
 export function solidCollisionRectsOverlapping(scene, rect) {
-  const collisionRects = scene.renderLayers?.terrainCollisionRects;
+  const collisionRects = scene.collisionLayers?.terrainRects;
   if (collisionRects?.length) return collisionRects.filter(hit => rectsOverlap(rect, hit));
+  /** @deprecated TODO(new-terrain): delete legacy renderLayers collision fallback after all terrain modes use collisionLayers. */
+  const legacyCollisionRects = scene.renderLayers?.terrainCollisionRects;
+  if (legacyCollisionRects?.length) return legacyCollisionRects.filter(hit => rectsOverlap(rect, hit));
   return findObjectsWithComponent(scene, 'collision:solid').map(object => ({ ...object.transform, kind: 'solid' })).filter(hit => rectsOverlap(rect, hit));
 }
 

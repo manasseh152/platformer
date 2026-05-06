@@ -4,7 +4,7 @@ import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../
 export const act01Level1Definition = {
   cols: 36,
   rows: 16,
-  artTileSize: 18,
+  artTileSize: 16,
   theme: 'kenney-pixel-platformer:grass',
   layers: [
     gridLayer({ id: 'terrain', symbols: { '#': solidTerrain }, rows: [
