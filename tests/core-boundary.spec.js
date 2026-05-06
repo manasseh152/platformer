@@ -3,6 +3,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const coreRoot = path.resolve('src/core');
+const engineRoot = path.resolve('src/engine');
 const bannedGlobals = ['document', 'window', 'navigator', 'localStorage', 'sessionStorage', 'ResizeObserver', 'HTMLCanvasElement', 'performance'];
 
 async function jsFiles(dir) {
@@ -14,7 +15,20 @@ async function jsFiles(dir) {
   return nested.flat();
 }
 
-test('core modules only import within core', async () => {
+test('engine modules only import within engine', async () => {
+  for (const file of await jsFiles(engineRoot)) {
+    const source = await readFile(file, 'utf8');
+    const imports = source.matchAll(/from\s+['"]([^'"]+)['"]|import\s*\(\s*['"]([^'"]+)['"]\s*\)/g);
+    for (const match of imports) {
+      const specifier = match[1] ?? match[2];
+      if (!specifier.startsWith('.')) continue;
+      const resolved = path.resolve(path.dirname(file), specifier);
+      expect(resolved, `${path.relative('.', file)} imports ${specifier}`).toContain(engineRoot);
+    }
+  }
+});
+
+test('core modules only import within core or engine', async () => {
   for (const file of await jsFiles(coreRoot)) {
     const source = await readFile(file, 'utf8');
     const imports = source.matchAll(/from\s+['"]([^'"]+)['"]|import\s*\(\s*['"]([^'"]+)['"]\s*\)/g);
@@ -22,13 +36,16 @@ test('core modules only import within core', async () => {
       const specifier = match[1] ?? match[2];
       if (!specifier.startsWith('.')) continue;
       const resolved = path.resolve(path.dirname(file), specifier);
-      expect(resolved, `${path.relative('.', file)} imports ${specifier}`).toContain(coreRoot);
+      expect(
+        resolved.startsWith(coreRoot) || resolved.startsWith(engineRoot),
+        `${path.relative('.', file)} imports ${specifier}`
+      ).toBe(true);
     }
   }
 });
 
-test('core modules do not reference browser globals directly', async () => {
-  for (const file of await jsFiles(coreRoot)) {
+test('core and engine modules do not reference browser globals directly', async () => {
+  for (const file of [...await jsFiles(coreRoot), ...await jsFiles(engineRoot)]) {
     const source = await readFile(file, 'utf8');
     for (const name of bannedGlobals) {
       expect(source, `${path.relative('.', file)} references ${name}`).not.toMatch(new RegExp(`\\b${name}\\b`));

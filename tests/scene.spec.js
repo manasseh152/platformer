@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { defineObject, sceneObject } from '../src/core/scene/objects.js';
-import { defineScene } from '../src/core/scene/scene.js';
-import { getComponent, getComponents, findObjectsWithComponent, findOneObjectWithComponent } from '../src/core/scene/queries.js';
-import { renderLayer, renderParallax, renderProcedural, renderTexture, solid } from '../src/core/scene/components.js';
+import { defineObject, sceneObject } from '../src/engine/scene/objects.js';
+import { defineScene } from '../src/engine/scene/scene.js';
+import { getComponent, getComponents, findObjectsWithComponent, findOneObjectWithComponent } from '../src/engine/scene/queries.js';
+import { renderLayer, renderParallax, renderProcedural, renderTexture, solid } from '../src/engine/scene/components.js';
 import { defineTilemapScene, gridLayer } from '../src/core/tilemaps/tilemap.js';
 import { solidTerrain } from '../src/content/tilemaps/objects.js';
 

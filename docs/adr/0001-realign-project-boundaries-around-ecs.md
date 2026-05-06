@@ -104,7 +104,7 @@ src/core/viewport.js    -> src/engine/viewport.js
 
 Camera may move to `engine` or `gameplay` depending on whether it remains generic or platformer-specific.
 
-Progress: not started.
+Progress: done. Generic scene primitives, runtime, scene stack, and viewport now live under `src/engine`; app/content/core imports and tests use engine paths. Boundary tests now enforce engine self-containment and allow core modules to depend only on core or engine.
 
 ### Stage 4: Remove legacy `level` terminology and compatibility APIs
 

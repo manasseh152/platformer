@@ -84,8 +84,8 @@ Use `GGG` for a three-cell finish gate. One character should represent one occup
 Layer symbols point to reusable object definitions. Avoid inline component lists in map files.
 
 ```js
-import { defineObject } from '../../scene/objects.js';
-import { renderTerrain, solid, spawner, terrain } from '../../scene/components.js';
+import { defineObject } from '../../../engine/scene/objects.js';
+import { renderTerrain, solid, spawner, terrain } from '../../../engine/scene/components.js';
 
 export const solidTerrain = defineObject({
   id: 'solid-terrain',
@@ -133,7 +133,7 @@ findObjectsWithComponent(scene, 'render:terrain');
 
 ## Compatibility fields
 
-Compatibility fields such as `renderLayers` and `tiles` exist for the current renderer and gameplay helpers. New systems should query scene objects/components through `src/core/scene` instead.
+Compatibility fields such as `renderLayers` and `tiles` exist for the current renderer and gameplay helpers. New systems should query scene objects/components through `src/engine/scene` instead.
 
 ## Dual-grid rendering
 

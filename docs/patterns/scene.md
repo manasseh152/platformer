@@ -1,13 +1,13 @@
 # Scene model
 
-Generic scene/object/component primitives live in `src/core/scene`. Tilemaps are one authoring format that compiles grid layers into core scene objects.
+Generic scene/object/component primitives live in `src/engine/scene`. Tilemaps are one authoring format that compiles grid layers into scene objects.
 
 ## Core APIs
 
 ```js
-import { defineScene } from '../../src/core/scene/scene.js';
-import { sceneObject, defineObject } from '../../src/core/scene/objects.js';
-import { findObjectsWithComponent } from '../../src/core/scene/queries.js';
+import { defineScene } from '../../src/engine/scene/scene.js';
+import { sceneObject, defineObject } from '../../src/engine/scene/objects.js';
+import { findObjectsWithComponent } from '../../src/engine/scene/queries.js';
 ```
 
 `defineObject()` defines reusable object definitions. `sceneObject()` defines an object instance in a scene. `defineScene()` normalizes objects and builds `componentIndex`.

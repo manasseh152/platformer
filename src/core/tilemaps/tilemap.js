@@ -1,8 +1,8 @@
 import { TILE_SIZE } from '../constants.js';
-import { defineScene } from '../scene/scene.js';
-import { defineObject, sceneObject } from '../scene/objects.js';
-import { getComponent, findObjectsWithComponent } from '../scene/queries.js';
-import { enemyController, health, patrol, physicsBody, playerController, renderGoal, renderTerrain, solid, spawner, terrain, transition, velocity } from '../scene/components.js';
+import { defineScene } from '../../engine/scene/scene.js';
+import { defineObject, sceneObject } from '../../engine/scene/objects.js';
+import { getComponent, findObjectsWithComponent } from '../../engine/scene/queries.js';
+import { enemyController, health, patrol, physicsBody, playerController, renderGoal, renderTerrain, solid, spawner, terrain, transition, velocity } from '../../engine/scene/components.js';
 
 const DECOR_TYPES = { r: 'bannerRed', g: 'bannerGreen', f: 'flag', t: 'torch' };
 const BACKDROP_SYMBOLS = new Set(['.', 'a', 'k', 'c', 'd']);
@@ -139,7 +139,7 @@ export function defineTilemapScene(definition) {
 
   const terrainPrimitives = buildTerrainPrimitives(scene);
   // Compatibility fields for current gameplay/render systems.
-  // New systems should prefer scene.objects + components + core/scene queries.
+  // New systems should prefer scene.objects + components + engine/scene queries.
   scene.renderLayers = {
     terrainVisuals: buildTerrainVisuals(scene),
     terrainPrimitives,

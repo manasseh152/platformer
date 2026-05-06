@@ -1,6 +1,4 @@
-import { PIXEL_PERFECT } from './constants.js';
-
-export function calculateViewport(canvasWidth, canvasHeight, viewWidth, viewHeight, pixelPerfect = PIXEL_PERFECT) {
+export function calculateViewport(canvasWidth, canvasHeight, viewWidth, viewHeight, pixelPerfect = false) {
   const fitScale = Math.min(canvasWidth / viewWidth, canvasHeight / viewHeight);
   const scale = pixelPerfect ? Math.max(1, Math.floor(fitScale)) : fitScale;
   return {

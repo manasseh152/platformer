@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { approachExp, clampCameraToWorld, createCamera, updateFollowCamera } from '../src/core/camera.js';
-import { calculateViewport } from '../src/core/viewport.js';
+import { calculateViewport } from '../src/engine/viewport.js';
 
 test('default viewport fills the available canvas with fractional scale', () => {
   expect(calculateViewport(1920, 1080, 480, 270)).toEqual({ scale: 4, offsetX: 0, offsetY: 0 });

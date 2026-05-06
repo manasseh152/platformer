@@ -1,6 +1,6 @@
 # Scene components
 
-Components are plain serializable data created by factories in `src/core/scene/components.js`.
+Components are plain serializable data created by factories in `src/engine/scene/components.js`.
 
 Current gameplay/render components include:
 
@@ -22,7 +22,7 @@ Current gameplay/render components include:
 Optional render extras are renderer-agnostic. Unsupported components are skipped by default; no CPU/2D fallback is implied.
 
 ```js
-import { renderLayer, renderParallax, renderProcedural, renderTexture } from '../../src/core/scene/components.js';
+import { renderLayer, renderParallax, renderProcedural, renderTexture } from '../../src/engine/scene/components.js';
 ```
 
 ```js
