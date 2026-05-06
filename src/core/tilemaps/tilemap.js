@@ -2,11 +2,11 @@ import { TILE_SIZE } from '../constants.js';
 import { defineScene } from '../../engine/scene/scene.js';
 import { defineObject, sceneObject } from '../../engine/scene/objects.js';
 import { getComponent, findObjectsWithComponent } from '../../engine/scene/queries.js';
-import { enemyController, health, patrol, physicsBody, playerController, renderGoal, renderTerrain, solid, spawner, terrain, transition, velocity } from '../../engine/scene/components.js';
+import { enemyController, hazard, health, patrol, physicsBody, playerController, renderGoal, renderTerrain, solid, spawner, terrain, transition, velocity } from '../../engine/scene/components.js';
 
 const DECOR_TYPES = { r: 'bannerRed', g: 'bannerGreen', f: 'flag', t: 'torch' };
 const BACKDROP_SYMBOLS = new Set(['.', 'a', 'k', 'c', 'd']);
-const markerObject = id => ({ id, components: [] });
+const markerObject = (id, components = []) => ({ id, components });
 
 // Compatibility symbols for legacy row-based tilemap definitions. Authored tilemap
 // content should prefer passing explicit layer symbols via gridLayer().
@@ -79,7 +79,7 @@ export function parseTilemap(definition, tileSize = definition.tileSize ?? T) {
       gridLayer({ id: 'terrain', symbols: { '#': legacySolidTerrain }, rows: normalizedTerrainRows }),
       gridLayer({ id: 'entities', symbols: { P: legacyPlayerSpawner, E: legacySlimeSpawner, G: legacyFinishGateObject }, rows: objectRows }),
       gridLayer({ id: 'decor', symbols: Object.fromEntries(Object.keys(DECOR_TYPES).map(symbol => [symbol, markerObject(`decor-${symbol}`)])), rows: decorRows }),
-      gridLayer({ id: 'hazards', symbols: { '^': markerObject('spike-hazard') }, rows: spikeRows })
+      gridLayer({ id: 'hazards', symbols: { '^': markerObject('spike-hazard', [hazard({ kind: 'spike', damage: 1 })]) }, rows: spikeRows })
     ]
   });
 }
@@ -171,16 +171,10 @@ export function solidTileRectsOverlapping(scene, rect) {
 }
 
 export function spikeHazardRectsOverlapping(scene, rect) {
-  const layer = scene.layers?.find(layer => layer.id === 'hazards');
-  if (!layer) return [];
-  const hits = [];
-  layer.rows.forEach((line, row) => [...line].forEach((tile, col) => {
-    if (tile === '^') {
-      const hit = tileRect(col, row, 1, 1, 'spike', scene.tileSize);
-      if (rectsOverlap(rect, hit)) hits.push(hit);
-    }
-  }));
-  return hits;
+  return findObjectsWithComponent(scene, 'collision:hazard')
+    .filter(object => getComponent(object, 'collision:hazard')?.kind === 'spike')
+    .map(object => ({ ...object.transform, kind: 'spike' }))
+    .filter(hit => rectsOverlap(rect, hit));
 }
 
 export function getGoalRect(scene) {

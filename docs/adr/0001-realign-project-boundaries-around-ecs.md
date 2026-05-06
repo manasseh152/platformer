@@ -127,7 +127,7 @@ Incrementally replace legacy helper/layer dependencies with ECS-ish queries:
 - Render via `render:*` components where practical.
 - Remove compatibility helpers as each responsibility migrates.
 
-Progress: not started.
+Progress: done. Gameplay session creation derives player/enemy runtime state from scene `spawner` components via ECS-ish queries, physics collision resolves against `collision:solid` scene objects, hazards resolve from `collision:hazard` scene objects, finish completion resolves from `transition` components, and gate/spike rendering uses render/hazard components where practical. Compatibility tilemap helpers remain for authored layer rendering, snapshots, and existing tilemap parser tests, but gameplay systems no longer import them. Full Playwright suite passed: `75 passed`.
 
 ## Consequences
 

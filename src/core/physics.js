@@ -1,19 +1,18 @@
 import { hasDown, hasPressed } from './input.js';
-import { getGoalTriggerRect, solidTileRectsOverlapping, spikeHazardRectsOverlapping } from './tilemaps/tilemap.js';
-
-export const rectsOverlap = (a,b) => a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+import { getTransitionTriggerRect, hazardCollisionRectsOverlapping, rectsOverlap, solidCollisionRectsOverlapping } from './gameplay-scene-queries.js';
+export { rectsOverlap } from './gameplay-scene-queries.js';
 
 export function collideWithTilemapScene(entity, tilemapScene, dt) {
   entity.wallDir = 0;
   entity.x += entity.vx * dt;
-  for (const p of solidTileRectsOverlapping(tilemapScene, entity)) if (rectsOverlap(entity, p)) {
+  for (const p of solidCollisionRectsOverlapping(tilemapScene, entity)) if (rectsOverlap(entity, p)) {
     if (entity.vx > 0) { entity.x = p.x - entity.w; entity.wallDir = 1; }
     if (entity.vx < 0) { entity.x = p.x + p.w; entity.wallDir = -1; }
     entity.vx = 0;
   }
   entity.y += entity.vy * dt;
   entity.grounded = false;
-  for (const p of solidTileRectsOverlapping(tilemapScene, entity)) if (rectsOverlap(entity, p)) {
+  for (const p of solidCollisionRectsOverlapping(tilemapScene, entity)) if (rectsOverlap(entity, p)) {
     if (entity.vy > 0) { entity.y = p.y - entity.h; entity.grounded = true; entity.coyote = .09; }
     if (entity.vy < 0) entity.y = p.y + p.h;
     entity.vy = 0;
@@ -58,7 +57,7 @@ export function updateEnemy(runtime, game, enemy, dt) {
   let turnAround = false;
   enemy.x += moveVx * dt;
 
-  for (const p of solidTileRectsOverlapping(tilemapScene, enemy)) if (rectsOverlap(enemy, p)) {
+  for (const p of solidCollisionRectsOverlapping(tilemapScene, enemy)) if (rectsOverlap(enemy, p)) {
     if (moveVx > 0) enemy.x = p.x - enemy.w;
     else if (moveVx < 0) enemy.x = p.x + p.w;
     turnAround = true;
@@ -75,7 +74,7 @@ export function updateEnemy(runtime, game, enemy, dt) {
   if (turnAround && moveVx !== 0) enemy.vx = -moveVx;
 
   enemy.y += enemy.vy * dt;
-  for (const p of solidTileRectsOverlapping(tilemapScene, enemy)) if (rectsOverlap(enemy, p)) {
+  for (const p of solidCollisionRectsOverlapping(tilemapScene, enemy)) if (rectsOverlap(enemy, p)) {
     if (enemy.vy > 0) enemy.y = p.y - enemy.h;
     if (enemy.vy < 0) enemy.y = p.y + p.h;
     enemy.vy = 0;
@@ -91,7 +90,7 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
   const tilemapScene = game.tilemapScene;
   if (hasPressed(input, 'restart')) controls.resetGame?.();
   if (player.dead || gameplaySession.outcome === 'completed') { input.pressed.clear(); return; }
-  if (rectsOverlap(player, getGoalTriggerRect(tilemapScene))) gameplaySession.outcome = 'completed';
+  if (rectsOverlap(player, getTransitionTriggerRect(tilemapScene, 'finish'))) gameplaySession.outcome = 'completed';
   if (gameplaySession.outcome === 'completed') { input.pressed.clear(); return; }
 
   const left = hasDown(input, 'left');
@@ -145,14 +144,15 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
   else player.vy += 1450 * (tilemapScene.tileSize / 70) * dt;
   player.coyote -= dt; player.jumpBuf -= dt; player.inv -= dt; player.attack -= dt; player.dashCooldown -= dt;
   collideWithTilemapScene(player, tilemapScene, dt);
-  if (spikeHazardRectsOverlapping(tilemapScene, player).length) hurtPlayer(runtime, game, 1, player.dir > 0 ? -1 : 1);
+  const [hazard] = hazardCollisionRectsOverlapping(tilemapScene, player);
+  if (hazard) hurtPlayer(runtime, game, hazard.damage, player.dir > 0 ? -1 : 1);
   const pushingWall = (player.wallDir === -1 && left) || (player.wallDir === 1 && right);
   player.wallSlide = !player.grounded && player.wallDir !== 0 && pushingWall && player.vy >= 0 && player.dash <= 0;
   if (player.wallSlide) player.vy = Math.min(player.vy, 95 * (tilemapScene.tileSize / 70));
 
   for (const e of enemies) if (e.hp > 0) updateEnemy(runtime, game, e, dt);
 
-  if (rectsOverlap(player, getGoalTriggerRect(tilemapScene))) {
+  if (rectsOverlap(player, getTransitionTriggerRect(tilemapScene, 'finish'))) {
     gameplaySession.outcome = 'completed';
   }
 

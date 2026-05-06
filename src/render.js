@@ -1,8 +1,9 @@
 import { assets, isLoaded } from './assets.js';
 import { DEBUG_CAMERA, TILE_SIZE } from './core/constants.js';
 import { controlsText } from './input.js';
-import { forEachLayerTile, getDecorType, getGoalRect, getTile, isSolidTile } from './core/tilemaps/tilemap.js';
+import { forEachLayerTile, getDecorType, getTile, isSolidTile } from './core/tilemaps/tilemap.js';
 import { isWon } from './app/app-state.js';
+import { findObjectsWithComponent, getComponent } from './engine/scene/queries.js';
 
 function roundedRect(ctx, x,y,w,h,r) {
   ctx.beginPath(); ctx.roundRect(x,y,w,h,r); ctx.fill();
@@ -180,15 +181,40 @@ export function drawDecorLayer(ctx, level) {
 }
 
 export function drawSpikeLayer(ctx, level) {
-  forEachLayerTile(level, 'terrain', (ch, col, row) => {
-    if (ch !== '^') return;
-    const x = col * TILE_SIZE;
-    const y = row * TILE_SIZE;
-    if (!drawFloorSpike(ctx, assets.spikes, x, y)) {
+  for (const object of findObjectsWithComponent(level, 'collision:hazard')) {
+    const hazard = getComponent(object, 'collision:hazard');
+    if (hazard?.kind !== 'spike') continue;
+    const { x, y, w = level.tileSize, h = level.tileSize } = object.transform;
+    if (!drawFloorSpike(ctx, assets.spikes, x, y, w, h)) {
       ctx.fillStyle = '#6c7472';
-      ctx.beginPath(); ctx.moveTo(x, y + TILE_SIZE); ctx.lineTo(x + TILE_SIZE/2, y + 24); ctx.lineTo(x + TILE_SIZE, y + TILE_SIZE); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x, y + h); ctx.lineTo(x + w / 2, y + h / 3); ctx.lineTo(x + w, y + h); ctx.fill();
     }
-  });
+  }
+}
+
+function spawnedObjectHasComponent(object, type) {
+  return getComponent(object, 'spawner')?.object?.components?.some(component => component.type === type);
+}
+
+function renderGoalObjects(level) {
+  return [
+    ...findObjectsWithComponent(level, 'render:goal'),
+    ...findObjectsWithComponent(level, 'spawner').filter(object => spawnedObjectHasComponent(object, 'render:goal'))
+  ].filter((object, index, objects) => objects.indexOf(object) === index);
+}
+
+function getRenderGoalRects(level) {
+  const goals = renderGoalObjects(level);
+  if (!goals.length) return [];
+  const minCol = Math.min(...goals.map(o => o.transform.col));
+  const maxCol = Math.max(...goals.map(o => o.transform.col));
+  const minRow = Math.min(...goals.map(o => o.transform.row));
+  const maxRow = Math.max(...goals.map(o => o.transform.row));
+  return [{ x: minCol * level.tileSize, y: minRow * level.tileSize, w: (maxCol - minCol + 1) * level.tileSize, h: (maxRow - minRow + 1) * level.tileSize, col: minCol, row: minRow, cols: maxCol - minCol + 1, rows: maxRow - minRow + 1, tileSize: level.tileSize }];
+}
+
+function drawGoals(ctx, level) {
+  for (const goal of getRenderGoalRects(level)) drawGoal(ctx, goal);
 }
 
 export function drawGoal(ctx, goal) {
@@ -198,10 +224,11 @@ export function drawGoal(ctx, goal) {
   ctx.shadowColor = 'rgba(227,185,79,.62)';
   ctx.shadowBlur = 18;
 
+  const tileSize = goal.tileSize ?? TILE_SIZE;
   if (goal.cols >= 3) {
-    const leftLoaded = drawAsset(ctx, assets.gateLeft, x, y);
-    const centerLoaded = drawAsset(ctx, assets.gateCenter, x + TILE_SIZE, y);
-    const rightLoaded = drawAsset(ctx, assets.gateRight, x + TILE_SIZE * 2, y);
+    const leftLoaded = drawAsset(ctx, assets.gateLeft, x, y, tileSize, tileSize);
+    const centerLoaded = drawAsset(ctx, assets.gateCenter, x + tileSize, y, tileSize, tileSize);
+    const rightLoaded = drawAsset(ctx, assets.gateRight, x + tileSize * 2, y, tileSize, tileSize);
     if (leftLoaded && centerLoaded && rightLoaded) {
       ctx.restore();
       return;
@@ -216,12 +243,12 @@ export function drawGoal(ctx, goal) {
   ctx.restore();
 }
 
-function drawFloorSpike(ctx, asset, x, y) {
+function drawFloorSpike(ctx, asset, x, y, w = TILE_SIZE, h = TILE_SIZE) {
   if (!isLoaded(asset)) return false;
   ctx.save();
-  ctx.translate(x + TILE_SIZE / 2, y + TILE_SIZE / 2);
+  ctx.translate(x + w / 2, y + h / 2);
   ctx.rotate(Math.PI);
-  ctx.drawImage(asset, -TILE_SIZE / 2, -TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
+  ctx.drawImage(asset, -w / 2, -h / 2, w, h);
   ctx.restore();
   return true;
 }
@@ -414,7 +441,7 @@ export function drawGame(runtime, game) {
 
   drawTilemap(ctx, level);
 
-  drawGoal(ctx, getGoalRect(level));
+  drawGoals(ctx, level);
 
   drawSpikeLayer(ctx, level);
 

@@ -44,6 +44,18 @@ test('core modules only import within core or engine', async () => {
   }
 });
 
+test('gameplay systems query scene components instead of tilemap compatibility helpers', async () => {
+  const gameplaySystemFiles = [
+    'src/core/gameplay-session.js',
+    'src/core/gameplay-scene-queries.js',
+    'src/core/physics.js'
+  ];
+  for (const file of gameplaySystemFiles) {
+    const source = await readFile(path.resolve(file), 'utf8');
+    expect(source, file).not.toMatch(/['"].*tilemaps\/tilemap\.js['"]/);
+  }
+});
+
 test('core and engine modules do not reference browser globals directly', async () => {
   for (const file of [...await jsFiles(coreRoot), ...await jsFiles(engineRoot)]) {
     const source = await readFile(file, 'utf8');

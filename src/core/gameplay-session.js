@@ -1,17 +1,17 @@
 import { centerCameraOnPlayer } from './camera.js';
-import { createEnemies, createPlayer, getSpawnPoint } from './tilemaps/tilemap.js';
 import { createCamera } from './camera.js';
+import { createEnemiesFromScene, createPlayerFromScene } from './gameplay-scene-queries.js';
 
 export function createGameplaySession(tilemapScene, { view, scenarioId = null, goal = { type: 'finish-gate' } } = {}) {
   if (!tilemapScene) throw new Error('createGameplaySession requires a tilemap scene');
-  const player = createPlayer(getSpawnPoint(tilemapScene), tilemapScene.tileSize);
+  const player = createPlayerFromScene(tilemapScene);
   const session = {
     scenarioId,
     tilemapScene,
     goal,
     outcome: 'active',
     player,
-    enemies: createEnemies(tilemapScene),
+    enemies: createEnemiesFromScene(tilemapScene),
     dust: [],
     particles: [],
     camera: createCamera()

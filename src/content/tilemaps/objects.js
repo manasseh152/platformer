@@ -1,9 +1,9 @@
 import { TILE_SIZE } from '../../core/constants.js';
 import { defineObject } from '../../engine/scene/objects.js';
-import { enemyController, health, patrol, physicsBody, playerController, renderGoal, renderTerrain, solid, spawner, terrain, transition, velocity } from '../../engine/scene/components.js';
+import { enemyController, hazard, health, patrol, physicsBody, playerController, renderGoal, renderTerrain, solid, spawner, terrain, transition, velocity } from '../../engine/scene/components.js';
 
 export { defineObject } from '../../engine/scene/objects.js';
-export { enemyController, health, patrol, physicsBody, playerController, renderGoal, renderTerrain, solid, spawner, terrain, transition, velocity } from '../../engine/scene/components.js';
+export { enemyController, hazard, health, patrol, physicsBody, playerController, renderGoal, renderTerrain, solid, spawner, terrain, transition, velocity } from '../../engine/scene/components.js';
 
 export const solidTerrain = defineObject({
   id: 'solid-terrain',
