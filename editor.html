@@ -12,7 +12,7 @@
       <header>
         <p class="eyebrow">Developer Tool</p>
         <h1>Tilemap Editor</h1>
-        <p class="hint">Paints the new explicit <code>gridLayer()</code> tilemaps: 16px build terrain plus 32px entity cells.</p>
+        <p class="hint">Paints shareable tilemaps: 16px build terrain plus 32px entity cells.</p>
       </header>
 
       <label class="field">
@@ -46,8 +46,10 @@
         <h2>Export</h2>
         <div class="button-row">
           <button id="copyButton" type="button">Copy JS</button>
-          <button id="downloadButton" type="button">Download</button>
+          <button id="exportMapButton" type="button">Export map</button>
+          <button id="importMapButton" type="button">Import map</button>
         </div>
+        <input id="importMapInput" type="file" accept="application/json,.json,.chibi-map" hidden />
         <p id="status" class="status" role="status">Ready.</p>
       </section>
     </aside>

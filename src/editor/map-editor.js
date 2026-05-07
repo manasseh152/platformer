@@ -4,6 +4,9 @@ import { drawCollisionDebugOverlay } from '../devtools/debug-render.js';
 import { getAllTilemaps, getDefaultTilemap } from '../content/tilemaps/registry.js';
 import { EMPTY, compileDraft as compileTilemapDraft, createBlankDraft, createDraftFromTilemap as draftFromTilemap, hasEntitySymbol, replaceChar } from './tilemap-draft.js';
 
+const SHARE_FORMAT = 'chibi-tilemap-draft';
+const SHARE_VERSION = 1;
+
 const PREVIEW_STORAGE_PREFIX = 'chibi.tilemap-preview.';
 const BRUSHES = [
   { id: 'terrain', label: 'Terrain #', layerId: 'buildTerrain', symbol: '#', cellSize: CELL_SIZE.BUILD, cursor: '#79f0c5' },
@@ -26,7 +29,9 @@ const dom = {
   collisionToggle: document.querySelector('#collisionToggle'),
   previewButton: document.querySelector('#previewButton'),
   copyButton: document.querySelector('#copyButton'),
-  downloadButton: document.querySelector('#downloadButton'),
+  exportMapButton: document.querySelector('#exportMapButton'),
+  importMapButton: document.querySelector('#importMapButton'),
+  importMapInput: document.querySelector('#importMapInput'),
   exportText: document.querySelector('#exportText'),
   status: document.querySelector('#status')
 };
@@ -96,6 +101,73 @@ function camelIdentifier(id) {
   return value ? `${value}Tilemap` : 'draftTilemap';
 }
 function escapeJs(value) { return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+
+function cloneDraft(value) { return JSON.parse(JSON.stringify(value)); }
+
+function sharePayload() {
+  return {
+    format: SHARE_FORMAT,
+    version: SHARE_VERSION,
+    exportedAt: new Date().toISOString(),
+    draft: cloneDraft(draft)
+  };
+}
+
+function draftFromSharePayload(payload) {
+  const candidate = payload?.format === SHARE_FORMAT ? payload.draft : payload;
+  validateImportedDraft(candidate);
+  return cloneDraft(candidate);
+}
+
+function validateImportedDraft(candidate) {
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) throw new Error('Imported map is not a tilemap draft.');
+  if (typeof candidate.id !== 'string' || !candidate.id.trim()) throw new Error('Imported map needs an id.');
+  if (typeof candidate.name !== 'string' || !candidate.name.trim()) throw new Error('Imported map needs a name.');
+  if (!Number.isInteger(candidate.cols) || candidate.cols < 1 || candidate.cols > 120) throw new Error('Imported map cols must be between 1 and 120.');
+  if (!Number.isInteger(candidate.rows) || candidate.rows < 1 || candidate.rows > 80) throw new Error('Imported map rows must be between 1 and 80.');
+  const terrain = candidate.layers?.find(layer => layer.id === 'buildTerrain');
+  const entities = candidate.layers?.find(layer => layer.id === 'entities');
+  if (!terrain || !entities) throw new Error('Imported map needs buildTerrain and entities layers.');
+  validateLayerRows(terrain, candidate.cols * CELL_SIZE.GRID / terrain.cellSize, candidate.rows * CELL_SIZE.GRID / terrain.cellSize, 'buildTerrain');
+  validateLayerRows(entities, candidate.cols, candidate.rows, 'entities');
+  compileTilemapDraft(candidate);
+}
+
+function validateLayerRows(layer, expectedCols, expectedRows, label) {
+  if (!Number.isInteger(layer.cellSize) || layer.cellSize < 1) throw new Error(`${label} has an invalid cell size.`);
+  if (!Number.isInteger(expectedCols) || !Number.isInteger(expectedRows)) throw new Error(`${label} dimensions do not line up with the map grid.`);
+  if (!Array.isArray(layer.rows) || layer.rows.length !== expectedRows) throw new Error(`${label} must have ${expectedRows} rows.`);
+  if (!layer.rows.every(row => typeof row === 'string' && row.length === expectedCols)) throw new Error(`${label} rows must be ${expectedCols} cells wide.`);
+}
+
+function downloadText(filename, text, type) {
+  const blob = new Blob([text], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function exportMap() {
+  downloadText(`${draft.id}.chibi-map.json`, JSON.stringify(sharePayload(), null, 2), 'application/json');
+  setStatus('Exported shareable map file.', 'ok');
+}
+
+async function importMapFile(file) {
+  if (!file) return;
+  try {
+    draft = draftFromSharePayload(JSON.parse(await file.text()));
+    persist();
+    dom.tilemapSelect.value = getDefaultTilemap().id;
+    render();
+    setStatus(`Imported ${draft.name}. Ready to preview.`, 'ok');
+  } catch (error) {
+    setStatus(error.message, 'error');
+  } finally {
+    dom.importMapInput.value = '';
+  }
+}
 
 function setStatus(message, kind = '') {
   dom.status.textContent = message;
@@ -266,14 +338,9 @@ function setup() {
     await navigator.clipboard.writeText(dom.exportText.value);
     setStatus('Copied generated tilemap module.', 'ok');
   });
-  dom.downloadButton.addEventListener('click', () => {
-    const blob = new Blob([dom.exportText.value], { type: 'text/javascript' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${draft.id}.js`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  });
+  dom.exportMapButton.addEventListener('click', exportMap);
+  dom.importMapButton.addEventListener('click', () => dom.importMapInput.click());
+  dom.importMapInput.addEventListener('change', () => importMapFile(dom.importMapInput.files?.[0]));
   dom.canvas.addEventListener('pointerdown', event => { isPainting = true; dom.canvas.setPointerCapture(event.pointerId); paint(event); });
   dom.canvas.addEventListener('pointermove', event => { pointer = pointerCell(event); if (isPainting) paint(event); else render(); });
   dom.canvas.addEventListener('pointerleave', () => { pointer = null; render(); });

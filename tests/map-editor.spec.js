@@ -31,6 +31,54 @@ test('map editor paints terrain into exported rows', async ({ page }) => {
   await expect(page.locator('#status')).toHaveClass(/ok/);
 });
 
+test('map editor exports and imports shareable map files instead of JS downloads', async ({ page }) => {
+  await page.goto('/editor.html');
+
+  await expect(page.getByRole('button', { name: 'Download' })).toHaveCount(0);
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'Export map' }).click()
+  ]);
+  expect(download.suggestedFilename()).toMatch(/\.chibi-map\.json$/);
+  const payload = JSON.parse(await download.createReadStream().then(stream => new Promise((resolve, reject) => {
+    let text = '';
+    stream.on('data', chunk => { text += chunk.toString(); });
+    stream.on('end', () => resolve(text));
+    stream.on('error', reject);
+  })));
+  expect(payload.format).toBe('chibi-tilemap-draft');
+  expect(payload.draft.layers.some(layer => layer.id === 'buildTerrain')).toBe(true);
+
+  await page.locator('#importMapInput').setInputFiles({
+    name: 'shared.chibi-map.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({
+      format: 'chibi-tilemap-draft',
+      version: 1,
+      draft: {
+        id: 'shared-play-map',
+        name: 'Shared Play Map',
+        cols: 4,
+        rows: 3,
+        artTileSize: 16,
+        terrainRenderMode: 'contained-autotile',
+        theme: 'kenney-pixel-platformer:grass',
+        visibility: 'developer',
+        categories: ['drafts'],
+        description: 'Imported in Playwright.',
+        layers: [
+          { id: 'buildTerrain', cellSize: 16, rows: ['........', '........', '........', '........', '........', '########'] },
+          { id: 'entities', cellSize: 32, rows: ['P...', '....', '...G'] }
+        ]
+      }
+    }))
+  });
+
+  await expect(page.locator('#status')).toHaveText('Imported Shared Play Map. Ready to preview.');
+  await expect(page.locator('#exportText')).toHaveValue(/id: 'shared-play-map'/);
+});
+
 test('map editor opens a playable preview payload for the current draft', async ({ page }) => {
   await page.addInitScript(() => {
     window.__openedPreviews = [];
