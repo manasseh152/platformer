@@ -500,6 +500,7 @@ export function setupMenu(game, runtime = browserRuntime) {
 
   ui.startButton.addEventListener('click', () => startGame(game, runtime));
   ui.startLevelSelectButton.addEventListener('click', () => openScenarioBrowser(game, 'start'));
+  ui.startEditorButton.addEventListener('click', () => window.location.assign('/editor'));
   ui.startSettingsButton.addEventListener('click', () => openSettings(game, 'start'));
   ui.resumeButton.addEventListener('click', () => setPaused(game, false, runtime));
   ui.restartButton.addEventListener('click', () => game.resetGame());

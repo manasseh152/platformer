@@ -24,6 +24,7 @@ export function getUI() {
     startButton: byId('startButton'),
     startSettingsButton: byId('startSettingsButton'),
     startLevelSelectButton: byId('startLevelSelectButton'),
+    startEditorButton: byId('startEditorButton'),
     selectedLevelSummary: byId('selectedLevelSummary'),
     resumeButton: byId('resumeButton'),
     restartButton: byId('restartButton'),

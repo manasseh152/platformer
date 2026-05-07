@@ -1,5 +1,13 @@
 import { expect, test } from '@playwright/test';
 
+test('start screen points the map editor button at the extensionless production route', async ({ page }) => {
+  await page.goto('/index.html');
+
+  await page.getByRole('button', { name: 'Map Editor' }).click();
+
+  await expect(page).toHaveURL(/\/editor$/);
+});
+
 test('map editor loads registered tilemaps and exports new gridLayer format', async ({ page }) => {
   await page.goto('/editor.html');
 
