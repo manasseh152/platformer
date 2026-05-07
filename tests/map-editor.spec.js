@@ -31,6 +31,104 @@ test('map editor paints terrain into exported rows', async ({ page }) => {
   await expect(page.locator('#status')).toHaveClass(/ok/);
 });
 
+test('map editor uses a fixed viewport canvas for large maps', async ({ page }) => {
+  await page.goto('/editor.html');
+  await page.locator('#colsInput').fill('120');
+  await page.locator('#rowsInput').fill('80');
+  await page.locator('#newButton').click();
+
+  const metrics = await page.locator('#editorCanvas').evaluate(canvas => ({
+    backingWidth: canvas.width,
+    backingHeight: canvas.height,
+    cssWidth: canvas.getBoundingClientRect().width,
+    cssHeight: canvas.getBoundingClientRect().height
+  }));
+
+  expect(metrics.cssWidth).toBeGreaterThan(100);
+  expect(metrics.cssHeight).toBeGreaterThan(100);
+  expect(metrics.backingWidth).toBeLessThan(3840);
+  expect(metrics.backingHeight).toBeLessThan(2560);
+});
+
+test('map editor zoom controls change viewport zoom without resizing to world size', async ({ page }) => {
+  await page.goto('/editor.html');
+  const before = await page.locator('#editorCanvas').getAttribute('data-zoom');
+
+  await page.getByRole('button', { name: 'Zoom in' }).click();
+
+  await expect.poll(() => page.locator('#editorCanvas').getAttribute('data-zoom')).not.toBe(before);
+  await expect(page.locator('#zoomReadout')).toContainText('%');
+});
+
+test('map editor defers compile/export/persist during drag and flushes after painting', async ({ page }) => {
+  await page.goto('/editor.html');
+  await page.locator('#colsInput').fill('20');
+  await page.locator('#rowsInput').fill('10');
+  await page.locator('#newButton').click();
+  await page.evaluate(() => { window.__mapEditorDebug.compileCount = 0; window.__mapEditorDebug.exportCount = 0; window.__mapEditorDebug.persistCount = 0; });
+
+  const box = await page.locator('#editorCanvas').boundingBox();
+  await page.mouse.move(box.x + 8, box.y + 8);
+  await page.mouse.down();
+  for (let i = 1; i < 8; i++) await page.mouse.move(box.x + 8 + i * 16, box.y + 8);
+
+  const duringDrag = await page.evaluate(() => ({ ...window.__mapEditorDebug }));
+  expect(duringDrag.compileCount).toBe(0);
+  expect(duringDrag.exportCount).toBe(0);
+  expect(duringDrag.persistCount).toBe(0);
+
+  await page.mouse.up();
+  await expect(page.locator('#status')).toHaveClass(/ok/);
+  const afterDrag = await page.evaluate(() => ({ ...window.__mapEditorDebug }));
+  expect(afterDrag.compileCount).toBe(1);
+  expect(afterDrag.exportCount).toBe(1);
+  expect(afterDrag.persistCount).toBe(1);
+});
+
+test('map editor undo and redo operate on a whole paint stroke', async ({ page }) => {
+  await page.goto('/editor.html');
+  await page.locator('#colsInput').fill('4');
+  await page.locator('#rowsInput').fill('3');
+  await page.locator('#newButton').click();
+
+  await expect(page.getByRole('button', { name: 'Undo' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Redo' })).toBeDisabled();
+
+  const box = await page.locator('#editorCanvas').boundingBox();
+  await page.mouse.move(box.x + 8, box.y + 8);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 24, box.y + 8);
+  await page.mouse.up();
+
+  await expect(page.locator('#exportText')).toHaveValue(/'##\.\.\.\.\.\.'/);
+  await expect(page.getByRole('button', { name: 'Undo' })).toBeEnabled();
+
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect(page.locator('#exportText')).toHaveValue(/'\.\.\.\.\.\.\.\.'/);
+  await expect(page.getByRole('button', { name: 'Redo' })).toBeEnabled();
+
+  await page.getByRole('button', { name: 'Redo' }).click();
+  await expect(page.locator('#exportText')).toHaveValue(/'##\.\.\.\.\.\.'/);
+});
+
+test('map editor clears redo when a new paint stroke follows undo', async ({ page }) => {
+  await page.goto('/editor.html');
+  await page.locator('#colsInput').fill('4');
+  await page.locator('#rowsInput').fill('3');
+  await page.locator('#newButton').click();
+
+  const box = await page.locator('#editorCanvas').boundingBox();
+  await page.mouse.click(box.x + 8, box.y + 8);
+  await expect(page.locator('#exportText')).toHaveValue(/'#\.\.\.\.\.\.\.'/);
+
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect(page.getByRole('button', { name: 'Redo' })).toBeEnabled();
+
+  await page.mouse.click(box.x + 40, box.y + 8);
+  await expect(page.locator('#exportText')).toHaveValue(/'\.\.#\.\.\.\.\.'/);
+  await expect(page.getByRole('button', { name: 'Redo' })).toBeDisabled();
+});
+
 test('map editor exports and imports shareable map files instead of JS downloads', async ({ page }) => {
   await page.goto('/editor.html');
 

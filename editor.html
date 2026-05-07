@@ -29,6 +29,10 @@
         <button id="newButton" type="button">New blank</button>
         <button id="resetButton" type="button">Reload</button>
       </div>
+      <div class="button-row history-controls" aria-label="Edit history controls">
+        <button id="undoButton" type="button" disabled>Undo</button>
+        <button id="redoButton" type="button" disabled>Redo</button>
+      </div>
 
       <section>
         <h2>Brush</h2>
@@ -39,6 +43,13 @@
         <h2>View</h2>
         <label class="check"><input id="gridToggle" type="checkbox" checked /> Grid</label>
         <label class="check"><input id="collisionToggle" type="checkbox" /> Collision rects</label>
+        <div class="button-row view-controls" aria-label="Viewport controls">
+          <button id="zoomOutButton" type="button" aria-label="Zoom out">−</button>
+          <button id="zoomInButton" type="button" aria-label="Zoom in">+</button>
+          <button id="resetViewButton" type="button">Reset view</button>
+          <output id="zoomReadout" aria-label="Zoom level">100%</output>
+        </div>
+        <p class="hint">Wheel/pinch to zoom. Hold Space or middle-drag to pan.</p>
         <button id="previewButton" type="button" class="primary full-width">Play preview</button>
       </section>
 
