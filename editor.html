@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chibi Hollow Tilemap Editor</title>
+  <link rel="stylesheet" href="/styles/map-editor.css" />
+</head>
+<body>
+  <main class="editor-shell">
+    <aside class="sidebar" aria-label="Tilemap editor controls">
+      <header>
+        <p class="eyebrow">Developer Tool</p>
+        <h1>Tilemap Editor</h1>
+        <p class="hint">Paints the new explicit <code>gridLayer()</code> tilemaps: 16px build terrain plus 32px entity cells.</p>
+      </header>
+
+      <label class="field">
+        <span>Registered tilemap</span>
+        <select id="tilemapSelect"></select>
+      </label>
+
+      <div class="field-grid">
+        <label class="field"><span>Cols</span><input id="colsInput" type="number" min="1" max="120" value="36" /></label>
+        <label class="field"><span>Rows</span><input id="rowsInput" type="number" min="1" max="80" value="16" /></label>
+      </div>
+
+      <div class="button-row">
+        <button id="newButton" type="button">New blank</button>
+        <button id="resetButton" type="button">Reload</button>
+      </div>
+
+      <section>
+        <h2>Brush</h2>
+        <div id="brushes" class="brush-grid" role="toolbar" aria-label="Paint brushes"></div>
+      </section>
+
+      <section>
+        <h2>View</h2>
+        <label class="check"><input id="gridToggle" type="checkbox" checked /> Grid</label>
+        <label class="check"><input id="collisionToggle" type="checkbox" /> Collision rects</label>
+        <button id="previewButton" type="button" class="primary full-width">Play preview</button>
+      </section>
+
+      <section>
+        <h2>Export</h2>
+        <div class="button-row">
+          <button id="copyButton" type="button">Copy JS</button>
+          <button id="downloadButton" type="button">Download</button>
+        </div>
+        <p id="status" class="status" role="status">Ready.</p>
+      </section>
+    </aside>
+
+    <section class="workspace">
+      <div class="canvas-card">
+        <canvas id="editorCanvas" width="1152" height="512" aria-label="Tilemap canvas"></canvas>
+      </div>
+      <textarea id="exportText" spellcheck="false" aria-label="Generated tilemap JavaScript"></textarea>
+    </section>
+  </main>
+
+  <script type="module" src="/src/editor/map-editor.js"></script>
+</body>
+</html>

@@ -14,12 +14,12 @@ const DEBUG_RECT_STYLES = {
   collisionRect: {
     fill: 'rgba(255, 80, 80, 0.12)',
     outline: 'rgba(255, 80, 80, 0.95)',
-    thickness: 2
+    thickness: 1
   },
   physicsBody: {
     fill: 'rgba(180, 90, 255, 0.12)',
     outline: 'rgba(180, 90, 255, 0.95)',
-    thickness: 2
+    thickness: 1
   }
 };
 

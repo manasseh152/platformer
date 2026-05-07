@@ -11,6 +11,7 @@ import { createSceneHost } from './scene-host.js';
 import { createGameplayScene } from './scenes/gameplay-scene.js';
 import { applyScenarioLaunchParams, readScenarioLaunchParams } from './catalog/scenarios/url.js';
 import { isPaused, isStarted, isWon } from './app/app-state.js';
+import { applyTilemapPreviewFromUrl } from './tilemap-preview.js';
 import { handleDevToolsKeydown, setupDevTools, syncDevTools } from './devtools/toolbox-dom.js';
 import { updateSpeedRun } from './speedrun.js';
 
@@ -27,7 +28,8 @@ setupDevTools(game);
 scenes.register(createGameplayScene(game));
 scenes.switchScene('gameplay');
 const launchParams = readScenarioLaunchParams();
-const urlLaunch = applyScenarioLaunchParams(game, launchParams, runtime);
+const previewLaunch = applyTilemapPreviewFromUrl(game, runtime);
+const urlLaunch = previewLaunch.handled ? previewLaunch : applyScenarioLaunchParams(game, launchParams, runtime);
 if (urlLaunch.ok && launchParams.autorun) startGame(game, runtime);
 syncGymApi(game, runtime);
 setupResize(game);

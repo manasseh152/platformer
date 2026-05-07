@@ -5,6 +5,7 @@ import { forEachLayerTile, getDecorType } from './core/tilemaps/tilemap.js';
 import { drawCollisionDebugOverlay, drawPhysicsBodyDebugOverlay } from './devtools/debug-render.js';
 import { isWon } from './app/app-state.js';
 import { findObjectsWithComponent, getComponent } from './engine/scene/queries.js';
+import { planContainedTerrainTileVisuals } from './render/contained-terrain.js';
 import { formatRunTime, getBestTime } from './speedrun.js';
 
 function roundedRect(ctx, x,y,w,h,r) {
@@ -24,17 +25,16 @@ function tileNoise(col, row, salt = 0) {
 }
 
 function drawContainedTerrainTile(ctx, tile, level) {
-  const top = !(tile.mask & 1);
-  const right = !(tile.mask & 4);
-  const bottom = !(tile.mask & 16);
-  const left = !(tile.mask & 64);
-  ctx.fillStyle = '#a7643b';
-  ctx.fillRect(tile.x, tile.y, tile.w, tile.h);
-  ctx.fillStyle = '#4f9f3a';
-  if (top) ctx.fillRect(tile.x, tile.y, tile.w, 4);
-  if (right) ctx.fillRect(tile.x + tile.w - 4, tile.y, 4, tile.h);
-  if (bottom) ctx.fillRect(tile.x, tile.y + tile.h - 4, tile.w, 4);
-  if (left) ctx.fillRect(tile.x, tile.y, 4, tile.h);
+  const primitives = planContainedTerrainTileVisuals(tile);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(tile.x, tile.y, tile.w, tile.h);
+  ctx.clip();
+  for (const primitive of primitives) {
+    ctx.fillStyle = primitive.color;
+    ctx.fillRect(primitive.x, primitive.y, primitive.w, primitive.h);
+  }
+  ctx.restore();
   if (level.devToolsFlags?.showBuildTerrainCells) {
     ctx.strokeStyle = 'rgba(0,0,0,.26)';
     ctx.lineWidth = 1;

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { drawCollisionDebugOverlay, drawPhysicsBodyDebugOverlay } from '../src/devtools/debug-render.js';
 import { drawPixelRect, normalizePixelRect } from '../src/rendering/pixel-outline.js';
 
 function fakeCanvasContext() {
@@ -80,6 +81,32 @@ test('drawPixelRect draws outside outlines around the original rect', () => {
     ['fillRect', 8, 20, 2, 6, '#fff'],
     ['fillRect', 18, 20, 2, 6, '#fff'],
     ['restore']
+  ]);
+});
+
+test('debug overlays use one native pixel outlines for collision and body rects', () => {
+  const collisionCtx = fakeCanvasContext();
+  drawCollisionDebugOverlay(collisionCtx, {
+    collisionLayers: { terrainRects: [{ x: 10, y: 20, w: 8, h: 6 }] }
+  }, { showCollisionRects: true });
+
+  expect(collisionCtx.calls.filter(call => call[0] === 'fillRect')).toEqual([
+    ['fillRect', 10, 20, 8, 6, 'rgba(255, 80, 80, 0.12)'],
+    ['fillRect', 10, 20, 8, 1, 'rgba(255, 80, 80, 0.95)'],
+    ['fillRect', 10, 25, 8, 1, 'rgba(255, 80, 80, 0.95)'],
+    ['fillRect', 10, 21, 1, 4, 'rgba(255, 80, 80, 0.95)'],
+    ['fillRect', 17, 21, 1, 4, 'rgba(255, 80, 80, 0.95)']
+  ]);
+
+  const bodyCtx = fakeCanvasContext();
+  drawPhysicsBodyDebugOverlay(bodyCtx, { player: { x: 1, y: 2, w: 8, h: 6 }, enemies: [] }, { showPhysicsBodyRects: true });
+
+  expect(bodyCtx.calls.filter(call => call[0] === 'fillRect')).toEqual([
+    ['fillRect', 1, 2, 8, 6, 'rgba(180, 90, 255, 0.12)'],
+    ['fillRect', 1, 2, 8, 1, 'rgba(180, 90, 255, 0.95)'],
+    ['fillRect', 1, 7, 8, 1, 'rgba(180, 90, 255, 0.95)'],
+    ['fillRect', 1, 3, 1, 4, 'rgba(180, 90, 255, 0.95)'],
+    ['fillRect', 8, 3, 1, 4, 'rgba(180, 90, 255, 0.95)']
   ]);
 });
 

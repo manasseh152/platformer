@@ -177,11 +177,11 @@ test('controller can navigate and choose levels in Level Select', async ({ page 
   await focusLevelRow(page, 'act-01-level-1');
 
   await pressPadButtonFrom(page, 13, 'button[data-scenario-id="act-01-level-1"]');
-  await expectFocusedLevelRow(page, 'movement-gym');
+  await expectFocusedLevelRow(page, 'act-01-level-2');
 
-  await pressPadButtonFrom(page, 0, 'button[data-scenario-id="movement-gym"]');
-  await expect(page.locator('body')).toHaveAttribute('data-tilemap-id', 'movement-gym-map');
-  await expect(page.locator('#selectedLevelSummary')).toContainText('Movement Gym');
+  await pressPadButtonFrom(page, 0, 'button[data-scenario-id="act-01-level-2"]');
+  await expect(page.locator('body')).toHaveAttribute('data-tilemap-id', 'act-01-level-2');
+  await expect(page.locator('#selectedLevelSummary')).toContainText('Act 01 Level 2');
 });
 
 test('controller diagonal menu directions navigate horizontal button groups', async ({ page }) => {

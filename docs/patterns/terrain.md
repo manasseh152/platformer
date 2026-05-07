@@ -47,11 +47,25 @@ Each solid `buildTerrain` cell produces one 16px visual tile:
   layer: 'buildTerrain',
   x, y, w: 16, h: 16,
   col, row,
-  mask
+  rawMask, // raw authored 8-neighbor adjacency
+  mask     // normalized visual 8-neighbor adjacency
 }
 ```
 
-The visual tile stays inside its build cell. The neighbor `mask` describes adjacent solid build cells and is used by the renderer to draw grass/edge/fill details.
+The visual tile stays inside its build cell. Contained terrain is a strict visual/collision audit layer: every contained-terrain pixel is clipped to its authored 16×16 `buildTerrain` cell. Visuals that intentionally overhang, animate beyond the cell, or are authored/generated independently (grass, foliage, ropes, chains, trees, etc.) must live in separate render layers, not contained terrain.
+
+`rawMask` stores authored 8-neighbor adjacency. `mask` is the cleaned visual mask used by the renderer. Cardinal bits (`N`, `E`, `S`, `W`) are preserved exactly. Diagonal bits are kept only when both adjacent cardinals are present:
+
+```js
+NE = rawNE && N && E
+SE = rawSE && S && E
+SW = rawSW && S && W
+NW = rawNW && N && W
+```
+
+This removes diagonal-only visual connections while preserving authored truth for debugging.
+
+Contained-terrain selection is deterministic and non-WFC. Rendering composes bounded primitives in a fixed order: base fill, exposed edge strips, outer corners, inner-corner notches, then future details. Edge/corner topology comes from the cleaned `mask`; optional cosmetic variation must be derived from stable tile identity, never runtime randomness or draw order.
 
 ## Collision
 

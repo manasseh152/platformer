@@ -143,7 +143,7 @@ test('contained autotile terrain derives 8px collision primitives from 16px buil
     expect.objectContaining({ x: 0, y: 0, w: 16, h: 16, kind: 'terrain-solid' })
   ]);
   expect(parsed.renderLayers.containedTerrainTiles).toEqual([
-    expect.objectContaining({ x: 0, y: 0, w: 16, h: 16, col: 0, row: 0, mask: expect.any(Number) })
+    expect.objectContaining({ x: 0, y: 0, w: 16, h: 16, col: 0, row: 0, rawMask: expect.any(Number), mask: expect.any(Number) })
   ]);
   expect(solidTileRectsOverlapping(parsed, { x: 7, y: 7, w: 2, h: 2 })).toEqual([
     expect.objectContaining({ x: 0, y: 0, w: 16, h: 16, kind: 'terrain-solid' })
@@ -160,6 +160,8 @@ test('every contained terrain visual tile is inside a solid buildTerrain cell', 
       expect(tile.y).toBe(tile.row * CELL_SIZE.BUILD);
       expect(tile.w).toBe(CELL_SIZE.BUILD);
       expect(tile.h).toBe(CELL_SIZE.BUILD);
+      expect(tile.rawMask).toEqual(expect.any(Number));
+      expect(tile.mask).toEqual(expect.any(Number));
     }
   }
 });

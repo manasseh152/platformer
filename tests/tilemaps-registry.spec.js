@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import {
   act01Level1Tilemap,
+  act01Level2Tilemap,
   getAllTilemaps,
   getDefaultTilemap,
   getTilemapById,
@@ -10,9 +11,11 @@ import {
 test('tilemap registry owns parsed tilemap level definitions', () => {
   expect(getDefaultTilemap()).toBe(act01Level1Tilemap);
   expect(getTilemapById('act-01-level-1')).toBe(act01Level1Tilemap);
+  expect(getTilemapById('act-01-level-2')).toBe(act01Level2Tilemap);
   expect(getTilemapById('movement-gym-map')).toBe(movementGymMapTilemap);
   expect(getAllTilemaps().map(definition => definition.id)).toEqual([
     'act-01-level-1',
+    'act-01-level-2',
     'movement-gym-map',
     'finish-gate-gym-map',
     'enemy-zoo-map'
