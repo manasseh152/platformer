@@ -42,7 +42,8 @@ body::after {
 }
 button, input, select, textarea { font: inherit; }
 button, select, input, textarea { outline: none; }
-button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { box-shadow: var(--shadow-focus); border-color: rgba(var(--color-accent-rgb), .55); }
+button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, .controller-focus { box-shadow: var(--shadow-focus); border-color: rgba(var(--color-accent-rgb), .55) !important; }
+.controller-focus { outline: 0 !important; }
 button {
   min-height: 38px;
   border: 1px solid var(--color-line);

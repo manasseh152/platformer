@@ -26,6 +26,7 @@ import { createBrowserInputAdapter, createGameInputRuntime } from '../app/input/
 import { hintPartsForAction } from '../app/input/input-hints.js';
 import { gameInputProfile } from '../app/input/game-input-profile.js';
 import { loadSettings } from '../settings.js';
+import { currentFocusElement, ensureMenuFocus, moveLinearFocus, visibleFocusables } from '../ui/navigation.js';
 
 const SHARE_FORMAT = 'chibi-tilemap-draft';
 const SHARE_VERSION = 1;
@@ -110,6 +111,7 @@ let floatingControlsEnabled = readBooleanPreference(FLOATING_CONTROLS_STORAGE_KE
 let dirty = false;
 let saving = false;
 let panMode = false;
+let editorPanelLastFocused = null;
 
 function storageKey(id) { return localDraftStorageKey(id); }
 function viewStorageKey(id) { return localDraftViewStorageKey(id); }
@@ -352,9 +354,10 @@ function setActiveTab(tabId, { show = true, focus = false } = {}) {
     const selected = tab.dataset.editorTab === activeTab;
     tab.setAttribute('aria-selected', selected ? 'true' : 'false');
     tab.tabIndex = selected ? 0 : -1;
-    if (selected && focus) tab.focus();
+    if (selected && focus) focusEditorControl(tab);
   }
   for (const panel of dom.panels) panel.hidden = panel.id !== `${activeTab}Panel`;
+  if (!show) clearEditorControllerFocus();
 }
 
 function toggleTab(tabId) {
@@ -370,6 +373,61 @@ function adjacentTabId(direction) {
 
 function moveActiveTab(direction, { focus = false } = {}) {
   setActiveTab(adjacentTabId(direction), { show: true, focus });
+}
+
+function clearEditorControllerFocus() {
+  document.querySelectorAll('.controller-focus').forEach(node => node.classList.remove('controller-focus'));
+}
+
+function focusEditorControl(element) {
+  if (!element) return;
+  clearEditorControllerFocus();
+  element.focus({ preventScroll: true });
+  element.classList.add('controller-focus');
+  editorPanelLastFocused = element;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (document.activeElement === element) element.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }));
+}
+
+function activeEditorPanel() {
+  if (overlayHidden) return null;
+  return dom.panels.find(panel => panel.id === `${activeTab}Panel` && !panel.hidden) || null;
+}
+
+function ensureEditorPanelFocus() {
+  const panel = activeEditorPanel();
+  return ensureMenuFocus(panel, editorPanelLastFocused, focusEditorControl);
+}
+
+function moveHorizontalEditorGroupFocus(direction) {
+  const panel = activeEditorPanel();
+  if (!panel) return false;
+  const current = currentFocusElement(panel, editorPanelLastFocused);
+  const group = current?.closest?.('.button-row, .brush-grid, .switch-stack');
+  if (!group) return false;
+  const items = visibleFocusables(group);
+  const index = items.indexOf(current);
+  if (items.length < 2 || index < 0) return false;
+  focusEditorControl(items[(index + direction + items.length) % items.length]);
+  return true;
+}
+
+function moveEditorPanelFocus(direction) {
+  const panel = activeEditorPanel();
+  if (!panel) return false;
+  if (ensureEditorPanelFocus()) return true;
+  return moveLinearFocus(panel, editorPanelLastFocused, direction, focusEditorControl);
+}
+
+function activateFocusedEditorControl() {
+  const panel = activeEditorPanel();
+  if (!panel) return false;
+  if (ensureEditorPanelFocus()) return true;
+  const current = currentFocusElement(panel, editorPanelLastFocused);
+  if (!current || !panel.contains(current)) return false;
+  current.click?.();
+  return true;
 }
 
 function syncTabHints() {
@@ -674,7 +732,7 @@ function updatePan(event) {
   scheduleRender();
 }
 
-function editorInputRoute() { return inputRuntime.route(['editor']); }
+function editorInputRoute() { return inputRuntime.route(['editor', 'menu']); }
 
 function processEditorKeyboardEvent(event) {
   inputAdapter.queueKeyboardEvent(event);
@@ -693,6 +751,18 @@ function processEditorControllerFrame() {
   const route = editorInputRoute();
   if (route.wasPressed('editor.previousTab')) { route.consume('editor.previousTab'); moveActiveTab(-1); }
   if (route.wasPressed('editor.nextTab')) { route.consume('editor.nextTab'); moveActiveTab(1); }
+  if (route.wasPressed('menu.navigateX')) {
+    const x = route.value('menu.navigateX');
+    if (x < 0 && moveHorizontalEditorGroupFocus(-1)) route.consume('menu.navigateX');
+    else if (x > 0 && moveHorizontalEditorGroupFocus(1)) route.consume('menu.navigateX');
+  }
+  if (route.wasPressed('menu.navigateY')) {
+    const y = route.value('menu.navigateY');
+    if (y < 0) { route.consume('menu.navigateY'); moveEditorPanelFocus(-1); }
+    if (y > 0) { route.consume('menu.navigateY'); moveEditorPanelFocus(1); }
+  }
+  if (route.wasPressed('menu.accept')) { route.consume('menu.accept'); activateFocusedEditorControl(); }
+  if (route.wasPressed('menu.back')) { route.consume('menu.back'); setActiveTab(activeTab, { show: false }); }
   inputRuntime.endFrame();
   requestAnimationFrame(processEditorControllerFrame);
 }
@@ -806,6 +876,7 @@ function setup() {
   dom.hideOverlayButton?.addEventListener('click', () => setActiveTab(activeTab, { show: false }));
   for (const tab of dom.tabs) {
     tab.addEventListener('click', () => toggleTab(tab.dataset.editorTab));
+    tab.addEventListener('focus', () => { editorPanelLastFocused = tab; });
     tab.addEventListener('keydown', event => {
       if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
       event.preventDefault();
@@ -858,6 +929,7 @@ function setup() {
   dom.zoomOutButton?.addEventListener('click', () => zoomBy(0.8));
   dom.zoomInButton?.addEventListener('click', () => zoomBy(1.25));
   dom.resetViewButton?.addEventListener('click', () => { resetView(viewport, worldWidth(), worldHeight()); saveView(); render(); });
+  dom.overlay?.addEventListener('focusin', event => { editorPanelLastFocused = event.target; clearEditorControllerFocus(); });
   dom.canvas.addEventListener('contextmenu', event => event.preventDefault());
   dom.canvas.addEventListener('wheel', event => {
     event.preventDefault();
