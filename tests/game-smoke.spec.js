@@ -98,8 +98,10 @@ test('settings hub, accessibility motion, advanced JSON, and start flow', async 
   await page.getByRole('button', { name: 'Dump app settings' }).click();
   const dumped = await page.locator('#settingsJson').inputValue();
   expect(dumped).toContain('schemaVersion');
-  expect(dumped).toContain('keyboardBinds');
-  expect(dumped).toContain('gamepadBinds');
+  expect(dumped).toContain('"input"');
+  expect(dumped).toContain('"bindings"');
+  expect(dumped).not.toContain('keyboardBinds');
+  expect(dumped).not.toContain('gamepadBinds');
 
   const next = JSON.parse(dumped);
   next.motion = 'on';

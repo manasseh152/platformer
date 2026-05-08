@@ -3,9 +3,7 @@ import { normalizeInputSettings } from '../../core/input/settings.js';
 import { gameInputProfile } from './game-input-profile.js';
 
 function inputSettingsFromAppSettings(settings = {}) {
-  const normalized = normalizeInputSettings(gameInputProfile, settings).settings;
-  normalized.input.slots.player1.devices.gamepad.enabled = settings.controllerEnabled !== false;
-  return normalized;
+  return normalizeInputSettings(gameInputProfile, settings).settings;
 }
 
 export function createGameInputRuntime(settings = {}) {

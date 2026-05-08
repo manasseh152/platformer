@@ -55,7 +55,7 @@ export function snapshotGame(game) {
     settings: {
       developerMode: Boolean(game.settings.developerMode),
       motion: game.settings.motion,
-      controllerEnabled: Boolean(game.settings.controllerEnabled)
+      controllerEnabled: Boolean(game.settings.input?.slots?.player1?.devices?.gamepad?.enabled)
     },
     devTools: {
       open: Boolean(game.devTools?.open),
