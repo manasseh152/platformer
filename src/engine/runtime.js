@@ -25,6 +25,7 @@ export function createMemoryStorage(initial = {}) {
     setItem: (key, value) => entries.set(key, String(value)),
     removeItem: key => entries.delete(key),
     clear: () => entries.clear(),
+    keys: () => [...entries.keys()],
     dump: () => Object.fromEntries(entries)
   };
 }

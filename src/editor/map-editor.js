@@ -19,6 +19,8 @@ import {
 } from './editor-viewport.js';
 import { createEditorScheduler } from './editor-scheduler.js';
 import { createHistory } from './editor-history.js';
+import { isKebabCaseId } from '../catalog/id.js';
+import { localDraftStorageKey, localDraftViewStorageKey, readLocalDraft, saveLocalDraft } from '../catalog/local-drafts/storage.js';
 
 const SHARE_FORMAT = 'chibi-tilemap-draft';
 const SHARE_VERSION = 1;
@@ -35,6 +37,8 @@ const BRUSHES = [
 const dom = {
   canvas: document.querySelector('#editorCanvas'),
   tilemapSelect: document.querySelector('#tilemapSelect'),
+  nameInput: document.querySelector('#nameInput'),
+  idInput: document.querySelector('#idInput'),
   colsInput: document.querySelector('#colsInput'),
   rowsInput: document.querySelector('#rowsInput'),
   newButton: document.querySelector('#newButton'),
@@ -48,6 +52,7 @@ const dom = {
   brushes: document.querySelector('#brushes'),
   gridToggle: document.querySelector('#gridToggle'),
   collisionToggle: document.querySelector('#collisionToggle'),
+  saveLocalButton: document.querySelector('#saveLocalButton'),
   previewButton: document.querySelector('#previewButton'),
   copyButton: document.querySelector('#copyButton'),
   exportMapButton: document.querySelector('#exportMapButton'),
@@ -75,9 +80,11 @@ let lastPaintKey = null;
 let keysDown = new Set();
 let activePointers = new Map();
 let pinch = null;
+let editorSource = 'registered';
+let loadedLocalDraftId = null;
 
-function storageKey(id) { return `chibi.tilemap-editor.${id}`; }
-function viewStorageKey(id) { return `chibi.tilemap-editor-view.${id}`; }
+function storageKey(id) { return localDraftStorageKey(id); }
+function viewStorageKey(id) { return localDraftViewStorageKey(id); }
 function previewStorageKey(id) { return `${PREVIEW_STORAGE_PREFIX}${id}`; }
 function worldWidth() { return draft.cols * CELL_SIZE.GRID; }
 function worldHeight() { return draft.rows * CELL_SIZE.GRID; }
@@ -180,9 +187,32 @@ function setStatus(message, kind = '') {
   dom.status.className = `status ${kind}`.trim();
 }
 
-function persist() {
+function persist({ syncMetadata = true } = {}) {
   debug.persistCount++;
-  localStorage.setItem(storageKey(draft.id), JSON.stringify(draft));
+  if (syncMetadata) syncDraftMetadataFromInputs();
+  const result = saveLocalDraft(localStorage, draft);
+  if (!result.ok) throw new Error(result.message);
+  draft = result.draft;
+  return result;
+}
+
+function tryPersist() {
+  try { return persist(); } catch (error) { setStatus(`${error.message} Fix draft ID to save locally.`, 'error'); return { ok: false, error }; }
+}
+
+function syncDraftMetadataFromInputs() {
+  if (dom.nameInput) draft.name = dom.nameInput.value.trim() || 'Untitled Local Map';
+  if (dom.idInput) draft.id = dom.idInput.value.trim();
+}
+
+function saveLocalExplicit() {
+  try {
+    flushPending();
+    const warning = !hasEntitySymbol(draft, 'P') ? ' Add Player P before playing.' : (!hasEntitySymbol(draft, 'G') ? ' No finish gate yet.' : ' Ready to play from Level Select.');
+    setStatus(`Saved locally as ${draft.id}.${warning}`, hasEntitySymbol(draft, 'P') ? 'ok' : '');
+  } catch (error) {
+    setStatus(error.message, 'error');
+  }
 }
 
 function saveView() {
@@ -203,6 +233,8 @@ function loadViewOrReset() {
 }
 
 function syncInputs() {
+  if (dom.nameInput) dom.nameInput.value = draft.name || '';
+  if (dom.idInput) dom.idInput.value = draft.id || '';
   dom.colsInput.value = draft.cols;
   dom.rowsInput.value = draft.rows;
   dom.exportText.value = generatedModule();
@@ -252,8 +284,8 @@ function downloadText(filename, text, type) {
 }
 
 function exportMap() {
-  flushPending();
-  downloadText(`${draft.id}.chibi-map.json`, JSON.stringify(sharePayload(), null, 2), 'application/json');
+  scheduler.flush(() => { syncDraftMetadataFromInputs(); compiledFresh = false; ensureCompiled(); syncInputs(); render(); });
+  downloadText(`${draft.id || 'local-draft'}.chibi-map.json`, JSON.stringify(sharePayload(), null, 2), 'application/json');
   setStatus('Exported shareable map file.', 'ok');
 }
 
@@ -264,13 +296,14 @@ async function importMapFile(file) {
     draft = draftFromSharePayload(JSON.parse(await file.text()));
     compiledFresh = false;
     ensureCompiled();
-    persist();
+    persist({ syncMetadata: false });
+    syncInputs();
     dom.tilemapSelect.value = getDefaultTilemap().id;
     resetView(viewport, worldWidth(), worldHeight());
     saveView();
     syncInputs();
     render();
-    setStatus(`Imported ${draft.name}. Ready to preview.`, 'ok');
+    setStatus(`Imported ${draft.name} and saved locally. Ready to preview.`, 'ok');
   } catch (error) {
     setStatus(error.message, 'error');
   } finally {
@@ -280,13 +313,14 @@ async function importMapFile(file) {
 
 function previewDraft() {
   try {
-    flushPending();
+    scheduler.flush(() => { syncDraftMetadataFromInputs(); compiledFresh = false; ensureCompiled(); syncInputs(); render(); });
     if (!hasEntitySymbol(draft, 'P')) {
       setStatus('Add a Player P before previewing.', 'error');
       return;
     }
     const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-    localStorage.setItem(previewStorageKey(id), JSON.stringify({ draft, createdAt: Date.now() }));
+    const previewDraft = isKebabCaseId(draft.id) ? draft : { ...draft, id: `preview-${id}` };
+    localStorage.setItem(previewStorageKey(id), JSON.stringify({ draft: previewDraft, createdAt: Date.now() }));
     const url = `/index.html?previewTilemapKey=${encodeURIComponent(id)}&autorun=1&mode=developer`;
     const preview = window.open(url, 'chibiTilemapPreview');
     if (!preview) {
@@ -488,6 +522,22 @@ function buildBrushButtons() {
 }
 
 function loadSelected(resetSaved = false) {
+  if (editorSource === 'local' && resetSaved && loadedLocalDraftId) {
+    const read = readLocalDraft(localStorage, loadedLocalDraftId);
+    if (read.ok) {
+      history.clear();
+      draft = read.draft;
+      compiledFresh = false;
+      ensureCompiled();
+      loadViewOrReset();
+      syncInputs();
+      render();
+      setStatus(`Reloaded local draft ${draft.name}.`, 'ok');
+      return;
+    }
+  }
+  editorSource = 'registered';
+  loadedLocalDraftId = null;
   const tilemap = registeredTilemaps.find(tilemap => tilemap.id === dom.tilemapSelect.value) ?? getDefaultTilemap();
   if (resetSaved) localStorage.removeItem(storageKey(tilemap.id));
   history.clear();
@@ -531,14 +581,26 @@ function updateTouchPinch() {
   scheduleRender();
 }
 
+function loadInitialDraftFromUrl() {
+  const draftId = new URLSearchParams(location.search).get('draft');
+  if (!draftId) return;
+  const read = readLocalDraft(localStorage, draftId);
+  if (!read.ok) { setStatus(read.message || 'Local draft not found.', 'error'); return; }
+  editorSource = 'local';
+  loadedLocalDraftId = draftId;
+  draft = read.draft;
+  compiledFresh = false;
+}
+
 function setup() {
+  loadInitialDraftFromUrl();
   for (const tilemap of registeredTilemaps) {
     const option = document.createElement('option');
     option.value = tilemap.id;
     option.textContent = `${tilemap.name} (${tilemap.id})`;
     dom.tilemapSelect.append(option);
   }
-  dom.tilemapSelect.value = draft.id;
+  dom.tilemapSelect.value = registeredTilemaps.some(tilemap => tilemap.id === draft.id) ? draft.id : getDefaultTilemap().id;
   buildBrushButtons();
   resizeViewport(viewport);
   compileDraft();
@@ -550,17 +612,22 @@ function setup() {
   dom.resetButton.addEventListener('click', () => loadSelected(true));
   dom.newButton.addEventListener('click', () => {
     history.clear();
+    editorSource = 'local';
+    loadedLocalDraftId = null;
     draft = createBlankDraft({ cols: Number(dom.colsInput.value), rows: Number(dom.rowsInput.value) });
     dom.tilemapSelect.value = getDefaultTilemap().id;
     compiledFresh = false;
     ensureCompiled();
     resetView(viewport, worldWidth(), worldHeight());
-    persist(); syncInputs(); render();
+    tryPersist(); syncInputs(); render();
   });
   dom.gridToggle.addEventListener('change', render);
   dom.collisionToggle.addEventListener('change', () => { if (dom.collisionToggle.checked) ensureCompiled(); render(); });
+  dom.nameInput?.addEventListener('input', () => { syncDraftMetadataFromInputs(); scheduleAfterEdit(); });
+  dom.idInput?.addEventListener('input', () => { syncDraftMetadataFromInputs(); compiledFresh = false; syncInputs(); if (!isKebabCaseId(draft.id)) setStatus('Draft id must be kebab-case. Fix ID to save locally or copy JS.', 'error'); else scheduleAfterEdit(); });
+  dom.saveLocalButton?.addEventListener('click', saveLocalExplicit);
   dom.previewButton.addEventListener('click', previewDraft);
-  dom.copyButton.addEventListener('click', async () => { flushPending(); await navigator.clipboard.writeText(dom.exportText.value); setStatus('Copied generated tilemap module.', 'ok'); });
+  dom.copyButton.addEventListener('click', async () => { syncDraftMetadataFromInputs(); if (!isKebabCaseId(draft.id)) { setStatus('Fix draft ID before copying JS.', 'error'); return; } flushPending(); await navigator.clipboard.writeText(dom.exportText.value); setStatus('Copied generated tilemap module.', 'ok'); });
   dom.exportMapButton.addEventListener('click', exportMap);
   dom.importMapButton.addEventListener('click', () => dom.importMapInput.click());
   dom.importMapInput.addEventListener('change', () => importMapFile(dom.importMapInput.files?.[0]));

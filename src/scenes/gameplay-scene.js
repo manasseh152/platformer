@@ -2,6 +2,7 @@ import { updateCamera } from '../core/camera.js';
 import { updateGameplay } from '../core/physics.js';
 import { drawGame } from '../render.js';
 import { isPaused, isStarted, isWon } from '../app/app-state.js';
+import { resetGameplaySession, syncGameplaySessionToGame } from '../core/gameplay-session.js';
 
 function round(value) {
   return Number.isFinite(value) ? Math.round(value * 1000) / 1000 : value;
@@ -30,7 +31,11 @@ function snapshotCamera(camera) {
 }
 
 export function createGameplayScene(game, props = {}) {
-  if (props.tilemapId && game.tilemaps?.current?.id !== props.tilemapId) {
+  if (props.tilemap) {
+    resetGameplaySession(game.gameplaySession, props.tilemap, { view: game.view, scenarioId: props.scenarioId ?? props.tilemap.id, goal: props.goal });
+    syncGameplaySessionToGame(game, game.gameplaySession);
+    if (typeof document !== 'undefined' && document.body?.dataset) document.body.dataset.tilemapId = props.tilemap.id;
+  } else if (props.tilemapId && game.tilemaps?.current?.id !== props.tilemapId) {
     game.tilemaps.switchTilemap(props.tilemapId);
   }
 

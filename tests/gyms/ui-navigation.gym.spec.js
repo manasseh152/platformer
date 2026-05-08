@@ -51,6 +51,7 @@ test(`${gym.name}: developer mode exposes clean scenarios and loads Movement Gym
   await page.locator('#startLevelSelectButton').click();
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'level-select');
   await expect(page.getByRole('button', { name: /Act 01 Level 1/ })).toBeVisible();
+  await page.getByRole('tab', { name: 'Gyms' }).click();
   await expect(page.getByRole('button', { name: /Movement Gym/ })).toBeVisible();
 
   const levelSelectSnapshot = await captureCheckpoint(page, testInfo, '02-level-select-with-gyms');

@@ -1,8 +1,11 @@
+import { isKebabCaseId } from '../id.js';
+
 export const VISIBILITY = new Set(['public', 'developer']);
 export const CATEGORY_ROLES = new Set(['group', 'filter']);
 
 export const categories = {
   levels: { id: 'levels', name: 'Levels', role: 'group', visibility: 'public', order: 10 },
+  local: { id: 'local', name: 'Local', role: 'group', visibility: 'public', order: 15 },
   'act-01': { id: 'act-01', name: 'Act 01', role: 'filter', visibility: 'public', order: 20 },
   gyms: { id: 'gyms', name: 'Gyms', role: 'group', visibility: 'developer', order: 100 },
   zoos: { id: 'zoos', name: 'Zoos', role: 'group', visibility: 'developer', order: 110 },
@@ -13,8 +16,6 @@ export const categories = {
   ui: { id: 'ui', name: 'UI', role: 'filter', visibility: 'developer', order: 240 },
   uncategorized: { id: 'uncategorized', name: 'Other', role: 'group', visibility: 'public', order: 9999 }
 };
-
-const KEBAB_CASE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export function isVisibleToMode(item, developerMode = false) {
   return item?.visibility === 'public' || Boolean(developerMode);
@@ -31,7 +32,7 @@ export function getAllCategories() {
 export function assertCategoryCatalog() {
   for (const category of Object.values(categories)) {
     if (!category || typeof category !== 'object') throw new Error('category must be an object');
-    if (!KEBAB_CASE.test(category.id || '')) throw new Error(`category id must be kebab-case: ${category.id}`);
+    if (!isKebabCaseId(category.id || '')) throw new Error(`category id must be kebab-case: ${category.id}`);
     if (typeof category.name !== 'string' || !category.name.trim()) throw new Error(`category ${category.id} must have a name`);
     if (!CATEGORY_ROLES.has(category.role)) throw new Error(`category ${category.id} has invalid role: ${category.role}`);
     if (!VISIBILITY.has(category.visibility)) throw new Error(`category ${category.id} has invalid visibility: ${category.visibility}`);
@@ -42,7 +43,7 @@ export function assertCategoryCatalog() {
 export function assertKnownCategories(entry) {
   if (!Array.isArray(entry.categories) || entry.categories.length === 0) throw new Error(`${entry.id} must have at least one category`);
   for (const categoryId of entry.categories) {
-    if (!KEBAB_CASE.test(categoryId || '')) throw new Error(`${entry.id} has invalid category id: ${categoryId}`);
+    if (!isKebabCaseId(categoryId || '')) throw new Error(`${entry.id} has invalid category id: ${categoryId}`);
     if (!getCategoryById(categoryId)) throw new Error(`${entry.id} references unknown category: ${categoryId}`);
   }
 }

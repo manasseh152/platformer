@@ -143,7 +143,9 @@ test('developer maps are only available in the normal Level Select when Develope
 
   await page.locator('#startLevelSelectButton').click();
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'level-select');
+  await page.getByRole('tab', { name: 'Gyms' }).click();
   await expect(page.getByRole('button', { name: /Movement Gym/ })).toBeVisible();
+  await page.getByRole('tab', { name: 'Zoos' }).click();
   await expect(page.getByRole('button', { name: /Enemy Zoo/ })).toBeVisible();
   await page.getByRole('button', { name: /Enemy Zoo/ }).click();
   await expect(page.locator('body')).toHaveAttribute('data-tilemap-id', 'enemy-zoo-map');

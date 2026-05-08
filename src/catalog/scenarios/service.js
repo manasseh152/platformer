@@ -5,6 +5,7 @@ import {
   getVisibleScenarioEntries,
   launchScenarioEntry
 } from './registry.js';
+import { getAllLocalDraftScenarios, getLocalDraftScenarioById, localDraftIdFromScenarioId } from '../local-drafts/storage.js';
 
 function canSeeScenario(game, scenario) {
   return scenario?.visibility === 'public' || Boolean(game.settings?.developerMode || game.session?.developerModeOverride);
@@ -14,13 +15,22 @@ export function createScenarioService(game, runtime = game.runtime) {
   let selectedScenarioId = getDefaultScenarioEntry().id;
   let current = null;
 
+  function getById(id) {
+    return getScenarioEntryById(id) ?? getLocalDraftScenarioById(runtime?.storage, id);
+  }
+
+  function getAll() {
+    return [...getAllScenarioEntries(), ...getAllLocalDraftScenarios(runtime?.storage)];
+  }
+
   function getSelected() {
-    return getScenarioEntryById(selectedScenarioId) ?? getDefaultScenarioEntry();
+    return getById(selectedScenarioId) ?? getDefaultScenarioEntry();
   }
 
   function select(id) {
-    const scenario = getScenarioEntryById(id);
-    if (!scenario) return { ok: false, reason: 'missing-scenario', scenario: null };
+    const scenario = getById(id);
+    if (!scenario) return { ok: false, reason: localDraftIdFromScenarioId(id) ? 'missing-local-draft' : 'missing-scenario', scenario: null };
+    if (scenario.source === 'local' && !scenario.localDraft?.validation?.playable) return { ok: false, reason: scenario.localDraft?.validation?.reason || 'unplayable-local-draft', scenario };
     if (!canSeeScenario(game, scenario)) return { ok: false, reason: 'developer-only', scenario };
     selectedScenarioId = scenario.id;
     runtime?.emit?.('scenario.select', { scenarioId: scenario.id, source: scenario.source });
@@ -28,11 +38,12 @@ export function createScenarioService(game, runtime = game.runtime) {
   }
 
   function launch(id = selectedScenarioId, options = {}) {
-    const scenario = getScenarioEntryById(id);
-    if (!scenario) return { ok: false, reason: 'missing-scenario', scenario: null };
+    const scenario = getById(id);
+    if (!scenario) return { ok: false, reason: localDraftIdFromScenarioId(id) ? 'missing-local-draft' : 'missing-scenario', scenario: null };
+    if (scenario.source === 'local' && !scenario.localDraft?.validation?.playable) return { ok: false, reason: scenario.localDraft?.validation?.reason || 'unplayable-local-draft', scenario };
     if (!canSeeScenario(game, scenario)) return { ok: false, reason: 'developer-only', scenario };
     selectedScenarioId = scenario.id;
-    const result = launchScenarioEntry(game, scenario.id);
+    const result = scenario.source === 'local' ? launchScenarioEntry(game, scenario) : launchScenarioEntry(game, scenario.id);
     if (!result.ok) return result;
     current = {
       id: scenario.id,
@@ -52,9 +63,9 @@ export function createScenarioService(game, runtime = game.runtime) {
   return {
     get selectedScenarioId() { return selectedScenarioId; },
     get current() { return current; },
-    getById: getScenarioEntryById,
-    getAll: getAllScenarioEntries,
-    getVisible: options => getVisibleScenarioEntries({ developerMode: Boolean(game.settings?.developerMode || game.session?.developerModeOverride), ...options }),
+    getById,
+    getAll,
+    getVisible: options => getAll().filter(entry => canSeeScenario(game, entry)),
     getSelected,
     select,
     launch,

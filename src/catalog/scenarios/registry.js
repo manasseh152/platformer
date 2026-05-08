@@ -57,8 +57,8 @@ export function getVisibleScenarioEntries({ developerMode = false } = {}) {
   return getAllScenarioEntries().filter(entry => isVisibleToMode(entry, developerMode));
 }
 
-export function launchScenarioEntry(game, entryId) {
-  const entry = getScenarioEntryById(entryId);
+export function launchScenarioEntry(game, entryOrId) {
+  const entry = typeof entryOrId === 'string' ? getScenarioEntryById(entryOrId) : entryOrId;
   if (!entry) return { ok: false, reason: 'missing-scenario-entry', entry: null };
 
   const composition = entry.composition;

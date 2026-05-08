@@ -49,12 +49,14 @@ Do not infer one from another by ID. A scenario may reference a tilemap, but the
 ## Sources
 
 - `campaigns`: public progression content.
+- `local`: public same-device drafts saved by the browser map editor. These are dynamic scenario entries generated from local storage, not static registry content.
 - `gyms`: developer validation fixtures. Usually CI-enabled.
 - `zoos`: developer documentation/examples. Usually CI-disabled unless explicitly opted in.
 
 Visibility defaults by source, but entries may override:
 
 - campaigns: `public`
+- local: `public`
 - gyms: `developer`
 - zoos: `developer`
 
@@ -96,3 +98,11 @@ App-owned state:
 ## Browser naming
 
 User-facing UI may say “Level Select” in public mode. Developer mode can say “Scenario Browser”. Internally, the browser reads scenarios from the scenario service, not raw tilemap registries.
+
+The browser uses top-level scenario tabs:
+
+- **Acts**: campaign scenarios grouped by `act-*` categories.
+- **Local**: same-device editor drafts stored under `chibi.tilemap-editor.*`, sorted recent-first. Local scenario ids use `local:<draft-id>`, and runtime tilemap ids are also rewritten to `local:<draft-id>` to avoid collisions with shipped content. Draft ids must be kebab-case to launch from Level Select. Missing `P` blocks launch; missing `G` is a warning.
+- **Gyms** and **Zoos**: developer-only tabs shown when Developer Mode or developer URL override is active.
+
+Map editor **Play preview** remains a temporary handoff via `previewTilemapKey` and is separate from durable Local drafts. **Save local** persists the draft for the Local tab.

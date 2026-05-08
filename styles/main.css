@@ -832,6 +832,14 @@ body.motion-reduce #pauseScreen .menu-page { animation: none !important; }
 .settings-row-list,
 .settings-category-body,
 .level-select-list { display: grid; gap: 10px; }
+.level-select-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+.level-select-tab[aria-selected="true"] { border-color: rgba(var(--color-accent-rgb), .68); background: rgba(var(--color-accent-rgb), .14); color: var(--color-cream); }
+.level-select-panel { display: grid; gap: 10px; }
+.level-select-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.level-select-toolbar h3 { margin: 0; }
+.local-draft-actions { gap: 8px; }
+.local-draft-actions .ds-button { min-height: 34px; padding: 7px 10px; }
+.local-draft-row.is-invalid { border-color: rgba(255,94,80,.42); }
 .settings-category-list { margin-top: 6px; }
 .settings-page-note {
   margin: 2px 0 4px;

@@ -282,7 +282,8 @@ export function syncHtmlHud(game) {
     ui.messageSpeedRun.textContent = result ? `Speed Run: ${formatRunTime(result.bestMs)} — ${result.isNewBest ? 'New Best!' : `Best ${formatRunTime(result.previousBestMs)}`}` : '';
   }
   if (ui.messageNextLevelButton) {
-    const nextLevel = won ? game.tilemaps.getNextTilemap() : null;
+    const campaignEligible = !game.scenarios?.current || game.scenarios.current.source === 'campaigns';
+    const nextLevel = won && campaignEligible ? game.tilemaps.getNextTilemap() : null;
     ui.messageNextLevelButton.hidden = !nextLevel;
     ui.messageNextLevelButton.textContent = nextLevel ? `Play ${nextLevel.name}` : 'Play Next';
   }

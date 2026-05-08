@@ -135,6 +135,10 @@ export function completeSpeedRunAttempt(game, runtime = game.runtime) {
   if (!attempt || !['ready', 'running'].includes(attempt.status)) return state?.lastResult ?? null;
   attempt.status = 'completed';
   const tilemapId = attempt.tilemapId || game.tilemap?.id;
+  if (game.scenarios?.current?.source === 'local') {
+    state.lastResult = { isNewBest: false, bestMs: Math.max(0, Math.round(attempt.elapsedMs)), previousBestMs: null, tilemapId, category: ANY_PERCENT, pausedDuringRun: attempt.pausedDuringRun, enemyTotal: attempt.enemyTotal, enemyKills: attempt.enemyKills, recorded: false };
+    return state.lastResult;
+  }
   const result = recordAnyPercentTime(state, tilemapId, attempt.elapsedMs, runtime);
   state.lastResult = { ...result, tilemapId, category: ANY_PERCENT, pausedDuringRun: attempt.pausedDuringRun, enemyTotal: attempt.enemyTotal, enemyKills: attempt.enemyKills };
   return state.lastResult;

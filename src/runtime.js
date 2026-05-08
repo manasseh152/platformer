@@ -13,7 +13,10 @@ export function createBrowserStorage(source = globalThis.localStorage) {
     getItem: key => target.getItem(key),
     setItem: (key, value) => target.setItem(key, value),
     removeItem: key => target.removeItem(key),
-    clear: () => target.clear()
+    clear: () => target.clear(),
+    keys: () => typeof target.keys === 'function'
+      ? target.keys()
+      : Array.from({ length: target.length ?? 0 }, (_, index) => target.key(index)).filter(Boolean)
   };
 }
 

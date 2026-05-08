@@ -23,8 +23,8 @@ export function createBlankDraft({ id = 'new-tilemap', name = 'New Tilemap', col
     artTileSize: CELL_SIZE.BUILD,
     terrainRenderMode: 'contained-autotile',
     theme: 'kenney-pixel-platformer:grass',
-    visibility: 'developer',
-    categories: ['drafts'],
+    visibility: 'public',
+    categories: ['local'],
     description: 'Draft tilemap authored in the browser editor.',
     layers: [
       { id: 'buildTerrain', cellSize: CELL_SIZE.BUILD, rows: Array.from({ length: layerRows(rows, CELL_SIZE.BUILD) }, () => lineOf(layerCols(cols, CELL_SIZE.BUILD))) },

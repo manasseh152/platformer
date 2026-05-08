@@ -173,8 +173,22 @@ test('map editor exports and imports shareable map files instead of JS downloads
     }))
   });
 
-  await expect(page.locator('#status')).toHaveText('Imported Shared Play Map. Ready to preview.');
+  await expect(page.locator('#status')).toHaveText('Imported Shared Play Map and saved locally. Ready to preview.');
   await expect(page.locator('#exportText')).toHaveValue(/id: 'shared-play-map'/);
+});
+
+test('map editor save local timestamps draft for Level Select', async ({ page }) => {
+  await page.goto('/editor.html');
+
+  await page.locator('#nameInput').fill('Saved Local Map');
+  await page.locator('#idInput').fill('saved-local-map');
+  await page.getByRole('button', { name: 'Save local' }).click();
+
+  await expect(page.locator('#status')).toContainText('Saved locally as saved-local-map.');
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('chibi.tilemap-editor.saved-local-map')));
+  expect(saved.name).toBe('Saved Local Map');
+  expect(saved.categories).toEqual(['levels', 'act-01']);
+  expect(typeof saved.updatedAt).toBe('number');
 });
 
 test('map editor opens a playable preview payload for the current draft', async ({ page }) => {
