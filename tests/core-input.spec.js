@@ -93,6 +93,24 @@ test('context routing can consume shared source edges before lower-priority acti
   expect(gameplay.isDown('player.jump')).toBe(true);
 });
 
+test('global devtools pause can consume KeyP before gameplay pause sees it', () => {
+  const input = createInputRuntime(gameInputProfile);
+
+  input.beginFrame();
+  key(input, 'control-down', 'KeyP');
+
+  const global = input.route(['global'], 'player1');
+  const gameplay = input.route(['gameplay'], 'player1');
+
+  expect(global.wasPressed('devtools.pause')).toBe(true);
+  expect(gameplay.wasPressed('system.pause')).toBe(true);
+
+  global.consume('devtools.pause');
+
+  expect(global.wasPressed('devtools.pause')).toBe(false);
+  expect(gameplay.wasPressed('system.pause')).toBe(false);
+});
+
 test('v1 keyboard and gamepad settings migrate to semantic structured input settings', () => {
   const { settings, warnings } = normalizeInputSettings(gameInputProfile, {
     schemaVersion: 1,

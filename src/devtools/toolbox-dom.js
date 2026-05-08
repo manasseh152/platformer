@@ -118,11 +118,6 @@ export function syncDevTools(game, { forceRender = false } = {}) {
 }
 
 export function handleDevToolsKeydown(game, event) {
-  if (event.code === 'Backquote') {
-    if (!isDevToolsEligible(game)) return false;
-    toggleDevTools(game);
-    return true;
-  }
   if (event.code === 'Escape' && game.devTools?.open) {
     const panel = game.devTools.elements.panel;
     if (panel?.contains(document.activeElement)) {
@@ -131,6 +126,26 @@ export function handleDevToolsKeydown(game, event) {
     }
   }
   return false;
+}
+
+export function handleDevToolsInput(game, route, { setPaused } = {}) {
+  if (!route) return false;
+  let handled = false;
+  if (route.wasPressed('devtools.toggle')) {
+    if (isDevToolsEligible(game)) {
+      toggleDevTools(game);
+      handled = true;
+    }
+    route.consume('devtools.toggle');
+  }
+  if (route.wasPressed('devtools.pause')) {
+    if (isDevToolsEligible(game)) {
+      setPaused?.(game, true);
+      handled = true;
+    }
+    if (handled) route.consume('devtools.pause');
+  }
+  return handled;
 }
 
 export function setupDevTools(game) {

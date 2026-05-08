@@ -248,6 +248,22 @@ bunx playwright test tests/core-input.spec.js tests/game-smoke.spec.js --project
 bun run build
 ```
 
+## Slice 7 implementation notes
+
+Devtools shortcuts now route through the semantic `global` input context instead of a raw Backquote keydown path.
+
+Added/changed modules:
+
+- `src/devtools/toolbox-dom.js`: exposes `handleDevToolsInput()` for `devtools.toggle` and `devtools.pause`, while keeping developer-mode/gameplay eligibility and panel behavior in devtools code.
+- `src/main.js`: processes the `global` route after the core input frame begins, consumes handled devtools source edges, and only lets lower-priority gameplay pause see `KeyP` when devtools did not handle it.
+- `tests/core-input.spec.js`: covers `devtools.pause` consuming the shared `KeyP` source edge before `system.pause` can double-trigger.
+
+Validation command for this slice:
+
+```sh
+bunx playwright test tests/devtools-toolbox.spec.js tests/core-input.spec.js tests/game-smoke.spec.js --project=chromium
+```
+
 ## Next slices
 
 1. **Wire gameplay to new core input** _(implemented in slice 2)_
@@ -279,7 +295,7 @@ bun run build
    - Let usage sites request hints by semantic action id plus optional presentation tokens while keeping fallback text available.
    - Lay the abstraction for controller icon packs and per-controller/global overrides, with text fallback first.
 
-6. **Devtools migration**
+6. **Devtools migration** _(implemented in slice 7)_
    - Route Backquote and devtools pause through the `global` input context and profile actions.
    - Keep developer-mode gating and panel behavior in devtools code.
    - Test that devtools shortcuts do not double-trigger pause/menu actions.

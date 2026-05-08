@@ -12,7 +12,7 @@ import { createGameplayScene } from './scenes/gameplay-scene.js';
 import { applyScenarioLaunchParams, readScenarioLaunchParams } from './catalog/scenarios/url.js';
 import { isPaused, isStarted, isWon } from './app/app-state.js';
 import { applyTilemapPreviewFromUrl } from './tilemap-preview.js';
-import { handleDevToolsKeydown, setupDevTools, syncDevTools } from './devtools/toolbox-dom.js';
+import { handleDevToolsInput, handleDevToolsKeydown, setupDevTools, syncDevTools } from './devtools/toolbox-dom.js';
 import { updateSpeedRun } from './speedrun.js';
 
 const runtime = createRuntime();
@@ -77,7 +77,7 @@ addEventListener('keydown', e => {
 
   const pauseHit = input.binds.pause.includes(e.code);
   if (!isStarted(game) && ['Enter','Space'].includes(e.code)) startGame(game, runtime);
-  else if (isStarted(game) && !player.dead && !isWon(game) && pauseHit) {
+  else if (!game.inputRuntime && isStarted(game) && !player.dead && !isWon(game) && pauseHit) {
     e.preventDefault();
     if (!e.repeat) setPaused(game, !isPaused(game), runtime);
     input.keys.add(e.code);
@@ -105,7 +105,9 @@ function frame(now = runtime.now()) {
     renderBinds(game);
   }
   const menuUsedGamepad = handleMenuInput(game);
-  const pausePressed = game.inputRuntime?.route(['gameplay']).wasPressed('system.pause') || hasPressed(game.input, 'pause');
+  const globalInput = game.inputRuntime?.route(['global']);
+  const devToolsHandled = handleDevToolsInput(game, globalInput, { setPaused: (game, value) => setPaused(game, value, runtime) });
+  const pausePressed = !devToolsHandled && (game.inputRuntime?.route(['gameplay']).wasPressed('system.pause') || hasPressed(game.input, 'pause'));
   if (!menuUsedGamepad && isStarted(game) && !game.player.dead && !isWon(game) && pausePressed) {
     setPaused(game, !isPaused(game), runtime);
   }
