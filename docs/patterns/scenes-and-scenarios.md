@@ -105,4 +105,4 @@ The browser uses top-level scenario tabs:
 - **Local**: same-device editor drafts stored under `chibi.tilemap-editor.*`, sorted recent-first. Local scenario ids use `local:<draft-id>`, and runtime tilemap ids are also rewritten to `local:<draft-id>` to avoid collisions with shipped content. Draft ids must be kebab-case to launch from Level Select. Missing `P` blocks launch; missing `G` is a warning.
 - **Gyms** and **Zoos**: developer-only tabs shown when Developer Mode or developer URL override is active.
 
-Map editor **Play preview** remains a temporary handoff via `previewTilemapKey` and is separate from durable Local drafts. **Save local** persists the draft for the Local tab.
+Map editor **Play preview** remains a temporary handoff via `previewTilemapKey` and is separate from durable Local drafts. **Save local** persists the draft for the Local tab. See [Map editor patterns](./map-editor.md) for editor save, preview, and local draft conventions.

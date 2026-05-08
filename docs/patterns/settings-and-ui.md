@@ -10,6 +10,8 @@ Avoid one-off nested panels, hidden implementation states, and duplicated persis
 
 Persistent app settings live in `game.settings`.
 
+Editor-only preferences, such as map editor auto-save and floating controls, are page-local tool preferences rather than app settings. Document them with the tool pattern instead of adding them to `game.settings`.
+
 Transient menu navigation lives in `game.menu`.
 
 Examples:
