@@ -25,6 +25,8 @@ import { localDraftStorageKey, localDraftViewStorageKey, readLocalDraft, saveLoc
 const SHARE_FORMAT = 'chibi-tilemap-draft';
 const SHARE_VERSION = 1;
 const PREVIEW_STORAGE_PREFIX = 'chibi.tilemap-preview.';
+const AUTO_SAVE_STORAGE_KEY = 'chibi.tilemap-editor.auto-save';
+const FLOATING_CONTROLS_STORAGE_KEY = 'chibi.tilemap-editor.floating-controls';
 const BRUSHES = [
   { id: 'terrain', label: 'Terrain #', layerId: 'buildTerrain', symbol: '#', cellSize: CELL_SIZE.BUILD, cursor: '#79f0c5' },
   { id: 'eraseTerrain', label: 'Erase terrain', layerId: 'buildTerrain', symbol: EMPTY, cellSize: CELL_SIZE.BUILD, cursor: '#ff8f8f' },
@@ -36,6 +38,16 @@ const BRUSHES = [
 
 const dom = {
   canvas: document.querySelector('#editorCanvas'),
+  mainMenuButton: document.querySelector('#mainMenuButton'),
+  saveLocalButton: document.querySelector('#saveLocalButton'),
+  overlay: document.querySelector('#editorOverlay'),
+  hideOverlayButton: document.querySelector('#hideOverlayButton'),
+  tabs: Array.from(document.querySelectorAll('[data-editor-tab]')),
+  panels: Array.from(document.querySelectorAll('[role="tabpanel"]')),
+  autoSaveToggle: document.querySelector('#autoSaveToggle'),
+  floatingControlsToggle: document.querySelector('#floatingControlsToggle'),
+  floatingViewControls: document.querySelector('#floatingViewControls'),
+  panToggleButton: document.querySelector('#panToggleButton'),
   tilemapSelect: document.querySelector('#tilemapSelect'),
   nameInput: document.querySelector('#nameInput'),
   idInput: document.querySelector('#idInput'),
@@ -52,7 +64,6 @@ const dom = {
   brushes: document.querySelector('#brushes'),
   gridToggle: document.querySelector('#gridToggle'),
   collisionToggle: document.querySelector('#collisionToggle'),
-  saveLocalButton: document.querySelector('#saveLocalButton'),
   previewButton: document.querySelector('#previewButton'),
   copyButton: document.querySelector('#copyButton'),
   exportMapButton: document.querySelector('#exportMapButton'),
@@ -82,6 +93,13 @@ let activePointers = new Map();
 let pinch = null;
 let editorSource = 'registered';
 let loadedLocalDraftId = null;
+let activeTab = 'edit';
+let overlayHidden = false;
+let autoSaveEnabled = readBooleanPreference(AUTO_SAVE_STORAGE_KEY, true);
+let floatingControlsEnabled = readBooleanPreference(FLOATING_CONTROLS_STORAGE_KEY, true);
+let dirty = false;
+let saving = false;
+let panMode = false;
 
 function storageKey(id) { return localDraftStorageKey(id); }
 function viewStorageKey(id) { return localDraftViewStorageKey(id); }
@@ -90,6 +108,14 @@ function worldWidth() { return draft.cols * CELL_SIZE.GRID; }
 function worldHeight() { return draft.rows * CELL_SIZE.GRID; }
 function terrainLayer() { return draft.layers.find(layer => layer.id === 'buildTerrain'); }
 function entityLayer() { return draft.layers.find(layer => layer.id === 'entities'); }
+function readBooleanPreference(key, defaultValue) {
+  try {
+    const value = localStorage.getItem(key);
+    if (value === null) return defaultValue;
+    return value === 'true';
+  } catch { return defaultValue; }
+}
+function writeBooleanPreference(key, value) { localStorage.setItem(key, value ? 'true' : 'false'); }
 
 function createDraftFromTilemap(tilemap) {
   const saved = localStorage.getItem(storageKey(tilemap.id));
@@ -205,14 +231,58 @@ function syncDraftMetadataFromInputs() {
   if (dom.idInput) draft.id = dom.idInput.value.trim();
 }
 
-function saveLocalExplicit() {
-  try {
-    flushPending();
-    const warning = !hasEntitySymbol(draft, 'P') ? ' Add Player P before playing.' : (!hasEntitySymbol(draft, 'G') ? ' No finish gate yet.' : ' Ready to play from Level Select.');
-    setStatus(`Saved locally as ${draft.id}.${warning}`, hasEntitySymbol(draft, 'P') ? 'ok' : '');
-  } catch (error) {
-    setStatus(error.message, 'error');
+function updateSaveButton() {
+  if (!dom.saveLocalButton) return;
+  const valid = isKebabCaseId(draft.id);
+  if (!valid) {
+    dom.saveLocalButton.textContent = 'Fix ID to save';
+    dom.saveLocalButton.disabled = true;
+    dom.saveLocalButton.dataset.saveState = 'invalid';
+    return;
   }
+  if (saving) {
+    dom.saveLocalButton.textContent = autoSaveEnabled ? 'Saving…' : 'Save local';
+    dom.saveLocalButton.disabled = false;
+    dom.saveLocalButton.dataset.saveState = 'saving';
+    return;
+  }
+  if (dirty || scheduler.dirty) {
+    dom.saveLocalButton.textContent = autoSaveEnabled ? 'Save now' : 'Save local';
+    dom.saveLocalButton.disabled = false;
+    dom.saveLocalButton.dataset.saveState = 'dirty';
+    return;
+  }
+  dom.saveLocalButton.textContent = 'Saved';
+  dom.saveLocalButton.disabled = true;
+  dom.saveLocalButton.dataset.saveState = 'clean';
+}
+
+function markDirty() {
+  dirty = true;
+  updateSaveButton();
+}
+
+function commitSave({ status = true } = {}) {
+  saving = true;
+  updateSaveButton();
+  try {
+    scheduler.flush(() => {
+      ensureCompiled();
+      persist();
+      syncInputs();
+      render();
+    });
+    dirty = false;
+    const warning = !hasEntitySymbol(draft, 'P') ? ' Add Player P before playing.' : (!hasEntitySymbol(draft, 'G') ? ' No finish gate yet.' : ' Ready to play from Level Select.');
+    if (status) setStatus(`Saved locally as ${draft.id}.${warning}`, hasEntitySymbol(draft, 'P') ? 'ok' : '');
+  } finally {
+    saving = false;
+    updateSaveButton();
+  }
+}
+
+function saveLocalExplicit() {
+  try { commitSave(); } catch (error) { setStatus(error.message, 'error'); updateSaveButton(); }
 }
 
 function saveView() {
@@ -240,6 +310,7 @@ function syncInputs() {
   dom.exportText.value = generatedModule();
   updateZoomReadout();
   updateHistoryControls();
+  updateSaveButton();
 }
 
 function updateHistoryControls() {
@@ -247,27 +318,75 @@ function updateHistoryControls() {
   if (dom.redoButton) dom.redoButton.disabled = !history.canRedo;
 }
 
+function syncPreferencesUi() {
+  if (dom.autoSaveToggle) dom.autoSaveToggle.checked = autoSaveEnabled;
+  if (dom.floatingControlsToggle) dom.floatingControlsToggle.checked = floatingControlsEnabled;
+  if (dom.floatingViewControls) dom.floatingViewControls.hidden = !floatingControlsEnabled;
+  document.body.classList.toggle('pan-mode', panMode);
+  if (dom.panToggleButton) dom.panToggleButton.setAttribute('aria-pressed', panMode ? 'true' : 'false');
+}
+
+function setActiveTab(tabId, { show = true, focus = false } = {}) {
+  activeTab = tabId;
+  overlayHidden = !show;
+  if (dom.overlay) dom.overlay.hidden = overlayHidden;
+  for (const tab of dom.tabs) {
+    const selected = tab.dataset.editorTab === activeTab;
+    tab.setAttribute('aria-selected', selected ? 'true' : 'false');
+    tab.tabIndex = selected ? 0 : -1;
+    if (selected && focus) tab.focus();
+  }
+  for (const panel of dom.panels) panel.hidden = panel.id !== `${activeTab}Panel`;
+}
+
+function toggleTab(tabId) {
+  if (tabId === activeTab) setActiveTab(tabId, { show: overlayHidden });
+  else setActiveTab(tabId, { show: true });
+}
+
+function navigateMainMenu() {
+  if (!autoSaveEnabled && dirty && !confirm('You have unsaved local changes. Leave without saving?')) return;
+  if (autoSaveEnabled) flushPending();
+  window.location.assign('/index.html');
+}
+
 function flushPending() {
+  if (!autoSaveEnabled) { updateSaveButton(); return; }
   scheduler.flush(() => {
     ensureCompiled();
     persist();
+    dirty = false;
     syncInputs();
     render();
     setStatus(`Valid ${draft.cols}×${draft.rows} tilemap.`, 'ok');
+    updateSaveButton();
   });
 }
 
 function scheduleAfterEdit() {
   compiledFresh = false;
+  markDirty();
+  if (!autoSaveEnabled) {
+    try { ensureCompiled(); syncInputs(); render(); }
+    catch (error) { setStatus(error.message, 'error'); }
+    updateSaveButton();
+    return;
+  }
   scheduler.scheduleDebounced(() => {
     try {
+      saving = true;
+      updateSaveButton();
       ensureCompiled();
       persist();
+      dirty = false;
       syncInputs();
       render();
       setStatus(`Valid ${draft.cols}×${draft.rows} tilemap.`, 'ok');
     } catch (error) {
       setStatus(error.message, 'error');
+    } finally {
+      saving = false;
+      updateSaveButton();
     }
   });
 }
@@ -297,6 +416,7 @@ async function importMapFile(file) {
     compiledFresh = false;
     ensureCompiled();
     persist({ syncMetadata: false });
+    dirty = false;
     syncInputs();
     dom.tilemapSelect.value = getDefaultTilemap().id;
     resetView(viewport, worldWidth(), worldHeight());
@@ -507,7 +627,7 @@ function updatePan(event) {
   scheduleRender();
 }
 
-function isPanGesture(event) { return event.button === 1 || keysDown.has('Space'); }
+function isPanGesture(event) { return panMode || event.button === 1 || keysDown.has('Space'); }
 
 function buildBrushButtons() {
   dom.brushes.innerHTML = '';
@@ -530,6 +650,7 @@ function loadSelected(resetSaved = false) {
       compiledFresh = false;
       ensureCompiled();
       loadViewOrReset();
+      dirty = false;
       syncInputs();
       render();
       setStatus(`Reloaded local draft ${draft.name}.`, 'ok');
@@ -545,6 +666,7 @@ function loadSelected(resetSaved = false) {
   compiledFresh = false;
   ensureCompiled();
   loadViewOrReset();
+  dirty = false;
   syncInputs();
   render();
   setStatus(`Valid ${draft.cols}×${draft.rows} tilemap.`, 'ok');
@@ -606,8 +728,35 @@ function setup() {
   compileDraft();
   loadViewOrReset();
   syncInputs();
+  syncPreferencesUi();
+  setActiveTab('edit', { show: true });
 
   new ResizeObserver(() => { resizeViewport(viewport); clampCamera(viewport, worldWidth(), worldHeight()); render(); }).observe(dom.canvas.parentElement);
+  dom.mainMenuButton?.addEventListener('click', navigateMainMenu);
+  dom.hideOverlayButton?.addEventListener('click', () => setActiveTab(activeTab, { show: false }));
+  for (const tab of dom.tabs) {
+    tab.addEventListener('click', () => toggleTab(tab.dataset.editorTab));
+    tab.addEventListener('keydown', event => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const index = dom.tabs.indexOf(tab);
+      const nextIndex = event.key === 'Home' ? 0 : event.key === 'End' ? dom.tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + dom.tabs.length) % dom.tabs.length;
+      setActiveTab(dom.tabs[nextIndex].dataset.editorTab, { show: true, focus: true });
+    });
+  }
+  dom.autoSaveToggle?.addEventListener('change', () => {
+    autoSaveEnabled = dom.autoSaveToggle.checked;
+    writeBooleanPreference(AUTO_SAVE_STORAGE_KEY, autoSaveEnabled);
+    syncPreferencesUi();
+    if (autoSaveEnabled && dirty) commitSave({ status: false });
+    else updateSaveButton();
+  });
+  dom.floatingControlsToggle?.addEventListener('change', () => {
+    floatingControlsEnabled = dom.floatingControlsToggle.checked;
+    writeBooleanPreference(FLOATING_CONTROLS_STORAGE_KEY, floatingControlsEnabled);
+    syncPreferencesUi();
+  });
+  dom.panToggleButton?.addEventListener('click', () => { panMode = !panMode; syncPreferencesUi(); });
   dom.tilemapSelect.addEventListener('change', () => loadSelected());
   dom.resetButton.addEventListener('click', () => loadSelected(true));
   dom.newButton.addEventListener('click', () => {
@@ -619,12 +768,13 @@ function setup() {
     compiledFresh = false;
     ensureCompiled();
     resetView(viewport, worldWidth(), worldHeight());
-    tryPersist(); syncInputs(); render();
+    if (autoSaveEnabled) { tryPersist(); dirty = false; } else { dirty = true; }
+    syncInputs(); render();
   });
   dom.gridToggle.addEventListener('change', render);
   dom.collisionToggle.addEventListener('change', () => { if (dom.collisionToggle.checked) ensureCompiled(); render(); });
   dom.nameInput?.addEventListener('input', () => { syncDraftMetadataFromInputs(); scheduleAfterEdit(); });
-  dom.idInput?.addEventListener('input', () => { syncDraftMetadataFromInputs(); compiledFresh = false; syncInputs(); if (!isKebabCaseId(draft.id)) setStatus('Draft id must be kebab-case. Fix ID to save locally or copy JS.', 'error'); else scheduleAfterEdit(); });
+  dom.idInput?.addEventListener('input', () => { syncDraftMetadataFromInputs(); compiledFresh = false; markDirty(); syncInputs(); if (!isKebabCaseId(draft.id)) setStatus('Draft id must be kebab-case. Fix ID to save locally or copy JS.', 'error'); else scheduleAfterEdit(); });
   dom.saveLocalButton?.addEventListener('click', saveLocalExplicit);
   dom.previewButton.addEventListener('click', previewDraft);
   dom.copyButton.addEventListener('click', async () => { syncDraftMetadataFromInputs(); if (!isKebabCaseId(draft.id)) { setStatus('Fix draft ID before copying JS.', 'error'); return; } flushPending(); await navigator.clipboard.writeText(dom.exportText.value); setStatus('Copied generated tilemap module.', 'ok'); });
@@ -679,14 +829,22 @@ function setup() {
   addEventListener('keydown', event => {
     keysDown.add(event.code);
     const modifier = event.ctrlKey || event.metaKey;
-    if (!modifier || ['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target?.tagName)) return;
+    if (!modifier) return;
+    if (event.code === 'KeyS') { event.preventDefault(); saveLocalExplicit(); return; }
+    if (event.code === 'Enter') { event.preventDefault(); previewDraft(); return; }
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target?.tagName)) return;
     if (event.code === 'KeyZ' && event.shiftKey) { event.preventDefault(); applyHistoryAction('redo'); }
     else if (event.code === 'KeyZ') { event.preventDefault(); applyHistoryAction('undo'); }
     else if (event.code === 'KeyY') { event.preventDefault(); applyHistoryAction('redo'); }
   });
   addEventListener('keyup', event => { keysDown.delete(event.code); });
-  addEventListener('pagehide', flushPending);
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushPending(); });
+  addEventListener('beforeunload', event => {
+    if (autoSaveEnabled || !dirty) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
+  addEventListener('pagehide', () => { if (autoSaveEnabled) flushPending(); });
+  document.addEventListener('visibilitychange', () => { if (autoSaveEnabled && document.visibilityState === 'hidden') flushPending(); });
   render();
   setStatus(`Valid ${draft.cols}×${draft.rows} tilemap.`, 'ok');
 }

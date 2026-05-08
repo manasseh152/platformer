@@ -1,5 +1,19 @@
 import { expect, test } from '@playwright/test';
 
+async function openMapPanel(page) {
+  if (await page.locator('#mapPanel').isVisible()) return;
+  await page.getByRole('tab', { name: 'Map' }).click();
+  if (!(await page.locator('#mapPanel').isVisible())) await page.getByRole('tab', { name: 'Map' }).click();
+}
+
+async function createBlankMap(page, cols = '4', rows = '3') {
+  await openMapPanel(page);
+  await page.locator('#colsInput').fill(cols);
+  await page.locator('#rowsInput').fill(rows);
+  await page.locator('#newButton').click();
+  await page.getByRole('tab', { name: 'Edit' }).click();
+}
+
 test('start screen points the map editor button at the extensionless production route', async ({ page }) => {
   await page.goto('/index.html');
 
@@ -12,6 +26,8 @@ test('map editor loads registered tilemaps and exports new gridLayer format', as
   await page.goto('/editor.html');
 
   await expect(page.locator('h1')).toHaveText('Tilemap Editor');
+  await expect(page.getByRole('tab', { name: 'Edit' })).toHaveAttribute('aria-selected', 'true');
+  await openMapPanel(page);
   await expect(page.locator('#tilemapSelect')).toContainText('Act 01 Level 1');
   await expect(page.locator('#status')).toContainText('Valid');
   await expect(page.locator('#exportText')).toHaveValue(/gridLayer\(\{ id: 'buildTerrain', cellSize: CELL_SIZE\.BUILD/);
@@ -20,9 +36,7 @@ test('map editor loads registered tilemaps and exports new gridLayer format', as
 
 test('map editor paints terrain into exported rows', async ({ page }) => {
   await page.goto('/editor.html');
-  await page.locator('#colsInput').fill('4');
-  await page.locator('#rowsInput').fill('3');
-  await page.locator('#newButton').click();
+  await createBlankMap(page);
 
   const box = await page.locator('#editorCanvas').boundingBox();
   await page.mouse.click(box.x + 8, box.y + 8);
@@ -33,9 +47,7 @@ test('map editor paints terrain into exported rows', async ({ page }) => {
 
 test('map editor uses a fixed viewport canvas for large maps', async ({ page }) => {
   await page.goto('/editor.html');
-  await page.locator('#colsInput').fill('120');
-  await page.locator('#rowsInput').fill('80');
-  await page.locator('#newButton').click();
+  await createBlankMap(page, '120', '80');
 
   const metrics = await page.locator('#editorCanvas').evaluate(canvas => ({
     backingWidth: canvas.width,
@@ -62,9 +74,7 @@ test('map editor zoom controls change viewport zoom without resizing to world si
 
 test('map editor defers compile/export/persist during drag and flushes after painting', async ({ page }) => {
   await page.goto('/editor.html');
-  await page.locator('#colsInput').fill('20');
-  await page.locator('#rowsInput').fill('10');
-  await page.locator('#newButton').click();
+  await createBlankMap(page, '20', '10');
   await page.evaluate(() => { window.__mapEditorDebug.compileCount = 0; window.__mapEditorDebug.exportCount = 0; window.__mapEditorDebug.persistCount = 0; });
 
   const box = await page.locator('#editorCanvas').boundingBox();
@@ -87,9 +97,7 @@ test('map editor defers compile/export/persist during drag and flushes after pai
 
 test('map editor undo and redo operate on a whole paint stroke', async ({ page }) => {
   await page.goto('/editor.html');
-  await page.locator('#colsInput').fill('4');
-  await page.locator('#rowsInput').fill('3');
-  await page.locator('#newButton').click();
+  await createBlankMap(page);
 
   await expect(page.getByRole('button', { name: 'Undo' })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Redo' })).toBeDisabled();
@@ -113,9 +121,7 @@ test('map editor undo and redo operate on a whole paint stroke', async ({ page }
 
 test('map editor clears redo when a new paint stroke follows undo', async ({ page }) => {
   await page.goto('/editor.html');
-  await page.locator('#colsInput').fill('4');
-  await page.locator('#rowsInput').fill('3');
-  await page.locator('#newButton').click();
+  await createBlankMap(page);
 
   const box = await page.locator('#editorCanvas').boundingBox();
   await page.mouse.click(box.x + 8, box.y + 8);
@@ -131,6 +137,7 @@ test('map editor clears redo when a new paint stroke follows undo', async ({ pag
 
 test('map editor exports and imports shareable map files instead of JS downloads', async ({ page }) => {
   await page.goto('/editor.html');
+  await openMapPanel(page);
 
   await expect(page.getByRole('button', { name: 'Download' })).toHaveCount(0);
 
@@ -179,10 +186,11 @@ test('map editor exports and imports shareable map files instead of JS downloads
 
 test('map editor save local timestamps draft for Level Select', async ({ page }) => {
   await page.goto('/editor.html');
+  await openMapPanel(page);
 
   await page.locator('#nameInput').fill('Saved Local Map');
   await page.locator('#idInput').fill('saved-local-map');
-  await page.getByRole('button', { name: 'Save local' }).click();
+  await page.getByRole('button', { name: /Save now|Save local/ }).click();
 
   await expect(page.locator('#status')).toContainText('Saved locally as saved-local-map.');
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('chibi.tilemap-editor.saved-local-map')));
@@ -200,6 +208,7 @@ test('map editor opens a playable preview payload for the current draft', async 
     };
   });
   await page.goto('/editor.html');
+  await openMapPanel(page);
 
   await page.getByRole('button', { name: 'Play preview' }).click();
 
@@ -228,15 +237,76 @@ test('map editor blocks preview until the draft has a player spawn', async ({ pa
     };
   });
   await page.goto('/editor.html');
-  await page.locator('#colsInput').fill('4');
-  await page.locator('#rowsInput').fill('3');
-  await page.locator('#newButton').click();
+  await createBlankMap(page);
+  await openMapPanel(page);
 
   await page.getByRole('button', { name: 'Play preview' }).click();
 
   await expect(page.locator('#status')).toHaveText('Add a Player P before previewing.');
   await expect(page.locator('#status')).toHaveClass(/error/);
   await expect.poll(() => page.evaluate(() => window.__openedPreviews.length)).toBe(0);
+});
+
+test('map editor tab clicks toggle the floating overlay', async ({ page }) => {
+  await page.goto('/editor.html');
+
+  await expect(page.locator('#editorOverlay')).toBeVisible();
+  await page.getByRole('tab', { name: 'Edit' }).click();
+  await expect(page.locator('#editorOverlay')).toBeHidden();
+  await page.getByRole('tab', { name: 'Edit' }).click();
+  await expect(page.locator('#editorOverlay')).toBeVisible();
+  await openMapPanel(page);
+  await expect(page.locator('#mapPanel')).toBeVisible();
+});
+
+test('map editor can disable auto-save and commit with ctrl+s', async ({ page }) => {
+  await page.goto('/editor.html');
+  await openMapPanel(page);
+  await page.locator('#autoSaveToggle').uncheck();
+  await createBlankMap(page);
+  await page.evaluate(() => { window.__mapEditorDebug.persistCount = 0; });
+
+  const box = await page.locator('#editorCanvas').boundingBox();
+  await page.mouse.click(box.x + 8, box.y + 8);
+  await page.waitForTimeout(350);
+
+  expect(await page.evaluate(() => window.__mapEditorDebug.persistCount)).toBe(0);
+  await expect(page.getByRole('button', { name: 'Save local' })).toBeEnabled();
+
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+S' : 'Control+S');
+  await expect(page.locator('#status')).toContainText('Saved locally as');
+  expect(await page.evaluate(() => window.__mapEditorDebug.persistCount)).toBe(1);
+  await expect(page.getByRole('button', { name: 'Saved' })).toBeDisabled();
+});
+
+test('map editor persists the floating zoom controls preference', async ({ page }) => {
+  await page.goto('/editor.html');
+  await page.getByRole('tab', { name: 'View' }).click();
+  await expect(page.locator('#floatingViewControls')).toBeVisible();
+
+  await page.locator('#floatingControlsToggle').uncheck();
+  await expect(page.locator('#floatingViewControls')).toBeHidden();
+
+  await page.reload();
+  await page.getByRole('tab', { name: 'View' }).click();
+  await expect(page.locator('#floatingControlsToggle')).not.toBeChecked();
+  await expect(page.locator('#floatingViewControls')).toBeHidden();
+});
+
+test('map editor ctrl+enter opens playable preview', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__openedPreviews = [];
+    window.open = (url, target) => {
+      window.__openedPreviews.push({ url, target });
+      return { focus() {} };
+    };
+  });
+  await page.goto('/editor.html');
+
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+Enter' : 'Control+Enter');
+
+  await expect(page.locator('#status')).toContainText('Opened playable preview');
+  await expect.poll(() => page.evaluate(() => window.__openedPreviews.length)).toBe(1);
 });
 
 test('game page consumes a preview tilemap payload and starts play', async ({ page }) => {

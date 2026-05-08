@@ -8,115 +8,114 @@
 </head>
 <body>
   <main class="editor-shell">
-    <header class="editor-topbar" aria-label="Editor overview">
-      <div class="brand-lockup">
-        <p class="eyebrow">Developer Tool</p>
-        <h1>Tilemap Editor</h1>
+    <header class="editor-topbar" aria-label="Editor controls">
+      <button id="mainMenuButton" type="button" class="top-button">Main menu</button>
+
+      <div class="editor-tabs" role="tablist" aria-label="Editor action groups">
+        <button id="mapTab" type="button" role="tab" aria-selected="false" aria-controls="mapPanel" data-editor-tab="map">Map</button>
+        <button id="editTab" type="button" role="tab" aria-selected="true" aria-controls="editPanel" data-editor-tab="edit">Edit</button>
+        <button id="viewTab" type="button" role="tab" aria-selected="false" aria-controls="viewPanel" data-editor-tab="view">View</button>
       </div>
-      <p class="topbar-copy">Paint 16px terrain, place 32px actors, then jump straight into a playable preview.</p>
-      <div class="topbar-actions">
-        <button id="saveLocalButton" type="button" class="primary">Save local</button>
-        <button id="previewButton" type="button" class="primary">Play preview</button>
-      </div>
+
+      <button id="saveLocalButton" type="button" class="save-state-button" data-save-state="clean" disabled>Saved</button>
     </header>
 
-    <aside class="sidebar" aria-label="Tilemap editor controls">
-      <section class="control-card control-card--map" aria-labelledby="mapHeading">
-        <div class="section-title">
-          <span class="section-kicker">01</span>
-          <h2 id="mapHeading">Map</h2>
-        </div>
-
-        <label class="field">
-          <span>Registered tilemap</span>
-          <select id="tilemapSelect"></select>
-        </label>
-
-        <label class="field">
-          <span>Map name</span>
-          <input id="nameInput" type="text" value="New Tilemap" />
-        </label>
-        <label class="field">
-          <span>Map ID</span>
-          <input id="idInput" type="text" value="new-tilemap" aria-describedby="idHint" />
-        </label>
-        <p id="idHint" class="hint">Use kebab-case, e.g. <code>my-map-01</code>.</p>
-
-        <div class="field-grid">
-          <label class="field"><span>Cols</span><input id="colsInput" type="number" min="1" max="120" value="36" /></label>
-          <label class="field"><span>Rows</span><input id="rowsInput" type="number" min="1" max="80" value="16" /></label>
-        </div>
-
-        <div class="button-row">
-          <button id="newButton" type="button">New blank</button>
-          <button id="resetButton" type="button">Reload</button>
-        </div>
-      </section>
-
-      <section class="control-card" aria-labelledby="brushHeading">
-        <div class="section-title">
-          <span class="section-kicker">02</span>
-          <h2 id="brushHeading">Brush</h2>
-        </div>
-        <div id="brushes" class="brush-grid" role="toolbar" aria-label="Paint brushes"></div>
-        <div class="button-row history-controls" aria-label="Edit history controls">
-          <button id="undoButton" type="button" disabled>Undo</button>
-          <button id="redoButton" type="button" disabled>Redo</button>
-        </div>
-      </section>
-
-      <section class="control-card" aria-labelledby="viewHeading">
-        <div class="section-title">
-          <span class="section-kicker">03</span>
-          <h2 id="viewHeading">View</h2>
-        </div>
-        <div class="switch-stack">
-          <label class="check"><input id="gridToggle" type="checkbox" checked /> <span>Grid</span></label>
-          <label class="check"><input id="collisionToggle" type="checkbox" /> <span>Collision rects</span></label>
-        </div>
-        <div class="button-row view-controls" aria-label="Viewport controls">
-          <button id="zoomOutButton" type="button" aria-label="Zoom out">−</button>
-          <output id="zoomReadout" aria-label="Zoom level">100%</output>
-          <button id="zoomInButton" type="button" aria-label="Zoom in">+</button>
-          <button id="resetViewButton" type="button">Reset view</button>
-        </div>
-        <p class="hint">Wheel or pinch to zoom. Hold <kbd>Space</kbd> or middle-drag to pan.</p>
-      </section>
-
-      <section class="control-card" aria-labelledby="exportHeading">
-        <div class="section-title">
-          <span class="section-kicker">04</span>
-          <h2 id="exportHeading">Export</h2>
-        </div>
-        <div class="button-row export-controls">
-          <button id="copyButton" type="button">Copy JS</button>
-          <button id="exportMapButton" type="button">Export map</button>
-          <button id="importMapButton" type="button">Import map</button>
-        </div>
-        <input id="importMapInput" type="file" accept="application/json,.json,.chibi-map" hidden />
-      </section>
-    </aside>
-
     <section class="workspace" aria-label="Tilemap workspace">
-      <div class="canvas-card">
-        <div class="canvas-chrome" aria-hidden="true">
-          <span class="chrome-dot"></span>
-          <span class="chrome-label">Live draft canvas</span>
-          <span class="chrome-tip">Paint • Pan • Preview</span>
+      <canvas id="editorCanvas" width="1152" height="512" aria-label="Tilemap canvas"></canvas>
+
+      <aside id="editorOverlay" class="editor-overlay" aria-label="Editor action panel">
+        <div class="overlay-head">
+          <h1>Tilemap Editor</h1>
+          <button id="hideOverlayButton" type="button" class="ghost-button">Hide</button>
         </div>
-        <canvas id="editorCanvas" width="1152" height="512" aria-label="Tilemap canvas"></canvas>
+
+        <section id="mapPanel" class="tab-panel" role="tabpanel" aria-labelledby="mapTab" hidden>
+          <div class="panel-section">
+            <h2>Map setup</h2>
+            <label class="field">
+              <span>Registered tilemap</span>
+              <select id="tilemapSelect"></select>
+            </label>
+            <label class="field">
+              <span>Map name</span>
+              <input id="nameInput" type="text" value="New Tilemap" />
+            </label>
+            <label class="field">
+              <span>Map ID</span>
+              <input id="idInput" type="text" value="new-tilemap" aria-describedby="idHint" />
+            </label>
+            <p id="idHint" class="hint">Use kebab-case, e.g. <code>my-map-01</code>.</p>
+            <div class="field-grid">
+              <label class="field"><span>Cols</span><input id="colsInput" type="number" min="1" max="120" value="36" /></label>
+              <label class="field"><span>Rows</span><input id="rowsInput" type="number" min="1" max="80" value="16" /></label>
+            </div>
+            <div class="button-row">
+              <button id="newButton" type="button">New blank</button>
+              <button id="resetButton" type="button">Reload</button>
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <h2>Local workflow</h2>
+            <label class="check"><input id="autoSaveToggle" type="checkbox" checked /> <span>Auto-save local changes</span></label>
+            <div class="button-row">
+              <button id="previewButton" type="button">Play preview</button>
+              <button id="copyButton" type="button">Copy JS</button>
+            </div>
+            <p class="hint"><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>S</kbd> saves. <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd> previews.</p>
+          </div>
+
+          <div class="panel-section">
+            <h2>Portability</h2>
+            <div class="button-row">
+              <button id="exportMapButton" type="button">Export map</button>
+              <button id="importMapButton" type="button">Import map</button>
+            </div>
+            <input id="importMapInput" type="file" accept="application/json,.json,.chibi-map" hidden />
+          </div>
+
+          <details class="source-disclosure">
+            <summary>Generated source</summary>
+            <textarea id="exportText" spellcheck="false" aria-label="Generated tilemap JavaScript"></textarea>
+          </details>
+        </section>
+
+        <section id="editPanel" class="tab-panel" role="tabpanel" aria-labelledby="editTab">
+          <div class="panel-section">
+            <h2>Brushes</h2>
+            <div id="brushes" class="brush-grid" role="toolbar" aria-label="Paint brushes"></div>
+          </div>
+          <div class="panel-section">
+            <h2>History</h2>
+            <div class="button-row history-controls" aria-label="Edit history controls">
+              <button id="undoButton" type="button" disabled>Undo</button>
+              <button id="redoButton" type="button" disabled>Redo</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="viewPanel" class="tab-panel" role="tabpanel" aria-labelledby="viewTab" hidden>
+          <div class="panel-section">
+            <h2>View</h2>
+            <div class="switch-stack">
+              <label class="check"><input id="gridToggle" type="checkbox" checked /> <span>Grid</span></label>
+              <label class="check"><input id="collisionToggle" type="checkbox" /> <span>Collision rects</span></label>
+              <label class="check"><input id="floatingControlsToggle" type="checkbox" checked /> <span>Floating zoom controls</span></label>
+            </div>
+            <p class="hint">Wheel or pinch to zoom. Hold <kbd>Space</kbd> or middle-drag to pan.</p>
+          </div>
+        </section>
+      </aside>
+
+      <div id="floatingViewControls" class="floating-view-controls" aria-label="Floating viewport controls">
+        <button id="zoomOutButton" type="button" aria-label="Zoom out">−</button>
+        <output id="zoomReadout" aria-label="Zoom level">100%</output>
+        <button id="zoomInButton" type="button" aria-label="Zoom in">+</button>
+        <button id="resetViewButton" type="button">Reset</button>
+        <button id="panToggleButton" type="button" aria-pressed="false">Pan</button>
       </div>
 
-      <section class="output-card" aria-label="Generated output">
-        <div class="output-header">
-          <div>
-            <p class="eyebrow">Generated Module</p>
-            <h2>Source</h2>
-          </div>
-          <p id="status" class="status" role="status">Ready.</p>
-        </div>
-        <textarea id="exportText" spellcheck="false" aria-label="Generated tilemap JavaScript"></textarea>
-      </section>
+      <p id="status" class="status" role="status">Ready.</p>
     </section>
   </main>
 
