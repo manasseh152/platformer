@@ -47,6 +47,33 @@ test('map editor loads registered tilemaps and exports new terrainLayer format',
   await expect(page.locator('#exportText')).toHaveValue(/gridLayer\(\{ id: 'entities', cellSize: CELL_SIZE\.GRID/);
 });
 
+test('map editor migrates legacy buildTerrain drafts from local storage', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('chibi.tilemap-editor.act-01-level-1', JSON.stringify({
+      id: 'act-01-level-1',
+      name: 'Legacy Saved Level',
+      cols: 4,
+      rows: 3,
+      artTileSize: 16,
+      terrainRenderMode: 'contained-autotile',
+      theme: 'kenney-pixel-platformer:grass',
+      visibility: 'developer',
+      categories: ['drafts'],
+      description: 'Old editor draft.',
+      layers: [
+        { id: 'buildTerrain', cellSize: 16, rows: ['##......', '##......', '........', '........', '......##', '......##'] },
+        { id: 'entities', cellSize: 32, rows: ['P...', '....', '...G'] }
+      ]
+    }));
+  });
+
+  await page.goto('/editor.html');
+
+  await expect(page.locator('#status')).toContainText('Valid 4×3 tilemap.');
+  await expect(page.locator('#exportText')).toHaveValue(/terrainLayer\(\{ cellSize: CELL_SIZE\.BUILD/);
+  await expect(page.locator('#exportText')).toHaveValue(/\[K\.GRASS, K\.GRASS, null, null, null, null, null, null\]/);
+});
+
 test('map editor paints terrain into exported rows', async ({ page }) => {
   await page.goto('/editor.html');
   await createBlankMap(page);

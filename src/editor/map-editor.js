@@ -3,7 +3,7 @@ import { drawCollisionDebugOverlay } from '../devtools/debug-render.js';
 import { getAllTilemaps, getDefaultTilemap } from '../content/tilemaps/registry.js';
 import { planContainedTerrainTileVisuals } from '../render/contained-terrain.js';
 import { TERRAIN_KIND, terrainKindConfig } from '../core/tilemaps/terrain-layer.js';
-import { EMPTY, compileDraft as compileTilemapDraft, createBlankDraft, createDraftFromTilemap as draftFromTilemap, hasEntitySymbol, replaceChar } from './tilemap-draft.js';
+import { EMPTY, compileDraft as compileTilemapDraft, createBlankDraft, createDraftFromTilemap as draftFromTilemap, hasEntitySymbol, normalizeDraft, replaceChar } from './tilemap-draft.js';
 import {
   applyWorldTransform,
   clearViewport,
@@ -127,7 +127,7 @@ function writeBooleanPreference(key, value) { localStorage.setItem(key, value ? 
 function createDraftFromTilemap(tilemap) {
   const saved = localStorage.getItem(storageKey(tilemap.id));
   if (saved) {
-    try { return JSON.parse(saved); } catch { localStorage.removeItem(storageKey(tilemap.id)); }
+    try { return normalizeDraft(JSON.parse(saved)); } catch { localStorage.removeItem(storageKey(tilemap.id)); }
   }
   return draftFromTilemap(tilemap);
 }
@@ -217,7 +217,7 @@ function validateImportedDraft(candidate) {
 }
 
 function draftFromSharePayload(payload) {
-  const candidate = payload?.format === SHARE_FORMAT ? payload.draft : payload;
+  const candidate = normalizeDraft(payload?.format === SHARE_FORMAT ? payload.draft : payload);
   validateImportedDraft(candidate);
   return cloneDraft(candidate);
 }
@@ -685,7 +685,7 @@ function loadSelected(resetSaved = false) {
     const read = readLocalDraft(localStorage, loadedLocalDraftId);
     if (read.ok) {
       history.clear();
-      draft = read.draft;
+      draft = normalizeDraft(read.draft);
       compiledFresh = false;
       ensureCompiled();
       loadViewOrReset();
@@ -749,7 +749,7 @@ function loadInitialDraftFromUrl() {
   if (!read.ok) { setStatus(read.message || 'Local draft not found.', 'error'); return; }
   editorSource = 'local';
   loadedLocalDraftId = draftId;
-  draft = read.draft;
+  draft = normalizeDraft(read.draft);
   compiledFresh = false;
 }
 

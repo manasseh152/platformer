@@ -1,6 +1,6 @@
 import { CELL_SIZE } from '../core/constants.js';
 import { defineTilemap, gridLayer } from '../core/tilemaps/tilemap.js';
-import { terrainLayer } from '../core/tilemaps/terrain-layer.js';
+import { TERRAIN_KIND, terrainLayer } from '../core/tilemaps/terrain-layer.js';
 import { finishGateObject, playerSpawner, slimeSpawner } from '../content/tilemaps/objects.js';
 
 export const EMPTY = '.';
@@ -34,9 +34,38 @@ export function createBlankDraft({ id = 'new-tilemap', name = 'New Tilemap', col
   };
 }
 
+function legacyTerrainRows(rows) {
+  return rows.map(row => Array.isArray(row)
+    ? row.map(cell => cell === '#' ? TERRAIN_KIND.GRASS : (cell === '.' ? null : cell))
+    : [...row].map(symbol => symbol === '#' ? TERRAIN_KIND.GRASS : null));
+}
+
+export function normalizeDraft(draft) {
+  if (!draft || typeof draft !== 'object' || !Array.isArray(draft.layers)) return draft;
+  const layers = [];
+  const hasModernTerrain = draft.layers.some(layer => layer.id === 'terrain' && layer.type === 'terrain');
+  let migratedTerrain = false;
+  for (const layer of draft.layers) {
+    if (layer.id === 'buildTerrain') {
+      if (!hasModernTerrain && !migratedTerrain) {
+        layers.push({ id: 'terrain', type: 'terrain', cellSize: CELL_SIZE.BUILD, rows: legacyTerrainRows(layer.rows ?? []) });
+        migratedTerrain = true;
+      }
+      continue;
+    }
+    if (layer.id === 'terrain' && layer.type !== 'terrain' && layer.rows?.every(row => typeof row === 'string' || Array.isArray(row))) {
+      layers.push({ id: 'terrain', type: 'terrain', cellSize: CELL_SIZE.BUILD, rows: legacyTerrainRows(layer.rows) });
+      migratedTerrain = true;
+      continue;
+    }
+    layers.push({ ...layer, rows: layer.rows?.map(row => Array.isArray(row) ? [...row] : row) });
+  }
+  return { ...draft, layers };
+}
+
 export function createDraftFromTilemap(tilemap, savedDraft = null) {
-  if (savedDraft) return savedDraft;
-  return {
+  if (savedDraft) return normalizeDraft(savedDraft);
+  return normalizeDraft({
     id: tilemap.id,
     name: tilemap.name,
     cols: tilemap.cols,
@@ -48,13 +77,14 @@ export function createDraftFromTilemap(tilemap, savedDraft = null) {
     categories: [...(tilemap.categories ?? [])],
     description: tilemap.description ?? '',
     layers: tilemap.layers.map(layer => ({ id: layer.id, type: layer.type, cellSize: layer.cellSize, rows: layer.rows.map(row => Array.isArray(row) ? [...row] : row) }))
-  };
+  });
 }
 
 export function toDefinition(draft) {
+  const normalized = normalizeDraft(draft);
   return {
-    ...draft,
-    layers: draft.layers.map(layer => layer.type === 'terrain' || layer.id === 'terrain'
+    ...normalized,
+    layers: normalized.layers.map(layer => layer.type === 'terrain' || layer.id === 'terrain'
       ? terrainLayer({ id: 'terrain', cellSize: layer.cellSize, rows: layer.rows })
       : gridLayer({
         id: layer.id,

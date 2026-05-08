@@ -1,4 +1,4 @@
-import { compileDraft, hasEntitySymbol } from '../../editor/tilemap-draft.js';
+import { compileDraft, hasEntitySymbol, normalizeDraft } from '../../editor/tilemap-draft.js';
 import { isKebabCaseId } from '../id.js';
 
 export const LOCAL_DRAFT_STORAGE_PREFIX = 'chibi.tilemap-editor.';
@@ -31,7 +31,7 @@ export function readLocalDraft(storage, id) {
   const raw = storage?.getItem?.(localDraftStorageKey(id));
   if (!raw) return { ok: false, id, draft: null, reason: 'missing-local-draft', message: 'Local draft not found.' };
   try {
-    const draft = JSON.parse(raw);
+    const draft = normalizeDraft(JSON.parse(raw));
     return { ok: true, id: draft?.id || id, draft, raw };
   } catch (error) {
     return { ok: false, id, draft: null, reason: 'invalid-json', message: 'Saved JSON is malformed.', error };
@@ -104,7 +104,7 @@ function recordForLocalDraftKey(storage, key, cache) {
     record = { id, key, draft: null, error: read, validation: { ok: false, playable: false, reason: read.reason, message: read.message } };
   } else {
     try {
-      const draft = JSON.parse(raw);
+      const draft = normalizeDraft(JSON.parse(raw));
       const validation = validateLocalDraftForPlay(draft);
       record = { id: draft?.id || id, key, draft, validation };
     } catch (error) {
