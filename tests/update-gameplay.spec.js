@@ -2,7 +2,6 @@ import { expect, test } from '@playwright/test';
 import { updateGameplay } from '../src/core/physics.js';
 import { createGameplaySession } from '../src/core/gameplay-session.js';
 import { getTilemapById } from '../src/content/tilemaps/registry.js';
-import { createInputState } from '../src/input.js';
 import { getGoalTriggerRect } from '../src/core/tilemaps/tilemap.js';
 import { createInputRuntime } from '../src/core/input/index.js';
 import { gameInputProfile } from '../src/app/input/game-input-profile.js';
@@ -11,7 +10,7 @@ import { createBrowserInputAdapter, createGameInputRuntime } from '../src/app/in
 test('updateGameplay completes session outcome through finish gate goal', () => {
   const level = getTilemapById('finish-gate-gym-map');
   const session = createGameplaySession(level, { scenarioId: 'finish-gate-gym' });
-  const input = createInputState();
+  const input = createInputRuntime(gameInputProfile);
   const trigger = getGoalTriggerRect(level);
   session.player.x = trigger.x + 1;
   session.player.y = trigger.y + 1;
@@ -76,9 +75,10 @@ test('browser input adapter clears disconnected gamepad controls', () => {
 test('updateGameplay uses injected restart control without needing full game object', () => {
   const level = getTilemapById('movement-gym-map');
   const session = createGameplaySession(level, { scenarioId: 'movement-gym' });
-  const input = createInputState();
+  const input = createInputRuntime(gameInputProfile);
   let restarted = 0;
-  input.pressed.add('KeyR');
+  input.beginFrame();
+  input.handleEvent({ type: 'keydown', code: 'KeyR' });
 
   updateGameplay({ random: () => 1 }, session, input, 0.016, { resetGame: () => restarted++ });
 

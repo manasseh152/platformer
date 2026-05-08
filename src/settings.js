@@ -3,7 +3,7 @@
  * Owns persistence, app schema normalization, and mutation of the compatibility game object.
  * Pure input schema rules live in `src/core/input/settings.js`.
  */
-import { clone } from './core/input.js';
+import { clone } from './core/input/utils.js';
 import { browserRuntime } from './runtime.js';
 import { createBrowserInputAdapter, createGameInputRuntime } from './app/input/browser-input-adapter.js';
 import { defaultBinds, defaultGamepadBinds } from './input.js';

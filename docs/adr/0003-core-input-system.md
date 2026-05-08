@@ -282,6 +282,26 @@ Validation command for this slice:
 bunx playwright test tests/core-boundary.spec.js tests/core-input.spec.js tests/map-editor.spec.js tests/game-smoke.spec.js --project=chromium
 ```
 
+## Slice 9 implementation notes
+
+Cleanup started by removing the duplicate core legacy input module and the remaining gameplay fallback to string-bind helpers.
+
+Added/changed modules and docs:
+
+- Deleted `src/core/input.js`; core input imports now resolve through `src/core/input/` modules only.
+- `src/core/physics.js`: requires a semantic core input runtime for gameplay updates instead of accepting old `left` / `jump` string-bind state.
+- `src/main.js`: gameplay pause now reads only semantic `system.pause`; the old `hasPressed(input, 'pause')` fallback is gone.
+- `src/core/settings.js`: no longer imports legacy bind defaults; it only normalizes non-input core settings used by core/domain tests.
+- `src/settings.js`: imports shared cloning from `src/core/input/utils.js` rather than the deleted legacy module.
+- `docs/patterns/settings-and-ui.md`: documents `schemaVersion: 2`, `settings.input` ownership, semantic binding persistence, and controller selection conventions.
+- `tests/update-gameplay.spec.js`: old gameplay fallback tests now use `createInputRuntime` semantic controls.
+
+Validation command for this slice:
+
+```sh
+bunx playwright test tests/core-boundary.spec.js tests/update-gameplay.spec.js tests/speedrun.spec.js --project=chromium
+```
+
 ## Next slices
 
 1. **Wire gameplay to new core input** _(implemented in slice 2)_
@@ -322,7 +342,7 @@ bunx playwright test tests/core-boundary.spec.js tests/core-input.spec.js tests/
    - Use core input for editor keyboard shortcuts such as pan modifier, save, preview, undo, and redo.
    - Introduce limited pointer/wheel descriptors only where useful; keep paint strokes, pinch zoom, and spatial editor behavior in editor code.
 
-8. **Cleanup and documentation**
+8. **Cleanup and documentation** _(started in slice 9)_
    - Delete or fold the duplicated old `src/core/input.js` and thin/remove old `src/input.js` once runtime migration is complete.
    - Remove old string-bind code paths.
    - Update `docs/patterns/settings-and-ui.md` to describe the new input settings ownership and UI conventions.

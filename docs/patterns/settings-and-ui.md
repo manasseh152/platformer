@@ -18,13 +18,21 @@ Examples:
 
 ```js
 game.settings = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   motion: 'system',
   developerMode: false,
-  controllerEnabled: true,
   speedRunMode: false,
-  keyboardBinds: {},
-  gamepadBinds: {}
+  input: {
+    bindings: {},
+    slots: {
+      player1: {
+        devices: {
+          keyboard: { enabled: true },
+          gamepad: { enabled: true, selectedFingerprint: null, selectedRuntimeId: null }
+        }
+      }
+    }
+  }
 };
 
 game.menu = {
@@ -52,10 +60,10 @@ Normal setting commits include:
 
 - motion preference
 - developer mode
-- controller enabled
+- controller enabled under `settings.input.slots.player1.devices.gamepad.enabled`
+- explicit selected controller runtime/fingerprint under the same slot device
 - speed run mode
-- keyboard bind commit/reset
-- controller bind commit/reset
+- input bind commit/reset under semantic `settings.input.bindings` action ids
 - valid app-settings JSON replacement
 
 ## Page model
@@ -180,3 +188,9 @@ Visible only when Developer Mode is enabled:
 - debug/test-only tooling
 
 Replacing settings JSON should validate before applying and show a clear status on failure.
+
+## Input settings
+
+`settings.input` is the persisted source of truth for gameplay, menu, system, devtools, and editor shortcuts. Store semantic action ids such as `player.moveX`, `menu.accept`, and `editor.undo`; do not persist legacy `keyboardBinds` / `gamepadBinds` rows.
+
+Keyboard/Controller settings pages may render friendly rows such as “Move Left” and “Move Right”, but commits should normalize through the core input settings helpers and write structured bindings. Controller enable/disable is separate from selected controller identity, and keyboard should remain enabled to prevent no-input lockout.

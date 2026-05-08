@@ -1,5 +1,5 @@
 import { getUI } from './dom.js';
-import { controlsText, hasPressed, pollGamepads, renderGameplayHints, setInputScheme } from './input.js';
+import { controlsText, pollGamepads, renderGameplayHints, setInputScheme } from './input.js';
 import { handleMenuInput, handleListeningKey, activeMenuRoot, renderBinds, setupMenu, setPaused, startGame } from './menu.js';
 import { syncSettingsFromInput } from './settings.js';
 import { setupResize } from './resize.js';
@@ -107,7 +107,7 @@ function frame(now = runtime.now()) {
   const menuUsedGamepad = handleMenuInput(game);
   const globalInput = game.inputRuntime?.route(['global']);
   const devToolsHandled = handleDevToolsInput(game, globalInput, { setPaused: (game, value) => setPaused(game, value, runtime) });
-  const pausePressed = !devToolsHandled && (game.inputRuntime?.route(['gameplay']).wasPressed('system.pause') || hasPressed(game.input, 'pause'));
+  const pausePressed = !devToolsHandled && game.inputRuntime?.route(['gameplay']).wasPressed('system.pause');
   if (!menuUsedGamepad && isStarted(game) && !game.player.dead && !isWon(game) && pausePressed) {
     setPaused(game, !isPaused(game), runtime);
   }

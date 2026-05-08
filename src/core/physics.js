@@ -1,4 +1,3 @@
-import { hasDown, hasPressed } from './input.js';
 import { getSlashHitbox } from './combat.js';
 import { getTransitionTriggerRect, hazardCollisionRectsOverlapping, rectsOverlap, solidCollisionRectsOverlapping } from './gameplay-scene-queries.js';
 export { rectsOverlap } from './gameplay-scene-queries.js';
@@ -102,16 +101,7 @@ function gameplayInput(input) {
       restartPressed: route.wasPressed('system.restart')
     };
   }
-  // Temporary migration fallback for tests and old callers until all runtime paths use src/core/input/.
-  return {
-    left: hasDown(input, 'left'),
-    right: hasDown(input, 'right'),
-    jumpPressed: hasPressed(input, 'jump'),
-    jumpHeld: hasDown(input, 'jump'),
-    attackPressed: hasPressed(input, 'attack'),
-    dashPressed: hasPressed(input, 'dash'),
-    restartPressed: hasPressed(input, 'restart')
-  };
+  throw new Error('updateGameplay requires a core input runtime.');
 }
 
 export function updateGameplay(runtime, gameplaySession, input, dt, controls = {}) {

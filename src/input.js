@@ -1,7 +1,7 @@
 /**
  * Application-layer browser input adapter.
- * Core input state/bind semantics live in `src/core/input.js`; this module owns DOM hints,
- * navigator gamepad polling, and settings UI status mutations.
+ * Core input state/bind semantics live in `src/core/input/`; this module owns DOM hints,
+ * controller diagnostics, and transitional settings UI status mutations.
  */
 
 import { hintActionAliases, hintPartsForAction } from './app/input/input-hints.js';
