@@ -782,6 +782,49 @@ body.playing:not(.paused):not([data-menu-origin="start"]) #pauseScreen { visibil
 #pauseScreen { view-transition-name: pause-screen; }
 #startScreen .menu-card { view-transition-name: start-card; }
 #pauseScreen .menu-card { view-transition-name: menu-card; }
+#menuEyebrow { view-transition-name: menu-eyebrow; }
+#menuTitle { view-transition-name: menu-title; }
+#pauseScreen .menu-page { view-transition-name: menu-page; }
+#pauseScreen .settings-actions { view-transition-name: menu-actions; }
+#pauseScreen .level-select-tabs { view-transition-name: level-select-tabs; }
+#pauseScreen .level-select-panel { view-transition-name: level-select-panel; }
+
+::view-transition-old(menu-title),
+::view-transition-new(menu-title),
+::view-transition-old(menu-eyebrow),
+::view-transition-new(menu-eyebrow) { animation-duration: .22s; animation-timing-function: cubic-bezier(.18,.9,.2,1); }
+::view-transition-old(menu-page),
+::view-transition-new(menu-page),
+::view-transition-old(level-select-panel),
+::view-transition-new(level-select-panel),
+::view-transition-old(menu-actions),
+::view-transition-new(menu-actions) { animation-duration: .24s; animation-timing-function: cubic-bezier(.18,.9,.2,1); }
+::view-transition-old(level-select-tabs),
+::view-transition-new(level-select-tabs) { animation-duration: .18s; animation-timing-function: ease; }
+:root[data-transition-context="menu-forward"] ::view-transition-old(menu-page),
+:root[data-transition-context="start-to-settings"] ::view-transition-old(menu-page),
+:root[data-transition-context="start-to-level-select"] ::view-transition-old(menu-page) { animation-name: menu-page-context-out-forward; }
+:root[data-transition-context="menu-forward"] ::view-transition-new(menu-page),
+:root[data-transition-context="start-to-settings"] ::view-transition-new(menu-page),
+:root[data-transition-context="start-to-level-select"] ::view-transition-new(menu-page) { animation-name: menu-page-context-in-forward; }
+:root[data-transition-context="menu-back"] ::view-transition-old(menu-page),
+:root[data-transition-context="menu-to-start"] ::view-transition-old(menu-page) { animation-name: menu-page-context-out-back; }
+:root[data-transition-context="menu-back"] ::view-transition-new(menu-page),
+:root[data-transition-context="menu-to-start"] ::view-transition-new(menu-page) { animation-name: menu-page-context-in-back; }
+:root[data-transition-context="scenario-tab"] ::view-transition-old(level-select-panel) { animation-name: scenario-panel-out; }
+:root[data-transition-context="scenario-tab"] ::view-transition-new(level-select-panel) { animation-name: scenario-panel-in; }
+:root[data-transition-context="game-start"] ::view-transition-old(start-card),
+:root[data-transition-context="pause-close"] ::view-transition-old(menu-card) { animation-name: menu-shell-dismiss; animation-duration: .22s; }
+:root[data-transition-context="pause-open"] ::view-transition-new(menu-card),
+:root[data-transition-context="main-menu"] ::view-transition-new(start-card) { animation-name: menu-shell-summon; animation-duration: .22s; }
+@keyframes menu-page-context-out-forward { to { opacity: 0; transform: translate3d(-18px, 0, 0) scale(.985); filter: blur(4px); } }
+@keyframes menu-page-context-in-forward { from { opacity: 0; transform: translate3d(26px, 0, 0) scale(.992); filter: blur(4px); } }
+@keyframes menu-page-context-out-back { to { opacity: 0; transform: translate3d(18px, 0, 0) scale(.985); filter: blur(4px); } }
+@keyframes menu-page-context-in-back { from { opacity: 0; transform: translate3d(-26px, 0, 0) scale(.992); filter: blur(4px); } }
+@keyframes scenario-panel-out { to { opacity: 0; transform: translateY(10px) scale(.992); filter: blur(3px); } }
+@keyframes scenario-panel-in { from { opacity: 0; transform: translateY(-8px) scale(.992); filter: blur(3px); } }
+@keyframes menu-shell-dismiss { to { opacity: 0; transform: translateY(18px) scale(.975); filter: blur(5px); } }
+@keyframes menu-shell-summon { from { opacity: 0; transform: translateY(-14px) scale(.982); filter: blur(5px); } }
 
 .menu-pages { position: relative; padding: 4px; margin: -4px; }
 .menu-page { display: none; width: 100%; text-align: left; transform-origin: 50% 18%; }

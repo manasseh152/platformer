@@ -121,10 +121,11 @@ function activeLevelSelectTab(game) {
 
 function setLevelSelectTab(game, tabId) {
   if (!availableLevelSelectTabs(game).some(tab => tab.id === tabId)) return;
-  game.menu.levelSelectTab = tabId;
-  game.runtime?.storage?.setItem?.(LEVEL_SELECT_TAB_KEY, tabId);
-  renderScenarioBrowser(game);
-  requestAnimationFrame(() => focusAndReveal(game, game.ui.levelSelectList?.querySelector(`[role="tab"][data-level-select-tab="${tabId}"]`)));
+  runDOMTransition(game, () => {
+    game.menu.levelSelectTab = tabId;
+    game.runtime?.storage?.setItem?.(LEVEL_SELECT_TAB_KEY, tabId);
+    renderScenarioBrowser(game);
+  }, () => focusAndReveal(game, game.ui.levelSelectList?.querySelector(`[role="tab"][data-level-select-tab="${tabId}"]`)), 'scenario-tab');
 }
 
 function scenarioTagNames(entry) {
@@ -306,9 +307,8 @@ export function renderBinds(game) {
   renderSettingsCategory(game);
 }
 
-function commitMenuPageChange(game, change, after) {
-  change();
-  requestAnimationFrame(() => after?.());
+function commitMenuPageChange(game, change, after, context = 'menu-forward') {
+  runDOMTransition(game, change, () => requestAnimationFrame(() => after?.()), context);
 }
 
 export function setMenuPage(game, page, direction = 'forward', category = null) {
@@ -319,7 +319,7 @@ export function setMenuPage(game, page, direction = 'forward', category = null) 
     renderSettings(game);
     if (page === 'level-select') renderScenarioBrowser(game);
     updateMenuChrome(game);
-  }, () => focusFirstMenuItem(game));
+  }, () => focusFirstMenuItem(game), direction === 'back' ? 'menu-back' : 'menu-forward');
 }
 
 export function openSettings(game, origin) {
@@ -330,7 +330,7 @@ export function openSettings(game, origin) {
     game.menu.direction = 'forward';
     renderSettings(game);
     updateMenuChrome(game);
-  }, () => focusFirstMenuItem(game));
+  }, () => focusFirstMenuItem(game), origin === 'start' ? 'start-to-settings' : 'menu-forward');
 }
 
 export function openScenarioBrowser(game, origin) {
@@ -341,7 +341,7 @@ export function openScenarioBrowser(game, origin) {
     game.menu.direction = 'forward';
     renderScenarioBrowser(game);
     updateMenuChrome(game);
-  }, () => focusFirstMenuItem(game));
+  }, () => focusFirstMenuItem(game), origin === 'start' ? 'start-to-level-select' : 'menu-forward');
 }
 
 function closeScenarioBrowser(game) {
@@ -352,7 +352,7 @@ function closeScenarioBrowser(game) {
     game.menu.direction = 'back';
     game.menu.origin = origin === 'start' ? 'none' : 'pause';
     updateMenuChrome(game);
-  }, () => focusAndReveal(game, origin === 'start' ? game.ui.startLevelSelectButton : game.ui.levelSelectButton));
+  }, () => focusAndReveal(game, origin === 'start' ? game.ui.startLevelSelectButton : game.ui.levelSelectButton), origin === 'start' ? 'menu-to-start' : 'menu-back');
 }
 
 export function closeSettings(game) {
@@ -364,7 +364,7 @@ export function closeSettings(game) {
     game.menu.direction = 'back';
     game.menu.origin = origin === 'start' ? 'none' : 'pause';
     updateMenuChrome(game);
-  }, () => focusAndReveal(game, origin === 'start' ? game.ui.startSettingsButton : game.ui.settingsButton));
+  }, () => focusAndReveal(game, origin === 'start' ? game.ui.startSettingsButton : game.ui.settingsButton), origin === 'start' ? 'menu-to-start' : 'menu-back');
 }
 
 export function goBack(game) {
@@ -384,22 +384,22 @@ export function setPaused(game, value, runtime = browserRuntime) {
     updateMenuChrome(game);
   };
   const after = () => isPaused(game) ? focusAndReveal(game, game.ui.resumeButton) : document.activeElement?.blur?.();
-  if (!value) { change(); runtime.emit('game.pause', { paused: isPaused(game) }); after(); return; }
-  runDOMTransition(game, () => { change(); runtime.emit('game.pause', { paused: isPaused(game) }); }, after);
+  runDOMTransition(game, () => { change(); runtime.emit('game.pause', { paused: isPaused(game) }); }, after, value ? 'pause-open' : 'pause-close');
 }
 
 export function startGame(game, runtime = browserRuntime) {
   if (isStarted(game)) return;
-  game.menu.page = 'main';
-  game.menu.settingsCategory = null;
-  document.body.dataset.menuOrigin = 'pause';
-  setStarted(game, true);
-  game.clock.last = runtime.now();
-  document.body.classList.add('playing');
-  prepareSpeedRunAttempt(game);
-  runtime.emit('game.start', { tilemapId: game.tilemap?.id || null });
-  game.canvas.focus?.({ preventScroll: true });
-  updateMenuChrome(game);
+  runDOMTransition(game, () => {
+    game.menu.page = 'main';
+    game.menu.settingsCategory = null;
+    document.body.dataset.menuOrigin = 'pause';
+    setStarted(game, true);
+    game.clock.last = runtime.now();
+    document.body.classList.add('playing');
+    prepareSpeedRunAttempt(game);
+    runtime.emit('game.start', { tilemapId: game.tilemap?.id || null });
+    updateMenuChrome(game);
+  }, () => game.canvas.focus?.({ preventScroll: true }), 'game-start');
 }
 
 export function returnToMainMenu(game, runtime = browserRuntime) {
@@ -415,7 +415,7 @@ export function returnToMainMenu(game, runtime = browserRuntime) {
     game.input.keys.clear();
     game.input.pressed.clear();
     updateMenuChrome(game);
-  }, () => focusAndReveal(game, game.ui.startButton));
+  }, () => focusAndReveal(game, game.ui.startButton), 'main-menu');
 }
 
 function dumpSettings(game) {

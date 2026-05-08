@@ -31,19 +31,38 @@ export function setupMotionPreference(game) {
   media?.addEventListener?.('change', () => applyMotionPreference(game));
 }
 
-export function runDOMTransition(game, change, after) {
+export function runDOMTransition(game, change, after, context = '') {
+  const root = document.documentElement;
+  const previousContext = root.dataset.transitionContext;
+  const setContext = () => {
+    if (context) root.dataset.transitionContext = context;
+  };
+  const clearContext = () => {
+    if (!context) return;
+    if (previousContext === undefined) delete root.dataset.transitionContext;
+    else root.dataset.transitionContext = previousContext;
+  };
+
   if (shouldReduceMotion(game) || !document.startViewTransition) {
     change();
     after?.();
     return null;
   }
   try {
+    setContext();
     const transition = document.startViewTransition(change);
+    let afterCalled = false;
+    const callAfter = () => {
+      if (afterCalled) return;
+      afterCalled = true;
+      after?.();
+    };
     transition.ready?.catch(() => {});
-    transition.updateCallbackDone?.catch(() => {});
-    transition.finished.catch(() => {}).finally(() => after?.());
+    transition.updateCallbackDone?.then(callAfter, callAfter);
+    transition.finished.catch(() => {}).finally(clearContext);
     return transition;
   } catch (err) {
+    clearContext();
     change();
     after?.();
     return null;
