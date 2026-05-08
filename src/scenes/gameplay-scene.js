@@ -43,7 +43,7 @@ export function createGameplayScene(game, props = {}) {
     id: 'gameplay',
     kind: 'gameplay',
     update(runtime, dt) {
-      updateGameplay(runtime, game.gameplaySession, game.input, dt, { resetGame: game.resetGame });
+      updateGameplay(runtime, game.gameplaySession, game.inputRuntime || game.input, dt, { resetGame: game.resetGame });
       updateCamera(game, dt);
     },
     render(runtime) {

@@ -7,6 +7,7 @@ import { CAMERA_HEIGHT, CAMERA_WIDTH, CAMERA_WORLD_HEIGHT, CAMERA_WORLD_WIDTH } 
 import { createGameplaySession, resetGameplaySession, syncGameplaySessionToGame } from './core/gameplay-session.js';
 import { createTilemapManager, resolveInitialTilemap } from './tilemap-manager.js';
 import { createInputState } from './input.js';
+import { createBrowserInputAdapter, createGameInputRuntime } from './app/input/browser-input-adapter.js';
 import { createPresenter } from './presenter.js';
 import { applySettingsToGame, loadSettings } from './settings.js';
 import { browserRuntime } from './runtime.js';
@@ -60,6 +61,8 @@ export function createGame(ui, runtime = browserRuntime) {
     particles: gameplaySession.particles,
     camera: gameplaySession.camera,
     input: createInputState(),
+    inputRuntime: createGameInputRuntime(settings),
+    inputAdapter: null,
     settings,
     speedRun: createSpeedRunState(runtime.storage),
     devTools: createDevToolsState(),
@@ -71,6 +74,7 @@ export function createGame(ui, runtime = browserRuntime) {
   };
   resetGameplaySession(gameplaySession, activeTilemap, { view: game.view, scenarioId: activeTilemap.id });
   syncGameplaySessionToGame(game, gameplaySession);
+  game.inputAdapter = createBrowserInputAdapter(game.inputRuntime, { now: runtime.now });
   game.tilemaps = createTilemapManager(game, runtime);
   game.sceneLibrary = createDefaultSceneLibrary();
   game.scenarios = createScenarioService(game, runtime);

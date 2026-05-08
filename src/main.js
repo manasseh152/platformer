@@ -36,6 +36,8 @@ setupResize(game);
 
 addEventListener('keydown', e => {
   const { input, player } = game;
+  game.inputAdapter?.queueKeyboardEvent(e);
+
   if (input.listeningFor) {
     e.preventDefault();
     handleListeningKey(game, e.code, runtime);
@@ -86,11 +88,15 @@ addEventListener('keydown', e => {
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
 });
 
-addEventListener('keyup', e => game.input.keys.delete(e.code));
+addEventListener('keyup', e => {
+  game.inputAdapter?.queueKeyboardEvent(e);
+  game.input.keys.delete(e.code);
+});
 
 function frame(now = runtime.now()) {
   const dt = Math.min(.033, (now - game.clock.last) / 1000);
   game.clock.last = now;
+  game.inputAdapter?.beginFrame({ controllerEnabled: game.input.useController });
   pollGamepads(runtime, game);
   if (game.input.bindRenderDirty) {
     game.input.bindRenderDirty = false;
@@ -99,15 +105,18 @@ function frame(now = runtime.now()) {
     renderBinds(game);
   }
   const menuUsedGamepad = game.input.useController && handleGamepadMenuInput(game);
-  if (!menuUsedGamepad && isStarted(game) && !game.player.dead && !isWon(game) && hasPressed(game.input, 'pause')) {
+  const pausePressed = game.inputRuntime?.route(['gameplay']).wasPressed('system.pause') || hasPressed(game.input, 'pause');
+  if (!menuUsedGamepad && isStarted(game) && !game.player.dead && !isWon(game) && pausePressed) {
     setPaused(game, !isPaused(game), runtime);
   }
   if (isStarted(game) && !isPaused(game)) {
     scenes.update(dt);
+    game.inputRuntime?.endFrame?.();
     updateSpeedRun(game, dt, runtime);
   } else {
     game.input.pressed.clear();
     game.input.gamepadPressed.clear();
+    game.inputRuntime?.endFrame?.();
   }
   game.gpu?.update?.(dt);
   syncDevTools(game);

@@ -5,6 +5,7 @@
 import { clone } from './core/input.js';
 import { defaultSettings, normalizeSettings } from './core/settings.js';
 import { browserRuntime } from './runtime.js';
+import { createBrowserInputAdapter, createGameInputRuntime } from './app/input/browser-input-adapter.js';
 
 export { defaultSettings, normalizeSettings };
 
@@ -34,12 +35,18 @@ export function applySettingsToGame(game) {
   game.input.listeningFor = null;
   game.input.controllerBindAction = null;
   game.input.bindDeadline = 0;
+  game.inputRuntime = createGameInputRuntime(game.settings);
+  game.inputAdapter = createBrowserInputAdapter(game.inputRuntime, { now: game.runtime?.now || browserRuntime.now });
   return game.settings;
 }
 
 export function syncSettingsFromInput(game, storage = browserRuntime.storage) {
   game.settings = normalizeSettings({ ...game.settings, controllerEnabled: game.input.useController, keyboardBinds: game.input.binds, gamepadBinds: game.input.gamepadBinds });
   saveSettings(game.settings, storage);
+  if (game.inputRuntime) {
+    game.inputRuntime = createGameInputRuntime(game.settings);
+    game.inputAdapter = createBrowserInputAdapter(game.inputRuntime, { now: game.runtime?.now || browserRuntime.now });
+  }
   return game.settings;
 }
 

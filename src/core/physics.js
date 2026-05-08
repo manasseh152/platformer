@@ -83,23 +83,50 @@ export function updateEnemy(runtime, game, enemy, dt) {
   if (rectsOverlap(player, enemy)) hurtPlayer(runtime, game, 1, player.x < enemy.x ? -1 : 1);
 }
 
+function clearFrameInput(input) {
+  input.pressed?.clear?.();
+  input.gamepadPressed?.clear?.();
+}
+
+function gameplayInput(input) {
+  if (input?.route) {
+    const route = input.route(['gameplay']);
+    const moveX = route.value('player.moveX');
+    return {
+      left: moveX < 0,
+      right: moveX > 0,
+      jumpPressed: route.wasPressed('player.jump'),
+      jumpHeld: route.isDown('player.jump'),
+      attackPressed: route.wasPressed('player.attack'),
+      dashPressed: route.wasPressed('player.dash'),
+      restartPressed: route.wasPressed('system.restart')
+    };
+  }
+  // Temporary migration fallback for tests and old callers until all runtime paths use src/core/input/.
+  return {
+    left: hasDown(input, 'left'),
+    right: hasDown(input, 'right'),
+    jumpPressed: hasPressed(input, 'jump'),
+    jumpHeld: hasDown(input, 'jump'),
+    attackPressed: hasPressed(input, 'attack'),
+    dashPressed: hasPressed(input, 'dash'),
+    restartPressed: hasPressed(input, 'restart')
+  };
+}
+
 export function updateGameplay(runtime, gameplaySession, input, dt, controls = {}) {
   const game = gameplaySession;
   game.input = input;
   game.resetGame = controls.resetGame;
   const { player, enemies } = game;
   const tilemap = game.tilemap;
-  if (hasPressed(input, 'restart')) controls.resetGame?.();
-  if (player.dead || gameplaySession.outcome === 'completed') { input.pressed.clear(); return; }
+  const inputActions = gameplayInput(input);
+  if (inputActions.restartPressed) controls.resetGame?.();
+  if (player.dead || gameplaySession.outcome === 'completed') { clearFrameInput(input); return; }
   if (rectsOverlap(player, getTransitionTriggerRect(tilemap, 'finish'))) gameplaySession.outcome = 'completed';
-  if (gameplaySession.outcome === 'completed') { input.pressed.clear(); return; }
+  if (gameplaySession.outcome === 'completed') { clearFrameInput(input); return; }
 
-  const left = hasDown(input, 'left');
-  const right = hasDown(input, 'right');
-  const jumpPressed = hasPressed(input, 'jump');
-  const jumpHeld = hasDown(input, 'jump');
-  const attackPressed = hasPressed(input, 'attack');
-  const dashPressed = hasPressed(input, 'dash');
+  const { left, right, jumpPressed, jumpHeld, attackPressed, dashPressed } = inputActions;
 
   if (dashPressed && player.dashCooldown <= 0) {
     player.dash = .14; player.dashCooldown = .55;
@@ -163,7 +190,7 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
   if (player.grounded && Math.abs(player.vx) > 90 * (tilemap.tileSize / 70) && runtime.random() < .35) game.dust.push({x:player.x+player.w/2,y:player.y+player.h,vx:-player.dir*30*(tilemap.tileSize/70),life:.25});
   if (player.wallSlide && runtime.random() < .45) game.dust.push({x:player.x+(player.wallDir>0?player.w:0),y:player.y+28*(tilemap.tileSize/70),vx:-player.wallDir*45*(tilemap.tileSize/70),life:.22});
   for (let i=game.dust.length-1;i>=0;i--) { game.dust[i].life -= dt; game.dust[i].x += game.dust[i].vx*dt; if (game.dust[i].life<=0) game.dust.splice(i,1); }
-  input.pressed.clear();
+  clearFrameInput(input);
 }
 
 export function updateGame(runtime, game, dt) {

@@ -156,3 +156,62 @@ bunx playwright test tests/core-boundary.spec.js tests/core-input.spec.js --proj
 ```
 
 At this point the existing game/editor runtime still uses the old input path. The next slice should wire gameplay to the new semantic actions without adding a long-lived legacy compatibility layer.
+
+## Slice 2 implementation notes
+
+Gameplay is now wired to the new semantic core input runtime while menu/settings/editor continue to use the old path during migration.
+
+Added/changed modules:
+
+- `src/app/input/browser-input-adapter.js`: browser-owned adapter that queues DOM keyboard events, polls Gamepad API snapshots, and feeds normalized events/snapshots into `createInputRuntime` at frame boundaries.
+- `src/state.js` / `src/settings.js`: create and refresh `game.inputRuntime` from normalized/migrated app settings so existing v1 gameplay binds still route through semantic actions.
+- `src/main.js`: queues keyboard events for the new runtime, begins/ends core input frames, and checks semantic `system.pause` for gameplay pause.
+- `src/scenes/gameplay-scene.js` / `src/core/physics.js`: gameplay updates query `player.moveX`, `player.jump`, `player.dash`, `player.attack`, and `system.restart` when passed a core input runtime, while preserving old tests during the transition.
+- `tests/update-gameplay.spec.js`: covers gameplay movement/jump through `createInputRuntime` semantic actions.
+
+Validation command for this slice:
+
+```sh
+bunx playwright test tests/core-boundary.spec.js tests/core-input.spec.js tests/update-gameplay.spec.js tests/game-smoke.spec.js --project=chromium
+```
+
+## Next slices
+
+1. **Wire gameplay to new core input** _(implemented in slice 2)_
+   - Add a browser adapter that feeds normalized keyboard events and gamepad snapshots into `createInputRuntime`.
+   - Update gameplay/physics to query semantic actions such as `player.moveX`, `player.jump`, `player.dash`, `player.attack`, `system.pause`, and `system.restart`.
+   - Preserve current gameplay behavior with tests before expanding settings/menu scope.
+
+2. **Wire menu input and extract UI navigation helper**
+   - Replace raw gamepad menu checks with `menu.navigateX`, `menu.navigateY`, `menu.accept`, and `menu.back` routes.
+   - Let keyboard and controller navigation share the same normalized menu action path where practical.
+   - Extract generic focus movement/activation helpers into `src/ui/navigation.js`; keep page-specific behavior in menu code.
+
+3. **Integrate unified input settings persistence**
+   - Move app settings toward `settings.input` as the persisted source of truth.
+   - Migrate old `keyboardBinds` / `gamepadBinds` on load.
+   - Keep the visible Keyboard/Controller settings pages mostly unchanged while editing structured semantic bindings internally.
+
+4. **Bind capture and controller selection**
+   - Replace current remap state with core bind-capture primitives.
+   - Add selected-controller behavior in Controller settings while keeping controller enable/disable separate from selection.
+   - Add direct tests for controller remapping, duplicate prevention, cancel behavior, and selected controller routing.
+
+5. **Input hints and presentation layer**
+   - Add reusable control presentation/keycap helpers outside core.
+   - Derive hints from actual bindings and last active source/display group instead of hardcoded `wasd` / `arrows` / `gamepad` checks.
+   - Lay the abstraction for controller icon packs and per-controller/global overrides, with text fallback first.
+
+6. **Devtools migration**
+   - Route Backquote and devtools pause through the `global` input context and profile actions.
+   - Keep developer-mode gating and panel behavior in devtools code.
+   - Test that devtools shortcuts do not double-trigger pause/menu actions.
+
+7. **Editor integration**
+   - Use core input for editor keyboard shortcuts such as pan modifier, save, preview, undo, and redo.
+   - Introduce limited pointer/wheel descriptors only where useful; keep paint strokes, pinch zoom, and spatial editor behavior in editor code.
+
+8. **Cleanup and documentation**
+   - Delete or fold the duplicated old `src/core/input.js` and thin/remove old `src/input.js` once runtime migration is complete.
+   - Remove old string-bind code paths.
+   - Update `docs/patterns/settings-and-ui.md` to describe the new input settings ownership and UI conventions.
