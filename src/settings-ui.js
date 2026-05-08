@@ -1,4 +1,4 @@
-import { bindLabels, bindText, controllerBindText, controllerName, defaultBinds, defaultGamepadBinds } from './input.js';
+import { bindLabels, bindText, controllerBindText, controllerName, defaultBinds, defaultGamepadBinds } from './app/input/legacy-bind-state.js';
 import { motionStatusText } from './transitions.js';
 import { browserRuntime } from './runtime.js';
 import { formatRunTime, getBestTime } from './speedrun.js';
@@ -135,13 +135,33 @@ function renderAdvanced(game) {
   </div>`;
 }
 
+const renderers = { keyboard: renderKeyboard, controller: renderController, gameplay: renderGameplay, accessibility: renderAccessibility, graphics: renderGraphics, advanced: renderAdvanced };
+
+export function activeSettingsCategory(game) {
+  return selectedCategory(game) || settingsCategories[0];
+}
+
+export function renderSettingsTabs(game) {
+  const active = activeSettingsCategory(game).id;
+  return `<div class="settings-tabs" role="tablist" aria-label="Settings categories">
+    <span class="settings-tabs__hint" data-settings-tab-hint="previous" aria-hidden="true">LB</span>
+    ${settingsCategories.map(category => {
+      const selected = category.id === active;
+      return `<button type="button" role="tab" aria-selected="${selected ? 'true' : 'false'}" data-settings-tab="${category.id}">
+        <span class="settings-tab__label">${category.title}</span>
+      </button>`;
+    }).join('')}
+    <span class="settings-tabs__hint" data-settings-tab-hint="next" aria-hidden="true">RB</span>
+  </div>`;
+}
+
 export function selectedCategory(game) {
   return settingsCategories.find(category => category.id === game.menu.settingsCategory) || null;
 }
 
 export function renderSettingsHub(game) {
   const { ui } = game;
-  ui.settingsRootRows.innerHTML = '';
+  ui.settingsRootRows.innerHTML = renderSettingsTabs(game);
   ui.settingsCategoryList.innerHTML = settingsCategories.map(category => `
     <button type="button" class="settings-category-card ds-list-card" data-settings-category="${category.id}">
       <span class="settings-category-card__title">${category.title}</span>
@@ -171,14 +191,18 @@ export function renderSettingsCategory(game, runtime = browserRuntime) {
   if (!category) return;
   ui.settingsCategoryDescription.textContent = category.description;
   if (game.input.bindError && runtime.now() > game.input.bindError.until) game.input.bindError = null;
-  const renderers = { keyboard: renderKeyboard, controller: renderController, gameplay: renderGameplay, accessibility: renderAccessibility, graphics: renderGraphics, advanced: renderAdvanced };
-  ui.settingsCategoryBody.innerHTML = renderers[category.id](game);
+  ui.settingsCategoryBody.innerHTML = `${renderSettingsTabs(game)}<div class="settings-tab-panel" role="tabpanel">${renderers[category.id](game)}</div>`;
   refreshDynamicRefs(game);
 }
 
 export function renderSettings(game) {
+  if (game.menu.page === 'settings-category') {
+    game.ui.settingsRootRows.innerHTML = '';
+    game.ui.settingsCategoryList.innerHTML = '';
+    renderSettingsCategory(game);
+    return;
+  }
   renderSettingsHub(game);
-  if (game.menu.page === 'settings-category') renderSettingsCategory(game);
 }
 
 export function defaultActionsForDevice(device) {

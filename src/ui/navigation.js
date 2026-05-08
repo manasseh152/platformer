@@ -33,7 +33,7 @@ export function moveLinearFocus(root, fallback, direction, focusElement) {
 
 export function moveHorizontalGroupFocus(root, fallback, direction, focusElement) {
   const current = currentFocusElement(root, fallback);
-  const group = current?.closest?.('.ds-action-row, .segmented, .level-select-tabs');
+  const group = current?.closest?.('.ds-action-row, .segmented, .level-select-tabs, .settings-tabs');
   if (!group) return false;
   const items = visibleFocusables(group);
   const index = items.indexOf(current);

@@ -1,10 +1,12 @@
-import { bindKey, bindLabels, menuButtons, findBindConflict, renderInputHints, resetControllerInput, resetDefaultGamepadBinds, resetDefaultKeyBinds, setBindStatus, setControllerStatus } from './input.js';
+import { setBindStatus, setControllerStatus } from './app/input/controller-diagnostics.js';
+import { bindKey, bindLabels, findBindConflict, menuButtons, resetControllerInput, resetDefaultGamepadBinds, resetDefaultKeyBinds } from './app/input/legacy-bind-state.js';
+import { renderInputHints } from './app/input/input-presentation.js';
 import { currentFocusElement, ensureMenuFocus, moveHorizontalGroupFocus as moveHorizontalFocus, moveLinearFocus, visibleFocusables } from './ui/navigation.js';
 import { createBindCapture } from './core/input/index.js';
 import { syncSettingsFromInput, replaceSettings, saveSettings, serializeSettings } from './settings.js';
 import { setPausedFlag } from './state.js';
 import { applyMotionPreference, runDOMTransition, shouldReduceMotion, setupMotionPreference } from './transitions.js';
-import { renderSettings, renderSettingsCategory, refreshDynamicRefs, selectedCategory } from './settings-ui.js';
+import { activeSettingsCategory, renderSettings, renderSettingsCategory, refreshDynamicRefs, selectedCategory, settingsCategories } from './settings-ui.js';
 import { syncGymApi } from './gym.js';
 import { browserRuntime } from './runtime.js';
 import { getCategoryById, primaryGroupCategoryFor } from './catalog/categories/registry.js';
@@ -116,6 +118,25 @@ function setLevelSelectTab(game, tabId) {
     game.runtime?.storage?.setItem?.(LEVEL_SELECT_TAB_KEY, tabId);
     renderScenarioBrowser(game);
   }, () => focusAndReveal(game, game.ui.levelSelectList?.querySelector(`[role="tab"][data-level-select-tab="${tabId}"]`)), 'scenario-tab');
+}
+
+function setSettingsTab(game, categoryId) {
+  if (!settingsCategories.some(category => category.id === categoryId)) return;
+  runDOMTransition(game, () => {
+    game.menu.page = 'settings-category';
+    game.menu.settingsCategory = categoryId;
+    renderSettings(game);
+    updateMenuChrome(game);
+  }, () => focusAndReveal(game, game.ui.pauseScreen?.querySelector(`[role="tab"][data-settings-tab="${categoryId}"]`)), 'scenario-tab');
+}
+
+function moveSettingsTab(game, direction) {
+  if (!['settings', 'settings-category'].includes(game.menu.page)) return false;
+  const activeId = activeSettingsCategory(game).id;
+  const index = settingsCategories.findIndex(category => category.id === activeId);
+  const next = settingsCategories[(index + direction + settingsCategories.length) % settingsCategories.length];
+  setSettingsTab(game, next.id);
+  return true;
 }
 
 function scenarioTagNames(entry) {
@@ -261,6 +282,16 @@ function activateSemanticMenuAction(game, actionId) {
 function handleMenuRouteInput(game, route) {
   ensureMenuFocus(activeMenuRoot(game), game.menu.lastFocused, el => focusAndReveal(game, el));
 
+  if (route.wasPressed('menu.previousTab') && moveSettingsTab(game, -1)) {
+    route.consume('menu.previousTab');
+    return true;
+  }
+
+  if (route.wasPressed('menu.nextTab') && moveSettingsTab(game, 1)) {
+    route.consume('menu.nextTab');
+    return true;
+  }
+
   if (route.wasPressed('menu.navigateX')) {
     const x = route.value('menu.navigateX');
     if (x < 0 && moveHorizontalGroupFocus(game, -1)) { route.consume('menu.navigateX'); return true; }
@@ -303,6 +334,8 @@ function handleMenuRouteInput(game, route) {
 
 function handleLegacyGamepadMenuInput(game) {
   const { input } = game;
+  if (input.gamepadPressed.has(menuButtons.previousTab) && moveSettingsTab(game, -1)) return true;
+  if (input.gamepadPressed.has(menuButtons.nextTab) && moveSettingsTab(game, 1)) return true;
   if (input.gamepadPressed.has(menuButtons.left) && moveHorizontalGroupFocus(game, -1)) return true;
   if (input.gamepadPressed.has(menuButtons.right) && moveHorizontalGroupFocus(game, 1)) return true;
   if (input.gamepadPressed.has(menuButtons.up)) {
@@ -392,8 +425,8 @@ export function setMenuPage(game, page, direction = 'forward', category = null) 
 export function openSettings(game, origin) {
   commitMenuPageChange(game, () => {
     game.menu.origin = origin;
-    game.menu.page = 'settings';
-    game.menu.settingsCategory = null;
+    game.menu.page = 'settings-category';
+    game.menu.settingsCategory = settingsCategories[0].id;
     game.menu.direction = 'forward';
     renderSettings(game);
     updateMenuChrome(game);
@@ -435,7 +468,7 @@ export function closeSettings(game) {
 }
 
 export function goBack(game) {
-  if (game.menu.page === 'settings-category') return setMenuPage(game, 'settings', 'back', null);
+  if (game.menu.page === 'settings-category') return closeSettings(game);
   if (game.menu.page === 'settings') return closeSettings(game);
   if (game.menu.page === 'level-select') return closeScenarioBrowser(game);
 }
@@ -644,6 +677,8 @@ function handleSettingsClick(game, e, runtime = browserRuntime) {
   const scenarioButton = e.target.closest('button[data-scenario-id]');
   if (scenarioButton) return selectScenario(game, scenarioButton.dataset.scenarioId);
   if (e.target.closest('[data-level-select-back]')) return goBack(game);
+  const settingsTab = e.target.closest('button[data-settings-tab]');
+  if (settingsTab) return setSettingsTab(game, settingsTab.dataset.settingsTab);
   const categoryButton = e.target.closest('[data-settings-category]');
   if (categoryButton) return setMenuPage(game, 'settings-category', 'forward', categoryButton.dataset.settingsCategory);
   const backButton = e.target.closest('[data-settings-back]');

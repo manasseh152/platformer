@@ -1,0 +1,123 @@
+import { bindGamepad, bindLabels, controllerName, findBindConflict } from './legacy-bind-state.js';
+import { setInputScheme } from './input-presentation.js';
+
+export function pollGamepads(runtime, game) {
+  if (!game) {
+    game = runtime;
+    runtime = { now: () => performance.now() };
+  }
+  const { input } = game;
+  input.gamepadPressed.clear();
+  input.gamepadDown.clear();
+  input.latestRawGamepadPressed = [];
+  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  let firstPad = null;
+  for (const pad of pads) {
+    if (!pad) continue;
+    firstPad ??= pad;
+    const b = pad.buttons;
+    const ax = pad.axes;
+
+    for (let i = 0; i < b.length; i++) if (b[i]?.pressed) input.gamepadDown.add(`PadButton${i}`);
+    for (let i = 0; i < ax.length; i++) {
+      const value = ax[i] ?? 0;
+      if (value < -.35) input.gamepadDown.add(`PadAxis${i}-`);
+      if (value > .35) input.gamepadDown.add(`PadAxis${i}+`);
+    }
+
+    if ((ax[0] ?? 0) < -.35 || b[14]?.pressed) input.gamepadDown.add('PadLeft');
+    if ((ax[0] ?? 0) > .35 || b[15]?.pressed) input.gamepadDown.add('PadRight');
+    if ((ax[1] ?? 0) < -.35 || b[12]?.pressed) input.gamepadDown.add('PadUp');
+    if ((ax[1] ?? 0) > .35 || b[13]?.pressed) input.gamepadDown.add('PadDown');
+    if (b[0]?.pressed) input.gamepadDown.add('PadA');
+    if (b[1]?.pressed) input.gamepadDown.add('PadB');
+    if (b[2]?.pressed) input.gamepadDown.add('PadX');
+    if (b[5]?.pressed || b[7]?.pressed) input.gamepadDown.add('PadRB');
+    if (b[9]?.pressed) input.gamepadDown.add('PadStart');
+    if (b[8]?.pressed) input.gamepadDown.add('PadBack');
+  }
+  for (const code of input.gamepadDown) if (!input.previousGamepadDown.has(code)) input.gamepadPressed.add(code);
+  input.latestRawGamepadPressed = [...input.gamepadPressed].filter(code => code.startsWith('PadButton') || code.startsWith('PadAxis'));
+  if (input.gamepadPressed.size) setInputScheme(game, 'gamepad');
+  input.previousGamepadDown.clear();
+  for (const code of input.gamepadDown) input.previousGamepadDown.add(code);
+  updateControllerDebug(runtime, game, firstPad);
+}
+
+export function updateControllerDebug(runtime, game, pad) {
+  if (!pad && game?.input === undefined) {
+    pad = game;
+    game = runtime;
+    runtime = { now: () => performance.now() };
+  }
+  const { input, ui } = game;
+  if (!ui.controllerName) return;
+  ui.controllerName.textContent = pad ? `${pad.id} (${pad.mapping || 'unknown mapping'})` : 'None detected';
+  if (ui.selectedControllerName && !ui.selectedControllerName.querySelector?.('[data-controller-select]')) {
+    const selected = game.settings?.input?.slots?.player1?.devices?.gamepad?.selectedRuntimeId;
+    ui.selectedControllerName.textContent = selected || (pad ? 'Auto / not selected' : 'Auto / none connected');
+  }
+  const rawDown = [...input.gamepadDown].filter(code => code.startsWith('PadButton') || code.startsWith('PadAxis'));
+  ui.controllerInputs.textContent = rawDown.length ? rawDown.join(', ') : 'None';
+  if (input.controllerBindAction && input.latestRawGamepadPressed.length) {
+    const action = input.controllerBindAction;
+    const code = input.latestRawGamepadPressed[0];
+    const captured = input.bindCapture?.snapshot?.({ controls: [legacyGamepadControlForCapture(code)] });
+    if (captured?.status === 'cancelled') {
+      input.controllerBindAction = null;
+      input.bindCapture = null;
+      input.bindDeadline = 0;
+      input.bindRenderDirty = true;
+      input.suppressMenuInputOnce = true;
+      setBindStatus(ui, 'Listening cancelled.');
+      return;
+    }
+    if (captured?.status === 'captured') return finishControllerBinding(runtime, game, action, legacyCodeFromGamepadBinding(captured.binding) || code);
+    return finishControllerBinding(runtime, game, action, code);
+  }
+}
+
+function legacyGamepadControlForCapture(code) {
+  const button = /^PadButton(\d+)$/.exec(code);
+  if (button) return { type: 'button', index: Number(button[1]), value: 1 };
+  const axis = /^PadAxis(\d)([+-])$/.exec(code);
+  if (axis) return { type: 'axis', index: Number(axis[1]), value: axis[2] === '+' ? 1 : -1 };
+  return { type: 'unknown', value: 0 };
+}
+
+function legacyCodeFromGamepadBinding(binding) {
+  if (binding?.deviceType !== 'gamepad') return null;
+  if (binding.control === 'button') return `PadButton${binding.index}`;
+  if (binding.control === 'axisDirection') return `PadAxis${binding.index}${binding.direction < 0 ? '-' : '+'}`;
+  return null;
+}
+
+function finishControllerBinding(runtime, game, action, code) {
+  const { input, ui } = game;
+  const conflict = findBindConflict(input, 'controller', action, code);
+  if (conflict) {
+    input.bindError = { device: 'controller', action, until: runtime.now() + 1800 };
+    input.bindRenderDirty = true;
+    const message = `${controllerName(code)} is already bound to ${bindLabels[conflict]}.`;
+    setBindStatus(ui, message, true);
+    setControllerStatus(ui, message, true);
+    return;
+  }
+  bindGamepad(input, action, code);
+  const message = `${bindLabels[action]} bound to ${controllerName(code)}.`;
+  setBindStatus(ui, message);
+  setControllerStatus(ui, message);
+}
+
+export function setBindStatus(ui, message, error = false) {
+  const el = ui.bindStatus || ui.settingsStatus;
+  if (!el) return;
+  el.textContent = message;
+  el.style.color = error ? '#ff9ebc' : '#9ef7ff';
+}
+
+export function setControllerStatus(ui, message, error = false) {
+  if (!ui.controllerStatus) return;
+  ui.controllerStatus.textContent = message;
+  ui.controllerStatus.style.color = error ? '#ff9ebc' : '#9ef7ff';
+}

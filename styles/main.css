@@ -621,10 +621,15 @@ kbd.ds-keycap {
   bottom: max(16px, env(safe-area-inset-bottom));
 }
 .scene-pause-overlay .command-bar {
+  position: fixed;
+  left: max(16px, env(safe-area-inset-left));
+  bottom: max(16px, env(safe-area-inset-bottom));
   justify-content: flex-start;
-  margin-top: var(--space-5);
+  margin-top: 0;
+  pointer-events: auto;
 }
-#startScreen .command-bar .input-hint {
+#startScreen .command-bar .input-hint,
+.scene-pause-overlay .command-bar .input-hint {
   min-height: 34px;
 }
 .input-hint {
@@ -943,7 +948,7 @@ body.motion-reduce #pauseScreen .menu-page { animation: none !important; }
 
 #pauseScreen[data-menu-page="level-select"] {
   place-items: stretch;
-  padding: clamp(22px, 4vw, 56px) clamp(18px, 5vw, 72px);
+  padding: clamp(22px, 4vw, 56px) clamp(18px, 5vw, 72px) calc(clamp(22px, 4vw, 56px) + 58px);
 }
 #pauseScreen[data-menu-page="level-select"] .menu-card,
 body[data-menu-origin="start"] #pauseScreen[data-menu-page="level-select"] .menu-card {
@@ -952,7 +957,8 @@ body[data-menu-origin="start"] #pauseScreen[data-menu-page="level-select"] .menu
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
   gap: clamp(10px, 2vh, 18px);
-  width: min(1380px, 100%);
+  width: 100%;
+  height: 100%;
   max-height: none;
   min-height: 0;
   overflow: visible;
@@ -1065,16 +1071,18 @@ body[data-menu-origin="start"] #pauseScreen[data-menu-page="level-select"] .menu
 #pauseScreen[data-menu-page="main"],
 #pauseScreen[data-menu-page="settings"],
 #pauseScreen[data-menu-page="settings-category"] {
-  place-items: center;
-  padding: clamp(22px, 4vw, 56px) clamp(18px, 5vw, 72px);
+  place-items: stretch;
+  padding: clamp(22px, 4vw, 56px) clamp(18px, 5vw, 72px) calc(clamp(22px, 4vw, 56px) + 58px);
 }
 #pauseScreen[data-menu-page="main"] .menu-card,
 #pauseScreen[data-menu-page="settings"] .menu-card,
 #pauseScreen[data-menu-page="settings-category"] .menu-card,
 body[data-menu-origin="start"] #pauseScreen[data-menu-page="settings"] .menu-card,
 body[data-menu-origin="start"] #pauseScreen[data-menu-page="settings-category"] .menu-card {
-  width: min(1180px, 100%);
+  width: 100%;
+  height: 100%;
   max-height: none;
+  min-height: 0;
   overflow: visible;
   padding: 0;
   border: 0;
@@ -1090,6 +1098,7 @@ body[data-menu-origin="start"] #pauseScreen[data-menu-page="settings-category"] 
   grid-template-columns: minmax(260px, .9fr) minmax(320px, .72fr);
   column-gap: clamp(28px, 7vw, 100px);
   align-items: center;
+  align-content: center;
 }
 #pauseScreen[data-menu-page="main"] #menuEyebrow,
 #pauseScreen[data-menu-page="main"] #menuTitle { grid-column: 1; }
@@ -1112,7 +1121,7 @@ body[data-menu-origin="start"] #pauseScreen[data-menu-page="settings-category"] 
 #pauseScreen[data-menu-page="settings"] .menu-card,
 #pauseScreen[data-menu-page="settings-category"] .menu-card {
   display: grid;
-  grid-template-columns: minmax(240px, 330px) minmax(0, 1fr);
+  grid-template-columns: minmax(240px, 360px) minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   column-gap: clamp(24px, 5vw, 76px);
   row-gap: 12px;
@@ -1140,9 +1149,9 @@ body[data-menu-origin="start"] #pauseScreen[data-menu-page="settings-category"] 
 #pauseScreen[data-menu-page="settings"] .settings-layout,
 #pauseScreen[data-menu-page="settings-category"] .settings-layout {
   align-content: start;
-  max-height: calc(100dvh - clamp(44px, 8vw, 112px));
+  max-height: calc(100dvh - clamp(44px, 8vw, 112px) - 58px);
   overflow: auto;
-  padding: 0 8px 4px 0;
+  padding: 0 8px 74px 0;
   scrollbar-color: rgba(255,246,232,.22) transparent;
 }
 #pauseScreen[data-menu-page="settings"] .settings-root-rows,
@@ -1150,6 +1159,9 @@ body[data-menu-origin="start"] #pauseScreen[data-menu-page="settings-category"] 
 #pauseScreen[data-menu-page="settings-category"] .settings-category-body {
   grid-template-columns: 1fr;
   gap: 10px;
+}
+#pauseScreen[data-menu-page="settings"] .settings-category-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 #pauseScreen[data-menu-page="settings"] .settings-actions,
 #pauseScreen[data-menu-page="settings-category"] .settings-actions {
@@ -1174,6 +1186,69 @@ body[data-menu-origin="start"] #pauseScreen[data-menu-page="settings-category"] 
 .level-select-list { display: grid; gap: 10px; }
 .level-select-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
 .level-select-tab[aria-selected="true"] { border-color: rgba(var(--color-accent-rgb), .68); background: rgba(var(--color-accent-rgb), .14); color: var(--color-cream); }
+.settings-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 14px;
+  padding: 4px;
+  border: 1px solid rgba(255, 246, 232, .10);
+  border-radius: 999px;
+  background: rgba(9, 12, 18, .68);
+  box-shadow: 0 12px 40px rgba(0,0,0,.32);
+  backdrop-filter: blur(18px) saturate(130%);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.settings-tabs::-webkit-scrollbar { display: none; }
+.settings-tabs__hint {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  min-width: 30px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(16,16,22,.45);
+  border-radius: 999px;
+  background: #fff7ea;
+  color: #14151a;
+  font: 900 .72rem/1 var(--font-ui);
+  letter-spacing: .055em;
+  text-transform: uppercase;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,.14), 0 4px 10px rgba(0,0,0,.16);
+}
+.settings-tabs button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  min-width: 78px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--color-muted);
+  background: transparent;
+  font: 900 12px/1 var(--font-ui);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.settings-tabs button[aria-selected="true"] {
+  color: var(--color-cream);
+  background: rgba(255,255,255,.105);
+  border-color: rgba(255,255,255,.08);
+}
+.settings-tab-panel { display: grid; gap: 14px; }
+.settings-tab-preview {
+  display: grid;
+  gap: 8px;
+  background: rgba(255, 246, 232, .052);
+  backdrop-filter: blur(14px) saturate(122%);
+}
+.settings-tab-preview__title {
+  color: var(--color-cream);
+  font: 900 18px/1.1 var(--font-ui);
+  letter-spacing: .02em;
+}
 .level-select-panel { display: grid; gap: 10px; }
 .level-select-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .level-select-toolbar h3 { margin: 0; }
@@ -1408,15 +1483,15 @@ button.devtool-row:focus-visible,
 
 @media (max-width: 620px), (max-height: 680px) {
   :root { --menu-ui-scale: .88; }
-  #startScreen,
-  #pauseScreen { place-items: start center; padding: max(10px, calc(12px * var(--menu-ui-scale))); }
+  #startScreen { place-items: start center; padding: max(10px, calc(12px * var(--menu-ui-scale))); }
+  #pauseScreen { place-items: start center; padding: max(10px, calc(12px * var(--menu-ui-scale))) max(10px, calc(12px * var(--menu-ui-scale))) calc(max(10px, calc(12px * var(--menu-ui-scale))) + 64px); }
   .menu-card { max-height: none; padding: calc(24px * var(--menu-ui-scale)) calc(18px * var(--menu-ui-scale)); border-radius: max(18px, calc(var(--radius-md) * var(--menu-ui-scale))); }
   .menu-card h1,
   .menu-card h2 { font-size: calc(42px * var(--menu-ui-scale)); }
   #pauseScreen[data-menu-page="level-select"] .menu-card,
   #pauseScreen[data-menu-page="settings"] .menu-card,
   #pauseScreen[data-menu-page="settings-category"] .menu-card { width: 100%; }
-  #pauseScreen[data-menu-page="level-select"] { padding: max(12px, calc(14px * var(--menu-ui-scale))); }
+  #pauseScreen[data-menu-page="level-select"] { padding: max(12px, calc(14px * var(--menu-ui-scale))) max(12px, calc(14px * var(--menu-ui-scale))) calc(max(12px, calc(14px * var(--menu-ui-scale))) + 64px); }
   #pauseScreen[data-menu-page="level-select"] .scene-scenario-browser { grid-template-columns: 1fr; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 10px; }
   #pauseScreen[data-menu-page="level-select"] .scene-scenario-browser > p,
   #pauseScreen[data-menu-page="level-select"] #levelSelectStatus,
@@ -1438,7 +1513,8 @@ button.devtool-row:focus-visible,
   #pauseScreen[data-menu-page="settings-category"] #menuTitle,
   #pauseScreen[data-menu-page="settings-category"] .menu-pages { grid-column: 1; grid-row: auto; }
   #pauseScreen[data-menu-page="settings"] .settings-layout,
-  #pauseScreen[data-menu-page="settings-category"] .settings-layout { max-height: none; overflow: visible; padding-right: 0; }
+  #pauseScreen[data-menu-page="settings-category"] .settings-layout { max-height: none; overflow: visible; padding: 0 0 64px; }
+  #pauseScreen[data-menu-page="settings"] .settings-category-list { grid-template-columns: 1fr; }
   .start-stage { grid-template-columns: 1fr; gap: 18px; width: 100%; }
   #startScreen .menu-actions { grid-template-columns: 1fr; width: 100%; }
   #startScreen #startButton { grid-column: auto; }

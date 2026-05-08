@@ -4,7 +4,7 @@ export const gameInputProfile = {
   contexts: {
     bindCapture: { priority: 1000, actions: [] },
     global: { priority: 100, actions: ['devtools.toggle', 'devtools.pause'] },
-    menu: { priority: 50, actions: ['menu.navigateX', 'menu.navigateY', 'menu.accept', 'menu.back', 'menu.settings'] },
+    menu: { priority: 50, actions: ['menu.navigateX', 'menu.navigateY', 'menu.accept', 'menu.back', 'menu.settings', 'menu.previousTab', 'menu.nextTab'] },
     editor: { priority: 20, actions: ['editor.panModifier', 'editor.save', 'editor.preview', 'editor.undo', 'editor.redo', 'editor.previousTab', 'editor.nextTab'] },
     gameplay: { priority: 10, actions: ['player.moveX', 'player.jump', 'player.dash', 'player.attack', 'system.pause', 'system.restart'] }
   },
@@ -20,6 +20,8 @@ export const gameInputProfile = {
     'menu.accept': { kind: 'button', label: 'Accept', preventDefault: true, userRemappable: false },
     'menu.back': { kind: 'button', label: 'Back', preventDefault: true, userRemappable: false },
     'menu.settings': { kind: 'button', label: 'Settings', preventDefault: true, userRemappable: false },
+    'menu.previousTab': { kind: 'button', label: 'Previous Tab', preventDefault: true, userRemappable: false },
+    'menu.nextTab': { kind: 'button', label: 'Next Tab', preventDefault: true, userRemappable: false },
     'devtools.toggle': { kind: 'button', label: 'Toggle Developer Tools', preventDefault: true, userRemappable: false },
     'devtools.pause': { kind: 'button', label: 'Pause Simulation', preventDefault: true, userRemappable: false },
     'editor.panModifier': { kind: 'button', label: 'Pan Modifier', preventDefault: true, userRemappable: false },
@@ -98,6 +100,8 @@ export const gameInputProfile = {
       { deviceType: 'keyboard', control: 'key', code: 'Tab' },
       { deviceType: 'gamepad', control: 'button', index: 3 }
     ],
+    'menu.previousTab': [{ deviceType: 'gamepad', control: 'button', index: 4 }],
+    'menu.nextTab': [{ deviceType: 'gamepad', control: 'button', index: 5 }],
     'devtools.toggle': [{ deviceType: 'keyboard', control: 'key', code: 'Backquote' }],
     'devtools.pause': [{ deviceType: 'keyboard', control: 'key', code: 'KeyP' }],
     'editor.panModifier': [{ deviceType: 'keyboard', control: 'key', code: 'Space' }],
