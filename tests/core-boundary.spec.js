@@ -2,7 +2,9 @@ import { expect, test } from '@playwright/test';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
+const catalogRoot = path.resolve('src/catalog');
 const coreRoot = path.resolve('src/core');
+const editorRoot = path.resolve('src/editor');
 const engineRoot = path.resolve('src/engine');
 const bannedGlobals = ['document', 'window', 'navigator', 'localStorage', 'sessionStorage', 'ResizeObserver', 'HTMLCanvasElement', 'performance'];
 
@@ -40,6 +42,19 @@ test('core modules only import within core or engine', async () => {
         resolved.startsWith(coreRoot) || resolved.startsWith(engineRoot),
         `${path.relative('.', file)} imports ${specifier}`
       ).toBe(true);
+    }
+  }
+});
+
+test('catalog modules do not import editor modules', async () => {
+  for (const file of await jsFiles(catalogRoot)) {
+    const source = await readFile(file, 'utf8');
+    const imports = source.matchAll(/from\s+['"]([^'"]+)['"]|import\s*\(\s*['"]([^'"]+)['"]\s*\)/g);
+    for (const match of imports) {
+      const specifier = match[1] ?? match[2];
+      if (!specifier.startsWith('.')) continue;
+      const resolved = path.resolve(path.dirname(file), specifier);
+      expect(resolved, `${path.relative('.', file)} imports ${specifier}`).not.toContain(editorRoot);
     }
   }
 });

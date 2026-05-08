@@ -1,4 +1,5 @@
-import { compileDraft, hasEntitySymbol, normalizeDraft } from '../../editor/tilemap-draft.js';
+import { hasEntitySymbol, normalizeDraft } from '../../core/tilemaps/draft.js';
+import { compileDraft } from '../../content/tilemaps/draft-compiler.js';
 import { isKebabCaseId } from '../id.js';
 
 export const LOCAL_DRAFT_STORAGE_PREFIX = 'chibi.tilemap-editor.';

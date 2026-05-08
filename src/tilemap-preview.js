@@ -1,5 +1,5 @@
 import { resetGameplaySession, syncGameplaySessionToGame } from './core/gameplay-session.js';
-import { compileDraft } from './editor/tilemap-draft.js';
+import { compileDraft } from './content/tilemaps/draft-compiler.js';
 
 export const PREVIEW_TILEMAP_PARAM = 'previewTilemapKey';
 export const PREVIEW_STORAGE_PREFIX = 'chibi.tilemap-preview.';
