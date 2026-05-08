@@ -35,7 +35,7 @@ test('start screen points the map editor button at the extensionless production 
   await expect(page).toHaveURL(/\/editor$/);
 });
 
-test('map editor loads registered tilemaps and exports new gridLayer format', async ({ page }) => {
+test('map editor loads registered tilemaps and exports new terrainLayer format', async ({ page }) => {
   await page.goto('/editor.html');
 
   await expect(page.locator('h1')).toHaveText('Tilemap Editor');
@@ -43,7 +43,7 @@ test('map editor loads registered tilemaps and exports new gridLayer format', as
   await openMapPanel(page);
   await expect(page.locator('#tilemapSelect')).toContainText('Act 01 Level 1');
   await expect(page.locator('#status')).toContainText('Valid');
-  await expect(page.locator('#exportText')).toHaveValue(/gridLayer\(\{ id: 'buildTerrain', cellSize: CELL_SIZE\.BUILD/);
+  await expect(page.locator('#exportText')).toHaveValue(/terrainLayer\(\{ cellSize: CELL_SIZE\.BUILD/);
   await expect(page.locator('#exportText')).toHaveValue(/gridLayer\(\{ id: 'entities', cellSize: CELL_SIZE\.GRID/);
 });
 
@@ -54,7 +54,7 @@ test('map editor paints terrain into exported rows', async ({ page }) => {
   const point = await editorScreenPoint(page, 8, 8);
   await page.mouse.click(point.x, point.y);
 
-  await expect(page.locator('#exportText')).toHaveValue(/'#\.\.\.\.\.\.\.'/);
+  await expect(page.locator('#exportText')).toHaveValue(/\[K\.GRASS, null, null, null, null, null, null, null\]/);
   await expect(page.locator('#status')).toHaveClass(/ok/);
 });
 
@@ -125,15 +125,15 @@ test('map editor undo and redo operate on a whole paint stroke', async ({ page }
   await page.mouse.move(next.x, next.y);
   await page.mouse.up();
 
-  await expect(page.locator('#exportText')).toHaveValue(/'##\.\.\.\.\.\.'/);
+  await expect(page.locator('#exportText')).toHaveValue(/\[K\.GRASS, K\.GRASS, null, null, null, null, null, null\]/);
   await expect(page.getByRole('button', { name: 'Undo' })).toBeEnabled();
 
   await page.keyboard.press(process.platform === 'darwin' ? 'Meta+Z' : 'Control+Z');
-  await expect(page.locator('#exportText')).toHaveValue(/'\.\.\.\.\.\.\.\.'/);
+  await expect(page.locator('#exportText')).toHaveValue(/\[null, null, null, null, null, null, null, null\]/);
   await expect(page.getByRole('button', { name: 'Redo' })).toBeEnabled();
 
   await page.keyboard.press(process.platform === 'darwin' ? 'Meta+Shift+Z' : 'Control+Shift+Z');
-  await expect(page.locator('#exportText')).toHaveValue(/'##\.\.\.\.\.\.'/);
+  await expect(page.locator('#exportText')).toHaveValue(/\[K\.GRASS, K\.GRASS, null, null, null, null, null, null\]/);
 });
 
 test('map editor clears redo when a new paint stroke follows undo', async ({ page }) => {
@@ -142,14 +142,14 @@ test('map editor clears redo when a new paint stroke follows undo', async ({ pag
 
   const first = await editorScreenPoint(page, 8, 8);
   await page.mouse.click(first.x, first.y);
-  await expect(page.locator('#exportText')).toHaveValue(/'#\.\.\.\.\.\.\.'/);
+  await expect(page.locator('#exportText')).toHaveValue(/\[K\.GRASS, null, null, null, null, null, null, null\]/);
 
   await page.getByRole('button', { name: 'Undo' }).click();
   await expect(page.getByRole('button', { name: 'Redo' })).toBeEnabled();
 
   const second = await editorScreenPoint(page, 40, 8);
   await page.mouse.click(second.x, second.y);
-  await expect(page.locator('#exportText')).toHaveValue(/'\.\.#\.\.\.\.\.'/);
+  await expect(page.locator('#exportText')).toHaveValue(/\[null, null, K\.GRASS, null, null, null, null, null\]/);
   await expect(page.getByRole('button', { name: 'Redo' })).toBeDisabled();
 });
 
@@ -171,7 +171,7 @@ test('map editor exports and imports shareable map files instead of JS downloads
     stream.on('error', reject);
   })));
   expect(payload.format).toBe('chibi-tilemap-draft');
-  expect(payload.draft.layers.some(layer => layer.id === 'buildTerrain')).toBe(true);
+  expect(payload.draft.layers.some(layer => layer.id === 'terrain' && layer.type === 'terrain')).toBe(true);
 
   await page.locator('#importMapInput').setInputFiles({
     name: 'shared.chibi-map.json',
@@ -191,7 +191,7 @@ test('map editor exports and imports shareable map files instead of JS downloads
         categories: ['drafts'],
         description: 'Imported in Playwright.',
         layers: [
-          { id: 'buildTerrain', cellSize: 16, rows: ['........', '........', '........', '........', '........', '########'] },
+          { id: 'terrain', type: 'terrain', cellSize: 16, rows: [[null, null, null, null, null, null, null, null], [null, null, null, null, null, null, null, null], [null, null, null, null, null, null, null, null], [null, null, null, null, null, null, null, null], [null, null, null, null, null, null, null, null], ['grass', 'grass', 'grass', 'grass', 'grass', 'grass', 'grass', 'grass']] },
           { id: 'entities', cellSize: 32, rows: ['P...', '....', '...G'] }
         ]
       }
@@ -344,7 +344,7 @@ test('game page consumes a preview tilemap payload and starts play', async ({ pa
         categories: ['drafts'],
         description: 'Preview payload from Playwright.',
         layers: [
-          { id: 'buildTerrain', cellSize: 16, rows: ['........', '........', '........', '........', '........', '########'] },
+          { id: 'terrain', type: 'terrain', cellSize: 16, rows: [[null, null, null, null, null, null, null, null], [null, null, null, null, null, null, null, null], [null, null, null, null, null, null, null, null], [null, null, null, null, null, null, null, null], [null, null, null, null, null, null, null, null], ['grass', 'grass', 'grass', 'grass', 'grass', 'grass', 'grass', 'grass']] },
           { id: 'entities', cellSize: 32, rows: ['P...', '....', '...G'] }
         ]
       }

@@ -1,6 +1,7 @@
 import { CELL_SIZE } from '../../../core/constants.js';
 import { defineTilemap, gridLayer } from '../../../core/tilemaps/tilemap.js';
-import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../objects.js';
+import { TERRAIN_KIND as K, terrainLayer } from '../../../core/tilemaps/terrain-layer.js';
+import { finishGateObject, playerSpawner, slimeSpawner } from '../objects.js';
 
 export const movementGymMapDefinition = {
   cols: 24,
@@ -9,38 +10,32 @@ export const movementGymMapDefinition = {
   terrainRenderMode: 'contained-autotile',
   theme: 'kenney-pixel-platformer:grass',
   layers: [
-    gridLayer({
-      id: 'buildTerrain',
-      cellSize: CELL_SIZE.BUILD,
-      symbols: { '#': solidTerrain },
-      rows: [
-    '################################################',
-    '################################################',
-    '##............................................##',
-    '##............................................##',
-    '##............................................##',
-    '##............................................##',
-    '##..................................######....##',
-    '##..................................######....##',
-    '##..........................######............##',
-    '##..........................######............##',
-    '##..................######....................##',
-    '##..................######....................##',
-    '##..........######............................##',
-    '##..........######............................##',
-    '##............................................##',
-    '##............................................##',
-    '##....######........######........######......##',
-    '##....######........######........######......##',
-    '##............##..............................##',
-    '##..........####..............................##',
-    '##..############......................####....##',
-    '##..############......................####....##',
-    '################################################',
-    '################################################'
-
-      ]
-    }),
+    terrainLayer({ cellSize: CELL_SIZE.BUILD, rows: [
+      [K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS],
+      [K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS]
+    ] }),
     gridLayer({
       id: 'entities',
       cellSize: CELL_SIZE.GRID,

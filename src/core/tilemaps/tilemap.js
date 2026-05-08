@@ -3,6 +3,7 @@ import { defineScene } from '../../engine/scene/scene.js';
 import { createEnemiesFromScene } from '../gameplay-scene-queries.js';
 import { sceneObject } from '../../engine/scene/objects.js';
 import { getComponent, findObjectsWithComponent } from '../../engine/scene/queries.js';
+import { terrainKindConfig } from './terrain-layer.js';
 import { TERRAIN_MASK, normalizeTerrainMask } from './terrain-mask.js';
 
 const DECOR_TYPES = { r: 'bannerRed', g: 'bannerGreen', f: 'flag', t: 'torch' };
@@ -49,8 +50,14 @@ function validateTerrainDefinition(definition) {
     throw new Error(`terrainRenderMode must be ${TERRAIN_RENDER_MODE}`);
   }
   for (const layer of definition.layers) {
-    if (layer.id === 'terrain') throw new Error('terrain layer is not supported; use buildTerrain');
-    if (layer.id === 'buildTerrain' && layer.cellSize !== CELL_SIZE.BUILD) throw new Error('buildTerrain layer must use CELL_SIZE.BUILD');
+    if (layer.id === 'buildTerrain') throw new Error('buildTerrain layer is archived; use terrainLayer');
+  }
+  const terrainLayers = definition.layers.filter(layer => layer.id === 'terrain');
+  if (terrainLayers.length !== 1) throw new Error('defineTilemap requires exactly one terrain layer');
+  for (const layer of definition.layers) {
+    if (layer.id === 'terrain' && layer.type !== 'terrain') throw new Error('terrain layer must be created with terrainLayer');
+    if (layer.type === 'terrain' && layer.id !== 'terrain') throw new Error('terrain layer id must be terrain');
+    if (layer.type === 'terrain' && layer.cellSize !== CELL_SIZE.BUILD) throw new Error('terrain layer must use CELL_SIZE.BUILD');
   }
 }
 
@@ -74,7 +81,7 @@ export function defineTilemap(definition) {
     const expectedRows = rows * cellsPerGrid;
     const expectedCols = cols * cellsPerGrid;
     if (layer.rows.length !== expectedRows) throw new Error(`${layer.id} layer must contain ${expectedRows} rows`);
-    layer.rows.forEach((row, index) => { if (row.length !== expectedCols) throw new Error(`${layer.id} layer row ${index} must be ${expectedCols} chars wide`); });
+    layer.rows.forEach((row, index) => { if (row.length !== expectedCols) throw new Error(`${layer.id} layer row ${index} must be ${expectedCols} cells wide`); });
   }
 
   const scene = {
@@ -96,6 +103,7 @@ export function defineTilemap(definition) {
 
   const objects = [];
   for (const layer of scene.layers) {
+    if (layer.type === 'terrain') continue;
     layer.rows.forEach((line, row) => [...line].forEach((symbol, col) => {
       if (symbol === EMPTY) return;
       objects.push(objectFromCell(scene, layer, symbol, layer.symbols[symbol], col, row));
@@ -103,18 +111,18 @@ export function defineTilemap(definition) {
   }
   Object.assign(scene, defineScene({ ...scene, objects: [...objects, ...(definition.objects ?? [])] }));
 
+  scene.terrain = normalizeTerrain(scene);
   scene.collisionLayers = buildContainedTerrainCollisionLayers(scene);
   scene.renderLayers = { containedTerrainTiles: buildContainedTerrainTiles(scene) };
   scene.tiles = Object.fromEntries(scene.layers.map(layer => [`${layer.id}Rows`, layer.rows]));
   return scene;
 }
 
-function terrainObjects(scene) { return findObjectsWithComponent(scene, 'collision:solid').filter(object => hasComponent(object, 'terrain')); }
-function terrainLayer(scene) { return scene.layers?.find(layer => layer.id === 'buildTerrain') ?? null; }
-function terrainCellSize(scene) { return terrainLayer(scene)?.cellSize ?? terrainObjects(scene)[0]?.transform?.cellSize ?? CELL_SIZE.BUILD; }
+function terrainLayer(scene) { return scene.layers?.find(layer => layer.id === 'terrain' && layer.type === 'terrain') ?? null; }
+function terrainCellSize(scene) { return terrainLayer(scene)?.cellSize ?? CELL_SIZE.BUILD; }
 function terrainKey(col, row) { return `${col},${row}`; }
-function terrainSet(scene) { return new Set(terrainObjects(scene).map(object => terrainKey(object.transform.col, object.transform.row))); }
-function isSolidTerrainCellAt(scene, col, row) { return terrainSet(scene).has(terrainKey(col, row)); }
+function terrainCellAt(scene, col, row) { return scene.terrain?.cellMap?.get(terrainKey(col, row)) ?? null; }
+function isSolidTerrainCellAt(scene, col, row) { const cell = terrainCellAt(scene, col, row); return Boolean(cell && terrainKindConfig(cell.kind)?.solid); }
 
 export function tileToWorld(col, row, tileSize = T) { return { x: col * tileSize, y: row * tileSize }; }
 export function worldToTile(x, y, tileSize = T) { return { col: Math.floor(x / tileSize), row: Math.floor(y / tileSize) }; }
@@ -135,7 +143,7 @@ export function getDecorType(tile) { return DECOR_TYPES[tile] ?? null; }
 export function solidTileRectsOverlapping(scene, rect) {
   const collisionRects = scene.collisionLayers?.terrainRects ?? [];
   if (collisionRects.length) return collisionRects.filter(hit => rectsOverlap(rect, hit));
-  return terrainObjects(scene).map(object => ({ ...object.transform, kind: 'solid' })).filter(hit => rectsOverlap(rect, hit));
+  return (scene.terrain?.cells ?? []).filter(cell => terrainKindConfig(cell.kind)?.solid).map(cell => ({ x: cell.x, y: cell.y, w: cell.w, h: cell.h, col: cell.col, row: cell.row, kind: 'solid', terrainKind: cell.kind })).filter(hit => rectsOverlap(rect, hit));
 }
 
 export function spikeHazardRectsOverlapping(scene, rect) {
@@ -167,10 +175,12 @@ function instantiatedObjects(scene, definitionId) {
 function rectsOverlap(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
 function clippedWorldRect(rect, scene) { const x = Math.max(0, rect.x); const y = Math.max(0, rect.y); const right = Math.min(scene.worldWidth, rect.x + rect.w); const bottom = Math.min(scene.worldHeight, rect.y + rect.h); return right <= x || bottom <= y ? null : { ...rect, x, y, w: right - x, h: bottom - y }; }
 function greedyMergeAabbs2D(width, height, isSolid) { const visited = new Uint8Array(width * height); const boxes = []; const index = (x, y) => y * width + x; const canUse = (x, y) => x >= 0 && x < width && y >= 0 && y < height && visited[index(x, y)] === 0 && isSolid(x, y); for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) { if (!canUse(x, y)) continue; let boxWidth = 1; while (canUse(x + boxWidth, y)) boxWidth++; let boxHeight = 1; while (y + boxHeight < height) { let rowMatches = true; for (let xx = x; xx < x + boxWidth; xx++) if (!canUse(xx, y + boxHeight)) { rowMatches = false; break; } if (!rowMatches) break; boxHeight++; } for (let yy = y; yy < y + boxHeight; yy++) for (let xx = x; xx < x + boxWidth; xx++) visited[index(xx, yy)] = 1; boxes.push({ x, y, w: boxWidth, h: boxHeight }); } return boxes; }
-function buildContainedTerrainCollisionPrimitives(scene) { const primitives = []; for (const object of terrainObjects(scene)) { const startCol = Math.floor(object.transform.x / TERRAIN_PRIMITIVE_SIZE); const startRow = Math.floor(object.transform.y / TERRAIN_PRIMITIVE_SIZE); const primitiveCols = object.transform.w / TERRAIN_PRIMITIVE_SIZE; const primitiveRows = object.transform.h / TERRAIN_PRIMITIVE_SIZE; for (let row = 0; row < primitiveRows; row++) for (let col = 0; col < primitiveCols; col++) primitives.push({ x: (startCol + col) * TERRAIN_PRIMITIVE_SIZE, y: (startRow + row) * TERRAIN_PRIMITIVE_SIZE, w: TERRAIN_PRIMITIVE_SIZE, h: TERRAIN_PRIMITIVE_SIZE, col: startCol + col, row: startRow + row, kind: 'terrain-primitive' }); } return primitives; }
+function normalizeTerrain(scene) { const layer = terrainLayer(scene); const cellSize = layer.cellSize; const cells = []; const cellMap = new Map(); layer.rows.forEach((line, row) => line.forEach((kind, col) => { if (kind === null) return; const cell = { layer: 'terrain', col, row, x: col * cellSize, y: row * cellSize, w: cellSize, h: cellSize, kind }; cells.push(cell); cellMap.set(terrainKey(col, row), cell); })); return { layerId: 'terrain', cellSize, cells, cellMap }; }
+function buildContainedTerrainCollisionPrimitives(scene) { const primitives = []; for (const cell of scene.terrain?.cells ?? []) { if (!terrainKindConfig(cell.kind)?.solid) continue; const startCol = Math.floor(cell.x / TERRAIN_PRIMITIVE_SIZE); const startRow = Math.floor(cell.y / TERRAIN_PRIMITIVE_SIZE); const primitiveCols = cell.w / TERRAIN_PRIMITIVE_SIZE; const primitiveRows = cell.h / TERRAIN_PRIMITIVE_SIZE; for (let row = 0; row < primitiveRows; row++) for (let col = 0; col < primitiveCols; col++) primitives.push({ x: (startCol + col) * TERRAIN_PRIMITIVE_SIZE, y: (startRow + row) * TERRAIN_PRIMITIVE_SIZE, w: TERRAIN_PRIMITIVE_SIZE, h: TERRAIN_PRIMITIVE_SIZE, col: startCol + col, row: startRow + row, kind: 'terrain-primitive', terrainKind: cell.kind }); } return primitives; }
 function buildContainedTerrainCollisionLayers(scene) { const terrainPrimitives = buildContainedTerrainCollisionPrimitives(scene); const solids = new Set(terrainPrimitives.map(cell => terrainKey(cell.col, cell.row))); const cols = Math.floor(scene.worldWidth / TERRAIN_PRIMITIVE_SIZE); const rows = Math.floor(scene.worldHeight / TERRAIN_PRIMITIVE_SIZE); return { terrainPrimitives, terrainRects: greedyMergeAabbs2D(cols, rows, (col, row) => solids.has(terrainKey(col, row))).map(box => clippedWorldRect({ x: box.x * TERRAIN_PRIMITIVE_SIZE, y: box.y * TERRAIN_PRIMITIVE_SIZE, w: box.w * TERRAIN_PRIMITIVE_SIZE, h: box.h * TERRAIN_PRIMITIVE_SIZE, col: box.x, row: box.y, cols: box.w, rows: box.h, kind: 'terrain-solid' }, scene)).filter(Boolean) }; }
-function buildTerrainNeighborMask(scene, col, row) { let mask = 0; const bit = (dx, dy, value) => isSolidTerrainCellAt(scene, col + dx, row + dy) ? value : 0; mask |= bit(0, -1, TERRAIN_MASK.N); mask |= bit(1, -1, TERRAIN_MASK.NE); mask |= bit(1, 0, TERRAIN_MASK.E); mask |= bit(1, 1, TERRAIN_MASK.SE); mask |= bit(0, 1, TERRAIN_MASK.S); mask |= bit(-1, 1, TERRAIN_MASK.SW); mask |= bit(-1, 0, TERRAIN_MASK.W); mask |= bit(-1, -1, TERRAIN_MASK.NW); return mask; }
-function buildContainedTerrainTiles(scene) { return terrainObjects(scene).map(object => { const rawMask = buildTerrainNeighborMask(scene, object.transform.col, object.transform.row); return { layer: 'buildTerrain', x: object.transform.x, y: object.transform.y, w: object.transform.w, h: object.transform.h, col: object.transform.col, row: object.transform.row, rawMask, mask: normalizeTerrainMask(rawMask) }; }); }
+function terrainVisuallyConnects(scene, source, col, row) { const neighbor = terrainCellAt(scene, col, row); if (!neighbor) return false; const config = terrainKindConfig(source.kind); return Boolean(config?.connectsTo?.includes(neighbor.kind)); }
+function buildVisualNeighborMask(scene, cell) { let mask = 0; const bit = (dx, dy, value) => terrainVisuallyConnects(scene, cell, cell.col + dx, cell.row + dy) ? value : 0; mask |= bit(0, -1, TERRAIN_MASK.N); mask |= bit(1, -1, TERRAIN_MASK.NE); mask |= bit(1, 0, TERRAIN_MASK.E); mask |= bit(1, 1, TERRAIN_MASK.SE); mask |= bit(0, 1, TERRAIN_MASK.S); mask |= bit(-1, 1, TERRAIN_MASK.SW); mask |= bit(-1, 0, TERRAIN_MASK.W); mask |= bit(-1, -1, TERRAIN_MASK.NW); return mask; }
+function buildContainedTerrainTiles(scene) { return (scene.terrain?.cells ?? []).filter(cell => terrainKindConfig(cell.kind)?.visible).map(cell => { const rawMask = buildVisualNeighborMask(scene, cell); return { layer: 'terrain', x: cell.x, y: cell.y, w: cell.w, h: cell.h, col: cell.col, row: cell.row, kind: cell.kind, rawMask, mask: normalizeTerrainMask(rawMask) }; }); }
 
 export function createPlayer(spawn) { if (!spawn) throw new Error('createPlayer requires a spawn point'); return { x: spawn.x, y: spawn.y, ...ACTOR_SIZE.PLAYER, vx: 0, vy: 0, dir: 1, grounded: false, hp: 5, inv: 0, attack: 0, coyote: 0, jumpBuf: 0, dash: 0, dashCooldown: 0, wallDir: 0, wallSlide: false, dead: false }; }
 export function createEnemies(scene) { return createEnemiesFromScene(scene); }

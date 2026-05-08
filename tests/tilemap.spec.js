@@ -25,13 +25,14 @@ import {
 } from '../src/core/tilemaps/tilemap.js';
 import { CELL_SIZE } from '../src/core/constants.js';
 import { finishGateObject, playerSpawner, renderTerrain, slimeSpawner, solidTerrain } from '../src/content/tilemaps/objects.js';
+import { TERRAIN_KIND, terrainLayer } from '../src/core/tilemaps/terrain-layer.js';
 import { resolveInitialTilemap } from '../src/tilemap-manager.js';
 import { defineContainedTestTilemap } from './helpers/contained-tilemap.js';
 
-function buildTerrainSet(tilemap) {
-  return new Set(tilemap.objects
-    .filter(object => object.layerId === 'buildTerrain' && object.definitionId === 'solid-terrain')
-    .map(object => `${object.transform.col},${object.transform.row}`));
+function visibleTerrainSet(tilemap) {
+  return new Set((tilemap.terrain?.cells ?? [])
+    .filter(cell => cell.kind !== TERRAIN_KIND.INVISIBLE)
+    .map(cell => `${cell.col},${cell.row}`));
 }
 
 function allObjects(tilemap) {
@@ -49,26 +50,29 @@ test('tile helpers convert between tile and world coordinates', () => {
   expect(tileRect(2, 4, 3, 1)).toMatchObject({ x: 64, y: 128, w: 96, h: 32 });
 });
 
-test('defineTilemap requires explicit dimensions and validates contained terrain layers', () => {
+test('defineTilemap requires explicit dimensions and validates terrain layers', () => {
   expect(CELL_SIZE).toEqual({ GRID: 32, BUILD: 16, TERRAIN_PRIMITIVE: 8 });
   const parsed = defineTilemap({
-    id: 'build-grid-validation',
+    id: 'terrain-layer-validation',
     cols: 2,
     rows: 1,
-    layers: [gridLayer({ id: 'buildTerrain', cellSize: CELL_SIZE.BUILD, symbols: { '#': solidTerrain }, rows: ['#...', '####'] })]
+    layers: [terrainLayer({ rows: [[TERRAIN_KIND.GRASS, null, null, null], [TERRAIN_KIND.STONE, TERRAIN_KIND.INVISIBLE, null, null]] })]
   });
 
   expect(parsed.worldWidth).toBe(64);
   expect(parsed.worldHeight).toBe(32);
   expect(parsed.terrainRenderMode).toBe('contained-autotile');
   expect(parsed.layers[0].cellSize).toBe(CELL_SIZE.BUILD);
-  expect(parsed.objects[0].transform).toMatchObject({ col: 0, row: 0, cellSize: CELL_SIZE.BUILD, x: 0, y: 0, w: 16, h: 16 });
+  expect(parsed.terrain.cells[0]).toMatchObject({ col: 0, row: 0, kind: TERRAIN_KIND.GRASS, x: 0, y: 0, w: 16, h: 16 });
+  expect(parsed.objects).toHaveLength(0);
   expect(() => gridLayer({ id: 'bad-resolution', resolution: 2, symbols: { '#': solidTerrain }, rows: ['#'] })).toThrow(/cellSize/);
   expect(() => gridLayer({ id: 'bad-cell-size', cellSize: 10, symbols: { '#': solidTerrain }, rows: ['#'] })).toThrow(/unsupported cellSize/);
-  expect(() => defineTilemap({ id: 'missing-dimensions', layers: [gridLayer({ id: 'buildTerrain', cellSize: CELL_SIZE.BUILD, symbols: { '#': solidTerrain }, rows: ['#'] })] })).toThrow(/cols/);
-  expect(() => defineTilemap({ id: 'old-terrain-layer', cols: 1, rows: 1, layers: [gridLayer({ id: 'terrain', symbols: { '#': solidTerrain }, rows: ['#'] })] })).toThrow(/buildTerrain/);
-  expect(() => defineTilemap({ id: 'wrong-mode', cols: 1, rows: 1, terrainRenderMode: 'other', layers: [gridLayer({ id: 'buildTerrain', cellSize: CELL_SIZE.BUILD, symbols: { '#': solidTerrain }, rows: ['..', '..'] })] })).toThrow(/contained-autotile/);
-  expect(() => defineTilemap({ id: 'bad-cell-size-rows', cols: 2, rows: 1, layers: [gridLayer({ id: 'buildTerrain', cellSize: CELL_SIZE.BUILD, symbols: { '#': solidTerrain }, rows: ['##'] })] })).toThrow(/buildTerrain layer must contain 2 rows/);
+  expect(() => terrainLayer({ rows: [[TERRAIN_KIND.GRASS, 'sand']] })).toThrow(/unknown terrain kind/);
+  expect(() => defineTilemap({ id: 'missing-dimensions', layers: [terrainLayer({ rows: [[TERRAIN_KIND.GRASS]] })] })).toThrow(/cols/);
+  expect(() => defineTilemap({ id: 'old-build-terrain-layer', cols: 1, rows: 1, layers: [gridLayer({ id: 'buildTerrain', cellSize: CELL_SIZE.BUILD, symbols: { '#': solidTerrain }, rows: ['##', '##'] })] })).toThrow(/buildTerrain layer is archived/);
+  expect(() => defineTilemap({ id: 'bad-terrain-layer', cols: 1, rows: 1, layers: [gridLayer({ id: 'terrain', symbols: { '#': solidTerrain }, rows: ['#'] })] })).toThrow(/terrain layer must be created with terrainLayer/);
+  expect(() => defineTilemap({ id: 'wrong-mode', cols: 1, rows: 1, terrainRenderMode: 'other', layers: [terrainLayer({ rows: [[null, null], [null, null]] })] })).toThrow(/contained-autotile/);
+  expect(() => defineTilemap({ id: 'bad-cell-size-rows', cols: 2, rows: 1, layers: [terrainLayer({ rows: [[TERRAIN_KIND.GRASS, null], [null, null]] })] })).toThrow(/terrain layer row 0 must be 4 cells wide/);
 });
 
 test('contained tilemap exposes layered tiles and query helpers derive gameplay data', () => {
@@ -109,7 +113,7 @@ test('contained tilemap exposes layered tiles and query helpers derive gameplay 
   expect(getGoalRect(parsed)).toMatchObject({ x: 96, y: 32, w: 32, h: 32, kind: 'gate' });
   expect(parsed.artTileSize).toBe(16);
   expect(parsed.artTilesPerTile).toBe(2);
-  expect(parsed.renderLayers.containedTerrainTiles.length).toBe(buildTerrainSet(parsed).size);
+  expect(parsed.renderLayers.containedTerrainTiles.length).toBe(visibleTerrainSet(parsed).size);
   expect(parsed.renderLayers.terrainPrimitives).toBeUndefined();
   expect(spikeHazardRectsOverlapping(parsed, { x: 108, y: 108, w: 36, h: 36 })).toHaveLength(1);
   expect(decor).toEqual([
@@ -122,14 +126,39 @@ test('contained tilemap exposes layered tiles and query helpers derive gameplay 
   ]));
 });
 
-test('contained autotile terrain derives 8px collision primitives from 16px build terrain', () => {
+test('terrain kinds drive visibility and visual connectivity without changing solid collision', () => {
+  const parsed = defineTilemap({
+    id: 'terrain-kinds',
+    cols: 2,
+    rows: 1,
+    layers: [terrainLayer({ rows: [
+      [TERRAIN_KIND.GRASS, TERRAIN_KIND.STONE, TERRAIN_KIND.INVISIBLE, null],
+      [TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, null, null]
+    ] })]
+  });
+
+  expect(parsed.terrain.cells.map(cell => cell.kind)).toEqual([
+    TERRAIN_KIND.GRASS,
+    TERRAIN_KIND.STONE,
+    TERRAIN_KIND.INVISIBLE,
+    TERRAIN_KIND.GRASS,
+    TERRAIN_KIND.GRASS
+  ]);
+  expect(parsed.collisionLayers.terrainPrimitives.filter(cell => cell.terrainKind === TERRAIN_KIND.INVISIBLE)).toHaveLength(4);
+  expect(parsed.renderLayers.containedTerrainTiles.map(tile => tile.kind)).not.toContain(TERRAIN_KIND.INVISIBLE);
+  const grass = parsed.renderLayers.containedTerrainTiles.find(tile => tile.col === 0 && tile.row === 0);
+  expect(grass.rawMask & 4).toBe(0); // east stone does not visually connect to grass
+  expect(grass.rawMask & 16).toBe(16); // south grass does connect
+});
+
+test('contained autotile terrain derives 8px collision primitives from 16px terrain cells', () => {
   const parsed = defineTilemap({
     id: 'contained-terrain',
     cols: 2,
     rows: 1,
     terrainRenderMode: 'contained-autotile',
     layers: [
-      gridLayer({ id: 'buildTerrain', cellSize: CELL_SIZE.BUILD, symbols: { '#': solidTerrain }, rows: ['#...', '....'] })
+      terrainLayer({ rows: [[TERRAIN_KIND.GRASS, null, null, null], [null, null, null, null]] })
     ]
   });
 
@@ -150,12 +179,12 @@ test('contained autotile terrain derives 8px collision primitives from 16px buil
   ]);
 });
 
-test('every contained terrain visual tile is inside a solid buildTerrain cell', () => {
+test('every contained terrain visual tile is inside a visible terrain cell', () => {
   for (const tilemap of [level, getDefaultTilemap()]) {
-    const solids = buildTerrainSet(tilemap);
+    const solids = visibleTerrainSet(tilemap);
     for (const tile of tilemap.renderLayers.containedTerrainTiles) {
       expect(solids.has(`${tile.col},${tile.row}`), tilemap.id).toBe(true);
-      expect(tile.layer).toBe('buildTerrain');
+      expect(tile.layer).toBe('terrain');
       expect(tile.x).toBe(tile.col * CELL_SIZE.BUILD);
       expect(tile.y).toBe(tile.row * CELL_SIZE.BUILD);
       expect(tile.w).toBe(CELL_SIZE.BUILD);
@@ -185,14 +214,14 @@ test('terrain render components are marker-only', () => {
   }
 });
 
-test('content definitions use buildTerrain contained terrain only', () => {
+test('content definitions use terrainLayer and no active buildTerrain', () => {
   const files = globSync('src/content/tilemaps/definitions/**/*.js');
   for (const file of files) {
     const text = readFileSync(file, 'utf8');
     expect(text, file).not.toContain('parseTilemap');
-    expect(text, file).not.toContain("id: 'terrain'");
+    expect(text, file).not.toContain('buildTerrain');
     expect(text, file).not.toContain('offsetGrid');
-    if (text.includes('defineTilemap(')) expect(text, file).toContain('buildTerrain');
+    if (text.includes('defineTilemap(')) expect(text, file).toContain('terrainLayer');
   }
 });
 

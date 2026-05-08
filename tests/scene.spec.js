@@ -3,8 +3,8 @@ import { defineObject, sceneObject } from '../src/engine/scene/objects.js';
 import { defineScene } from '../src/engine/scene/scene.js';
 import { getComponent, getComponents, findObjectsWithComponent, findOneObjectWithComponent } from '../src/engine/scene/queries.js';
 import { renderLayer, renderParallax, renderProcedural, renderTexture, solid } from '../src/engine/scene/components.js';
-import { defineTilemap, gridLayer } from '../src/core/tilemaps/tilemap.js';
-import { solidTerrain } from '../src/content/tilemaps/objects.js';
+import { defineTilemap } from '../src/core/tilemaps/tilemap.js';
+import { TERRAIN_KIND, terrainLayer } from '../src/core/tilemaps/terrain-layer.js';
 
 test('defineScene normalizes objects, clones components, and builds component index', () => {
   const sourceComponent = { type: 'tag:test', value: 1 };
@@ -40,13 +40,14 @@ test('defineTilemap merges authored scene objects into the core scene index', ()
     id: 'with-authored-object',
     cols: 2,
     rows: 1,
-    layers: [gridLayer({ id: 'buildTerrain', cellSize: 16, symbols: { '#': solidTerrain }, rows: ['#...', '....'] })],
+    layers: [terrainLayer({ rows: [[TERRAIN_KIND.GRASS, null, null, null], [null, null, null, null]] })],
     objects: [sceneObject({ id: 'far-sky', components: [renderLayer({ order: -200 }), renderProcedural({ shader: 'sky-bands' })] })]
   });
 
-  expect(scene.objects.map(object => object.id)).toEqual(['buildTerrain:0,0', 'far-sky']);
+  expect(scene.objects.map(object => object.id)).toEqual(['far-sky']);
+  expect(scene.terrain.cells).toHaveLength(1);
   expect(findObjectsWithComponent(scene, 'render:layer').map(object => object.id)).toEqual(['far-sky']);
-  expect(findObjectsWithComponent(scene, 'collision:solid').map(object => object.id)).toEqual(['buildTerrain:0,0']);
+  expect(findObjectsWithComponent(scene, 'collision:solid').map(object => object.id)).toEqual([]);
 });
 
 test('render components normalize pixel-perfect layer data', () => {

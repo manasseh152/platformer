@@ -1,6 +1,7 @@
 import { CELL_SIZE } from '../../src/core/constants.js';
-import { defineObject, finishGateObject, playerSpawner, slimeSpawner, solidTerrain, hazard } from '../../src/content/tilemaps/objects.js';
+import { defineObject, finishGateObject, playerSpawner, slimeSpawner, hazard } from '../../src/content/tilemaps/objects.js';
 import { defineTilemap, gridLayer } from '../../src/core/tilemaps/tilemap.js';
+import { TERRAIN_KIND, terrainLayer } from '../../src/core/tilemaps/terrain-layer.js';
 
 const EMPTY = '.';
 const solidSymbols = new Set(['#', '=', 'B']);
@@ -21,8 +22,11 @@ function assertRows(rows, name, expectedRows = rows.length, expectedCols = rows[
 }
 function buildRowsFromTerrainRows(terrainRows) {
   return terrainRows.flatMap(row => {
-    const buildRow = [...row].map(ch => solidSymbols.has(ch) ? '##' : '..').join('');
-    return [buildRow, buildRow];
+    const buildRow = [...row].flatMap(ch => {
+      if (solidSymbols.has(ch)) return [TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS];
+      return [null, null];
+    });
+    return [buildRow, [...buildRow]];
   });
 }
 function hazardRowsFromTerrainRows(terrainRows) {
@@ -47,7 +51,7 @@ export function defineContainedTestTilemap({ id = 'contained-test-tilemap', terr
     terrainRenderMode: 'contained-autotile',
     layers: [
       gridLayer({ id: 'backdrop', cellSize: CELL_SIZE.GRID, symbols: BACKDROP_SYMBOLS, rows: backdropRows }),
-      gridLayer({ id: 'buildTerrain', cellSize: CELL_SIZE.BUILD, symbols: { '#': solidTerrain }, rows: buildRowsFromTerrainRows(terrainRows) }),
+      terrainLayer({ cellSize: CELL_SIZE.BUILD, rows: buildRowsFromTerrainRows(terrainRows) }),
       gridLayer({ id: 'entities', cellSize: CELL_SIZE.GRID, symbols: ENTITY_SYMBOLS, rows: objectRows }),
       gridLayer({ id: 'decor', cellSize: CELL_SIZE.GRID, symbols: DECOR_SYMBOLS, rows: decorRows }),
       gridLayer({ id: 'hazards', cellSize: CELL_SIZE.GRID, symbols: { '^': spikeHazard }, rows: hazardRowsFromTerrainRows(terrainRows) })

@@ -1,4 +1,5 @@
 import { CELL_SIZE } from '../core/constants.js';
+import { terrainKindConfig } from '../core/tilemaps/terrain-layer.js';
 import { TERRAIN_MASK } from '../core/tilemaps/terrain-mask.js';
 
 export const CONTAINED_TERRAIN_DRAW_ORDER = ['base', 'edge', 'outer-corner', 'inner-corner', 'detail'];
@@ -15,8 +16,8 @@ const { N, NE, E, SE, S, SW, W, NW } = TERRAIN_MASK;
 function has(mask, bit) { return (mask & bit) !== 0; }
 function exposed(mask, bit) { return !has(mask, bit); }
 
-export function selectTerrainVisualVariant(_tile, _salt = 0) {
-  return { ...DEFAULT_VARIANT };
+export function selectTerrainVisualVariant(tile, _salt = 0) {
+  return { ...DEFAULT_VARIANT, ...(terrainKindConfig(tile?.kind)?.palette ?? {}) };
 }
 
 function assertContainedTerrainTile(tile) {

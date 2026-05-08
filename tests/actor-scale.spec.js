@@ -6,6 +6,7 @@ import { ACTOR_SIZE, ATTACK_HITBOX } from '../src/core/constants.js';
 import { getSlashHitbox } from '../src/core/combat.js';
 import { createEnemiesFromScene } from '../src/core/gameplay-scene-queries.js';
 import { createPlayer, defineTilemap, getSpawnPoint, gridLayer } from '../src/core/tilemaps/tilemap.js';
+import { TERRAIN_KIND, terrainLayer } from '../src/core/tilemaps/terrain-layer.js';
 import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../src/content/tilemaps/objects.js';
 import { CELL_SIZE } from '../src/core/constants.js';
 import { getComponent } from '../src/engine/scene/queries.js';
@@ -26,17 +27,15 @@ function actorFixtureTilemap() {
     cols: 4,
     rows: 3,
     layers: [
-      gridLayer({
-        id: 'buildTerrain',
+      terrainLayer({
         cellSize: CELL_SIZE.BUILD,
-        symbols: { '#': solidTerrain },
         rows: [
-          '........',
-          '........',
-          '........',
-          '........',
-          '########',
-          '########'
+          [null, null, null, null, null, null, null, null],
+          [null, null, null, null, null, null, null, null],
+          [null, null, null, null, null, null, null, null],
+          [null, null, null, null, null, null, null, null],
+          [TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS],
+          [TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS]
         ]
       }),
       gridLayer({

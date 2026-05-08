@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { CELL_SIZE } from '../src/core/constants.js';
 import { TERRAIN_MASK, normalizeTerrainMask } from '../src/core/tilemaps/terrain-mask.js';
-import { defineTilemap, gridLayer } from '../src/core/tilemaps/tilemap.js';
-import { solidTerrain } from '../src/content/tilemaps/objects.js';
+import { defineTilemap } from '../src/core/tilemaps/tilemap.js';
+import { TERRAIN_KIND, terrainLayer } from '../src/core/tilemaps/terrain-layer.js';
 import {
   CONTAINED_TERRAIN_DRAW_ORDER,
   planContainedTerrainTileVisuals,
@@ -10,7 +10,7 @@ import {
 } from '../src/render/contained-terrain.js';
 
 const M = TERRAIN_MASK;
-const baseTile = { layer: 'buildTerrain', x: 32, y: 48, w: CELL_SIZE.BUILD, h: CELL_SIZE.BUILD, col: 2, row: 3, mask: 0, rawMask: 0 };
+const baseTile = { layer: 'terrain', kind: TERRAIN_KIND.GRASS, x: 32, y: 48, w: CELL_SIZE.BUILD, h: CELL_SIZE.BUILD, col: 2, row: 3, mask: 0, rawMask: 0 };
 
 function kinds(primitives) { return primitives.map(primitive => primitive.kind); }
 function primitive(primitives, kind, key, value) { return primitives.find(item => item.kind === kind && item[key] === value); }
@@ -39,17 +39,12 @@ test('contained terrain tiles expose raw authored mask and cleaned visual mask',
     cols: 2,
     rows: 2,
     layers: [
-      gridLayer({
-        id: 'buildTerrain',
-        cellSize: CELL_SIZE.BUILD,
-        symbols: { '#': solidTerrain },
-        rows: [
-          '.#..',
-          '#...',
-          '....',
-          '....'
-        ]
-      })
+      terrainLayer({ rows: [
+        [null, TERRAIN_KIND.GRASS, null, null],
+        [TERRAIN_KIND.GRASS, null, null, null],
+        [null, null, null, null],
+        [null, null, null, null]
+      ] })
     ]
   });
 

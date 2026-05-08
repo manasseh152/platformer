@@ -2,6 +2,7 @@ import { CELL_SIZE } from '../core/constants.js';
 import { drawCollisionDebugOverlay } from '../devtools/debug-render.js';
 import { getAllTilemaps, getDefaultTilemap } from '../content/tilemaps/registry.js';
 import { planContainedTerrainTileVisuals } from '../render/contained-terrain.js';
+import { TERRAIN_KIND, terrainKindConfig } from '../core/tilemaps/terrain-layer.js';
 import { EMPTY, compileDraft as compileTilemapDraft, createBlankDraft, createDraftFromTilemap as draftFromTilemap, hasEntitySymbol, replaceChar } from './tilemap-draft.js';
 import {
   applyWorldTransform,
@@ -30,8 +31,11 @@ const PREVIEW_STORAGE_PREFIX = 'chibi.tilemap-preview.';
 const AUTO_SAVE_STORAGE_KEY = 'chibi.tilemap-editor.auto-save';
 const FLOATING_CONTROLS_STORAGE_KEY = 'chibi.tilemap-editor.floating-controls';
 const BRUSHES = [
-  { id: 'terrain', label: 'Terrain #', layerId: 'buildTerrain', symbol: '#', cellSize: CELL_SIZE.BUILD, cursor: '#79f0c5' },
-  { id: 'eraseTerrain', label: 'Erase terrain', layerId: 'buildTerrain', symbol: EMPTY, cellSize: CELL_SIZE.BUILD, cursor: '#ff8f8f' },
+  { id: 'grass', label: 'Grass', layerId: 'terrain', symbol: TERRAIN_KIND.GRASS, cellSize: CELL_SIZE.BUILD, cursor: '#79f0c5' },
+  { id: 'dirt', label: 'Dirt', layerId: 'terrain', symbol: TERRAIN_KIND.DIRT, cellSize: CELL_SIZE.BUILD, cursor: '#b86f3d' },
+  { id: 'stone', label: 'Stone', layerId: 'terrain', symbol: TERRAIN_KIND.STONE, cellSize: CELL_SIZE.BUILD, cursor: '#9aa7b2' },
+  { id: 'invisibleTerrain', label: 'Invisible', layerId: 'terrain', symbol: TERRAIN_KIND.INVISIBLE, cellSize: CELL_SIZE.BUILD, cursor: '#a78bfa' },
+  { id: 'eraseTerrain', label: 'Erase terrain', layerId: 'terrain', symbol: null, cellSize: CELL_SIZE.BUILD, cursor: '#ff8f8f' },
   { id: 'player', label: 'Player P', layerId: 'entities', symbol: 'P', cellSize: CELL_SIZE.GRID, cursor: '#78a8ff' },
   { id: 'slime', label: 'Slime E', layerId: 'entities', symbol: 'E', cellSize: CELL_SIZE.GRID, cursor: '#ff7bd5' },
   { id: 'gate', label: 'Gate G', layerId: 'entities', symbol: 'G', cellSize: CELL_SIZE.GRID, cursor: '#ffd36a' },
@@ -109,7 +113,7 @@ function viewStorageKey(id) { return localDraftViewStorageKey(id); }
 function previewStorageKey(id) { return `${PREVIEW_STORAGE_PREFIX}${id}`; }
 function worldWidth() { return draft.cols * CELL_SIZE.GRID; }
 function worldHeight() { return draft.rows * CELL_SIZE.GRID; }
-function terrainLayer() { return draft.layers.find(layer => layer.id === 'buildTerrain'); }
+function terrainLayer() { return draft.layers.find(layer => layer.id === 'terrain'); }
 function entityLayer() { return draft.layers.find(layer => layer.id === 'entities'); }
 function readBooleanPreference(key, defaultValue) {
   try {
@@ -141,6 +145,10 @@ function ensureCompiled() {
 }
 
 function serialiseRows(rows, indent = '    ') { return rows.map(row => `${indent}'${row}'`).join(',\n'); }
+function serialiseTerrainRows(rows, indent = '    ') {
+  const kindExpr = value => value === null ? 'null' : `K.${Object.entries(TERRAIN_KIND).find(([, kind]) => kind === value)?.[0] ?? 'GRASS'}`;
+  return rows.map(row => `${indent}[${row.map(kindExpr).join(', ')}]`).join(',\n');
+}
 function camelIdentifier(id) {
   const value = id.replace(/[^a-zA-Z0-9]+(.)/g, (_, ch) => ch.toUpperCase()).replace(/^[^a-zA-Z_$]+/, '');
   return value ? `${value}Tilemap` : 'draftTilemap';
@@ -155,7 +163,8 @@ function generatedModule() {
   const categories = JSON.stringify(draft.categories ?? ['drafts']);
   return `import { CELL_SIZE } from '../../../core/constants.js';
 import { defineTilemap, gridLayer } from '../../../core/tilemaps/tilemap.js';
-import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../objects.js';
+import { TERRAIN_KIND as K, terrainLayer } from '../../../core/tilemaps/terrain-layer.js';
+import { finishGateObject, playerSpawner, slimeSpawner } from '../objects.js';
 
 export const ${camelIdentifier(draft.id)} = defineTilemap({
   id: '${draft.id}',
@@ -169,8 +178,8 @@ export const ${camelIdentifier(draft.id)} = defineTilemap({
   visibility: '${draft.visibility ?? 'developer'}',
   description: '${escapeJs(draft.description ?? '')}',
   layers: [
-    gridLayer({ id: 'buildTerrain', cellSize: CELL_SIZE.BUILD, symbols: { '#': solidTerrain }, rows: [
-${serialiseRows(terrain.rows, '      ')}
+    terrainLayer({ cellSize: CELL_SIZE.BUILD, rows: [
+${serialiseTerrainRows(terrain.rows, '      ')}
     ] }),
     gridLayer({ id: 'entities', cellSize: CELL_SIZE.GRID, symbols: { P: playerSpawner, E: slimeSpawner, G: finishGateObject }, rows: [
 ${serialiseRows(entities.rows, '      ')}
@@ -188,7 +197,9 @@ function validateLayerRows(layer, expectedCols, expectedRows, label) {
   if (!Number.isInteger(layer.cellSize) || layer.cellSize < 1) throw new Error(`${label} has an invalid cell size.`);
   if (!Number.isInteger(expectedCols) || !Number.isInteger(expectedRows)) throw new Error(`${label} dimensions do not line up with the map grid.`);
   if (!Array.isArray(layer.rows) || layer.rows.length !== expectedRows) throw new Error(`${label} must have ${expectedRows} rows.`);
-  if (!layer.rows.every(row => typeof row === 'string' && row.length === expectedCols)) throw new Error(`${label} rows must be ${expectedCols} cells wide.`);
+  if (label === 'terrain') {
+    if (!layer.rows.every(row => Array.isArray(row) && row.length === expectedCols && row.every(cell => cell === null || terrainKindConfig(cell)))) throw new Error(`${label} rows must be ${expectedCols} terrain cells wide.`);
+  } else if (!layer.rows.every(row => typeof row === 'string' && row.length === expectedCols)) throw new Error(`${label} rows must be ${expectedCols} cells wide.`);
 }
 
 function validateImportedDraft(candidate) {
@@ -197,10 +208,10 @@ function validateImportedDraft(candidate) {
   if (typeof candidate.name !== 'string' || !candidate.name.trim()) throw new Error('Imported map needs a name.');
   if (!Number.isInteger(candidate.cols) || candidate.cols < 1 || candidate.cols > 120) throw new Error('Imported map cols must be between 1 and 120.');
   if (!Number.isInteger(candidate.rows) || candidate.rows < 1 || candidate.rows > 80) throw new Error('Imported map rows must be between 1 and 80.');
-  const terrain = candidate.layers?.find(layer => layer.id === 'buildTerrain');
+  const terrain = candidate.layers?.find(layer => layer.id === 'terrain');
   const entities = candidate.layers?.find(layer => layer.id === 'entities');
-  if (!terrain || !entities) throw new Error('Imported map needs buildTerrain and entities layers.');
-  validateLayerRows(terrain, candidate.cols * CELL_SIZE.GRID / terrain.cellSize, candidate.rows * CELL_SIZE.GRID / terrain.cellSize, 'buildTerrain');
+  if (!terrain || !entities) throw new Error('Imported map needs terrain and entities layers.');
+  validateLayerRows(terrain, candidate.cols * CELL_SIZE.GRID / terrain.cellSize, candidate.rows * CELL_SIZE.GRID / terrain.cellSize, 'terrain');
   validateLayerRows(entities, candidate.cols, candidate.rows, 'entities');
   compileTilemapDraft(candidate);
 }
@@ -494,8 +505,16 @@ function drawDraftTerrain(ctx, rect) {
   for (let row = range.startRow; row <= range.endRow; row++) {
     const line = layer.rows[row];
     for (let col = range.startCol; col <= range.endCol; col++) {
-      if (line[col] === EMPTY) continue;
+      const kind = line[col];
+      if (kind === null) continue;
+      const config = terrainKindConfig(kind);
+      ctx.fillStyle = config?.visible === false ? 'rgba(167,139,250,.38)' : config?.palette?.baseColor ?? '#40504a';
       ctx.fillRect(col * layer.cellSize, row * layer.cellSize, layer.cellSize, layer.cellSize);
+      if (config?.visible === false) {
+        ctx.strokeStyle = 'rgba(216,204,255,.72)';
+        ctx.lineWidth = 1 / viewport.camera.zoom;
+        ctx.strokeRect(col * layer.cellSize + 2, row * layer.cellSize + 2, layer.cellSize - 4, layer.cellSize - 4);
+      }
     }
   }
 }
@@ -585,14 +604,15 @@ function pointerCell(event) {
 function paint(event) {
   const cell = pointerCell(event);
   pointer = cell;
-  const key = `${brush.layerId}:${cell.col},${cell.row}:${brush.symbol}`;
+  const key = `${brush.layerId}:${cell.col},${cell.row}:${brush.symbol ?? 'null'}`;
   if (key === lastPaintKey) return;
   lastPaintKey = key;
   const layer = draft.layers.find(layer => layer.id === brush.layerId);
   if (!layer || cell.row < 0 || cell.row >= layer.rows.length || cell.col < 0 || cell.col >= layer.rows[0].length) { scheduleRender(); return; }
   const before = layer.rows[cell.row][cell.col];
   if (before !== brush.symbol) {
-    layer.rows[cell.row] = replaceChar(layer.rows[cell.row], cell.col, brush.symbol);
+    if (Array.isArray(layer.rows[cell.row])) layer.rows[cell.row][cell.col] = brush.symbol;
+    else layer.rows[cell.row] = replaceChar(layer.rows[cell.row], cell.col, brush.symbol);
     history.recordCellChange({ layerId: brush.layerId, col: cell.col, row: cell.row, before, after: brush.symbol });
     updateHistoryControls();
     scheduleAfterEdit();
@@ -604,7 +624,8 @@ function paint(event) {
 function applyHistoryCellChange(change) {
   const layer = draft.layers.find(layer => layer.id === change.layerId);
   if (!layer || change.row < 0 || change.row >= layer.rows.length || change.col < 0 || change.col >= layer.rows[0].length) return;
-  layer.rows[change.row] = replaceChar(layer.rows[change.row], change.col, change.value);
+  if (Array.isArray(layer.rows[change.row])) layer.rows[change.row][change.col] = change.value;
+  else layer.rows[change.row] = replaceChar(layer.rows[change.row], change.col, change.value);
 }
 
 function applyHistoryAction(kind) {

@@ -14,7 +14,7 @@ function localDraft({ id = 'local-play-map', name = 'Local Play Map', updatedAt 
     description: 'Saved in Playwright.',
     updatedAt,
     layers: [
-      { id: 'buildTerrain', cellSize: 16, rows: ['........', '........', '........', '........', '........', '########'] },
+      { id: 'terrain', type: 'terrain', cellSize: 16, rows: [[null, null, null, null, null, null, null, null], [null, null, null, null, null, null, null, null], [null, null, null, null, null, null, null, null], [null, null, null, null, null, null, null, null], [null, null, null, null, null, null, null, null], ['grass', 'grass', 'grass', 'grass', 'grass', 'grass', 'grass', 'grass']] },
       { id: 'entities', cellSize: 32, rows: [player ? 'P...' : '....', '....', '...G'] }
     ]
   };

@@ -1,17 +1,18 @@
 import { CELL_SIZE } from '../core/constants.js';
 import { defineTilemap, gridLayer } from '../core/tilemaps/tilemap.js';
-import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../content/tilemaps/objects.js';
+import { terrainLayer } from '../core/tilemaps/terrain-layer.js';
+import { finishGateObject, playerSpawner, slimeSpawner } from '../content/tilemaps/objects.js';
 
 export const EMPTY = '.';
 
 export const SYMBOLS = {
-  buildTerrain: { '#': solidTerrain },
   entities: { P: playerSpawner, E: slimeSpawner, G: finishGateObject }
 };
 
 export function layerCols(cols, cellSize) { return cols * CELL_SIZE.GRID / cellSize; }
 export function layerRows(rows, cellSize) { return rows * CELL_SIZE.GRID / cellSize; }
 export function lineOf(width, symbol = EMPTY) { return symbol.repeat(width); }
+export function terrainLineOf(width, kind = null) { return Array.from({ length: width }, () => kind); }
 export function replaceChar(line, index, char) { return `${line.slice(0, index)}${char}${line.slice(index + 1)}`; }
 
 export function createBlankDraft({ id = 'new-tilemap', name = 'New Tilemap', cols = 18, rows = 10 } = {}) {
@@ -27,7 +28,7 @@ export function createBlankDraft({ id = 'new-tilemap', name = 'New Tilemap', col
     categories: ['local'],
     description: 'Draft tilemap authored in the browser editor.',
     layers: [
-      { id: 'buildTerrain', cellSize: CELL_SIZE.BUILD, rows: Array.from({ length: layerRows(rows, CELL_SIZE.BUILD) }, () => lineOf(layerCols(cols, CELL_SIZE.BUILD))) },
+      terrainLayer({ rows: Array.from({ length: layerRows(rows, CELL_SIZE.BUILD) }, () => terrainLineOf(layerCols(cols, CELL_SIZE.BUILD))) }),
       { id: 'entities', cellSize: CELL_SIZE.GRID, rows: Array.from({ length: rows }, () => lineOf(cols)) }
     ]
   };
@@ -46,19 +47,21 @@ export function createDraftFromTilemap(tilemap, savedDraft = null) {
     visibility: tilemap.visibility ?? 'developer',
     categories: [...(tilemap.categories ?? [])],
     description: tilemap.description ?? '',
-    layers: tilemap.layers.map(layer => ({ id: layer.id, cellSize: layer.cellSize, rows: [...layer.rows] }))
+    layers: tilemap.layers.map(layer => ({ id: layer.id, type: layer.type, cellSize: layer.cellSize, rows: layer.rows.map(row => Array.isArray(row) ? [...row] : row) }))
   };
 }
 
 export function toDefinition(draft) {
   return {
     ...draft,
-    layers: draft.layers.map(layer => gridLayer({
-      id: layer.id,
-      cellSize: layer.cellSize,
-      symbols: SYMBOLS[layer.id] ?? {},
-      rows: layer.rows
-    }))
+    layers: draft.layers.map(layer => layer.type === 'terrain' || layer.id === 'terrain'
+      ? terrainLayer({ id: 'terrain', cellSize: layer.cellSize, rows: layer.rows })
+      : gridLayer({
+        id: layer.id,
+        cellSize: layer.cellSize,
+        symbols: SYMBOLS[layer.id] ?? {},
+        rows: layer.rows
+      }))
   };
 }
 

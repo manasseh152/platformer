@@ -1,7 +1,7 @@
 import { drawPixelRect } from '../rendering/pixel-outline.js';
 
 const DEBUG_RECT_STYLES = {
-  buildTerrainCell: {
+  terrainCell: {
     fill: 'rgba(255, 220, 0, 0.08)',
     outline: 'rgba(255, 220, 0, 0.75)',
     thickness: 1
@@ -32,7 +32,7 @@ export function registerDebugRenderDevTools(game) {
       {
         id: 'show-build-terrain-cells',
         kind: 'toggle',
-        label: 'Show build terrain cells',
+        label: 'Show terrain cells',
         get: game => Boolean(game.devTools.flags.showBuildTerrainCells),
         set: (game, value) => { game.devTools.flags.showBuildTerrainCells = value; }
       },
@@ -69,7 +69,7 @@ export function drawCollisionDebugOverlay(ctx, tilemap, flags = {}) {
   if (!showBuildCells && !showCells && !showRects) return;
 
   if (showBuildCells) {
-    drawPixelRect(ctx, tilemap.renderLayers?.containedTerrainTiles ?? [], DEBUG_RECT_STYLES.buildTerrainCell);
+    drawPixelRect(ctx, tilemap.renderLayers?.containedTerrainTiles ?? [], DEBUG_RECT_STYLES.terrainCell);
   }
 
   if (showCells) {

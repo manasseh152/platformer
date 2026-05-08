@@ -2,7 +2,8 @@ import { expect, test } from '@playwright/test';
 import { ACTOR_SIZE, CELL_SIZE } from '../src/core/constants.js';
 import { createEnemiesFromScene } from '../src/core/gameplay-scene-queries.js';
 import { defineTilemap, gridLayer } from '../src/core/tilemaps/tilemap.js';
-import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../src/content/tilemaps/objects.js';
+import { TERRAIN_KIND, terrainLayer } from '../src/core/tilemaps/terrain-layer.js';
+import { finishGateObject, playerSpawner, slimeSpawner } from '../src/content/tilemaps/objects.js';
 import { enemyZooMap } from '../src/content/tilemaps/definitions/enemy-zoo-map.js';
 import { defineContainedTestTilemap } from './helpers/contained-tilemap.js';
 
@@ -14,21 +15,19 @@ function containedEnemyMap() {
     artTileSize: CELL_SIZE.BUILD,
     terrainRenderMode: 'contained-autotile',
     layers: [
-      gridLayer({
-        id: 'buildTerrain',
+      terrainLayer({
         cellSize: CELL_SIZE.BUILD,
-        symbols: { '#': solidTerrain },
         rows: [
-          '................',
-          '................',
-          '................',
-          '................',
-          '................',
-          '................',
-          '..##########....',
-          '..##########....',
-          '................',
-          '................'
+          [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+          [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+          [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+          [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+          [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+          [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+          [null, null, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, null, null, null, null],
+          [null, null, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, null, null, null, null],
+          [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+          [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
         ]
       }),
       gridLayer({

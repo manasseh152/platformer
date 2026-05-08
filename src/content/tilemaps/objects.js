@@ -5,6 +5,8 @@ import { enemyController, hazard, health, patrol, physicsBody, playerController,
 export { defineObject } from '../../engine/scene/objects.js';
 export { enemyController, hazard, health, patrol, physicsBody, playerController, renderGoal, renderTerrain, solid, spawner, terrain, transition, velocity } from '../../engine/scene/components.js';
 
+// ARCHIVED: pre-terrainLayer terrain object used by the removed buildTerrain string-grid flow.
+// Kept temporarily for validation tests/migration reference; do not use in active tilemap definitions.
 export const solidTerrain = defineObject({
   id: 'solid-terrain',
   components: [solid(), terrain(), renderTerrain()]
