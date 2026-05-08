@@ -48,6 +48,17 @@ function infoRow(label, value, id) {
   </div>`;
 }
 
+function controllerSelectionRow(game) {
+  const selectedRuntimeId = game.settings.input.slots.player1.devices.gamepad.selectedRuntimeId;
+  const devices = game.inputRuntime?.connectedDevices?.('gamepad') || [];
+  if (!devices.length) return infoRow('Selected Controller', selectedRuntimeId || 'Auto / none connected', 'selectedControllerName');
+  const buttons = devices.map(device => `<button type="button" class="ds-button ds-button--secondary" data-controller-select="${device.runtimeId}"${device.runtimeId === selectedRuntimeId ? ' aria-pressed="true"' : ''}>${device.runtimeId === selectedRuntimeId ? 'Selected: ' : 'Select: '}${device.id || device.runtimeId}</button>`).join(' ');
+  return `<div class="ds-setting-row ds-setting-row--info">
+    <span class="ds-setting-row__copy"><span class="ds-setting-row__label">Selected Controller</span><span class="ds-setting-row__description">Selection is explicit; disconnects do not silently switch to another controller.</span></span>
+    <span class="ds-setting-row__value controller-select-list" id="selectedControllerName">${buttons}</span>
+  </div>`;
+}
+
 function bindRow(game, device, action) {
   const listening = device === 'controller' ? game.input.controllerBindAction === action : game.input.listeningFor === action;
   const text = device === 'controller' ? controllerBindText(game.input, action) : bindText(game.input, action);
@@ -78,6 +89,7 @@ function renderController(game) {
   return `${section('Controller Setup', `<div class="settings-row-list">
       ${valueRow({ id: 'controller-enabled', label: 'Controller Input', value: onOff(game.input.useController), description: 'Allow gamepad input during play and menus.', kind: 'toggle' })}
       ${infoRow('Detected Controller', 'None detected', 'controllerName')}
+      ${controllerSelectionRow(game)}
       ${infoRow('Pressed Inputs', 'None', 'controllerInputs')}
     </div><div id="controllerStatus" class="status-line"></div>`)}
     ${pageNote('Select a bind row, then press a controller input. B / Circle cancels. Duplicate buttons are blocked.')}
@@ -146,6 +158,7 @@ export function refreshDynamicRefs(game) {
   ui.developerTools = document.getElementById('developerTools');
   ui.controllerName = document.getElementById('controllerName');
   ui.controllerInputs = document.getElementById('controllerInputs');
+  ui.selectedControllerName = document.getElementById('selectedControllerName');
   ui.controllerStatus = document.getElementById('controllerStatus');
   ui.motionStatus = document.getElementById('motionStatus');
   ui.bindStatus = ui.settingsStatus;

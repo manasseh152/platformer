@@ -163,25 +163,62 @@ body::after {
 .ds-panel--hero,
 #startScreen .menu-card { width: min(1060px, 100%); }
 
+/* Main menu adopts the map editor's full-screen glass layout: no enclosing card,
+   subtle ambient backdrop, centered content, and shortcuts anchored to the edge. */
+#startScreen.ds-screen--hero,
+#startScreen {
+  place-items: center;
+  padding: clamp(22px, 4vw, 56px) clamp(18px, 5vw, 72px) clamp(84px, 11vh, 132px);
+  background:
+    radial-gradient(circle at 18% 12%, rgba(89, 217, 231, .12), transparent 30rem),
+    radial-gradient(circle at 84% 5%, rgba(var(--color-accent-rgb), .12), transparent 28rem),
+    linear-gradient(140deg, #0a0d13, #111720 48%, #07090e);
+}
+
+#startScreen::before {
+  inset: 0;
+  border-radius: 0;
+  opacity: .38;
+  background:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(circle at 50% 46%, #000 0 18%, transparent 72%);
+}
+
+#startScreen .start-stage.menu-card,
+#startScreen .start-stage.ds-panel {
+  width: min(1320px, 100%);
+  max-height: none;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#startScreen .start-stage.menu-card::before,
+#startScreen .start-stage.ds-panel::before { content: none; }
+
 .start-stage {
   display: grid;
-  grid-template-columns: minmax(0, .95fr) minmax(320px, .78fr);
-  gap: clamp(22px, 4vw, 48px);
-  align-items: stretch;
-  padding: clamp(calc(22px * var(--menu-ui-scale)), calc(4.6vw * var(--menu-ui-scale)), calc(56px * var(--menu-ui-scale)));
+  grid-template-columns: minmax(360px, .86fr) minmax(360px, .94fr);
+  gap: clamp(28px, 7vw, 108px);
+  align-items: center;
+  padding: 0;
   overflow: hidden;
 }
 
 .start-stage::after {
   content: "";
   position: absolute;
-  right: -12%;
-  bottom: -34%;
-  width: 58%;
+  right: clamp(-80px, -4vw, -28px);
+  bottom: clamp(-90px, -9vw, -40px);
+  width: min(46vw, 620px);
   aspect-ratio: 1;
   pointer-events: none;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(var(--color-accent-rgb), .18), transparent 64%);
+  background: radial-gradient(circle, rgba(var(--color-accent-rgb), .12), transparent 66%);
   filter: blur(2px);
 }
 
@@ -189,7 +226,11 @@ body::after {
 .hero-scene,
 .start-stage .command-bar { position: relative; z-index: 1; }
 
-.hero-copy { align-self: center; }
+.hero-copy {
+  align-self: center;
+  justify-self: center;
+  width: min(560px, 100%);
+}
 
 .hero-lede {
   max-width: 46ch;
@@ -420,6 +461,13 @@ body::after {
 
 .ds-action-stack,
 .menu-actions { display: grid; gap: 11px; width: min(380px, 100%); margin-top: 22px; }
+#startScreen .menu-actions {
+  width: min(520px, 100%);
+  grid-template-columns: minmax(0, 1fr) minmax(0, .72fr);
+  gap: 12px;
+  margin-top: clamp(24px, 4vh, 42px);
+}
+#startScreen #startButton { grid-column: 1 / -1; }
 .ds-action-row,
 .settings-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start; margin-top: 18px; }
 
@@ -554,6 +602,27 @@ kbd.ds-keycap {
   font: 900 12px/1 var(--font-ui);
   letter-spacing: .13em;
   text-transform: uppercase;
+}
+#startScreen .command-bar {
+  position: fixed;
+  left: max(16px, env(safe-area-inset-left));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 4;
+  max-width: min(620px, calc(100vw - 32px));
+  margin: 0;
+  padding: 8px;
+  border: 1px solid rgba(255, 246, 232, .10);
+  border-radius: var(--radius-pill);
+  background: rgba(9, 12, 18, .46);
+  box-shadow: 0 12px 40px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.045);
+  backdrop-filter: blur(18px) saturate(130%);
+  gap: 8px;
+}
+#startScreen .command-bar .input-hint {
+  min-height: 34px;
+  padding: 4px 10px 4px 5px;
+  border-radius: var(--radius-pill);
+  background: rgba(255,255,255,.045);
 }
 .input-hint { display: inline-flex; align-items: center; gap: 10px; }
 .input-hint__label { color: rgba(255, 246, 232, .66); }
@@ -817,13 +886,13 @@ body.playing:not(.paused):not([data-menu-origin="start"]) #pauseScreen { visibil
 :root[data-transition-context="pause-close"] ::view-transition-old(menu-card) { animation-name: menu-shell-dismiss; animation-duration: .22s; }
 :root[data-transition-context="pause-open"] ::view-transition-new(menu-card),
 :root[data-transition-context="main-menu"] ::view-transition-new(start-card) { animation-name: menu-shell-summon; animation-duration: .22s; }
-@keyframes menu-page-context-out-forward { to { opacity: 0; transform: translate3d(-18px, 0, 0) scale(.985); filter: blur(4px); } }
+@keyframes menu-page-context-out-forward { to { opacity: 0; transform: translate3d(-18px, 0, 0) scale(.985); } }
 @keyframes menu-page-context-in-forward { from { opacity: 0; transform: translate3d(26px, 0, 0) scale(.992); filter: blur(4px); } }
-@keyframes menu-page-context-out-back { to { opacity: 0; transform: translate3d(18px, 0, 0) scale(.985); filter: blur(4px); } }
+@keyframes menu-page-context-out-back { to { opacity: 0; transform: translate3d(18px, 0, 0) scale(.985); } }
 @keyframes menu-page-context-in-back { from { opacity: 0; transform: translate3d(-26px, 0, 0) scale(.992); filter: blur(4px); } }
-@keyframes scenario-panel-out { to { opacity: 0; transform: translateY(10px) scale(.992); filter: blur(3px); } }
+@keyframes scenario-panel-out { to { opacity: 0; transform: translateY(10px) scale(.992); } }
 @keyframes scenario-panel-in { from { opacity: 0; transform: translateY(-8px) scale(.992); filter: blur(3px); } }
-@keyframes menu-shell-dismiss { to { opacity: 0; transform: translateY(18px) scale(.975); filter: blur(5px); } }
+@keyframes menu-shell-dismiss { to { opacity: 0; transform: translateY(18px) scale(.975); } }
 @keyframes menu-shell-summon { from { opacity: 0; transform: translateY(-14px) scale(.982); filter: blur(5px); } }
 
 .menu-pages { position: relative; padding: 4px; margin: -4px; }
@@ -869,6 +938,232 @@ body.motion-reduce #pauseScreen .menu-page { animation: none !important; }
 #pauseScreen[data-menu-page="level-select"] .menu-card h2,
 #pauseScreen[data-menu-page="settings"] .menu-card h2,
 #pauseScreen[data-menu-page="settings-category"] .menu-card h2 { margin-bottom: calc(8px * var(--menu-ui-scale)); font-size: clamp(calc(34px * var(--menu-ui-scale)), calc(6vw * var(--menu-ui-scale)), calc(58px * var(--menu-ui-scale))); }
+
+#pauseScreen[data-menu-page="level-select"] {
+  place-items: stretch;
+  padding: clamp(22px, 4vw, 56px) clamp(18px, 5vw, 72px);
+}
+#pauseScreen[data-menu-page="level-select"] .menu-card,
+body[data-menu-origin="start"] #pauseScreen[data-menu-page="level-select"] .menu-card {
+  justify-self: center;
+  align-self: stretch;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: clamp(10px, 2vh, 18px);
+  width: min(1380px, 100%);
+  max-height: none;
+  min-height: 0;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#pauseScreen[data-menu-page="level-select"] .menu-card::before { content: none; }
+#pauseScreen[data-menu-page="level-select"] .menu-card h2 {
+  max-width: 12ch;
+  margin: 0;
+  font-size: clamp(calc(42px * var(--menu-ui-scale)), calc(7vw * var(--menu-ui-scale)), calc(88px * var(--menu-ui-scale)));
+}
+#pauseScreen[data-menu-page="level-select"] .menu-pages {
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+}
+#pauseScreen[data-menu-page="level-select"] .scene-scenario-browser {
+  grid-template-columns: minmax(240px, 330px) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  column-gap: clamp(22px, 5vw, 72px);
+  row-gap: 14px;
+  min-height: 0;
+  align-items: start;
+}
+#pauseScreen[data-menu-page="level-select"] .scene-scenario-browser > p {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+  max-width: 30ch;
+  padding-top: 4px;
+}
+#pauseScreen[data-menu-page="level-select"] #levelSelectStatus {
+  grid-column: 1;
+  grid-row: 2;
+  align-self: start;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 246, 232, .10);
+  border-radius: 18px;
+  background: rgba(9, 12, 18, .42);
+  backdrop-filter: blur(16px) saturate(125%);
+}
+#pauseScreen[data-menu-page="level-select"] .settings-actions {
+  grid-column: 1;
+  grid-row: 3;
+  align-self: end;
+  margin-top: 0;
+}
+#pauseScreen[data-menu-page="level-select"] .settings-actions .ds-button { min-width: 150px; }
+#pauseScreen[data-menu-page="level-select"] #levelSelectList {
+  grid-column: 2;
+  grid-row: 1 / 4;
+  min-height: 0;
+  max-height: 100%;
+  overflow: auto;
+  padding: 0 8px 4px 0;
+  scrollbar-color: rgba(255,246,232,.22) transparent;
+}
+#pauseScreen[data-menu-page="level-select"] .level-select-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 14px;
+  padding: 5px;
+  border: 1px solid rgba(255, 246, 232, .10);
+  border-radius: var(--radius-pill);
+  background: rgba(9, 12, 18, .64);
+  box-shadow: 0 12px 40px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.045);
+  backdrop-filter: blur(18px) saturate(130%);
+}
+#pauseScreen[data-menu-page="level-select"] .level-select-tab {
+  min-height: 36px;
+  padding: 9px 14px;
+  border-color: transparent;
+  background: transparent;
+}
+#pauseScreen[data-menu-page="level-select"] .level-select-panel {
+  grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
+  align-items: start;
+  gap: 14px;
+}
+#pauseScreen[data-menu-page="level-select"] .level-select-group {
+  padding: 14px;
+  border-radius: 22px;
+  background: rgba(9, 12, 18, .36);
+  backdrop-filter: blur(18px) saturate(128%);
+}
+#pauseScreen[data-menu-page="level-select"] .level-select-group h3 {
+  margin-bottom: 12px;
+  color: rgba(255,246,232,.82);
+  font: 900 13px/1 var(--font-mono);
+  letter-spacing: .14em;
+}
+#pauseScreen[data-menu-page="level-select"] .settings-row-list {
+  grid-template-columns: repeat(auto-fit, minmax(min(330px, 100%), 1fr));
+  gap: 10px;
+}
+#pauseScreen[data-menu-page="level-select"] .level-select-row,
+#pauseScreen[data-menu-page="level-select"] .local-draft-row {
+  min-height: 86px;
+  background: rgba(255, 246, 232, .052);
+}
+
+#pauseScreen[data-menu-page="main"],
+#pauseScreen[data-menu-page="settings"],
+#pauseScreen[data-menu-page="settings-category"] {
+  place-items: center;
+  padding: clamp(22px, 4vw, 56px) clamp(18px, 5vw, 72px);
+}
+#pauseScreen[data-menu-page="main"] .menu-card,
+#pauseScreen[data-menu-page="settings"] .menu-card,
+#pauseScreen[data-menu-page="settings-category"] .menu-card,
+body[data-menu-origin="start"] #pauseScreen[data-menu-page="settings"] .menu-card,
+body[data-menu-origin="start"] #pauseScreen[data-menu-page="settings-category"] .menu-card {
+  width: min(1180px, 100%);
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#pauseScreen[data-menu-page="main"] .menu-card::before,
+#pauseScreen[data-menu-page="settings"] .menu-card::before,
+#pauseScreen[data-menu-page="settings-category"] .menu-card::before { content: none; }
+#pauseScreen[data-menu-page="main"] .menu-card {
+  display: grid;
+  grid-template-columns: minmax(260px, .9fr) minmax(320px, .72fr);
+  column-gap: clamp(28px, 7vw, 100px);
+  align-items: center;
+}
+#pauseScreen[data-menu-page="main"] #menuEyebrow,
+#pauseScreen[data-menu-page="main"] #menuTitle { grid-column: 1; }
+#pauseScreen[data-menu-page="main"] #menuTitle {
+  max-width: 8ch;
+  margin-bottom: 0;
+  font-size: clamp(calc(54px * var(--menu-ui-scale)), calc(10vw * var(--menu-ui-scale)), calc(112px * var(--menu-ui-scale)));
+}
+#pauseScreen[data-menu-page="main"] .menu-pages { grid-column: 2; padding: 0; margin: 0; }
+#pauseScreen[data-menu-page="main"] .pause-main {
+  padding: 18px;
+  border: 1px solid rgba(255, 246, 232, .10);
+  border-radius: 26px;
+  background: rgba(9, 12, 18, .34);
+  backdrop-filter: blur(18px) saturate(128%);
+}
+#pauseScreen[data-menu-page="main"] .pause-main p { margin-bottom: 18px; }
+#pauseScreen[data-menu-page="main"] .menu-actions { width: 100%; }
+
+#pauseScreen[data-menu-page="settings"] .menu-card,
+#pauseScreen[data-menu-page="settings-category"] .menu-card {
+  display: grid;
+  grid-template-columns: minmax(240px, 330px) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  column-gap: clamp(24px, 5vw, 76px);
+  row-gap: 12px;
+  align-items: start;
+}
+#pauseScreen[data-menu-page="settings"] #menuEyebrow,
+#pauseScreen[data-menu-page="settings"] #menuTitle,
+#pauseScreen[data-menu-page="settings-category"] #menuEyebrow,
+#pauseScreen[data-menu-page="settings-category"] #menuTitle { grid-column: 1; }
+#pauseScreen[data-menu-page="settings"] #menuTitle,
+#pauseScreen[data-menu-page="settings-category"] #menuTitle {
+  max-width: 8ch;
+  margin: 0;
+  font-size: clamp(calc(44px * var(--menu-ui-scale)), calc(7.4vw * var(--menu-ui-scale)), calc(88px * var(--menu-ui-scale)));
+}
+#pauseScreen[data-menu-page="settings"] .menu-pages,
+#pauseScreen[data-menu-page="settings-category"] .menu-pages {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+}
+#pauseScreen[data-menu-page="settings"] .settings-layout,
+#pauseScreen[data-menu-page="settings-category"] .settings-layout {
+  align-content: start;
+  max-height: calc(100dvh - clamp(44px, 8vw, 112px));
+  overflow: auto;
+  padding: 0 8px 4px 0;
+  scrollbar-color: rgba(255,246,232,.22) transparent;
+}
+#pauseScreen[data-menu-page="settings"] .settings-root-rows,
+#pauseScreen[data-menu-page="settings"] .settings-category-list,
+#pauseScreen[data-menu-page="settings-category"] .settings-category-body {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+#pauseScreen[data-menu-page="settings"] .settings-actions,
+#pauseScreen[data-menu-page="settings-category"] .settings-actions {
+  position: sticky;
+  bottom: 0;
+  margin-top: 6px;
+  padding-top: 10px;
+  background: linear-gradient(180deg, transparent, rgba(8, 11, 17, .82) 42%);
+}
+#pauseScreen[data-menu-page="settings"] .ds-setting-row,
+#pauseScreen[data-menu-page="settings"] .settings-category-card,
+#pauseScreen[data-menu-page="settings-category"] .ds-setting-row,
+#pauseScreen[data-menu-page="settings-category"] .settings-section {
+  background: rgba(255, 246, 232, .052);
+  backdrop-filter: blur(14px) saturate(122%);
+}
 
 .settings-layout { gap: 14px; }
 .settings-category-list,
@@ -922,6 +1217,20 @@ body.motion-reduce #pauseScreen .menu-page { animation: none !important; }
 .ds-setting-row--info:hover { transform: none; border-color: rgba(255,246,232,.12); background: rgba(255, 246, 232, .055); box-shadow: none; }
 .level-select-row.is-current { border-color: rgba(var(--color-accent-rgb), .68); background: rgba(var(--color-accent-rgb), .12); box-shadow: inset 3px 0 0 rgba(var(--color-accent-rgb),.82); }
 .selected-level-summary { margin: 0 0 14px; color: var(--color-accent-2); font: 900 12px/1.35 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+#startScreen .selected-level-summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  max-width: 100%;
+  margin: 2px 0 0;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 246, 232, .12);
+  border-radius: var(--radius-pill);
+  background: rgba(9, 12, 18, .48);
+  color: rgba(255, 246, 232, .78);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.045);
+  backdrop-filter: blur(14px) saturate(125%);
+}
 .ds-setting-row--bind.is-listening { border-color: rgba(var(--color-accent-rgb), .68); background: rgba(var(--color-accent-rgb),.12); box-shadow: inset 3px 0 0 rgba(var(--color-accent-rgb),.82); }
 .ds-setting-row--bind.is-error { border-color: rgba(255,94,80,.76); box-shadow: inset 3px 0 0 rgba(255,94,80,.86); }
 .ds-section,
@@ -1105,7 +1414,33 @@ button.devtool-row:focus-visible,
   #pauseScreen[data-menu-page="level-select"] .menu-card,
   #pauseScreen[data-menu-page="settings"] .menu-card,
   #pauseScreen[data-menu-page="settings-category"] .menu-card { width: 100%; }
-  .start-stage { grid-template-columns: 1fr; gap: 18px; }
+  #pauseScreen[data-menu-page="level-select"] { padding: max(12px, calc(14px * var(--menu-ui-scale))); }
+  #pauseScreen[data-menu-page="level-select"] .scene-scenario-browser { grid-template-columns: 1fr; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 10px; }
+  #pauseScreen[data-menu-page="level-select"] .scene-scenario-browser > p,
+  #pauseScreen[data-menu-page="level-select"] #levelSelectStatus,
+  #pauseScreen[data-menu-page="level-select"] #levelSelectList,
+  #pauseScreen[data-menu-page="level-select"] .settings-actions { grid-column: 1; grid-row: auto; }
+  #pauseScreen[data-menu-page="level-select"] #levelSelectList { overflow: visible; padding-right: 0; }
+  #pauseScreen[data-menu-page="level-select"] .level-select-tabs { width: 100%; }
+  #pauseScreen[data-menu-page="level-select"] .level-select-tab { flex: 1 1 auto; text-align: center; }
+  #pauseScreen[data-menu-page="main"] .menu-card,
+  #pauseScreen[data-menu-page="settings"] .menu-card,
+  #pauseScreen[data-menu-page="settings-category"] .menu-card { grid-template-columns: 1fr; grid-template-rows: auto; gap: 10px; }
+  #pauseScreen[data-menu-page="main"] #menuEyebrow,
+  #pauseScreen[data-menu-page="main"] #menuTitle,
+  #pauseScreen[data-menu-page="main"] .menu-pages,
+  #pauseScreen[data-menu-page="settings"] #menuEyebrow,
+  #pauseScreen[data-menu-page="settings"] #menuTitle,
+  #pauseScreen[data-menu-page="settings"] .menu-pages,
+  #pauseScreen[data-menu-page="settings-category"] #menuEyebrow,
+  #pauseScreen[data-menu-page="settings-category"] #menuTitle,
+  #pauseScreen[data-menu-page="settings-category"] .menu-pages { grid-column: 1; grid-row: auto; }
+  #pauseScreen[data-menu-page="settings"] .settings-layout,
+  #pauseScreen[data-menu-page="settings-category"] .settings-layout { max-height: none; overflow: visible; padding-right: 0; }
+  .start-stage { grid-template-columns: 1fr; gap: 18px; width: 100%; }
+  #startScreen .menu-actions { grid-template-columns: 1fr; width: 100%; }
+  #startScreen #startButton { grid-column: auto; }
+  #startScreen .command-bar { border-radius: 20px; }
   .hero-lede { font-size: 15px; }
   .hero-scene { min-height: 300px; order: -1; }
   .hero-loadout { grid-template-columns: 1fr; }

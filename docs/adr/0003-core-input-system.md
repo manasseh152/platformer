@@ -175,6 +175,59 @@ Validation command for this slice:
 bunx playwright test tests/core-boundary.spec.js tests/core-input.spec.js tests/update-gameplay.spec.js tests/game-smoke.spec.js --project=chromium
 ```
 
+## Slice 3 implementation notes
+
+Menu navigation now uses the semantic core input route while settings/editor binding flows remain on the old path during migration.
+
+Added/changed modules:
+
+- `src/ui/navigation.js`: reusable DOM focus helpers for visible focusables, current/fallback focus, linear movement, and horizontal button-group movement.
+- `src/menu.js`: routes active menu input through `menu.navigateX`, `menu.navigateY`, `menu.accept`, and `menu.back`; keeps page-specific back/activation behavior in menu code and retains the old gamepad fallback for transitional settings/bind paths.
+- `src/main.js`: lets queued keyboard events reach the core input frame before menu activation/back handling so keyboard and controller menu actions share the same semantic route where practical.
+- `src/core/input/runtime.js`: detects semantic press/release transitions after deadzone processing, so analog stick menu navigation fires when crossing the effective action threshold, not only when the raw axis leaves zero.
+- `tests/core-input.spec.js`: covers effective deadzone threshold press behavior for axis actions.
+
+Validation command for this slice:
+
+```sh
+bunx playwright test tests/core-boundary.spec.js tests/core-input.spec.js tests/game-smoke.spec.js --project=chromium
+```
+
+## Slice 4 implementation notes
+
+Unified input settings are now the app-level persisted source of truth while the visible Keyboard/Controller pages continue to use transitional legacy row state.
+
+Added/changed modules:
+
+- `src/settings.js`: normalizes persisted app settings to `schemaVersion: 2` with `settings.input`, migrates old v1 `keyboardBinds` / `gamepadBinds` / `controllerEnabled` on load/save, derives temporary legacy UI rows from structured bindings, and syncs remap UI edits back into semantic action bindings without persisting old bind fields.
+- `src/app/input/browser-input-adapter.js`: creates runtimes directly from `settings.input` instead of overlaying old `controllerEnabled`.
+- `src/main.js`, `src/menu.js`, `src/gym.js`: read controller enabled state from `settings.input.slots.player1.devices.gamepad.enabled` for events/status while preserving current UI behavior.
+- `tests/settings.spec.js`: covers v1-to-v2 persistence and transitional UI sync preserving both sides of `player.moveX`.
+- `tests/game-smoke.spec.js`: verifies advanced settings JSON now dumps structured `input.bindings` rather than old `keyboardBinds` / `gamepadBinds`.
+
+Validation command for this slice:
+
+```sh
+bunx playwright test tests/settings.spec.js tests/core-boundary.spec.js tests/core-input.spec.js tests/update-gameplay.spec.js tests/game-smoke.spec.js --project=chromium
+```
+
+## Slice 5 implementation notes
+
+Bind-capture primitives and explicit controller selection are now available in the core input route, with a small Controller settings UI selector layered on top.
+
+Added/changed modules:
+
+- `src/core/input/capture.js`: pure bind-capture helpers for keyboard events and gamepad button/axis snapshots, duplicate/conflict checks, cancellation, and immutable captured-binding application.
+- `src/core/input/runtime.js`: exposes connected device snapshots, explicit gamepad selection by slot, selected runtime/fingerprint persistence, and selected-controller routing that avoids silent switching to a different controller after disconnect.
+- `src/settings-ui.js` / `src/menu.js`: add a Controller settings selector for connected gamepads and persist the selected runtime/fingerprint separately from controller enable/disable.
+- `tests/core-input.spec.js`: covers bind capture, duplicate prevention, controller selection, and no-silent-switch routing after disconnect.
+
+Validation command for this slice:
+
+```sh
+bunx playwright test tests/core-boundary.spec.js tests/core-input.spec.js tests/settings.spec.js tests/update-gameplay.spec.js tests/game-smoke.spec.js --project=chromium
+```
+
 ## Next slices
 
 1. **Wire gameplay to new core input** _(implemented in slice 2)_
@@ -182,24 +235,28 @@ bunx playwright test tests/core-boundary.spec.js tests/core-input.spec.js tests/
    - Update gameplay/physics to query semantic actions such as `player.moveX`, `player.jump`, `player.dash`, `player.attack`, `system.pause`, and `system.restart`.
    - Preserve current gameplay behavior with tests before expanding settings/menu scope.
 
-2. **Wire menu input and extract UI navigation helper**
+2. **Wire menu input and extract UI navigation helper** _(implemented in slice 3)_
    - Replace raw gamepad menu checks with `menu.navigateX`, `menu.navigateY`, `menu.accept`, and `menu.back` routes.
    - Let keyboard and controller navigation share the same normalized menu action path where practical.
    - Extract generic focus movement/activation helpers into `src/ui/navigation.js`; keep page-specific behavior in menu code.
 
-3. **Integrate unified input settings persistence**
+3. **Integrate unified input settings persistence** _(implemented in slice 4)_
    - Move app settings toward `settings.input` as the persisted source of truth.
    - Migrate old `keyboardBinds` / `gamepadBinds` on load.
    - Keep the visible Keyboard/Controller settings pages mostly unchanged while editing structured semantic bindings internally.
 
-4. **Bind capture and controller selection**
+4. **Bind capture and controller selection** _(implemented in slice 5)_
    - Replace current remap state with core bind-capture primitives.
    - Add selected-controller behavior in Controller settings while keeping controller enable/disable separate from selection.
    - Add direct tests for controller remapping, duplicate prevention, cancel behavior, and selected controller routing.
 
 5. **Input hints and presentation layer**
    - Add reusable control presentation/keycap helpers outside core.
+   - Implement the first icon-pack presenter from `.temp/kenney_input-prompts_1.5`, copying only the needed runtime assets into the app asset tree and preserving license attribution.
    - Derive hints from actual bindings and last active source/display group instead of hardcoded `wasd` / `arrows` / `gamepad` checks.
+   - Render each action hint as its own pill/badge built from structured hint parts, not as one grouped/static hint string shared by all usages.
+   - Support optional clickable hints for UI/system actions such as back and settings; clicking a hint dispatches the same semantic action path as the bound input instead of bypassing input/menu logic.
+   - Let usage sites request hints by semantic action id plus optional presentation tokens, e.g. `system.settings` with `settings {x,etc}`-style icon/text variants, while keeping fallback text available.
    - Lay the abstraction for controller icon packs and per-controller/global overrides, with text fallback first.
 
 6. **Devtools migration**

@@ -30,7 +30,16 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
   function assignedGamepadRuntimeId(slot = 'player1') {
     const gamepad = slotConfig(slot).devices.gamepad;
     if (!gamepad.enabled) return null;
-    if (gamepad.selectedRuntimeId) return gamepad.selectedRuntimeId;
+    if (gamepad.selectedRuntimeId && state.devices.has(gamepad.selectedRuntimeId)) return gamepad.selectedRuntimeId;
+    if (gamepad.selectedRuntimeId && !gamepad.selectedFingerprint) return gamepad.selectedRuntimeId;
+    if (gamepad.selectedFingerprint) {
+      const match = [...state.devices.values()].find(device => device.type === 'gamepad' && device.fingerprint === gamepad.selectedFingerprint);
+      if (match) {
+        gamepad.selectedRuntimeId = match.runtimeId;
+        return match.runtimeId;
+      }
+      return gamepad.selectedRuntimeId || null;
+    }
     const first = [...state.devices.values()].find(device => device.type === 'gamepad');
     return first?.runtimeId || null;
   }
@@ -80,11 +89,31 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
     }
   }
 
-  function bindingValue(binding, slot = 'player1') {
+  function unregisterDevice(runtimeId) {
+    state.devices.delete(runtimeId);
+    for (const key of [...state.controls.keys()]) {
+      if (key.startsWith(`${runtimeId}:`)) state.controls.delete(key);
+    }
+  }
+
+  function connectedDevices(type = null) {
+    return [...state.devices.values()].filter(device => !type || device.type === type).map(device => ({ ...device }));
+  }
+
+  function selectGamepad(slot = 'player1', runtimeId) {
+    const device = state.devices.get(runtimeId);
+    if (!device || device.type !== 'gamepad') return { ok: false, reason: 'missing-device' };
+    const gamepad = slotConfig(slot).devices.gamepad;
+    gamepad.selectedRuntimeId = device.runtimeId;
+    gamepad.selectedFingerprint = device.fingerprint || null;
+    return { ok: true, device: { ...device } };
+  }
+
+  function bindingValueFromControls(binding, slot = 'player1', controls = state.controls) {
     const deviceId = deviceAllowed(binding, slot);
     if (!deviceId) return { value: 0, sourceKey: null, deviceId: null };
     const key = bindingKey(binding, deviceId);
-    let raw = state.controls.get(key) || 0;
+    let raw = controls.get(key) || 0;
     if (binding.deviceType === 'gamepad' && binding.control === 'axis') {
       raw = normalizeAxisValue(raw, settings.input.gamepad.defaultDeadzone);
       if (binding.invert) raw *= -1;
@@ -98,6 +127,10 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
     }
     if (Math.abs(raw) <= 0) return { value: 0, sourceKey: key, deviceId };
     return { value: binding.scale ?? 1, sourceKey: key, deviceId };
+  }
+
+  function bindingValue(binding, slot = 'player1') {
+    return bindingValueFromControls(binding, slot, state.controls);
   }
 
   function actionBindings(actionId) { return settings.input.bindings[actionId] || []; }
@@ -129,11 +162,36 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
 
   function matchingEdges(actionId, type, options = {}) {
     const slot = options.slot || 'player1';
-    const sourceKeys = new Set(actionBindings(actionId).map(binding => {
+    const bindings = actionBindings(actionId);
+    const sourceKeys = new Set(bindings.map(binding => {
       const deviceId = deviceAllowed(binding, slot);
       return deviceId ? bindingKey(binding, deviceId) : null;
     }).filter(Boolean));
-    return state.edges.filter(edge => edge.type === type && sourceKeys.has(edge.sourceKey) && !state.consumedSources.has(edge.sourceKey));
+    const bindingForSource = key => bindings.find(binding => {
+      const deviceId = deviceAllowed(binding, slot);
+      return deviceId && bindingKey(binding, deviceId) === key;
+    });
+    const matches = state.edges.filter(edge => {
+      if (edge.type !== type || !sourceKeys.has(edge.sourceKey) || state.consumedSources.has(edge.sourceKey)) return false;
+      const binding = bindingForSource(edge.sourceKey);
+      if (!binding) return false;
+      const previous = bindingValueFromControls(binding, slot, state.previousControls).value;
+      const current = bindingValueFromControls(binding, slot, state.controls).value;
+      return type === 'press' ? current !== 0 : previous !== 0;
+    });
+    const seen = new Set(matches.map(edge => edge.sourceKey));
+    for (const binding of bindings) {
+      const previous = bindingValueFromControls(binding, slot, state.previousControls);
+      const current = bindingValueFromControls(binding, slot, state.controls);
+      if (!current.sourceKey || state.consumedSources.has(current.sourceKey) || seen.has(current.sourceKey)) continue;
+      const wasDown = previous.value !== 0;
+      const isDown = current.value !== 0;
+      if ((type === 'press' && !wasDown && isDown) || (type === 'release' && wasDown && !isDown)) {
+        matches.push({ id: `${state.frame}:semantic:${matches.length}`, sourceKey: current.sourceKey, type, value: current.value, timestamp: 0, control: null, device: { id: current.deviceId }, meta: { semantic: true } });
+        seen.add(current.sourceKey);
+      }
+    }
+    return matches;
   }
 
   function wasPressed(actionId, options = {}) { return matchingEdges(actionId, 'press', options).length > 0; }
@@ -161,5 +219,5 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
 
   function endFrame() { state.edges = []; state.consumedSources.clear(); }
 
-  return { profile, settings, warnings: normalized.warnings, state, beginFrame, endFrame, handleEvent, updateDeviceSnapshot, value, isDown, wasPressed, wasReleased, consume, route, lastActiveSource: slot => state.lastActiveSource[slot || 'player1'] || null };
+  return { profile, settings, warnings: normalized.warnings, state, beginFrame, endFrame, handleEvent, updateDeviceSnapshot, unregisterDevice, connectedDevices, selectGamepad, value, isDown, wasPressed, wasReleased, consume, route, lastActiveSource: slot => state.lastActiveSource[slot || 'player1'] || null };
 }

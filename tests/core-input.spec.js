@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { gameInputProfile } from '../src/app/input/game-input-profile.js';
-import { createInputRuntime, normalizeInputSettings } from '../src/core/input/index.js';
+import { applyCapturedBinding, createBindCapture, createInputRuntime, findBindingConflict, normalizeInputSettings } from '../src/core/input/index.js';
 
 function key(runtime, type, code) {
   runtime.handleEvent({ type, device: { type: 'keyboard', id: 'keyboard' }, control: { type: 'key', code }, timestamp: runtime.state.frame });
@@ -58,6 +58,19 @@ test('gamepad axis values apply deadzone and merge with digital fallback', () =>
 
   key(input, 'control-down', 'KeyD');
   expect(input.value('player.moveX')).toBe(0);
+});
+
+test('axis actions press when crossing the effective deadzone threshold', () => {
+  const input = createInputRuntime(gameInputProfile);
+
+  input.beginFrame();
+  gamepad(input, [{ type: 'axis', index: 1, value: 0.2 }]);
+  expect(input.route(['menu']).wasPressed('menu.navigateY')).toBe(false);
+
+  input.beginFrame();
+  gamepad(input, [{ type: 'axis', index: 1, value: 0.7 }]);
+  expect(input.route(['menu']).wasPressed('menu.navigateY')).toBe(true);
+  expect(input.route(['menu']).value('menu.navigateY')).toBeGreaterThan(0);
 });
 
 test('context routing can consume shared source edges before lower-priority actions see them', () => {
@@ -123,4 +136,42 @@ test('last active source records display group from the binding that triggered i
 
   expect(input.value('player.moveX')).toBe(1);
   expect(input.lastActiveSource('player1')).toMatchObject({ deviceType: 'keyboard', deviceId: 'keyboard', displayGroup: 'arrows' });
+});
+
+test('bind capture captures keyboard bindings, supports cancel, and prevents duplicates', () => {
+  const capture = createBindCapture({ actionId: 'player.jump', deviceType: 'keyboard', cancelBindings: [{ deviceType: 'keyboard', control: 'key', code: 'Escape' }] });
+  expect(capture.event({ code: 'Escape' })).toMatchObject({ status: 'cancelled', reason: 'user' });
+
+  const second = createBindCapture({ actionId: 'player.jump', deviceType: 'keyboard' });
+  const result = second.event({ code: 'KeyJ', modifiers: { shift: false } });
+  expect(result).toEqual({ status: 'captured', actionId: 'player.jump', binding: { deviceType: 'keyboard', control: 'key', code: 'KeyJ' } });
+
+  const { settings } = normalizeInputSettings(gameInputProfile, {});
+  expect(findBindingConflict(settings, 'player.jump', { deviceType: 'keyboard', control: 'key', code: 'KeyJ' })).toMatchObject({ actionId: 'player.attack' });
+  expect(applyCapturedBinding(settings, 'player.jump', result.binding).ok).toBe(false);
+});
+
+test('bind capture captures gamepad buttons and axis directions', () => {
+  const button = createBindCapture({ actionId: 'player.dash', deviceType: 'gamepad' });
+  expect(button.snapshot({ controls: [{ type: 'button', index: 5, value: 1 }] })).toMatchObject({ status: 'captured', binding: { deviceType: 'gamepad', control: 'button', index: 5 } });
+
+  const axis = createBindCapture({ actionId: 'player.moveX', deviceType: 'gamepad' });
+  expect(axis.snapshot({ threshold: 0.35, controls: [{ type: 'axis', index: 0, value: -0.8 }] })).toMatchObject({ status: 'captured', binding: { deviceType: 'gamepad', control: 'axisDirection', index: 0, direction: -1, threshold: 0.35 } });
+});
+
+test('explicit controller selection persists runtime/fingerprint and avoids silent switching after disconnect', () => {
+  const { settings } = normalizeInputSettings(gameInputProfile, {});
+  const input = createInputRuntime(gameInputProfile, settings);
+
+  input.beginFrame();
+  gamepad(input, [{ type: 'button', index: 0, value: 0 }], 'gamepad:0');
+  input.updateDeviceSnapshot({ device: { type: 'gamepad', runtimeId: 'gamepad:1', id: 'other', fingerprint: 'other' }, controls: [{ type: 'button', index: 0, value: 0 }] });
+
+  expect(input.selectGamepad('player1', 'gamepad:0')).toMatchObject({ ok: true });
+  expect(input.settings.input.slots.player1.devices.gamepad).toMatchObject({ selectedRuntimeId: 'gamepad:0', selectedFingerprint: 'pad' });
+
+  input.unregisterDevice('gamepad:0');
+  input.beginFrame();
+  input.updateDeviceSnapshot({ device: { type: 'gamepad', runtimeId: 'gamepad:1', id: 'other', fingerprint: 'other' }, controls: [{ type: 'button', index: 0, value: 1 }] });
+  expect(input.wasPressed('player.jump')).toBe(false);
 });

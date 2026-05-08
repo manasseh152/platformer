@@ -31,6 +31,8 @@ export function setupMotionPreference(game) {
   media?.addEventListener?.('change', () => applyMotionPreference(game));
 }
 
+const SNAPSHOT_ARTIFACT_CONTEXTS = new Set(['pause-close', 'menu-to-start']);
+
 export function runDOMTransition(game, change, after, context = '') {
   const root = document.documentElement;
   const previousContext = root.dataset.transitionContext;
@@ -43,7 +45,7 @@ export function runDOMTransition(game, change, after, context = '') {
     else root.dataset.transitionContext = previousContext;
   };
 
-  if (shouldReduceMotion(game) || !document.startViewTransition) {
+  if (shouldReduceMotion(game) || SNAPSHOT_ARTIFACT_CONTEXTS.has(context) || !document.startViewTransition) {
     change();
     after?.();
     return null;

@@ -1,6 +1,6 @@
 import { getUI } from './dom.js';
 import { controlsText, hasPressed, pollGamepads, setInputScheme } from './input.js';
-import { handleGamepadMenuInput, handleListeningKey, activeMenuRoot, goBack, renderBinds, setupMenu, setPaused, startGame } from './menu.js';
+import { handleMenuInput, handleListeningKey, activeMenuRoot, renderBinds, setupMenu, setPaused, startGame } from './menu.js';
 import { syncSettingsFromInput } from './settings.js';
 import { setupResize } from './resize.js';
 import { resetGame } from './state.js';
@@ -36,7 +36,6 @@ setupResize(game);
 
 addEventListener('keydown', e => {
   const { input, player } = game;
-  game.inputAdapter?.queueKeyboardEvent(e);
 
   if (input.listeningFor) {
     e.preventDefault();
@@ -48,6 +47,8 @@ addEventListener('keydown', e => {
     e.preventDefault();
     return;
   }
+
+  game.inputAdapter?.queueKeyboardEvent(e);
 
   const sceneInput = scenes.handleInput({ type: 'keydown', code: e.code, repeat: e.repeat, originalEvent: e });
   if (sceneInput?.handled) {
@@ -62,13 +63,11 @@ addEventListener('keydown', e => {
 
   if (menuFocused && activatable && ['Enter', 'Space'].includes(e.code)) {
     e.preventDefault();
-    active.click();
     return;
   }
 
   if (e.code === 'Escape' && ['level-select', 'settings', 'settings-category'].includes(game.menu.page)) {
     e.preventDefault();
-    goBack(game);
     return;
   }
 
@@ -101,10 +100,10 @@ function frame(now = runtime.now()) {
   if (game.input.bindRenderDirty) {
     game.input.bindRenderDirty = false;
     syncSettingsFromInput(game, runtime.storage);
-    runtime.emit('settings.input-sync', { controllerEnabled: game.settings.controllerEnabled });
+    runtime.emit('settings.input-sync', { controllerEnabled: game.settings.input.slots.player1.devices.gamepad.enabled });
     renderBinds(game);
   }
-  const menuUsedGamepad = game.input.useController && handleGamepadMenuInput(game);
+  const menuUsedGamepad = handleMenuInput(game);
   const pausePressed = game.inputRuntime?.route(['gameplay']).wasPressed('system.pause') || hasPressed(game.input, 'pause');
   if (!menuUsedGamepad && isStarted(game) && !game.player.dead && !isWon(game) && pausePressed) {
     setPaused(game, !isPaused(game), runtime);

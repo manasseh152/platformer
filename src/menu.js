@@ -1,4 +1,6 @@
-import { bindKey, bindLabels, findBindConflict, menuButtons, renderInputHints, resetControllerInput, resetDefaultGamepadBinds, resetDefaultKeyBinds, setBindStatus, setControllerStatus } from './input.js';
+import { bindKey, bindLabels, menuButtons, findBindConflict, renderInputHints, resetControllerInput, resetDefaultGamepadBinds, resetDefaultKeyBinds, setBindStatus, setControllerStatus } from './input.js';
+import { currentFocusElement, ensureMenuFocus, moveHorizontalGroupFocus as moveHorizontalFocus, moveLinearFocus, visibleFocusables } from './ui/navigation.js';
+import { createBindCapture } from './core/input/index.js';
 import { syncSettingsFromInput, replaceSettings, saveSettings, serializeSettings } from './settings.js';
 import { setPausedFlag } from './state.js';
 import { applyMotionPreference, runDOMTransition, shouldReduceMotion, setupMotionPreference } from './transitions.js';
@@ -23,11 +25,6 @@ const LEVEL_SELECT_TABS = [
   { id: 'gyms', label: 'Gyms', developer: true },
   { id: 'zoos', label: 'Zoos', developer: true }
 ];
-
-export function visibleFocusables(root) {
-  return [...root.querySelectorAll('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled)')]
-    .filter(el => el.offsetParent !== null && getComputedStyle(el).visibility !== 'hidden');
-}
 
 export function activeMenuRoot(game) {
   if (document.body.dataset.menuOrigin === 'start') return pageElement(game.ui, game.menu.page) || game.ui.pauseScreen;
@@ -68,30 +65,15 @@ export function focusFirstMenuItem(game) {
 }
 
 function currentMenuElement(game, root = activeMenuRoot(game)) {
-  const active = document.activeElement;
-  if (active && root?.contains(active)) return active;
-  if (game.menu.lastFocused && root?.contains(game.menu.lastFocused)) return game.menu.lastFocused;
-  return active;
+  return currentFocusElement(root, game.menu.lastFocused);
 }
 
 export function moveMenuFocus(game, dir) {
-  const root = activeMenuRoot(game);
-  if (!root) return;
-  const items = visibleFocusables(root);
-  if (!items.length) return;
-  const current = items.indexOf(currentMenuElement(game, root));
-  focusAndReveal(game, items[current < 0 ? 0 : (current + dir + items.length) % items.length]);
+  moveLinearFocus(activeMenuRoot(game), game.menu.lastFocused, dir, el => focusAndReveal(game, el));
 }
 
 function moveHorizontalGroupFocus(game, dx) {
-  const current = currentMenuElement(game);
-  const group = current?.closest?.('.ds-action-row, .segmented, .level-select-tabs');
-  if (!group) return false;
-  const items = visibleFocusables(group);
-  const index = items.indexOf(current);
-  if (items.length < 2 || index < 0) return false;
-  focusAndReveal(game, items[(index + dx + items.length) % items.length]);
-  return true;
+  return moveHorizontalFocus(activeMenuRoot(game), game.menu.lastFocused, dx, el => focusAndReveal(game, el));
 }
 
 function renderSelectedTilemapSummary(game) {
@@ -251,15 +233,50 @@ function renderScenarioBrowser(game, message = '') {
   renderSelectedTilemapSummary(game);
 }
 
-export function handleGamepadMenuInput(game) {
+function handleMenuRouteInput(game, route) {
+  const { ui } = game;
+  ensureMenuFocus(activeMenuRoot(game), game.menu.lastFocused, el => focusAndReveal(game, el));
+
+  if (route.wasPressed('menu.navigateX')) {
+    const x = route.value('menu.navigateX');
+    if (x < 0 && moveHorizontalGroupFocus(game, -1)) { route.consume('menu.navigateX'); return true; }
+    if (x > 0 && moveHorizontalGroupFocus(game, 1)) { route.consume('menu.navigateX'); return true; }
+  }
+
+  if (route.wasPressed('menu.navigateY')) {
+    const y = route.value('menu.navigateY');
+    if (y < 0) {
+      route.consume('menu.navigateY');
+      if (moveHorizontalGroupFocus(game, 1)) return true;
+      moveMenuFocus(game, -1);
+      return true;
+    }
+    if (y > 0) {
+      route.consume('menu.navigateY');
+      if (moveHorizontalGroupFocus(game, -1)) return true;
+      moveMenuFocus(game, 1);
+      return true;
+    }
+  }
+
+  if (route.wasPressed('menu.accept')) {
+    route.consume('menu.accept');
+    document.activeElement?.click?.();
+    return true;
+  }
+
+  if (route.wasPressed('menu.back')) {
+    route.consume('menu.back');
+    if (backablePages.includes(game.menu.page)) goBack(game);
+    else if (isStarted(game)) ui.resumeButton.click();
+    return true;
+  }
+
+  return false;
+}
+
+function handleLegacyGamepadMenuInput(game) {
   const { input, ui } = game;
-  const root = activeMenuRoot(game);
-  if (!root) return false;
-  if (input.controllerBindAction) return false;
-  if (input.suppressMenuInputOnce) { input.suppressMenuInputOnce = false; return true; }
-  if (input.listeningFor) return false;
-  const focusables = visibleFocusables(root);
-  if (!root.contains(document.activeElement) && !root.contains(game.menu.lastFocused)) focusFirstMenuItem(game);
   if (input.gamepadPressed.has(menuButtons.left) && moveHorizontalGroupFocus(game, -1)) return true;
   if (input.gamepadPressed.has(menuButtons.right) && moveHorizontalGroupFocus(game, 1)) return true;
   if (input.gamepadPressed.has(menuButtons.up)) {
@@ -277,10 +294,26 @@ export function handleGamepadMenuInput(game) {
   return false;
 }
 
+export function handleMenuInput(game) {
+  const { input } = game;
+  const root = activeMenuRoot(game);
+  if (!root) return false;
+  if (input.controllerBindAction) return false;
+  if (input.suppressMenuInputOnce) { input.suppressMenuInputOnce = false; return true; }
+  if (input.listeningFor) return false;
+  ensureMenuFocus(root, game.menu.lastFocused, el => focusAndReveal(game, el));
+  const route = game.inputRuntime?.route(['menu']);
+  if (route && handleMenuRouteInput(game, route)) return true;
+  return input.useController && handleLegacyGamepadMenuInput(game);
+}
+
+export const handleGamepadMenuInput = handleMenuInput;
+
 export function cancelBindListening(game, message = '') {
   const { input, ui } = game;
   input.listeningFor = null;
   input.controllerBindAction = null;
+  input.bindCapture = null;
   input.bindMode = 'replace';
   input.bindDeadline = 0;
   if (game.bindListenTimer) clearTimeout(game.bindListenTimer);
@@ -297,6 +330,14 @@ export function startBindListening(game, action, type, runtime = browserRuntime)
   input.controllerBindAction = type === 'controller' ? action : null;
   input.bindMode = 'replace';
   input.bindDeadline = runtime.now() + 6000;
+  input.bindCapture = createBindCapture({
+    actionId: action,
+    deviceType: type === 'controller' ? 'gamepad' : 'keyboard',
+    timeoutAt: input.bindDeadline,
+    cancelBindings: type === 'controller'
+      ? [{ deviceType: 'gamepad', control: 'button', index: 1 }]
+      : [{ deviceType: 'keyboard', control: 'key', code: 'Escape' }]
+  });
   const label = bindLabels[action];
   setBindStatus(ui, type === 'keyboard' ? `Press a key for ${label}. Escape cancels.` : `Press a controller button for ${label}. B / Circle cancels.`);
   renderSettingsCategory(game);
@@ -433,7 +474,7 @@ function handleReplaceSettings(game, runtime = browserRuntime) {
   try {
     const apply = () => {
       replaceSettings(game, JSON.stringify(normalized), runtime.storage);
-      runtime.emit('settings.replace', { developerMode: game.settings.developerMode, motion: game.settings.motion, gpuExtras: game.settings.gpuExtras, controllerEnabled: game.settings.controllerEnabled, speedRunMode: game.settings.speedRunMode });
+      runtime.emit('settings.replace', { developerMode: game.settings.developerMode, motion: game.settings.motion, gpuExtras: game.settings.gpuExtras, controllerEnabled: game.settings.input.slots.player1.devices.gamepad.enabled, speedRunMode: game.settings.speedRunMode });
       syncGymApi(game, runtime);
       renderSettings(game);
       updateMenuChrome(game);
@@ -496,10 +537,26 @@ function toggleController(game, runtime = browserRuntime) {
   input.useController = !input.useController;
   resetControllerInput(input);
   syncSettingsFromInput(game, runtime.storage);
-  runtime.emit('settings.change', { key: 'controllerEnabled', value: game.settings.controllerEnabled });
+  runtime.emit('settings.change', { key: 'controllerEnabled', value: game.settings.input.slots.player1.devices.gamepad.enabled });
   renderSettingsCategory(game);
   setBindStatus(ui, input.useController ? 'Controller enabled.' : 'Controller disabled.');
   setControllerStatus(ui, input.useController ? 'Controller enabled.' : 'Controller disabled.');
+}
+
+function selectController(game, runtimeId, runtime = browserRuntime) {
+  const result = game.inputRuntime?.selectGamepad?.('player1', runtimeId);
+  if (!result?.ok) {
+    setControllerStatus(game.ui, 'Controller is no longer connected.', true);
+    return;
+  }
+  const runtimeDevice = game.inputRuntime.settings.input.slots.player1.devices.gamepad;
+  const appDevice = game.settings.input.slots.player1.devices.gamepad;
+  appDevice.selectedRuntimeId = runtimeDevice.selectedRuntimeId;
+  appDevice.selectedFingerprint = runtimeDevice.selectedFingerprint;
+  game.settings = saveSettings(game.settings, runtime.storage);
+  runtime.emit('settings.controller-selected', { runtimeId: appDevice.selectedRuntimeId, fingerprint: appDevice.selectedFingerprint });
+  renderSettingsCategory(game);
+  setControllerStatus(game.ui, `Selected ${result.device.id || result.device.runtimeId}.`);
 }
 
 function toggleDeveloperMode(game, runtime = browserRuntime) {
@@ -567,6 +624,8 @@ function handleSettingsClick(game, e, runtime = browserRuntime) {
   if (backButton) return goBack(game);
   const bindButton = e.target.closest('button[data-bind-action]');
   if (bindButton) return startBindListening(game, bindButton.dataset.bindAction, bindButton.dataset.bindDevice, runtime);
+  const controllerSelect = e.target.closest('button[data-controller-select]');
+  if (controllerSelect) return selectController(game, controllerSelect.dataset.controllerSelect, runtime);
   const row = e.target.closest('[data-setting-row]');
   if (row) {
     if (row.dataset.settingRow === 'motion') return cycleMotion(game, runtime);
@@ -635,7 +694,8 @@ export function setupMenu(game, runtime = browserRuntime) {
 export function handleListeningKey(game, code, runtime = browserRuntime) {
   const action = game.input.listeningFor;
   if (!action) return;
-  if (code === 'Escape') return cancelBindListening(game, 'Listening cancelled.');
+  const captured = game.input.bindCapture?.event?.({ code, timestamp: runtime.now() });
+  if (captured?.status === 'cancelled' || code === 'Escape') return cancelBindListening(game, 'Listening cancelled.');
   if (game.bindListenTimer) clearTimeout(game.bindListenTimer);
   game.bindListenTimer = null;
   const conflict = findBindConflict(game.input, 'keyboard', action, code);

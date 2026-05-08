@@ -3,6 +3,7 @@
  * Core input state/bind semantics live in `src/core/input.js`; this module owns DOM hints,
  * navigator gamepad polling, and settings UI status mutations.
  */
+
 export const defaultBinds = {
   left: ['KeyA', 'ArrowLeft'],
   right: ['KeyD', 'ArrowRight'],
@@ -56,6 +57,7 @@ export function createInputState() {
   return {
     binds: clone(defaultBinds),
     listeningFor: null,
+    bindCapture: null,
     bindMode: 'replace',
     bindEditorDevice: 'keyboard',
     inputScheme: 'wasd',
@@ -146,6 +148,7 @@ export function bindKey(input, action, code) {
     input.binds[action] = [code];
   }
   input.listeningFor = null;
+  input.bindCapture = null;
   input.bindMode = 'replace';
   input.bindDeadline = 0;
 }
@@ -153,6 +156,7 @@ export function bindKey(input, action, code) {
 export function bindGamepad(input, action, code) {
   input.gamepadBinds[action] = [code];
   input.controllerBindAction = null;
+  input.bindCapture = null;
   input.bindDeadline = 0;
   input.bindRenderDirty = true;
   input.suppressMenuInputOnce = true;
@@ -167,6 +171,7 @@ export function clearExtraBinds(input, action) {
   input.binds[action] = input.binds[action].slice(0, 1);
   input.gamepadBinds[action] = input.gamepadBinds[action].slice(0, 1);
   input.listeningFor = null;
+  input.bindCapture = null;
   input.bindMode = 'replace';
   input.controllerBindAction = null;
   input.bindDeadline = 0;
@@ -239,33 +244,60 @@ export function updateControllerDebug(runtime, game, pad) {
   const { input, ui } = game;
   if (!ui.controllerName) return;
   ui.controllerName.textContent = pad ? `${pad.id} (${pad.mapping || 'unknown mapping'})` : 'None detected';
+  if (ui.selectedControllerName && !ui.selectedControllerName.querySelector?.('[data-controller-select]')) {
+    const selected = game.settings?.input?.slots?.player1?.devices?.gamepad?.selectedRuntimeId;
+    ui.selectedControllerName.textContent = selected || (pad ? 'Auto / not selected' : 'Auto / none connected');
+  }
   const rawDown = [...input.gamepadDown].filter(code => code.startsWith('PadButton') || code.startsWith('PadAxis'));
   ui.controllerInputs.textContent = rawDown.length ? rawDown.join(', ') : 'None';
   if (input.controllerBindAction && input.latestRawGamepadPressed.length) {
     const action = input.controllerBindAction;
     const code = input.latestRawGamepadPressed[0];
-    if (['PadButton1', 'PadB'].includes(code)) {
+    const captured = input.bindCapture?.snapshot?.({ controls: [legacyGamepadControlForCapture(code)] });
+    if (captured?.status === 'cancelled') {
       input.controllerBindAction = null;
+      input.bindCapture = null;
       input.bindDeadline = 0;
       input.bindRenderDirty = true;
       input.suppressMenuInputOnce = true;
       setBindStatus(ui, 'Listening cancelled.');
       return;
     }
-    const conflict = findBindConflict(input, 'controller', action, code);
-    if (conflict) {
-      input.bindError = { device: 'controller', action, until: runtime.now() + 1800 };
-      input.bindRenderDirty = true;
-      const message = `${controllerName(code)} is already bound to ${bindLabels[conflict]}.`;
-      setBindStatus(ui, message, true);
-      setControllerStatus(ui, message, true);
-      return;
-    }
-    bindGamepad(input, action, code);
-    const message = `${bindLabels[action]} bound to ${controllerName(code)}.`;
-    setBindStatus(ui, message);
-    setControllerStatus(ui, message);
+    if (captured?.status === 'captured') return finishControllerBinding(runtime, game, action, legacyCodeFromGamepadBinding(captured.binding) || code);
+    return finishControllerBinding(runtime, game, action, code);
   }
+}
+
+function legacyGamepadControlForCapture(code) {
+  const button = /^PadButton(\d+)$/.exec(code);
+  if (button) return { type: 'button', index: Number(button[1]), value: 1 };
+  const axis = /^PadAxis(\d)([+-])$/.exec(code);
+  if (axis) return { type: 'axis', index: Number(axis[1]), value: axis[2] === '+' ? 1 : -1 };
+  return { type: 'unknown', value: 0 };
+}
+
+function legacyCodeFromGamepadBinding(binding) {
+  if (binding?.deviceType !== 'gamepad') return null;
+  if (binding.control === 'button') return `PadButton${binding.index}`;
+  if (binding.control === 'axisDirection') return `PadAxis${binding.index}${binding.direction < 0 ? '-' : '+'}`;
+  return null;
+}
+
+function finishControllerBinding(runtime, game, action, code) {
+  const { input, ui } = game;
+  const conflict = findBindConflict(input, 'controller', action, code);
+  if (conflict) {
+    input.bindError = { device: 'controller', action, until: runtime.now() + 1800 };
+    input.bindRenderDirty = true;
+    const message = `${controllerName(code)} is already bound to ${bindLabels[conflict]}.`;
+    setBindStatus(ui, message, true);
+    setControllerStatus(ui, message, true);
+    return;
+  }
+  bindGamepad(input, action, code);
+  const message = `${bindLabels[action]} bound to ${controllerName(code)}.`;
+  setBindStatus(ui, message);
+  setControllerStatus(ui, message);
 }
 
 export function setBindStatus(ui, message, error = false) {
@@ -291,18 +323,21 @@ export function resetControllerInput(input) {
   input.gamepadPressed.clear();
   input.previousGamepadDown.clear();
   input.controllerBindAction = null;
+  input.bindCapture = null;
   input.bindDeadline = 0;
 }
 
 export function resetDefaultGamepadBinds(input) {
   input.gamepadBinds = clone(defaultGamepadBinds);
   input.controllerBindAction = null;
+  input.bindCapture = null;
   input.bindDeadline = 0;
 }
 
 export function resetDefaultKeyBinds(input) {
   input.binds = clone(defaultBinds);
   input.listeningFor = null;
+  input.bindCapture = null;
   input.bindMode = 'replace';
   input.bindDeadline = 0;
 }
