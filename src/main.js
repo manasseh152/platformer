@@ -1,5 +1,6 @@
 import { getUI } from './dom.js';
-import { controlsText, pollGamepads, renderGameplayHints, setInputScheme } from './input.js';
+import { pollGamepads } from './app/input/controller-diagnostics.js';
+import { controlsText, renderGameplayHints, setInputScheme } from './app/input/input-presentation.js';
 import { handleMenuInput, handleListeningKey, activeMenuRoot, renderBinds, setupMenu, setPaused, startGame } from './menu.js';
 import { syncSettingsFromInput } from './settings.js';
 import { setupResize } from './resize.js';

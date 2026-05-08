@@ -6,7 +6,7 @@
 import { CAMERA_HEIGHT, CAMERA_WIDTH, CAMERA_WORLD_HEIGHT, CAMERA_WORLD_WIDTH } from './core/constants.js';
 import { createGameplaySession, resetGameplaySession, syncGameplaySessionToGame } from './core/gameplay-session.js';
 import { createTilemapManager, resolveInitialTilemap } from './tilemap-manager.js';
-import { createInputState } from './input.js';
+import { createInputState } from './app/input/legacy-bind-state.js';
 import { createBrowserInputAdapter, createGameInputRuntime } from './app/input/browser-input-adapter.js';
 import { createPresenter } from './presenter.js';
 import { applySettingsToGame, loadSettings } from './settings.js';

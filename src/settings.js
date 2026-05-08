@@ -6,7 +6,7 @@
 import { clone } from './core/input/utils.js';
 import { browserRuntime } from './runtime.js';
 import { createBrowserInputAdapter, createGameInputRuntime } from './app/input/browser-input-adapter.js';
-import { defaultBinds, defaultGamepadBinds } from './input.js';
+import { defaultBinds, defaultGamepadBinds } from './app/input/legacy-bind-state.js';
 import { gameInputProfile } from './app/input/game-input-profile.js';
 import { bindingFromLegacyGamepad, bindingFromLegacyKeyboard, normalizeInputSettings } from './core/input/settings.js';
 

@@ -96,19 +96,22 @@ Direction:
 - Do not immediately migrate UI into scene-stack scenes.
 - After decomposition, evaluate migrating one overlay/page at a time if scene ownership simplifies lifecycle/input.
 
-### P1 / High — Input domain and input presentation are still blurred
+### Partially completed — Input presentation is separated from legacy input state
 
 Evidence:
 
-- Semantic core input exists under `src/core/input/**`.
-- `src/input.js` still exports legacy bind rows/state, controller diagnostics helpers, hint rendering, and transitional settings helpers.
-- `src/render.js` imports `renderGameplayHints` from `src/input.js`, coupling rendering to input UI helpers.
+- Semantic core input exists under `src/core/input/**` and remains the source of truth for runtime actions.
+- Transitional bind state now lives in `src/app/input/legacy-bind-state.js`.
+- DOM hint/scheme rendering now lives in `src/app/input/input-presentation.js`.
+- Browser gamepad polling, controller diagnostics, and bind-status UI helpers now live in `src/app/input/controller-diagnostics.js`.
+- `src/render.js` imports `renderGameplayHints` from the input presentation module instead of a legacy input facade.
+- `tests/core-boundary.spec.js` asserts the world renderer does not import the legacy input facade.
 
-Direction:
+Follow-up:
 
-- Separate input presentation/hints/remap UI from legacy compatibility state.
-- Keep semantic input as the source of truth.
-- Remove legacy helpers only after menu/settings/editor users migrate.
+- The legacy `src/input.js` facade was removed after all repo-local imports moved to focused modules.
+- Menu/settings code still uses transitional bind concepts and should migrate gradually when the settings UI is decomposed.
+- Add characterization tests before changing actual bind/remap behavior.
 
 ### Completed — Catalog local drafts no longer depend on editor draft logic
 
@@ -142,7 +145,7 @@ Direction:
 Evidence:
 
 - `src/render.js` draws world elements and also updates DOM state such as HUD level name, messages, body classes, speedrun HUD, hearts, and input hints.
-- `src/render.js -> src/input.js` is a suspicious dependency edge.
+- The old `src/render.js -> src/input.js` dependency edge is removed; `src/render.js` still imports input presentation for HUD hint updates.
 
 Direction:
 
@@ -223,7 +226,7 @@ Direction:
 
 | Candidate | Status | Removal condition |
 | --- | --- | --- |
-| Legacy bind state/helpers in `src/input.js` | Delete after migration | Settings/menu/editor users read semantic input directly or through presentation helpers. |
+| Legacy bind state/helpers from former `src/input.js` | Deleted/focused | Transitional bind helpers now live in `src/app/input/legacy-bind-state.js`; remove individual helpers as menu/settings migrate to semantic input. |
 | `src/editor/tilemap-draft.js` compatibility facade | Delete after migration | Editor imports `src/core/tilemaps/draft.js` and `src/content/tilemaps/draft-compiler.js` directly. |
 | `game.player`, `game.enemies`, `game.camera` mirrors | Delete after migration | Callers use `game.gameplaySession.*`. |
 | Tilemap compatibility helpers in `src/core/tilemaps/tilemap.js` | Decompose/migrate | Render/snapshot/tests use scene queries or focused tilemap query modules. |
@@ -236,6 +239,7 @@ Existing tests cover many broad flows: core boundaries, core input, settings, ga
 
 Before risky refactors, add characterization tests for:
 
+- physics/gameplay input behavior when migrating old physics tests from legacy bind state to core input runtime; 
 - menu back/focus behavior if changing focus/page routing;
 - settings bind/remap behavior if changing input presentation;
 - editor save/preview/import/export if moving persistence logic;
@@ -267,29 +271,58 @@ bunx playwright test tests/core-boundary.spec.js tests/map-editor.spec.js tests/
 
 Known validation note: `tests/scenario-browser.spec.js:23` currently fails independently because it waits for `#settingsCategoryBackButton`, while the rendered Advanced settings page exposes the newer `Esc Back` shortcut.
 
-## Recommended next implementation slice
-
 ### Slice 2: Untangle input presentation from legacy input state
 
-Why next:
+Completed on 2026-05-08.
 
-- It removes a repeated coupling point between semantic input, settings/remap UI, controller diagnostics, and render-time input hints.
-- It should eliminate the suspicious `src/render.js -> src/input.js` dependency before rendering/HUD decomposition.
-- Characterization tests can bound current bind/remap behavior before moving code.
+Changed files:
 
-Likely files:
-
-- `src/input.js`
-- `src/app/input/**`
-- `src/core/input/**`
-- `src/render.js`
+- `src/app/input/legacy-bind-state.js`
+- `src/app/input/input-presentation.js`
+- `src/app/input/controller-diagnostics.js`
+- removed `src/input.js`
+- `src/main.js`
 - `src/menu.js`
-- settings/input tests
+- `src/render.js`
+- `src/settings.js`
+- `src/settings-ui.js`
+- `src/state.js`
+- `tests/core-boundary.spec.js`
+- `tests/settings.spec.js`
+- `tests/physics.spec.js`
 
 Validation:
 
 ```sh
-bunx playwright test tests/core-input.spec.js tests/settings.spec.js tests/game-smoke.spec.js --project=chromium
+bun run build
+bunx playwright test tests/core-boundary.spec.js tests/settings.spec.js --project=chromium
+bunx playwright test tests/game-smoke.spec.js --project=chromium
+```
+
+Known validation note: `tests/physics.spec.js` still has existing failures around tests passing legacy input state directly to `updateGameplay`, which now requires a core input runtime. Defer fixing those tests to a dedicated follow-up slice that migrates physics test helpers to semantic/core input runtime events.
+
+## Recommended next implementation slice
+
+### Slice 3: Decompose menu/settings/scenario browser ownership
+
+Why next:
+
+- `src/menu.js` still owns unrelated UI flows: shell/focus, settings actions, scenario browser rendering, launch handling, and bind UI wiring.
+- Input presentation is now split enough that menu decomposition can import focused helpers instead of the old all-in-one input module.
+- Characterization tests should bound DOM/focus/back behavior before moving menu logic.
+
+Likely files:
+
+- `src/menu.js`
+- `src/settings-ui.js`
+- `src/scenes/menu-dom.js`
+- `src/app/input/**`
+- menu/scenario/settings Playwright tests
+
+Validation:
+
+```sh
+bunx playwright test tests/scenario-browser.spec.js tests/settings.spec.js tests/game-smoke.spec.js --project=chromium
 bun run build
 bunx playwright test --project=chromium
 ```

@@ -103,10 +103,12 @@ Initial slice order:
    - Likely target: split pure draft helpers into `src/core/tilemaps/` and Chibi symbol compilation into `src/content/tilemaps/`.
    - Validate with scenario browser, map editor, tilemap tests, full build, and full Playwright before completion.
 
-2. **Untangle input presentation from legacy input state**
+2. **Untangle input presentation from legacy input state** — completed
    - Invariant: semantic core input remains the source of truth, while hints/remap/controller presentation are separated from transitional legacy bind state.
-   - Likely target: decompose `src/input.js` into focused app/input presentation and compatibility modules.
-   - Add characterization tests before changing bind/remap behavior.
+   - Implemented: legacy bind state, input hint presentation, and controller diagnostics now live in focused `src/app/input/` modules.
+   - Implemented: world rendering imports input presentation directly, protected by a core-boundary test.
+   - Implemented: removed the legacy `src/input.js` facade after repo-local consumers migrated.
+   - Remaining follow-up: add characterization tests before changing actual bind/remap behavior.
 
 3. **Decompose menu/settings/scenario browser ownership**
    - Invariant: `src/menu.js` stops being the single owner of unrelated UI flows while preserving current DOM behavior.

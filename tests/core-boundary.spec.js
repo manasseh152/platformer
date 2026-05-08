@@ -71,6 +71,12 @@ test('gameplay systems query scene components instead of tilemap compatibility h
   }
 });
 
+test('world renderer imports input presentation instead of legacy input facade', async () => {
+  const source = await readFile(path.resolve('src/render.js'), 'utf8');
+  expect(source).toContain("./app/input/input-presentation.js");
+  expect(source).not.toMatch(/['"]\.\/input\.js['"]/);
+});
+
 test('core and engine modules do not reference browser globals directly', async () => {
   for (const file of [...await jsFiles(coreRoot), ...await jsFiles(engineRoot)]) {
     const source = await readFile(file, 'utf8');

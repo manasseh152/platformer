@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { applySettingsToGame, defaultSettings, saveSettings, syncSettingsFromInput } from '../src/settings.js';
-import { createInputState } from '../src/input.js';
+import { createInputState } from '../src/app/input/legacy-bind-state.js';
 
 function memoryStorage() {
   const values = new Map();

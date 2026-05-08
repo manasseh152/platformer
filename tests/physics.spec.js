@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createInputState } from '../src/input.js';
+import { createInputState } from '../src/app/input/legacy-bind-state.js';
 import { createGameplaySession } from '../src/core/gameplay-session.js';
 import { updateEnemy, updateGameplay } from '../src/core/physics.js';
 import { defineContainedTestTilemap } from './helpers/contained-tilemap.js';

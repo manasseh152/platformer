@@ -1,6 +1,6 @@
 import { assets, isLoaded } from './assets.js';
 import { ACTOR_DRAW, DEBUG_CAMERA, TILE_SIZE } from './core/constants.js';
-import { renderGameplayHints } from './input.js';
+import { renderGameplayHints } from './app/input/input-presentation.js';
 import { forEachLayerTile, getDecorType } from './core/tilemaps/tilemap.js';
 import { drawCollisionDebugOverlay, drawPhysicsBodyDebugOverlay } from './devtools/debug-render.js';
 import { isWon } from './app/app-state.js';
