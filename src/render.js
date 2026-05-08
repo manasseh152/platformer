@@ -1,6 +1,6 @@
 import { assets, isLoaded } from './assets.js';
 import { ACTOR_DRAW, DEBUG_CAMERA, TILE_SIZE } from './core/constants.js';
-import { controlsText } from './input.js';
+import { renderGameplayHints } from './input.js';
 import { forEachLayerTile, getDecorType } from './core/tilemaps/tilemap.js';
 import { drawCollisionDebugOverlay, drawPhysicsBodyDebugOverlay } from './devtools/debug-render.js';
 import { isWon } from './app/app-state.js';
@@ -423,6 +423,6 @@ export function drawGame(runtime, game) {
 
   game.renderSnap = null;
   syncHtmlHud(game);
-  ui.controlsEl.textContent = controlsText(game.input);
+  renderGameplayHints(game, ui.controlsEl);
   game.presenter.present(subpixelOffsetX, subpixelOffsetY);
 }

@@ -603,28 +603,41 @@ kbd.ds-keycap {
   letter-spacing: .13em;
   text-transform: uppercase;
 }
+#startScreen .command-bar,
+.scene-pause-overlay .command-bar {
+  z-index: 4;
+  max-width: min(620px, calc(100vw - 32px));
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  gap: 8px;
+}
 #startScreen .command-bar {
   position: fixed;
   left: max(16px, env(safe-area-inset-left));
   bottom: max(16px, env(safe-area-inset-bottom));
-  z-index: 4;
-  max-width: min(620px, calc(100vw - 32px));
-  margin: 0;
-  padding: 8px;
-  border: 1px solid rgba(255, 246, 232, .10);
-  border-radius: var(--radius-pill);
-  background: rgba(9, 12, 18, .46);
-  box-shadow: 0 12px 40px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.045);
-  backdrop-filter: blur(18px) saturate(130%);
-  gap: 8px;
+}
+.scene-pause-overlay .command-bar {
+  justify-content: flex-start;
+  margin-top: var(--space-5);
 }
 #startScreen .command-bar .input-hint {
   min-height: 34px;
-  padding: 4px 10px 4px 5px;
+}
+.input-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px 4px 6px;
+  border: 1px solid rgba(255, 246, 232, .12);
   border-radius: var(--radius-pill);
   background: rgba(255,255,255,.045);
 }
-.input-hint { display: inline-flex; align-items: center; gap: 10px; }
+.input-hint__joiner { margin: 0 -6px; color: rgba(255, 246, 232, .38); }
+.input-hint__icon { width: 30px; height: 30px; object-fit: contain; image-rendering: auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,.25)); }
 .input-hint__label { color: rgba(255, 246, 232, .66); }
 .input-hint[data-input-platform="gamepad"] .ds-keycap {
   min-width: 30px;
@@ -764,36 +777,25 @@ body.playing #message:not([hidden]) { opacity: 1; }
 #dashStatus.ready::after { content: " ready"; color: var(--color-good); }
 
 #controls {
-  left: 50%;
+  left: 18px;
   bottom: 18px;
-  width: auto;
-  max-width: calc(100vw - 36px);
-  padding: 13px 18px 13px 46px;
-  border: 1px solid rgba(255,246,232,.17);
-  border-radius: 18px;
-  background:
-    linear-gradient(90deg, rgba(var(--color-accent-rgb), .16), transparent 28%),
-    rgba(8, 12, 18, .70);
+  width: min(760px, calc((100vw - 36px) / var(--game-ui-scale)));
+  max-width: calc((100vw - 36px) / var(--game-ui-scale));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: rgba(255,246,232,.82);
   font: 900 12px/1.35 var(--font-ui);
   letter-spacing: .075em;
   text-transform: uppercase;
-  transform: translateX(-50%) scale(var(--game-ui-scale));
-  transform-origin: bottom center;
-  backdrop-filter: blur(13px);
-  box-shadow: 0 16px 40px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.08);
-}
-#controls::before {
-  content: "Controls";
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  writing-mode: vertical-rl;
-  transform: translateY(-50%) rotate(180deg);
-  color: var(--color-accent-2);
-  font: 900 8px/1 var(--font-mono);
-  letter-spacing: .16em;
-  opacity: .88;
+  transform: scale(var(--game-ui-scale));
+  transform-origin: bottom left;
+  backdrop-filter: none;
+  box-shadow: none;
 }
 
 #message {

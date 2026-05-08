@@ -228,6 +228,26 @@ Validation command for this slice:
 bunx playwright test tests/core-boundary.spec.js tests/core-input.spec.js tests/settings.spec.js tests/update-gameplay.spec.js tests/game-smoke.spec.js --project=chromium
 ```
 
+## Slice 6 implementation notes
+
+Input hints now use a reusable app-side presentation layer that derives controls from semantic action ids and normalized structured bindings instead of static `wasd` / `arrows` / `gamepad` tables.
+
+Added/changed modules and assets:
+
+- `src/app/input/input-hints.js`: control label and hint-part helpers for semantic actions, display-group-aware binding selection, text fallback, and a first Xbox icon-pack mapping hook.
+- `src/input.js`: renders `[data-input-hint]` elements from semantic action ids (`menu.accept`, `menu.back`, `menu.settings`, etc.), actual bindings, last active source/display group, and optional icon-pack assets.
+- `src/core/input/runtime.js`: records last active source when press/release transition queries match, so hints can follow controller/menu button usage as well as continuous gameplay values.
+- `src/menu.js`: routes `menu.settings` through the menu semantic input path and lets clickable back/settings hints invoke the same menu action handler.
+- `public/assets/kenney-input-prompts/`: first minimal Kenney Input Prompts runtime asset subset with CC0 license/source attribution.
+- `tests/core-input.spec.js`: covers semantic hint derivation, keyboard display groups, last-active gamepad source selection, and Xbox icon presenter fallback.
+
+Validation command for this slice:
+
+```sh
+bunx playwright test tests/core-input.spec.js tests/game-smoke.spec.js --project=chromium
+bun run build
+```
+
 ## Next slices
 
 1. **Wire gameplay to new core input** _(implemented in slice 2)_
@@ -250,13 +270,13 @@ bunx playwright test tests/core-boundary.spec.js tests/core-input.spec.js tests/
    - Add selected-controller behavior in Controller settings while keeping controller enable/disable separate from selection.
    - Add direct tests for controller remapping, duplicate prevention, cancel behavior, and selected controller routing.
 
-5. **Input hints and presentation layer**
+5. **Input hints and presentation layer** _(implemented in slice 6)_
    - Add reusable control presentation/keycap helpers outside core.
    - Implement the first icon-pack presenter from `.temp/kenney_input-prompts_1.5`, copying only the needed runtime assets into the app asset tree and preserving license attribution.
    - Derive hints from actual bindings and last active source/display group instead of hardcoded `wasd` / `arrows` / `gamepad` checks.
    - Render each action hint as its own pill/badge built from structured hint parts, not as one grouped/static hint string shared by all usages.
    - Support optional clickable hints for UI/system actions such as back and settings; clicking a hint dispatches the same semantic action path as the bound input instead of bypassing input/menu logic.
-   - Let usage sites request hints by semantic action id plus optional presentation tokens, e.g. `system.settings` with `settings {x,etc}`-style icon/text variants, while keeping fallback text available.
+   - Let usage sites request hints by semantic action id plus optional presentation tokens while keeping fallback text available.
    - Lay the abstraction for controller icon packs and per-controller/global overrides, with text fallback first.
 
 6. **Devtools migration**

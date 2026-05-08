@@ -45,6 +45,14 @@ export function updateMenuChrome(game) {
   ui.menuTitle.textContent = menu.page === 'settings-category' && category ? category.title : (menu.page === 'level-select' ? scenarioBrowserTitle : (menu.page === 'settings' ? 'Settings' : 'Paused'));
   ui.menuEyebrow.textContent = menu.page === 'main' ? 'Paused' : (menu.page === 'level-select' ? 'Choose your route' : (menu.page === 'settings-category' ? 'Settings' : (menu.origin === 'start' ? 'Before you begin' : 'Settings')));
   refreshDynamicRefs(game);
+  if (ui.pauseBackHint) {
+    ui.pauseBackHint.removeAttribute('data-level-select-back');
+    ui.pauseBackHint.removeAttribute('data-settings-back');
+    if (menu.page === 'level-select') ui.pauseBackHint.setAttribute('data-level-select-back', '');
+    if (menu.page === 'settings') ui.pauseBackHint.setAttribute('data-settings-back', 'root');
+    if (menu.page === 'settings-category') ui.pauseBackHint.setAttribute('data-settings-back', 'category');
+  }
+  if (ui.pauseSettingsHint) ui.pauseSettingsHint.hidden = menu.page === 'settings' || menu.page === 'settings-category';
   if (ui.developerTools) ui.developerTools.hidden = !game.settings.developerMode;
   applyMotionPreference(game);
 }
@@ -233,8 +241,24 @@ function renderScenarioBrowser(game, message = '') {
   renderSelectedTilemapSummary(game);
 }
 
-function handleMenuRouteInput(game, route) {
+function activateSemanticMenuAction(game, actionId) {
   const { ui } = game;
+  if (actionId === 'menu.accept') { document.activeElement?.click?.(); return true; }
+  if (actionId === 'menu.back') {
+    if (backablePages.includes(game.menu.page)) goBack(game);
+    else if (isStarted(game)) ui.resumeButton.click();
+    return true;
+  }
+  if (actionId === 'menu.settings') {
+    if (game.menu.page === 'settings' || game.menu.page === 'settings-category') return true;
+    if (isStarted(game)) ui.settingsButton?.click?.();
+    else ui.startSettingsButton?.click?.();
+    return true;
+  }
+  return false;
+}
+
+function handleMenuRouteInput(game, route) {
   ensureMenuFocus(activeMenuRoot(game), game.menu.lastFocused, el => focusAndReveal(game, el));
 
   if (route.wasPressed('menu.navigateX')) {
@@ -261,22 +285,24 @@ function handleMenuRouteInput(game, route) {
 
   if (route.wasPressed('menu.accept')) {
     route.consume('menu.accept');
-    document.activeElement?.click?.();
-    return true;
+    return activateSemanticMenuAction(game, 'menu.accept');
   }
 
   if (route.wasPressed('menu.back')) {
     route.consume('menu.back');
-    if (backablePages.includes(game.menu.page)) goBack(game);
-    else if (isStarted(game)) ui.resumeButton.click();
-    return true;
+    return activateSemanticMenuAction(game, 'menu.back');
+  }
+
+  if (route.wasPressed('menu.settings')) {
+    route.consume('menu.settings');
+    return activateSemanticMenuAction(game, 'menu.settings');
   }
 
   return false;
 }
 
 function handleLegacyGamepadMenuInput(game) {
-  const { input, ui } = game;
+  const { input } = game;
   if (input.gamepadPressed.has(menuButtons.left) && moveHorizontalGroupFocus(game, -1)) return true;
   if (input.gamepadPressed.has(menuButtons.right) && moveHorizontalGroupFocus(game, 1)) return true;
   if (input.gamepadPressed.has(menuButtons.up)) {
@@ -289,8 +315,8 @@ function handleLegacyGamepadMenuInput(game) {
     moveMenuFocus(game, 1);
     return true;
   }
-  if (input.gamepadPressed.has(menuButtons.accept)) { document.activeElement?.click?.(); return true; }
-  if (input.gamepadPressed.has(menuButtons.back)) { if (backablePages.includes(game.menu.page)) goBack(game); else if (isStarted(game)) ui.resumeButton.click(); return true; }
+  if (input.gamepadPressed.has(menuButtons.accept)) return activateSemanticMenuAction(game, 'menu.accept');
+  if (input.gamepadPressed.has(menuButtons.back)) return activateSemanticMenuAction(game, 'menu.back');
   return false;
 }
 
@@ -647,7 +673,7 @@ export function setupMenu(game, runtime = browserRuntime) {
   setupMotionPreference(game);
   renderSettings(game);
   updateMenuChrome(game);
-  renderInputHints(game.input);
+  renderInputHints(game.input, document, game);
 
   for (let i = 0; i < 5; i++) {
     const heart = document.createElement('span');
@@ -686,7 +712,20 @@ export function setupMenu(game, runtime = browserRuntime) {
     setPausedFlag(game, true, runtime);
     openScenarioBrowser(game, 'pause');
   });
-  ui.menuPages.addEventListener('click', e => handleSettingsClick(game, e, runtime));
+  const handleHintActivation = e => {
+    const hintAction = e.target.closest('[data-input-clickable="true"]')?.dataset.inputAction;
+    return Boolean(hintAction && activateSemanticMenuAction(game, hintAction));
+  };
+  ui.startScreen.addEventListener('click', e => { handleHintActivation(e); });
+  ui.startScreen.addEventListener('keydown', e => {
+    if (!['Enter', 'Space'].includes(e.code) || !handleHintActivation(e)) return;
+    e.preventDefault();
+  });
+  ui.pauseScreen.addEventListener('click', e => { if (!handleHintActivation(e)) handleSettingsClick(game, e, runtime); });
+  ui.pauseScreen.addEventListener('keydown', e => {
+    if (!['Enter', 'Space'].includes(e.code) || !handleHintActivation(e)) return;
+    e.preventDefault();
+  });
 
   requestAnimationFrame(() => focusAndReveal(game, ui.startButton));
 }

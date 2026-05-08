@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { gameInputProfile } from '../src/app/input/game-input-profile.js';
 import { applyCapturedBinding, createBindCapture, createInputRuntime, findBindingConflict, normalizeInputSettings } from '../src/core/input/index.js';
+import { hintPartsForAction, textHintForAction } from '../src/app/input/input-hints.js';
 
 function key(runtime, type, code) {
   runtime.handleEvent({ type, device: { type: 'keyboard', id: 'keyboard' }, control: { type: 'key', code }, timestamp: runtime.state.frame });
@@ -136,6 +137,19 @@ test('last active source records display group from the binding that triggered i
 
   expect(input.value('player.moveX')).toBe(1);
   expect(input.lastActiveSource('player1')).toMatchObject({ deviceType: 'keyboard', deviceId: 'keyboard', displayGroup: 'arrows' });
+});
+
+test('input hints derive controls from semantic bindings and last active source', () => {
+  const { settings } = normalizeInputSettings(gameInputProfile, {});
+  const input = createInputRuntime(gameInputProfile, settings);
+
+  expect(textHintForAction(gameInputProfile, settings, 'menu.settings', { inputScheme: 'wasd' })).toBe('Tab Settings');
+  expect(hintPartsForAction(gameInputProfile, settings, 'player.moveX', { inputScheme: 'arrows', axisScale: -1 }).parts.map(part => part.label)).toEqual(['←']);
+
+  input.beginFrame();
+  gamepad(input, [{ type: 'button', index: 3, value: 1 }]);
+  expect(input.wasPressed('menu.settings')).toBe(true);
+  expect(hintPartsForAction(gameInputProfile, settings, 'menu.settings', { runtime: input, inputScheme: 'wasd', iconPack: 'xbox' }).parts[0]).toMatchObject({ label: 'Y', icon: '/assets/kenney-input-prompts/xbox/xbox_button_y.png' });
 });
 
 test('bind capture captures keyboard bindings, supports cancel, and prevents duplicates', () => {

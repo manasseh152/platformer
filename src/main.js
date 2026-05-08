@@ -1,5 +1,5 @@
 import { getUI } from './dom.js';
-import { controlsText, hasPressed, pollGamepads, setInputScheme } from './input.js';
+import { controlsText, hasPressed, pollGamepads, renderGameplayHints, setInputScheme } from './input.js';
 import { handleMenuInput, handleListeningKey, activeMenuRoot, renderBinds, setupMenu, setPaused, startGame } from './menu.js';
 import { syncSettingsFromInput } from './settings.js';
 import { setupResize } from './resize.js';
@@ -21,6 +21,7 @@ const game = createGameApp(ui, runtime);
 const scenes = createSceneHost(runtime);
 runtime.scenes = scenes;
 game.controlsText = () => controlsText(game.input);
+renderGameplayHints(game);
 game.resetGame = () => resetGame(game, runtime);
 
 setupMenu(game, runtime);

@@ -177,7 +177,9 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
       if (!binding) return false;
       const previous = bindingValueFromControls(binding, slot, state.previousControls).value;
       const current = bindingValueFromControls(binding, slot, state.controls).value;
-      return type === 'press' ? current !== 0 : previous !== 0;
+      const matched = type === 'press' ? current !== 0 : previous !== 0;
+      if (matched) rememberActive(slot, binding, edge.device?.id || current.deviceId);
+      return matched;
     });
     const seen = new Set(matches.map(edge => edge.sourceKey));
     for (const binding of bindings) {
@@ -187,6 +189,7 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
       const wasDown = previous.value !== 0;
       const isDown = current.value !== 0;
       if ((type === 'press' && !wasDown && isDown) || (type === 'release' && wasDown && !isDown)) {
+        rememberActive(slot, binding, current.deviceId);
         matches.push({ id: `${state.frame}:semantic:${matches.length}`, sourceKey: current.sourceKey, type, value: current.value, timestamp: 0, control: null, device: { id: current.deviceId }, meta: { semantic: true } });
         seen.add(current.sourceKey);
       }
