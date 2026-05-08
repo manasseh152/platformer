@@ -35,8 +35,8 @@ export function fitZoom(viewport, worldWidth, worldHeight, padding = DEFAULT_VIE
 
 export function resetView(viewport, worldWidth, worldHeight) {
   viewport.camera.zoom = fitZoom(viewport, worldWidth, worldHeight);
-  viewport.camera.x = Math.max(0, (worldWidth - viewport.width / viewport.camera.zoom) / 2);
-  viewport.camera.y = Math.max(0, (worldHeight - viewport.height / viewport.camera.zoom) / 2);
+  viewport.camera.x = (worldWidth - viewport.width / viewport.camera.zoom) / 2;
+  viewport.camera.y = (worldHeight - viewport.height / viewport.camera.zoom) / 2;
   clampCamera(viewport, worldWidth, worldHeight);
 }
 
@@ -47,8 +47,10 @@ export function clampZoom(viewport, zoom) {
 export function clampCamera(viewport, worldWidth, worldHeight) {
   const visibleWidth = viewport.width / viewport.camera.zoom;
   const visibleHeight = viewport.height / viewport.camera.zoom;
-  viewport.camera.x = clamp(viewport.camera.x, 0, Math.max(0, worldWidth - visibleWidth));
-  viewport.camera.y = clamp(viewport.camera.y, 0, Math.max(0, worldHeight - visibleHeight));
+  const xRange = cameraAxisRange(worldWidth, visibleWidth);
+  const yRange = cameraAxisRange(worldHeight, visibleHeight);
+  viewport.camera.x = clamp(viewport.camera.x, xRange.min, xRange.max);
+  viewport.camera.y = clamp(viewport.camera.y, yRange.min, yRange.max);
 }
 
 export function zoomAtScreenPoint(viewport, screenX, screenY, nextZoom, worldWidth, worldHeight) {
@@ -100,6 +102,14 @@ export function clearViewport(ctx, viewport, color = '#090d15') {
   ctx.setTransform(viewport.dpr, 0, 0, viewport.dpr, 0, 0);
   ctx.fillStyle = color;
   ctx.fillRect(0, 0, viewport.width, viewport.height);
+}
+
+function cameraAxisRange(worldSize, visibleSize) {
+  if (worldSize <= visibleSize) {
+    const centered = (worldSize - visibleSize) / 2;
+    return { min: centered, max: centered };
+  }
+  return { min: 0, max: worldSize - visibleSize };
 }
 
 function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }

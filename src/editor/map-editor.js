@@ -502,12 +502,13 @@ function drawGrid(ctx, rect) {
   ctx.lineWidth = 1 / viewport.camera.zoom;
   ctx.strokeStyle = 'rgba(255,255,255,.07)';
   const drawLines = (step) => {
-    const startX = Math.floor(rect.x / step) * step;
-    const endX = rect.x + rect.w;
-    const startY = Math.floor(rect.y / step) * step;
-    const endY = rect.y + rect.h;
-    for (let x = startX; x <= endX; x += step) line(ctx, x, rect.y, x, endY);
-    for (let y = startY; y <= endY; y += step) line(ctx, rect.x, y, endX, y);
+    const startX = Math.max(0, Math.floor(rect.x / step) * step);
+    const endX = Math.min(worldWidth(), rect.x + rect.w);
+    const startY = Math.max(0, Math.floor(rect.y / step) * step);
+    const endY = Math.min(worldHeight(), rect.y + rect.h);
+    if (startX > endX || startY > endY) return;
+    for (let x = startX; x <= endX; x += step) line(ctx, x, startY, x, endY);
+    for (let y = startY; y <= endY; y += step) line(ctx, startX, y, endX, y);
   };
   drawLines(CELL_SIZE.BUILD);
   ctx.strokeStyle = 'rgba(121,240,197,.22)';

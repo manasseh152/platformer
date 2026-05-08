@@ -14,6 +14,19 @@ async function createBlankMap(page, cols = '4', rows = '3') {
   await page.getByRole('tab', { name: 'Edit' }).click();
 }
 
+async function editorScreenPoint(page, worldX, worldY, cols = 4, rows = 3) {
+  return page.locator('#editorCanvas').evaluate((canvas, { worldX, worldY, cols, rows }) => {
+    const box = canvas.getBoundingClientRect();
+    const zoom = Number(canvas.dataset.zoom || 1);
+    const worldWidth = cols * 32;
+    const worldHeight = rows * 32;
+    return {
+      x: box.x + (box.width - worldWidth * zoom) / 2 + worldX * zoom,
+      y: box.y + (box.height - worldHeight * zoom) / 2 + worldY * zoom
+    };
+  }, { worldX, worldY, cols, rows });
+}
+
 test('start screen points the map editor button at the extensionless production route', async ({ page }) => {
   await page.goto('/index.html');
 
@@ -38,8 +51,8 @@ test('map editor paints terrain into exported rows', async ({ page }) => {
   await page.goto('/editor.html');
   await createBlankMap(page);
 
-  const box = await page.locator('#editorCanvas').boundingBox();
-  await page.mouse.click(box.x + 8, box.y + 8);
+  const point = await editorScreenPoint(page, 8, 8);
+  await page.mouse.click(point.x, point.y);
 
   await expect(page.locator('#exportText')).toHaveValue(/'#\.\.\.\.\.\.\.'/);
   await expect(page.locator('#status')).toHaveClass(/ok/);
@@ -77,10 +90,13 @@ test('map editor defers compile/export/persist during drag and flushes after pai
   await createBlankMap(page, '20', '10');
   await page.evaluate(() => { window.__mapEditorDebug.compileCount = 0; window.__mapEditorDebug.exportCount = 0; window.__mapEditorDebug.persistCount = 0; });
 
-  const box = await page.locator('#editorCanvas').boundingBox();
-  await page.mouse.move(box.x + 8, box.y + 8);
+  const start = await editorScreenPoint(page, 320, 8, 20, 10);
+  await page.mouse.move(start.x, start.y);
   await page.mouse.down();
-  for (let i = 1; i < 8; i++) await page.mouse.move(box.x + 8 + i * 16, box.y + 8);
+  for (let i = 1; i < 8; i++) {
+    const point = await editorScreenPoint(page, 320 + i * 16, 8, 20, 10);
+    await page.mouse.move(point.x, point.y);
+  }
 
   const duringDrag = await page.evaluate(() => ({ ...window.__mapEditorDebug }));
   expect(duringDrag.compileCount).toBe(0);
@@ -102,10 +118,11 @@ test('map editor undo and redo operate on a whole paint stroke', async ({ page }
   await expect(page.getByRole('button', { name: 'Undo' })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Redo' })).toBeDisabled();
 
-  const box = await page.locator('#editorCanvas').boundingBox();
-  await page.mouse.move(box.x + 8, box.y + 8);
+  const start = await editorScreenPoint(page, 8, 8);
+  const next = await editorScreenPoint(page, 24, 8);
+  await page.mouse.move(start.x, start.y);
   await page.mouse.down();
-  await page.mouse.move(box.x + 24, box.y + 8);
+  await page.mouse.move(next.x, next.y);
   await page.mouse.up();
 
   await expect(page.locator('#exportText')).toHaveValue(/'##\.\.\.\.\.\.'/);
@@ -123,14 +140,15 @@ test('map editor clears redo when a new paint stroke follows undo', async ({ pag
   await page.goto('/editor.html');
   await createBlankMap(page);
 
-  const box = await page.locator('#editorCanvas').boundingBox();
-  await page.mouse.click(box.x + 8, box.y + 8);
+  const first = await editorScreenPoint(page, 8, 8);
+  await page.mouse.click(first.x, first.y);
   await expect(page.locator('#exportText')).toHaveValue(/'#\.\.\.\.\.\.\.'/);
 
   await page.getByRole('button', { name: 'Undo' }).click();
   await expect(page.getByRole('button', { name: 'Redo' })).toBeEnabled();
 
-  await page.mouse.click(box.x + 40, box.y + 8);
+  const second = await editorScreenPoint(page, 40, 8);
+  await page.mouse.click(second.x, second.y);
   await expect(page.locator('#exportText')).toHaveValue(/'\.\.#\.\.\.\.\.'/);
   await expect(page.getByRole('button', { name: 'Redo' })).toBeDisabled();
 });
@@ -266,8 +284,8 @@ test('map editor can disable auto-save and commit with ctrl+s', async ({ page })
   await createBlankMap(page);
   await page.evaluate(() => { window.__mapEditorDebug.persistCount = 0; });
 
-  const box = await page.locator('#editorCanvas').boundingBox();
-  await page.mouse.click(box.x + 8, box.y + 8);
+  const point = await editorScreenPoint(page, 8, 8);
+  await page.mouse.click(point.x, point.y);
   await page.waitForTimeout(350);
 
   expect(await page.evaluate(() => window.__mapEditorDebug.persistCount)).toBe(0);
