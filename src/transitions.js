@@ -53,15 +53,9 @@ export function runDOMTransition(game, change, after, context = '') {
   try {
     setContext();
     const transition = document.startViewTransition(change);
-    let afterCalled = false;
-    const callAfter = () => {
-      if (afterCalled) return;
-      afterCalled = true;
-      after?.();
-    };
     transition.ready?.catch(() => {});
-    transition.updateCallbackDone?.then(callAfter, callAfter);
-    transition.finished.catch(() => {}).finally(clearContext);
+    transition.updateCallbackDone?.catch(() => {});
+    transition.finished.catch(() => {}).finally(() => { clearContext(); after?.(); });
     return transition;
   } catch (err) {
     clearContext();

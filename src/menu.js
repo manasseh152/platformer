@@ -69,7 +69,7 @@ export function focusAndReveal(game, el) {
 
 export function focusFirstMenuItem(game) {
   const root = activeMenuRoot(game);
-  focusAndReveal(game, root && visibleFocusables(root)[0]);
+  ensureMenuFocus(root, game.menu.lastFocused, el => focusAndReveal(game, el));
 }
 
 function currentMenuElement(game, root = activeMenuRoot(game)) {

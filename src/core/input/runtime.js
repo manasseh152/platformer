@@ -109,24 +109,24 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
     return { ok: true, device: { ...device } };
   }
 
-  function bindingValueFromControls(binding, slot = 'player1', controls = state.controls) {
-    const deviceId = deviceAllowed(binding, slot);
-    if (!deviceId) return { value: 0, sourceKey: null, deviceId: null };
-    const key = bindingKey(binding, deviceId);
-    let raw = controls.get(key) || 0;
+  function bindingValueFromRaw(binding, raw) {
     if (binding.deviceType === 'gamepad' && binding.control === 'axis') {
-      raw = normalizeAxisValue(raw, settings.input.gamepad.defaultDeadzone);
-      if (binding.invert) raw *= -1;
-      return { value: raw, sourceKey: key, deviceId };
+      const value = normalizeAxisValue(raw, settings.input.gamepad.defaultDeadzone) * (binding.invert ? -1 : 1);
+      return value;
     }
     if (binding.deviceType === 'gamepad' && binding.control === 'axisDirection') {
       const direction = binding.direction || 1;
       const threshold = binding.threshold ?? settings.input.gamepad.defaultDeadzone;
-      const active = raw * direction > threshold;
-      return { value: active ? (binding.scale ?? 1) : 0, sourceKey: key, deviceId };
+      return raw * direction > threshold ? (binding.scale ?? 1) : 0;
     }
-    if (Math.abs(raw) <= 0) return { value: 0, sourceKey: key, deviceId };
-    return { value: binding.scale ?? 1, sourceKey: key, deviceId };
+    return Math.abs(raw) > 0 ? (binding.scale ?? 1) : 0;
+  }
+
+  function bindingValueFromControls(binding, slot = 'player1', controls = state.controls) {
+    const deviceId = deviceAllowed(binding, slot);
+    if (!deviceId) return { value: 0, sourceKey: null, deviceId: null };
+    const key = bindingKey(binding, deviceId);
+    return { value: bindingValueFromRaw(binding, controls.get(key) || 0), sourceKey: key, deviceId };
   }
 
   function bindingValue(binding, slot = 'player1') {
@@ -183,13 +183,15 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
       const deviceId = deviceAllowed(binding, slot);
       return deviceId && bindingKey(binding, deviceId) === key;
     });
-    const matches = state.edges.filter(edge => {
+    const matches = state.edges.filter((edge, edgeIndex) => {
       if (edge.type !== type || !sourceKeys.has(edge.sourceKey) || state.consumedSources.has(edge.sourceKey)) return false;
       const binding = bindingsForSource(edge.sourceKey).find(candidate => keyboardModifiersMatch(candidate, edge));
       if (!binding) return false;
       const previous = bindingValueFromControls(binding, slot, state.previousControls).value;
       const current = bindingValueFromControls(binding, slot, state.controls).value;
-      const matched = type === 'press' ? current !== 0 : previous !== 0;
+      const edgeValue = bindingValueFromRaw(binding, edge.value);
+      const pressedEarlierThisFrame = state.edges.slice(0, edgeIndex).some(candidate => candidate.type === 'press' && candidate.sourceKey === edge.sourceKey);
+      const matched = type === 'press' ? edgeValue !== 0 : previous !== 0 || pressedEarlierThisFrame;
       if (matched) rememberActive(slot, binding, edge.device?.id || current.deviceId);
       return matched;
     });

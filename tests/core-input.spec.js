@@ -30,6 +30,18 @@ test('keyboard actions expose press, down, release across explicit frames', () =
   expect(input.isDown('player.jump')).toBe(false);
 });
 
+test('press edges survive down and up events queued in the same frame', () => {
+  const input = createInputRuntime(gameInputProfile);
+
+  input.beginFrame();
+  key(input, 'control-down', 'Escape');
+  key(input, 'control-up', 'Escape');
+
+  expect(input.wasPressed('system.pause')).toBe(true);
+  expect(input.isDown('system.pause')).toBe(false);
+  expect(input.wasReleased('system.pause')).toBe(true);
+});
+
 test('gamepad buttons and selected runtime id drive assigned player slot', () => {
   const { settings } = normalizeInputSettings(gameInputProfile, {});
   settings.input.slots.player1.devices.gamepad.selectedRuntimeId = 'gamepad:1';
