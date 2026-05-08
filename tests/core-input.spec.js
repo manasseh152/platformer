@@ -123,6 +123,25 @@ test('global devtools pause can consume KeyP before gameplay pause sees it', () 
   expect(gameplay.wasPressed('system.pause')).toBe(false);
 });
 
+test('editor tab actions default to gamepad shoulder buttons', () => {
+  const input = createInputRuntime(gameInputProfile);
+
+  input.beginFrame();
+  gamepad(input, [
+    { type: 'button', index: 4, value: 1 },
+    { type: 'button', index: 5, value: 0 }
+  ]);
+  expect(input.route(['editor']).wasPressed('editor.previousTab')).toBe(true);
+  expect(input.route(['editor']).wasPressed('editor.nextTab')).toBe(false);
+
+  input.beginFrame();
+  gamepad(input, [
+    { type: 'button', index: 4, value: 0 },
+    { type: 'button', index: 5, value: 1 }
+  ]);
+  expect(input.route(['editor']).wasPressed('editor.nextTab')).toBe(true);
+});
+
 test('keyboard combo bindings require declared modifiers', () => {
   const input = createInputRuntime(gameInputProfile);
 

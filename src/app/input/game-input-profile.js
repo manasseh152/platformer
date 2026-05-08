@@ -5,7 +5,7 @@ export const gameInputProfile = {
     bindCapture: { priority: 1000, actions: [] },
     global: { priority: 100, actions: ['devtools.toggle', 'devtools.pause'] },
     menu: { priority: 50, actions: ['menu.navigateX', 'menu.navigateY', 'menu.accept', 'menu.back', 'menu.settings'] },
-    editor: { priority: 20, actions: ['editor.panModifier', 'editor.save', 'editor.preview', 'editor.undo', 'editor.redo'] },
+    editor: { priority: 20, actions: ['editor.panModifier', 'editor.save', 'editor.preview', 'editor.undo', 'editor.redo', 'editor.previousTab', 'editor.nextTab'] },
     gameplay: { priority: 10, actions: ['player.moveX', 'player.jump', 'player.dash', 'player.attack', 'system.pause', 'system.restart'] }
   },
   actions: {
@@ -26,7 +26,9 @@ export const gameInputProfile = {
     'editor.save': { kind: 'button', label: 'Save Local Draft', preventDefault: true, userRemappable: false, allowModifierKeys: true },
     'editor.preview': { kind: 'button', label: 'Play Preview', preventDefault: true, userRemappable: false, allowModifierKeys: true },
     'editor.undo': { kind: 'button', label: 'Undo', preventDefault: true, userRemappable: false, allowModifierKeys: true },
-    'editor.redo': { kind: 'button', label: 'Redo', preventDefault: true, userRemappable: false, allowModifierKeys: true }
+    'editor.redo': { kind: 'button', label: 'Redo', preventDefault: true, userRemappable: false, allowModifierKeys: true },
+    'editor.previousTab': { kind: 'button', label: 'Previous Tab', preventDefault: true, userRemappable: false },
+    'editor.nextTab': { kind: 'button', label: 'Next Tab', preventDefault: true, userRemappable: false }
   },
   defaultBindings: {
     'player.moveX': [
@@ -105,7 +107,9 @@ export const gameInputProfile = {
     'editor.redo': [
       { deviceType: 'keyboard', control: 'key', code: 'KeyY', modifiers: { primary: true } },
       { deviceType: 'keyboard', control: 'key', code: 'KeyZ', modifiers: { primary: true, shift: true } }
-    ]
+    ],
+    'editor.previousTab': [{ deviceType: 'gamepad', control: 'button', index: 4 }],
+    'editor.nextTab': [{ deviceType: 'gamepad', control: 'button', index: 5 }]
   },
   uiGroups: {
     gameplayControls: [

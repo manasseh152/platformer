@@ -12,9 +12,11 @@
       <button id="mainMenuButton" type="button" class="top-button">Main menu</button>
 
       <div class="editor-tabs" role="tablist" aria-label="Editor action groups">
-        <button id="mapTab" type="button" role="tab" aria-selected="false" aria-controls="mapPanel" data-editor-tab="map">Map</button>
-        <button id="editTab" type="button" role="tab" aria-selected="true" aria-controls="editPanel" data-editor-tab="edit">Edit</button>
-        <button id="viewTab" type="button" role="tab" aria-selected="false" aria-controls="viewPanel" data-editor-tab="view">View</button>
+        <span class="editor-tabs__hint" data-editor-tab-hint="previous" aria-hidden="true">LB</span>
+        <button id="mapTab" type="button" role="tab" aria-label="Map" aria-selected="false" aria-controls="mapPanel" data-editor-tab="map"><span>Map</span></button>
+        <button id="editTab" type="button" role="tab" aria-label="Edit" aria-selected="true" aria-controls="editPanel" data-editor-tab="edit"><span>Edit</span></button>
+        <button id="viewTab" type="button" role="tab" aria-label="View" aria-selected="false" aria-controls="viewPanel" data-editor-tab="view"><span>View</span></button>
+        <span class="editor-tabs__hint" data-editor-tab-hint="next" aria-hidden="true">RB</span>
       </div>
 
       <button id="saveLocalButton" type="button" class="save-state-button" data-save-state="clean" disabled>Saved</button>

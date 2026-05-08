@@ -304,6 +304,25 @@ test('map editor tab clicks toggle the floating overlay', async ({ page }) => {
   await expect(page.locator('#mapPanel')).toBeVisible();
 });
 
+test('map editor shoulder buttons switch tabs and show controller hints', async ({ page }) => {
+  await page.addInitScript(() => {
+    const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));
+    const pad = { index: 0, id: 'Mock Controller', mapping: 'standard', buttons, axes: [0, 0, 0, 0] };
+    window.__setMockGamepadButton = (index, pressed) => { buttons[index] = { pressed }; };
+    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] });
+  });
+  await page.goto('/editor.html');
+
+  await expect(page.locator('[data-editor-tab-hint="previous"]')).toHaveText('LB');
+  await expect(page.locator('[data-editor-tab-hint="next"]')).toHaveText('RB');
+
+  await page.evaluate(() => window.__setMockGamepadButton(5, true));
+  await expect(page.locator('#viewPanel')).toBeVisible();
+  await page.evaluate(() => window.__setMockGamepadButton(5, false));
+  await page.evaluate(() => window.__setMockGamepadButton(4, true));
+  await expect(page.locator('#editPanel')).toBeVisible();
+});
+
 test('map editor can disable auto-save and commit with ctrl+s', async ({ page }) => {
   await page.goto('/editor.html');
   await openMapPanel(page);

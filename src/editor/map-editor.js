@@ -23,6 +23,8 @@ import { createHistory } from './editor-history.js';
 import { isKebabCaseId } from '../catalog/id.js';
 import { localDraftStorageKey, localDraftViewStorageKey, readLocalDraft, saveLocalDraft } from '../catalog/local-drafts/storage.js';
 import { createBrowserInputAdapter, createGameInputRuntime } from '../app/input/browser-input-adapter.js';
+import { hintPartsForAction } from '../app/input/input-hints.js';
+import { gameInputProfile } from '../app/input/game-input-profile.js';
 import { loadSettings } from '../settings.js';
 
 const SHARE_FORMAT = 'chibi-tilemap-draft';
@@ -49,6 +51,7 @@ const dom = {
   overlay: document.querySelector('#editorOverlay'),
   hideOverlayButton: document.querySelector('#hideOverlayButton'),
   tabs: Array.from(document.querySelectorAll('[data-editor-tab]')),
+  tabHints: Array.from(document.querySelectorAll('[data-editor-tab-hint]')),
   panels: Array.from(document.querySelectorAll('[role="tabpanel"]')),
   autoSaveToggle: document.querySelector('#autoSaveToggle'),
   floatingControlsToggle: document.querySelector('#floatingControlsToggle'),
@@ -338,6 +341,7 @@ function syncPreferencesUi() {
   if (dom.floatingViewControls) dom.floatingViewControls.hidden = !floatingControlsEnabled;
   document.body.classList.toggle('pan-mode', panMode);
   if (dom.panToggleButton) dom.panToggleButton.setAttribute('aria-pressed', panMode ? 'true' : 'false');
+  syncTabHints();
 }
 
 function setActiveTab(tabId, { show = true, focus = false } = {}) {
@@ -356,6 +360,24 @@ function setActiveTab(tabId, { show = true, focus = false } = {}) {
 function toggleTab(tabId) {
   if (tabId === activeTab) setActiveTab(tabId, { show: overlayHidden });
   else setActiveTab(tabId, { show: true });
+}
+
+function adjacentTabId(direction) {
+  const index = dom.tabs.findIndex(tab => tab.dataset.editorTab === activeTab);
+  const nextIndex = ((index < 0 ? 0 : index) + direction + dom.tabs.length) % dom.tabs.length;
+  return dom.tabs[nextIndex]?.dataset.editorTab || activeTab;
+}
+
+function moveActiveTab(direction, { focus = false } = {}) {
+  setActiveTab(adjacentTabId(direction), { show: true, focus });
+}
+
+function syncTabHints() {
+  for (const hint of dom.tabHints) {
+    const action = hint.dataset.editorTabHint === 'previous' ? 'editor.previousTab' : 'editor.nextTab';
+    const control = hintPartsForAction(gameInputProfile, inputRuntime.settings, action, { runtime: inputRuntime, inputScheme: 'gamepad', deviceType: 'gamepad' }).parts[0];
+    hint.textContent = control?.label || (hint.dataset.editorTabHint === 'previous' ? 'LB' : 'RB');
+  }
 }
 
 function navigateMainMenu() {
@@ -666,6 +688,15 @@ function processEditorKeyboardEvent(event) {
   inputRuntime.endFrame();
 }
 
+function processEditorControllerFrame() {
+  inputAdapter.beginFrame({ controllerEnabled: true });
+  const route = editorInputRoute();
+  if (route.wasPressed('editor.previousTab')) { route.consume('editor.previousTab'); moveActiveTab(-1); }
+  if (route.wasPressed('editor.nextTab')) { route.consume('editor.nextTab'); moveActiveTab(1); }
+  inputRuntime.endFrame();
+  requestAnimationFrame(processEditorControllerFrame);
+}
+
 function isPanGesture(event) { return panMode || event.button === 1 || editorInputRoute().isDown('editor.panModifier'); }
 
 function buildBrushButtons() {
@@ -778,9 +809,11 @@ function setup() {
     tab.addEventListener('keydown', event => {
       if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
       event.preventDefault();
-      const index = dom.tabs.indexOf(tab);
-      const nextIndex = event.key === 'Home' ? 0 : event.key === 'End' ? dom.tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + dom.tabs.length) % dom.tabs.length;
-      setActiveTab(dom.tabs[nextIndex].dataset.editorTab, { show: true, focus: true });
+      if (event.key === 'Home' || event.key === 'End') {
+        setActiveTab(dom.tabs[event.key === 'Home' ? 0 : dom.tabs.length - 1].dataset.editorTab, { show: true, focus: true });
+      } else {
+        moveActiveTab(event.key === 'ArrowRight' ? 1 : -1, { focus: true });
+      }
     });
   }
   dom.autoSaveToggle?.addEventListener('change', () => {
@@ -867,6 +900,7 @@ function setup() {
   });
   addEventListener('keydown', processEditorKeyboardEvent);
   addEventListener('keyup', processEditorKeyboardEvent);
+  requestAnimationFrame(processEditorControllerFrame);
   addEventListener('beforeunload', event => {
     if (autoSaveEnabled || !dirty) return;
     event.preventDefault();

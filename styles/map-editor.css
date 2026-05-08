@@ -98,9 +98,26 @@ kbd {
 .editor-tabs {
   justify-self: center;
   display: inline-flex;
+  align-items: center;
   gap: 4px;
   padding: 4px;
   border-radius: 999px;
+}
+.editor-tabs__hint {
+  display: inline-grid;
+  place-items: center;
+  min-width: 30px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(16,16,22,.45);
+  border-radius: 999px;
+  background: #fff7ea;
+  color: #14151a;
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,.14), 0 4px 10px rgba(0,0,0,.16);
 }
 .editor-tabs button {
   min-height: 34px;
