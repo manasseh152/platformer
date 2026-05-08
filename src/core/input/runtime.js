@@ -160,6 +160,18 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
     return def.kind === 'axis1d' ? value(actionId, options) !== 0 : actionBindings(actionId).some(binding => bindingValue(binding, options.slot || 'player1').value !== 0);
   }
 
+  function keyboardModifiersMatch(binding, edge) {
+    if (binding.deviceType !== 'keyboard' || !binding.modifiers) return true;
+    const actual = edge.meta?.modifiers || {};
+    const expected = binding.modifiers;
+    const primary = Boolean(actual.ctrl || actual.meta);
+    for (const [key, value] of Object.entries(expected)) {
+      const actualValue = key === 'primary' ? primary : Boolean(actual[key]);
+      if (actualValue !== Boolean(value)) return false;
+    }
+    return true;
+  }
+
   function matchingEdges(actionId, type, options = {}) {
     const slot = options.slot || 'player1';
     const bindings = actionBindings(actionId);
@@ -167,13 +179,13 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
       const deviceId = deviceAllowed(binding, slot);
       return deviceId ? bindingKey(binding, deviceId) : null;
     }).filter(Boolean));
-    const bindingForSource = key => bindings.find(binding => {
+    const bindingsForSource = key => bindings.filter(binding => {
       const deviceId = deviceAllowed(binding, slot);
       return deviceId && bindingKey(binding, deviceId) === key;
     });
     const matches = state.edges.filter(edge => {
       if (edge.type !== type || !sourceKeys.has(edge.sourceKey) || state.consumedSources.has(edge.sourceKey)) return false;
-      const binding = bindingForSource(edge.sourceKey);
+      const binding = bindingsForSource(edge.sourceKey).find(candidate => keyboardModifiersMatch(candidate, edge));
       if (!binding) return false;
       const previous = bindingValueFromControls(binding, slot, state.previousControls).value;
       const current = bindingValueFromControls(binding, slot, state.controls).value;
@@ -183,6 +195,7 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
     });
     const seen = new Set(matches.map(edge => edge.sourceKey));
     for (const binding of bindings) {
+      if (binding.deviceType === 'keyboard' && binding.modifiers) continue;
       const previous = bindingValueFromControls(binding, slot, state.previousControls);
       const current = bindingValueFromControls(binding, slot, state.controls);
       if (!current.sourceKey || state.consumedSources.has(current.sourceKey) || seen.has(current.sourceKey)) continue;

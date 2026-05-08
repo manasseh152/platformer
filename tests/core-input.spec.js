@@ -3,8 +3,8 @@ import { gameInputProfile } from '../src/app/input/game-input-profile.js';
 import { applyCapturedBinding, createBindCapture, createInputRuntime, findBindingConflict, normalizeInputSettings } from '../src/core/input/index.js';
 import { hintPartsForAction, textHintForAction } from '../src/app/input/input-hints.js';
 
-function key(runtime, type, code) {
-  runtime.handleEvent({ type, device: { type: 'keyboard', id: 'keyboard' }, control: { type: 'key', code }, timestamp: runtime.state.frame });
+function key(runtime, type, code, modifiers = {}) {
+  runtime.handleEvent({ type, device: { type: 'keyboard', id: 'keyboard' }, control: { type: 'key', code }, timestamp: runtime.state.frame, modifiers });
 }
 
 function gamepad(runtime, controls, runtimeId = 'gamepad:0') {
@@ -109,6 +109,26 @@ test('global devtools pause can consume KeyP before gameplay pause sees it', () 
 
   expect(global.wasPressed('devtools.pause')).toBe(false);
   expect(gameplay.wasPressed('system.pause')).toBe(false);
+});
+
+test('keyboard combo bindings require declared modifiers', () => {
+  const input = createInputRuntime(gameInputProfile);
+
+  input.beginFrame();
+  key(input, 'control-down', 'KeyS');
+  expect(input.route(['editor']).wasPressed('editor.save')).toBe(false);
+
+  input.beginFrame();
+  key(input, 'control-up', 'KeyS');
+  key(input, 'control-down', 'KeyS', { ctrl: true });
+  expect(input.route(['editor']).wasPressed('editor.save')).toBe(true);
+
+  input.beginFrame();
+  key(input, 'control-up', 'KeyS', { ctrl: true });
+  key(input, 'control-down', 'KeyZ', { ctrl: true, shift: true });
+  const editor = input.route(['editor']);
+  expect(editor.wasPressed('editor.redo')).toBe(true);
+  expect(editor.wasPressed('editor.undo')).toBe(false);
 });
 
 test('v1 keyboard and gamepad settings migrate to semantic structured input settings', () => {

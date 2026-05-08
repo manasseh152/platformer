@@ -21,6 +21,8 @@ import { createEditorScheduler } from './editor-scheduler.js';
 import { createHistory } from './editor-history.js';
 import { isKebabCaseId } from '../catalog/id.js';
 import { localDraftStorageKey, localDraftViewStorageKey, readLocalDraft, saveLocalDraft } from '../catalog/local-drafts/storage.js';
+import { createBrowserInputAdapter, createGameInputRuntime } from '../app/input/browser-input-adapter.js';
+import { loadSettings } from '../settings.js';
 
 const SHARE_FORMAT = 'chibi-tilemap-draft';
 const SHARE_VERSION = 1;
@@ -77,6 +79,8 @@ const ctx = dom.canvas.getContext('2d');
 const viewport = createViewport(dom.canvas);
 const scheduler = createEditorScheduler();
 const history = createHistory({ limit: 100 });
+const inputRuntime = createGameInputRuntime(loadSettings());
+const inputAdapter = createBrowserInputAdapter(inputRuntime);
 const registeredTilemaps = getAllTilemaps();
 const debug = window.__mapEditorDebug = window.__mapEditorDebug ?? { compileCount: 0, exportCount: 0, persistCount: 0, renderCount: 0 };
 
@@ -88,7 +92,6 @@ let pointer = null;
 let isPainting = false;
 let panPointer = null;
 let lastPaintKey = null;
-let keysDown = new Set();
 let activePointers = new Map();
 let pinch = null;
 let editorSource = 'registered';
@@ -628,7 +631,21 @@ function updatePan(event) {
   scheduleRender();
 }
 
-function isPanGesture(event) { return panMode || event.button === 1 || keysDown.has('Space'); }
+function editorInputRoute() { return inputRuntime.route(['editor']); }
+
+function processEditorKeyboardEvent(event) {
+  inputAdapter.queueKeyboardEvent(event);
+  inputAdapter.beginFrame({ controllerEnabled: false });
+  const route = editorInputRoute();
+  if (route.wasPressed('editor.save')) { event.preventDefault(); route.consume('editor.save'); saveLocalExplicit(); inputRuntime.endFrame(); return; }
+  if (route.wasPressed('editor.preview')) { event.preventDefault(); route.consume('editor.preview'); previewDraft(); inputRuntime.endFrame(); return; }
+  if (['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target?.tagName)) { inputRuntime.endFrame(); return; }
+  if (route.wasPressed('editor.redo')) { event.preventDefault(); route.consume('editor.redo'); applyHistoryAction('redo'); inputRuntime.endFrame(); return; }
+  if (route.wasPressed('editor.undo')) { event.preventDefault(); route.consume('editor.undo'); applyHistoryAction('undo'); inputRuntime.endFrame(); return; }
+  inputRuntime.endFrame();
+}
+
+function isPanGesture(event) { return panMode || event.button === 1 || editorInputRoute().isDown('editor.panModifier'); }
 
 function buildBrushButtons() {
   dom.brushes.innerHTML = '';
@@ -827,18 +844,8 @@ function setup() {
       flushPending();
     }
   });
-  addEventListener('keydown', event => {
-    keysDown.add(event.code);
-    const modifier = event.ctrlKey || event.metaKey;
-    if (!modifier) return;
-    if (event.code === 'KeyS') { event.preventDefault(); saveLocalExplicit(); return; }
-    if (event.code === 'Enter') { event.preventDefault(); previewDraft(); return; }
-    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target?.tagName)) return;
-    if (event.code === 'KeyZ' && event.shiftKey) { event.preventDefault(); applyHistoryAction('redo'); }
-    else if (event.code === 'KeyZ') { event.preventDefault(); applyHistoryAction('undo'); }
-    else if (event.code === 'KeyY') { event.preventDefault(); applyHistoryAction('redo'); }
-  });
-  addEventListener('keyup', event => { keysDown.delete(event.code); });
+  addEventListener('keydown', processEditorKeyboardEvent);
+  addEventListener('keyup', processEditorKeyboardEvent);
   addEventListener('beforeunload', event => {
     if (autoSaveEnabled || !dirty) return;
     event.preventDefault();

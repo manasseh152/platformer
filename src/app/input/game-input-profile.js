@@ -5,6 +5,7 @@ export const gameInputProfile = {
     bindCapture: { priority: 1000, actions: [] },
     global: { priority: 100, actions: ['devtools.toggle', 'devtools.pause'] },
     menu: { priority: 50, actions: ['menu.navigateX', 'menu.navigateY', 'menu.accept', 'menu.back', 'menu.settings'] },
+    editor: { priority: 20, actions: ['editor.panModifier', 'editor.save', 'editor.preview', 'editor.undo', 'editor.redo'] },
     gameplay: { priority: 10, actions: ['player.moveX', 'player.jump', 'player.dash', 'player.attack', 'system.pause', 'system.restart'] }
   },
   actions: {
@@ -20,7 +21,12 @@ export const gameInputProfile = {
     'menu.back': { kind: 'button', label: 'Back', preventDefault: true, userRemappable: false },
     'menu.settings': { kind: 'button', label: 'Settings', preventDefault: true, userRemappable: false },
     'devtools.toggle': { kind: 'button', label: 'Toggle Developer Tools', preventDefault: true, userRemappable: false },
-    'devtools.pause': { kind: 'button', label: 'Pause Simulation', preventDefault: true, userRemappable: false }
+    'devtools.pause': { kind: 'button', label: 'Pause Simulation', preventDefault: true, userRemappable: false },
+    'editor.panModifier': { kind: 'button', label: 'Pan Modifier', preventDefault: true, userRemappable: false },
+    'editor.save': { kind: 'button', label: 'Save Local Draft', preventDefault: true, userRemappable: false, allowModifierKeys: true },
+    'editor.preview': { kind: 'button', label: 'Play Preview', preventDefault: true, userRemappable: false, allowModifierKeys: true },
+    'editor.undo': { kind: 'button', label: 'Undo', preventDefault: true, userRemappable: false, allowModifierKeys: true },
+    'editor.redo': { kind: 'button', label: 'Redo', preventDefault: true, userRemappable: false, allowModifierKeys: true }
   },
   defaultBindings: {
     'player.moveX': [
@@ -91,7 +97,15 @@ export const gameInputProfile = {
       { deviceType: 'gamepad', control: 'button', index: 3 }
     ],
     'devtools.toggle': [{ deviceType: 'keyboard', control: 'key', code: 'Backquote' }],
-    'devtools.pause': [{ deviceType: 'keyboard', control: 'key', code: 'KeyP' }]
+    'devtools.pause': [{ deviceType: 'keyboard', control: 'key', code: 'KeyP' }],
+    'editor.panModifier': [{ deviceType: 'keyboard', control: 'key', code: 'Space' }],
+    'editor.save': [{ deviceType: 'keyboard', control: 'key', code: 'KeyS', modifiers: { primary: true } }],
+    'editor.preview': [{ deviceType: 'keyboard', control: 'key', code: 'Enter', modifiers: { primary: true } }],
+    'editor.undo': [{ deviceType: 'keyboard', control: 'key', code: 'KeyZ', modifiers: { primary: true, shift: false } }],
+    'editor.redo': [
+      { deviceType: 'keyboard', control: 'key', code: 'KeyY', modifiers: { primary: true } },
+      { deviceType: 'keyboard', control: 'key', code: 'KeyZ', modifiers: { primary: true, shift: true } }
+    ]
   },
   uiGroups: {
     gameplayControls: [

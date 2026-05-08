@@ -128,11 +128,11 @@ test('map editor undo and redo operate on a whole paint stroke', async ({ page }
   await expect(page.locator('#exportText')).toHaveValue(/'##\.\.\.\.\.\.'/);
   await expect(page.getByRole('button', { name: 'Undo' })).toBeEnabled();
 
-  await page.getByRole('button', { name: 'Undo' }).click();
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+Z' : 'Control+Z');
   await expect(page.locator('#exportText')).toHaveValue(/'\.\.\.\.\.\.\.\.'/);
   await expect(page.getByRole('button', { name: 'Redo' })).toBeEnabled();
 
-  await page.getByRole('button', { name: 'Redo' }).click();
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+Shift+Z' : 'Control+Shift+Z');
   await expect(page.locator('#exportText')).toHaveValue(/'##\.\.\.\.\.\.'/);
 });
 

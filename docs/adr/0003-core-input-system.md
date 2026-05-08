@@ -264,6 +264,24 @@ Validation command for this slice:
 bunx playwright test tests/devtools-toolbox.spec.js tests/core-input.spec.js tests/game-smoke.spec.js --project=chromium
 ```
 
+## Slice 8 implementation notes
+
+Editor keyboard shortcuts now use the semantic core input route while pointer painting, wheel zoom, pinch zoom, and spatial canvas behavior remain owned by editor code.
+
+Added/changed modules:
+
+- `src/app/input/game-input-profile.js`: adds `editor` context actions for pan modifier, save, preview, undo, and redo, including primary-modifier keyboard combo bindings.
+- `src/core/input/runtime.js`: honors keyboard modifier requirements for combo bindings and skips modifier combos in semantic down/up fallback checks that do not carry event modifier metadata.
+- `src/editor/map-editor.js`: creates a browser input adapter/runtime from normalized app settings and routes Space pan, Ctrl/Cmd+S, Ctrl/Cmd+Enter, Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z, and Ctrl/Cmd+Y through `editor.*` actions.
+- `tests/core-input.spec.js`: covers keyboard combo modifier matching.
+- `tests/map-editor.spec.js`: covers editor undo/redo keyboard shortcuts through the semantic route.
+
+Validation command for this slice:
+
+```sh
+bunx playwright test tests/core-boundary.spec.js tests/core-input.spec.js tests/map-editor.spec.js tests/game-smoke.spec.js --project=chromium
+```
+
 ## Next slices
 
 1. **Wire gameplay to new core input** _(implemented in slice 2)_
@@ -300,7 +318,7 @@ bunx playwright test tests/devtools-toolbox.spec.js tests/core-input.spec.js tes
    - Keep developer-mode gating and panel behavior in devtools code.
    - Test that devtools shortcuts do not double-trigger pause/menu actions.
 
-7. **Editor integration**
+7. **Editor integration** _(implemented in slice 8)_
    - Use core input for editor keyboard shortcuts such as pan modifier, save, preview, undo, and redo.
    - Introduce limited pointer/wheel descriptors only where useful; keep paint strokes, pinch zoom, and spatial editor behavior in editor code.
 
