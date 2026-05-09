@@ -31,11 +31,11 @@ Primary success criterion: future features should be easier to build because sys
 
 ## Current green baseline
 
-Validated for the editor command/status extraction slice on 2026-05-09:
+Validated for the docs/terminology cleanup slice on 2026-05-09:
 
 ```sh
 bun run build
-bunx playwright test tests/map-editor.spec.js tests/tilemap.spec.js tests/core-boundary.spec.js --project=chromium
+bunx playwright test tests/tilemap.spec.js --project=chromium
 ```
 
 Full suite note: `bunx playwright test --project=chromium` still has known unrelated legacy/intermittent failures documented under earlier slices.
@@ -175,20 +175,18 @@ Follow-up:
 - Keep the facade until consumers can move opportunistically to focused modules.
 - Continue using ECS-ish scene objects/components as the integration point.
 
-### P1 / High — Current docs contain stale terrain contradictions
+### Completed — Terrain docs now match current terrainLayer authoring
 
 Evidence:
 
-- `src/core/tilemaps/tilemap.js` rejects `buildTerrain` and requires modern `terrainLayer` with id `terrain`.
-- `docs/patterns/tilemaps.md` describes the modern terrain layer.
-- `docs/patterns/terrain.md` still says authored terrain uses `buildTerrain` and that `terrain` is unsupported.
-- ADR numbering also has duplicate `0003` files.
+- `src/core/tilemaps/tilemap.js` rejects `buildTerrain` and requires modern `terrainLayer()` with id `terrain`.
+- `docs/patterns/terrain.md` and `docs/patterns/tilemaps.md` now describe `terrainLayer()`, terrain kinds, `null` empty cells, and archived `buildTerrain` compatibility only at draft/storage boundaries.
+- `docs/adr/0003-contained-terrain-scale.md` is marked as historical where it references the old `buildTerrain` authoring API.
+- Duplicate ADR `0003` numbering is documented as historical in both affected ADRs.
 
-Direction:
+Follow-up:
 
-- Pattern docs must describe current intended shape.
-- ADRs may remain historical, but add superseded/updated notes when they conflict with current patterns.
-- Fix `docs/patterns/terrain.md` during the tilemap/terrain slice or a docs hygiene slice.
+- Keep pattern docs current when terrain kinds, render artifacts, or editor export format change.
 
 ### P2 / High — CSS design primitives are duplicated between game and editor
 
@@ -238,7 +236,7 @@ Direction:
 | `game.player`, `game.enemies`, `game.camera` mirrors | Delete after migration | Callers use `game.gameplaySession.*`. |
 | Tilemap compatibility facade in `src/core/tilemaps/tilemap.js` | Keep/migrate opportunistically | Consumers import focused modules directly when touching related code. |
 | Internal `level` terminology | Opportunistic cleanup | Rename when touching nearby code; user-facing “Level Select” may stay. |
-| Stale terrain docs | Fix soon | Update pattern doc to current `terrainLayer` model. |
+| Stale terrain docs | Completed | Pattern docs now describe current `terrainLayer()` model; ADR conflicts are marked historical. |
 
 ## Test gaps to track
 
@@ -499,21 +497,26 @@ bun run build
 bunx playwright test tests/map-editor.spec.js tests/tilemap.spec.js tests/core-boundary.spec.js --project=chromium
 ```
 
-## Recommended next implementation slice
-
 ### Slice 10: Clean up stale terrain docs and ADR terminology conflicts
 
-Why next:
+Completed on 2026-05-09.
 
-- The code already rejects `buildTerrain` in authored tilemaps and standardizes on `terrainLayer`, but `docs/patterns/terrain.md` still describes historical behavior.
-- ADR numbering has duplicate `0003` files; mark the historical context without rewriting decision history.
-
-Likely files:
+Changed files:
 
 - `docs/patterns/terrain.md`
+- `docs/patterns/tilemaps.md`
+- `docs/patterns/devtools.md`
+- `docs/patterns/rendering.md`
 - `docs/adr/0003-contained-terrain-scale.md`
 - `docs/adr/0003-core-input-system.md`
-- related README/index docs if they link stale terminology
+- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/patterns/foundation-review.md`
+
+Implemented:
+
+- Current pattern docs now describe `terrainLayer()` with `id: 'terrain'`, terrain kind arrays, `null` empty cells, and archived `buildTerrain` support only as boundary migration behavior.
+- Contained-terrain ADR conflicts are marked historical without rewriting the original decision record.
+- Duplicate `0003` ADR numbering is explicitly documented as historical.
 
 Validation:
 
@@ -522,11 +525,31 @@ bun run build
 bunx playwright test tests/tilemap.spec.js --project=chromium
 ```
 
+## Recommended next implementation slice
+
+### Slice 11: Decide and add a stable aggregate validation script
+
+Why next:
+
+- Foundation slices repeatedly use the same gates, but the exact command set is still spread across ADR/pattern notes.
+- A stable `validate` script would make handoff and future agent work safer once the current expected full-suite behavior is clear.
+
+Likely files:
+
+- `package.json`
+- docs that mention validation gates, if the script is added
+
+Validation:
+
+```sh
+bun run build
+bunx playwright test --project=chromium
+```
+
 ## Candidate later slices
 
 1. Extract shared CSS tokens/primitives if both game and editor continue to duplicate them.
-2. Add a `validate` package script once the desired full validation gate is stable.
-3. Continue opportunistic editor shell decomposition if map-editor changes expose more pure command/status seams.
+2. Continue opportunistic editor shell decomposition if map-editor changes expose more pure command/status seams.
 
 ## Keep-up-to-date rule
 

@@ -2,7 +2,7 @@ import { renderInputHints } from '../input/input-presentation.js';
 import { currentFocusElement, ensureMenuFocus, moveHorizontalGroupFocus as moveHorizontalFocus, moveLinearFocus } from '../../ui/navigation.js';
 import { setPausedFlag } from '../../state.js';
 import { applyMotionPreference, runDOMTransition, shouldReduceMotion } from '../../transitions.js';
-import { renderSettings, refreshDynamicRefs, selectedCategory } from '../../settings-ui.js';
+import { renderSettings, refreshDynamicRefs, selectedCategory, settingsCategories } from '../../settings-ui.js';
 import { browserRuntime } from '../../runtime.js';
 import { renderScenarioBrowser } from './scenario-browser.js';
 import { cancelBindListening } from './settings-actions.js';
@@ -94,8 +94,8 @@ export function setMenuPage(game, page, direction = 'forward', category = null) 
 export function openSettings(game, origin) {
   commitMenuPageChange(game, () => {
     game.menu.origin = origin;
-    game.menu.page = 'settings';
-    game.menu.settingsCategory = null;
+    game.menu.page = 'settings-category';
+    game.menu.settingsCategory = settingsCategories[0]?.id || null;
     game.menu.direction = 'forward';
     renderSettings(game);
     updateMenuChrome(game);
@@ -137,7 +137,7 @@ export function closeSettings(game) {
 }
 
 export function goBack(game) {
-  if (game.menu.page === 'settings-category') return setMenuPage(game, 'settings', 'back');
+  if (game.menu.page === 'settings-category') return closeSettings(game);
   if (game.menu.page === 'settings') return closeSettings(game);
   if (game.menu.page === 'level-select') return closeScenarioBrowser(game);
 }

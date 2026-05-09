@@ -4,6 +4,8 @@
 
 Accepted
 
+> Numbering note (2026-05-09): this repository also has `0003-contained-terrain-scale.md`; both ADRs predate the numbering cleanup and remain as historical records.
+
 ## Context
 
 Keyboard and controller handling currently spans browser adapters, menu code, settings UI, and duplicated `src/input.js` / `src/core/input.js` helpers. The game also needs the tilemap editor to share the same patterns for user input, hints, configuration, and future controller selection.

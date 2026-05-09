@@ -2,11 +2,13 @@ import { expect, test } from '@playwright/test';
 
 async function openStartSettings(page) {
   await page.locator('#startSettingsButton').click();
-  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'settings');
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'settings-category');
+  await expect(page.locator('#menuTitle')).toHaveText('Keyboard');
+  await expect(page.locator('[data-settings-back]')).toHaveCount(0);
 }
 
 async function openCategory(page, id, title) {
-  await page.locator(`[data-settings-category="${id}"]`).click();
+  await page.locator(`[data-settings-tab="${id}"]`).click();
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'settings-category');
   await expect(page.locator('#menuTitle')).toHaveText(title);
 }
@@ -15,6 +17,17 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
+});
+
+test('settings opens on the first tab without inline back buttons', async ({ page }) => {
+  await openStartSettings(page);
+  await openCategory(page, 'gameplay', 'Gameplay');
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#startScreen')).toBeVisible();
+
+  await openStartSettings(page);
+  await expect(page.locator('[role="tab"][data-settings-tab="keyboard"]')).toHaveAttribute('aria-selected', 'true');
 });
 
 test('player can enable Speed Run Mode and see the timer HUD during play', async ({ page }) => {
@@ -27,8 +40,8 @@ test('player can enable Speed Run Mode and see the timer HUD during play', async
   await expect(page.locator('[data-setting-row="speed-run-mode"]')).toContainText('On');
   await expect(page.locator('[data-settings-action="clear-speedrun-records"]')).toBeVisible();
 
-  await page.locator('[data-settings-back="category"]').click();
-  await page.locator('[data-settings-back="root"]').click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#startScreen')).toBeVisible();
   await page.locator('#startButton').click();
 
   await expect(page.locator('body')).toHaveClass(/\bplaying\b/);

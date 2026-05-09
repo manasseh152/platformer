@@ -8,7 +8,7 @@ Related:
 - [Scene components](./scene-components.md)
 - [Terrain pipeline](./terrain.md)
 
-`defineTilemap()` compiles explicit grid layers into core scene objects and then delegates generic object/index work to the core scene model.
+`defineTilemap()` compiles explicit layers into core scene objects, terrain/collision artifacts, and then delegates generic object/index work to the core scene model.
 
 ## Authoring API
 
@@ -16,8 +16,9 @@ Use explicit layer `cellSize` values from `CELL_SIZE`:
 
 ```js
 import { CELL_SIZE } from '../../../core/constants.js';
-import { defineTilemap, gridLayer } from '../tilemap.js';
-import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../objects.js';
+import { defineTilemap, gridLayer } from '../../../core/tilemaps/tilemap.js';
+import { TERRAIN_KIND as K, terrainLayer } from '../../../core/tilemaps/terrain-layer.js';
+import { finishGateObject, playerSpawner, slimeSpawner } from '../objects.js';
 
 export const movementGymMap = defineTilemap({
   id: 'movement-gym-map',
@@ -29,17 +30,15 @@ export const movementGymMap = defineTilemap({
   visibility: 'developer',
   description: 'Movement validation fixture.',
   layers: [
-    gridLayer({
-      id: 'buildTerrain',
+    terrainLayer({
       cellSize: CELL_SIZE.BUILD,
-      symbols: { '#': solidTerrain },
       rows: [
-        '################',
-        '################',
-        '##............##',
-        '##............##',
-        '################',
-        '################'
+        [K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS],
+        [K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS],
+        [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
+        [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
+        [K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS],
+        [K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS]
       ]
     }),
     gridLayer({
@@ -70,7 +69,7 @@ Canonical cell sizes live in `src/core/constants.js`:
 | `CELL_SIZE.BUILD` | 16px | terrain authoring and visual autotile grid |
 | `CELL_SIZE.TERRAIN_PRIMITIVE` | 8px | derived terrain collision primitive grid |
 
-`gridLayer()` accepts only these values.
+`gridLayer()` accepts only supported `CELL_SIZE` values. `terrainLayer()` currently requires `CELL_SIZE.BUILD`.
 
 Layer dimensions must match map bounds:
 
@@ -79,16 +78,21 @@ layer columns = cols * CELL_SIZE.GRID / cellSize
 layer rows    = rows * CELL_SIZE.GRID / cellSize
 ```
 
-## Symbols
+## Terrain layer
 
-Build terrain layer:
+Every tilemap must have exactly one terrain layer created with `terrainLayer()`.
 
-| Symbol | Meaning |
-| --- | --- |
-| `.` | empty |
-| `#` | solid terrain scene object |
+- The layer id is always `terrain`.
+- The layer type is always `terrain`.
+- Empty terrain cells are `null`.
+- Solid terrain uses `TERRAIN_KIND` values such as `GRASS`, `DIRT`, `STONE`, or `INVISIBLE`.
+- The archived `buildTerrain` string-grid layer is rejected in authored tilemaps.
 
-Entities layer:
+Contained terrain reads `terrain`, derives 8px collision primitives, greedy-merges physics rects, and draws visible 16px terrain tiles inside their cells.
+
+## Entity/object grid layers
+
+Entity layers use symbols mapped to reusable object definitions.
 
 | Symbol | Meaning |
 | --- | --- |
@@ -105,12 +109,7 @@ Layer symbols point to reusable object definitions. Avoid inline component lists
 
 ```js
 import { defineObject } from '../../../engine/scene/objects.js';
-import { renderTerrain, solid, spawner, terrain } from '../../../engine/scene/components.js';
-
-export const solidTerrain = defineObject({
-  id: 'solid-terrain',
-  components: [solid(), terrain(), renderTerrain()]
-});
+import { spawner } from '../../../engine/scene/components.js';
 
 export const playerSpawner = defineObject({
   id: 'player-spawner',
@@ -118,39 +117,57 @@ export const playerSpawner = defineObject({
 });
 ```
 
+Terrain is not authored as a symbol/object grid anymore; use `terrainLayer()` for terrain cells.
+
 One concept is used for both static objects and spawnable runtime objects: `defineObject()`.
 
 ## Parser output
 
 `defineTilemap()` validates and compiles layers into:
 
-- `layers`: authoring grids and symbol mappings
-- `objects`: one scene object per non-empty cell, plus authored scene objects
+- `layers`: authoring grids, including the required `terrain` layer
+- `terrain`: normalized terrain cells and lookup map
+- `objects`: one scene object per non-empty object-grid cell, plus authored scene objects
 - `componentIndex`: cached lookup by component type
 - `worldWidth/worldHeight`, `cols/rows`, `tileSize`/`gridSize`
 - per-layer `cellSize` and per-object cell-sized transforms
 - derived render artifacts in `renderLayers.containedTerrainTiles`
 - derived collision artifacts in `collisionLayers`
 
-Scene object shape:
+Terrain cell shape:
 
 ```js
 {
-  id: 'buildTerrain:4,8',
-  layerId: 'buildTerrain',
-  symbol: '#',
-  definitionId: 'solid-terrain',
-  transform: { col: 4, row: 8, cellSize: 16, x: 64, y: 128, w: 16, h: 16 },
+  layer: 'terrain',
+  col: 4,
+  row: 8,
+  x: 64,
+  y: 128,
+  w: 16,
+  h: 16,
+  kind: 'grass'
+}
+```
+
+Object scene shape:
+
+```js
+{
+  id: 'entities:4,1',
+  layerId: 'entities',
+  symbol: 'P',
+  definitionId: 'player-spawner',
+  transform: { col: 4, row: 1, cellSize: 32, x: 128, y: 32, w: 32, h: 32 },
   components: [...]
 }
 ```
 
-Systems query components, not layer names or symbols:
+Systems query components or tilemap query helpers, not terrain implementation details:
 
 ```js
-findObjectsWithComponent(scene, 'collision:solid');
 findObjectsWithComponent(scene, 'spawner');
-findObjectsWithComponent(scene, 'render:terrain');
+solidTileRectsOverlapping(scene, rect);
+terrainCellAt(scene, col, row);
 ```
 
 ## Terrain mode
@@ -161,22 +178,26 @@ Tilemaps use:
 terrainRenderMode: 'contained-autotile'
 ```
 
-Contained terrain reads `buildTerrain`, derives 8px collision primitives, greedy-merges physics rects, and draws 16px visual tiles inside their cells.
+This is currently the only supported terrain render mode.
 
 ## Compatibility fields
 
-`renderLayers` and `tiles` exist for current renderer and gameplay helpers. Collision-aware systems should prefer public query helpers and `scene.collisionLayers`.
+`renderLayers`, `tiles`, and the public `src/core/tilemaps/tilemap.js` facade exist for current renderer/gameplay imports. New code may import focused modules directly when that improves ownership, but broad churn is not required.
+
+Legacy editor/local-draft inputs can still be normalized from archived `buildTerrain` data at storage boundaries. Active authored content should use `terrainLayer()`.
 
 ## Validation philosophy
 
 Generic tilemap parsing validates structure only:
 
 - layers exist
+- exactly one `terrainLayer()` layer exists
 - rows are rectangular
 - `cols` and `rows` are explicit positive integers
 - layer dimensions match `cols * CELL_SIZE.GRID / cellSize` and `rows * CELL_SIZE.GRID / cellSize`
 - `cellSize` is one of the supported `CELL_SIZE` values
-- non-empty symbols are defined
-- solid terrain is authored in `buildTerrain` at `CELL_SIZE.BUILD`
+- non-empty object-grid symbols are defined
+- terrain kinds are known
+- archived `buildTerrain` layers are rejected
 
 Gameplay requirements belong to gameplay assembly or editor checks, not the generic parser. Examples: “must have a player,” “spawn should stand on ground,” or “gate should be contiguous.”

@@ -35,7 +35,7 @@ For custom composition or tests, use `normalizePixelRect(rect)`. Pass `snap: fal
 
 V1 uses `drawPixelRect` for developer/debug overlays:
 
-- build terrain cells
+- authored terrain cells
 - collision cells
 - greedy-merged collision rects
 - runtime physics body rects

@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted.
+Accepted. Updated by current pattern docs.
+
+> Current-state note (2026-05-09): this ADR records the original 32/16/8 contained-terrain decision, but the active authored terrain API has since moved from the historical `buildTerrain` string-grid layer to `terrainLayer()` with `id: 'terrain'`. Use `docs/patterns/terrain.md` and `docs/patterns/tilemaps.md` for current authoring guidance.
+
+> Numbering note: this repository also has `0003-core-input-system.md`; both ADRs predate the numbering cleanup and remain as historical records.
 
 ## Context
 

@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { createInputState } from '../src/app/input/legacy-bind-state.js';
 import { createGameplaySession } from '../src/core/gameplay-session.js';
+import { createInputRuntime } from '../src/core/input/index.js';
 import { updateEnemy, updateGameplay } from '../src/core/physics.js';
+import { gameInputProfile } from '../src/app/input/game-input-profile.js';
 import { defineContainedTestTilemap } from './helpers/contained-tilemap.js';
 
 function makeTilemap(terrainRows) {
@@ -36,16 +37,28 @@ function makeRuntime() {
   return { random: () => 0.99 };
 }
 
+const actionCodes = {
+  jump: 'Space',
+  attack: 'KeyJ',
+  left: 'KeyA',
+  right: 'KeyD'
+};
+
+function createTestInput() {
+  const input = createInputRuntime(gameInputProfile);
+  input.beginFrame();
+  return input;
+}
+
 function press(input, action) {
-  input.keys.add(input.binds[action][0]);
-  input.pressed.add(input.binds[action][0]);
+  input.handleEvent({ type: 'keydown', code: actionCodes[action] });
 }
 
 function hold(input, action) {
-  input.keys.add(input.binds[action][0]);
+  press(input, action);
 }
 
-function step(session, input = createInputState(), dt = 1 / 60) {
+function step(session, input = createTestInput(), dt = 1 / 60) {
   updateGameplay(makeRuntime(), session, input, dt, { resetGame: () => { session.resetRequested = true; } });
   return input;
 }
@@ -136,7 +149,7 @@ test('player can use coyote time to jump shortly after walking off a ledge', () 
   session.player.coyote = 0.06;
   session.player.vy = 20;
 
-  const input = createInputState();
+  const input = createTestInput();
   press(input, 'jump');
   step(session, input, 1 / 60);
 
@@ -168,12 +181,12 @@ test('jump input buffers before landing and fires when the player touches ground
   session.player.y = 5 * level.tileSize - session.player.h - 10;
   session.player.vy = 600;
 
-  const input = createInputState();
+  const input = createTestInput();
   press(input, 'jump');
   step(session, input, 1 / 60);
   expect(session.player.jumpBuf).toBeGreaterThan(0);
 
-  step(session, createInputState(), 1 / 60);
+  step(session, createTestInput(), 1 / 60);
 
   expect(session.player.grounded).toBe(false);
   expect(session.player.vy).toBeLessThan(-220);
@@ -254,7 +267,7 @@ test('player slash damages enemies in front without requiring body contact', () 
     max: level.worldWidth
   });
 
-  const input = createInputState();
+  const input = createTestInput();
   press(input, 'attack');
   step(session, input);
 
@@ -289,7 +302,7 @@ test('finish gate trigger completes the gameplay session and freezes later gamep
   expect(session.outcome).toBe('completed');
 
   const xAfterWin = session.player.x;
-  const input = createInputState();
+  const input = createTestInput();
   hold(input, 'right');
   step(session, input, 0.5);
   expect(session.player.x).toBe(xAfterWin);

@@ -108,7 +108,7 @@ Current terrain/physics overlays:
 
 | Toggle | Meaning |
 | --- | --- |
-| Show build terrain cells | 16px `buildTerrain` cells used for contained-autotile visuals |
+| Show terrain cells | 16px `terrainLayer()` cells used for contained-autotile visuals |
 | Show collision cells | 8px derived terrain primitives |
 | Show collision rects | greedy-merged terrain collision rects used by physics queries |
 | Show physics body rects | runtime actor body AABBs |

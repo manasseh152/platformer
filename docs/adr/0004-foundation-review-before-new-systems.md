@@ -137,9 +137,11 @@ Initial slice order:
    - Implemented: share/export module generation, imported-draft validation, preview payload creation, preference persistence helpers, and local-save status rules now live in `src/editor/map-editor-commands.js`.
    - `src/editor/map-editor.js` remains the browser shell for DOM wiring, canvas interactions, viewport, history integration, and storage side effects.
 
-7. **Clean up docs, terminology, and validation scripts as follow-through slices**
+7. **Clean up docs, terminology, and validation scripts as follow-through slices** — in progress
    - Invariant: pattern docs describe current intended shape, ADR conflicts are marked as historical/superseded, and validation commands are easy to run.
-   - Likely target: stale terrain docs, duplicate ADR numbering note, internal terminology cleanup when touching related modules, and an optional aggregate `validate` script.
+   - Implemented: terrain and tilemap pattern docs now describe current `terrainLayer()` authoring; archived `buildTerrain` references are limited to compatibility/migration notes.
+   - Implemented: conflicting terrain ADR authoring details and duplicate `0003` numbering are marked as historical without rewriting ADR history.
+   - Remaining follow-up: add an optional aggregate `validate` script once the desired full validation gate is stable.
 
 These slices are a starting order, not a permanent roadmap. Update `docs/patterns/foundation-review.md` when new evidence changes priority, scope, or ordering.
 
