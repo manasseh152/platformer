@@ -87,17 +87,17 @@ Confidence:
 
 Evidence:
 
-- `src/menu.js` still owns pause/start flow, menu shell/focus, page transitions, and broad event wiring.
+- `src/menu.js` remains the menu setup, semantic-action, input-routing, and broad DOM event wiring facade.
 - Scenario browser rendering/launch handling has been extracted to `src/app/ui/scenario-browser.js`.
 - Settings category tab switching has been extracted to `src/app/ui/settings-navigation.js`.
 - Settings actions, bind-listening, controller selection, raw settings, motion/GPU/developer toggles, and speedrun setting actions have been extracted to `src/app/ui/settings-actions.js`.
+- Menu shell/focus, page transitions, menu chrome updates, pause/start flow, and main-menu return flow now live in `src/app/ui/menu-shell.js`.
 - Docs describe scene-owned DOM and scene stack concepts, but only gameplay is a registered runtime scene today.
-- `src/scenes/menu-dom.js` creates start/pause/settings/scenario browser markup, while behavior lives in `src/menu.js`.
+- `src/scenes/menu-dom.js` creates start/pause/settings/scenario browser markup, while behavior is split across `src/menu.js` and `src/app/ui/**` modules.
 
 Direction:
 
-- Continue decomposing `menu.js` into cohesive modules while preserving DOM behavior.
-- Next likely seam is menu shell/focus and page transition ownership.
+- Keep `src/menu.js` as the compatibility facade until callers can depend on focused UI modules directly.
 - Do not immediately migrate UI into scene-stack scenes.
 - After decomposition, evaluate migrating one overlay/page at a time if scene ownership simplifies lifecycle/input.
 
@@ -337,7 +337,7 @@ Full-suite note: `bunx playwright test --project=chromium` passed UI/navigation 
 
 ### Slice 4: Continue menu/settings ownership decomposition
 
-Partially completed on 2026-05-09.
+Completed on 2026-05-09.
 
 Changed files:
 
@@ -349,7 +349,7 @@ Changed files:
 Implemented:
 
 - Settings category tab switching moved out of `src/menu.js` into `src/app/ui/settings-navigation.js`.
-- Menu keeps ownership of focus callbacks and chrome updates while delegating category validation and tab movement.
+- At the time of this slice, menu kept ownership of focus callbacks and chrome updates while delegating category validation and tab movement; later Slice 6 moved that shell ownership too.
 
 Validation:
 
@@ -381,24 +381,23 @@ bun run build
 bunx playwright test tests/settings.spec.js --project=chromium
 ```
 
-Known validation note: the broader `tests/settings.spec.js tests/game-smoke.spec.js tests/devtools-toolbox.spec.js` gate still has the same two UI-navigation/devtools failures documented before this extraction; keep them visible when extracting menu shell/focus.
-
-## Recommended next implementation slice
+Known validation note: the broader `tests/settings.spec.js tests/game-smoke.spec.js tests/devtools-toolbox.spec.js` gate still had the same two UI-navigation/devtools failures documented before this extraction.
 
 ### Slice 6: Extract menu shell/focus and page transition ownership
 
-Why next:
+Completed on 2026-05-09.
 
-- `src/menu.js` still owns focus restoration, page transitions, pause/start/main-menu flow, semantic menu action dispatch, and broad DOM event wiring.
-- Scenario browser, settings navigation, and settings actions now have focused modules, leaving shell/focus as the next coherent menu seam.
-- This should be bounded by existing settings/game-smoke/devtools/UI-navigation tests and any added characterization for focus/back behavior.
+Changed files:
 
-Likely files:
-
+- `src/app/ui/menu-shell.js`
 - `src/menu.js`
-- `src/scenes/menu-dom.js`
-- `src/app/ui/**`
-- settings/devtools/game-smoke/UI-navigation Playwright tests
+- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/patterns/foundation-review.md`
+
+Implemented:
+
+- Menu chrome updates, active-root selection, focus restoration/reveal behavior, settings tab focus callbacks, page transitions, settings/level-select open/close flow, pause/start, and main-menu return flow moved out of `src/menu.js` into `src/app/ui/menu-shell.js`.
+- `src/menu.js` remains the compatibility facade for setup, semantic menu activation, input routing, and delegated settings/scenario click routing.
 
 Validation:
 
@@ -407,15 +406,40 @@ bun run build
 bunx playwright test tests/settings.spec.js tests/game-smoke.spec.js tests/devtools-toolbox.spec.js tests/gyms/ui-navigation.gym.spec.js --project=chromium
 ```
 
+Known validation note: this gate still has the existing two `tests/devtools-toolbox.spec.js` failures where the toolbox panel does not open for two devtools checks. A later parallel rerun without devtools also exposed the existing/intermittent controller diagonal focus check in `tests/game-smoke.spec.js`; the same test passes when run alone.
+
+## Recommended next implementation slice
+
+### Slice 7: Split world rendering from HUD/message DOM updates
+
+Why next:
+
+- `src/render.js` still combines canvas world rendering with DOM HUD/message/body-class/input-hint updates.
+- Menu/settings ownership is now decomposed enough that the next P1 boundary with high confidence is rendering-vs-DOM UI.
+- This should preserve current canvas draw order and DOM message behavior while creating separate ownership for future renderer/WebGPU/shader work.
+
+Likely files:
+
+- `src/render.js`
+- new focused modules under `src/render/**` or `src/app/ui/**`
+- render/HUD/speedrun/game-smoke tests
+
+Validation:
+
+```sh
+bun run build
+bunx playwright test tests/game-smoke.spec.js tests/speedrun-ui.spec.js tests/core-boundary.spec.js --project=chromium
+bun run validate:map-render
+```
+
 ## Candidate later slices
 
-1. Continue decomposing `src/menu.js` by extracting menu shell/focus/page-transition ownership.
-2. Split `src/render.js` into world renderer and HUD/message DOM updater.
-3. Decompose tilemap compiler internals.
-4. Extract editor command/persistence/status logic behind a browser shell.
-5. Extract shared CSS tokens/primitives if both game and editor continue to duplicate them.
-6. Update stale terrain docs and mark superseded ADR details.
-7. Add a `validate` package script once the desired full validation gate is stable.
+1. Split `src/render.js` into world renderer and HUD/message DOM updater.
+2. Decompose tilemap compiler internals.
+3. Extract editor command/persistence/status logic behind a browser shell.
+4. Extract shared CSS tokens/primitives if both game and editor continue to duplicate them.
+5. Update stale terrain docs and mark superseded ADR details.
+6. Add a `validate` package script once the desired full validation gate is stable.
 
 ## Keep-up-to-date rule
 

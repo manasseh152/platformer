@@ -9,6 +9,12 @@ async function enableDeveloperMode(page) {
   await page.locator('#settingsBackButton').click();
 }
 
+async function startGameplay(page) {
+  await page.locator('#startButton').click();
+  await expect(page.locator('body')).toHaveClass(/\bplaying\b/);
+  await expect(page.locator('#devtoolToggle')).toBeVisible();
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
@@ -23,9 +29,7 @@ test('developer toolbox is gated by Developer Mode and gameplay state', async ({
   await enableDeveloperMode(page);
   await expect(page.locator('#devtoolToggle')).toBeHidden();
 
-  await page.locator('#startButton').click();
-  await expect(page.locator('body')).toHaveClass(/\bplaying\b/);
-  await expect(page.locator('#devtoolToggle')).toBeVisible();
+  await startGameplay(page);
 
   await page.keyboard.press('Backquote');
   await expect(page.locator('#devtoolPanel')).toBeVisible();
@@ -43,7 +47,7 @@ test('developer toolbox is gated by Developer Mode and gameplay state', async ({
 
 test('developer toolbox collision toggles update session-only debug flags', async ({ page }) => {
   await enableDeveloperMode(page);
-  await page.locator('#startButton').click();
+  await startGameplay(page);
   await page.keyboard.press('Backquote');
 
   await page.locator('[data-devtool-toggle="render.show-build-terrain-cells"]').check();
@@ -65,7 +69,7 @@ test('developer toolbox collision toggles update session-only debug flags', asyn
 
 test('developer toolbox button and keyboard close behavior are accessible', async ({ page }) => {
   await enableDeveloperMode(page);
-  await page.locator('#startButton').click();
+  await startGameplay(page);
 
   await page.locator('#devtoolToggle').click();
   await expect(page.locator('#devtoolPanel')).toBeVisible();
@@ -85,7 +89,7 @@ test('developer toolbox button and keyboard close behavior are accessible', asyn
 
 test('developer toolbox closes and hides while paused or when Developer Mode is disabled', async ({ page }) => {
   await enableDeveloperMode(page);
-  await page.locator('#startButton').click();
+  await startGameplay(page);
   await page.keyboard.press('Backquote');
   await expect(page.locator('#devtoolPanel')).toBeVisible();
 

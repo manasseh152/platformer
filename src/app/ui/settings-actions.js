@@ -167,9 +167,11 @@ function toggleDeveloperMode(game, runtime = browserRuntime, callbacks = {}) {
     game.devTools?.sync?.();
     renderSelectedTilemapSummary(game);
   }, () => {
+    const root = activeMenuRoot?.(game);
+    const active = document.activeElement;
+    if (root?.contains(active) && !active?.matches?.('[data-settings-back]')) return;
     const developerRow = game.ui.settingsCategoryBody?.querySelector('[data-setting-row="developer-mode"]');
     if (developerRow) return focusAndReveal?.(game, developerRow);
-    const root = activeMenuRoot?.(game);
     if (!root?.contains(document.activeElement)) focusFirstMenuItem?.(game);
   });
 }
