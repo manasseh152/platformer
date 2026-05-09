@@ -110,9 +110,13 @@ Initial slice order:
    - Implemented: removed the legacy `src/input.js` facade after repo-local consumers migrated.
    - Remaining follow-up: add characterization tests before changing actual bind/remap behavior.
 
-3. **Decompose menu/settings/scenario browser ownership**
+3. **Decompose menu/settings/scenario browser ownership** — partially completed
    - Invariant: `src/menu.js` stops being the single owner of unrelated UI flows while preserving current DOM behavior.
-   - Likely target: split menu shell/focus, settings actions/navigation, and scenario browser rendering/launch handling.
+   - Implemented: scenario browser rendering, local draft rows, tab persistence, selected-level summary updates, and scenario launch handling now live in `src/app/ui/scenario-browser.js`.
+   - Implemented: settings now opens through the hub again with explicit back buttons for hub/category/level-select flows, restoring existing DOM characterization tests.
+   - Implemented: settings tab navigation now lives in `src/app/ui/settings-navigation.js`.
+   - Implemented: settings action handlers and bind-listening helpers now live in `src/app/ui/settings-actions.js`.
+   - Remaining follow-up: split menu shell/focus from `src/menu.js`.
    - Do not migrate to scene-stack UI scenes until responsibilities are clear.
 
 4. **Split world rendering from HUD/message DOM updates**
