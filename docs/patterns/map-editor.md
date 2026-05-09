@@ -2,6 +2,8 @@
 
 The browser map editor is a same-device content tool, not a gameplay scene. Keep it optimized for fast local iteration while preserving clear save semantics.
 
+`src/editor/map-editor.js` is the browser shell: DOM wiring, canvas interactions, viewport/history orchestration, localStorage side effects, downloads, and popup opening. Reusable draft commands/status/payload decisions belong in focused editor modules such as `src/editor/map-editor-commands.js`.
+
 ## Shell layout
 
 Use the canvas as the full-page background. Editor controls float above it:

@@ -31,12 +31,11 @@ Primary success criterion: future features should be easier to build because sys
 
 ## Current green baseline
 
-Validated for the tilemap compiler decomposition slice on 2026-05-09:
+Validated for the editor command/status extraction slice on 2026-05-09:
 
 ```sh
 bun run build
-bunx playwright test tests/tilemap.spec.js tests/core-boundary.spec.js --project=chromium
-bun run validate:map-render
+bunx playwright test tests/map-editor.spec.js tests/tilemap.spec.js tests/core-boundary.spec.js --project=chromium
 ```
 
 Full suite note: `bunx playwright test --project=chromium` still has known unrelated legacy/intermittent failures documented under earlier slices.
@@ -77,7 +76,7 @@ Confidence:
 | Catalog | `src/catalog/**` | Scenario/category registries, scenario service, local-draft catalog integration | Does not import editor modules; protected by boundary test. |
 | App/browser shell | top-level app modules, `src/app/**` | DOM, settings persistence, browser adapters, composition root | May compose all layers, but should pass smaller contexts over time. |
 | Game UI | `src/menu.js`, `src/app/ui/**`, `src/settings-ui.js`, `src/scenes/menu-dom.js`, `styles/main.css` | Start/pause/settings/scenario browser/HUD/devtools shell | `src/menu.js` remains the shell/focus/event hotspot while scenario browser, settings navigation, and settings actions are focused modules. |
-| Editor UI/tool | `src/editor/**`, `styles/map-editor.css` | Browser map editor shell, commands, viewport, persistence UI | Shared draft/data logic should move out of editor. |
+| Editor UI/tool | `src/editor/**`, `styles/map-editor.css` | Browser map editor shell, command/status/payload helpers, viewport, persistence UI | `src/editor/map-editor.js` owns DOM/canvas wiring; `src/editor/map-editor-commands.js` owns reusable draft commands/status/payload helpers. |
 | Rendering | `src/render.js`, `src/render/**`, `src/rendering/**`, `src/gpu/**` | World drawing, render helpers, future renderer backends | `src/render/world-renderer.js` owns canvas drawing; `src/render.js` remains the presentation facade. |
 | Devtools | `src/devtools/**` | Developer-only toolbox/overlays | Keep gated and out of core gameplay logic. |
 
@@ -216,18 +215,19 @@ Direction:
 - Document event names if automation/playbooks begin depending on them.
 - Rename only when touching related flows and tests can cover it.
 
-### P2 / Medium — Browser globals are localized enough, but editor shell could be cleaner
+### Partially completed — Browser globals are localized enough, but editor shell could be cleaner
 
 Evidence:
 
 - Core/engine boundary tests forbid browser globals and currently pass.
 - Browser globals are expected in app/editor modules.
-- `src/editor/map-editor.js` directly uses `document`, `window`, `localStorage`, `Date.now`, and `Math.random`.
+- `src/editor/map-editor.js` still directly uses `document`, `window`, `localStorage`, `Date.now`, and `Math.random` for browser shell duties.
+- Share/export module generation, import validation, preview payload creation, preference helpers, and local-save status rules now live in `src/editor/map-editor-commands.js`.
 
 Direction:
 
 - Do not treat browser globals in browser shell files as defects.
-- Extract pure editor commands/status/serialization logic behind an editor context when it improves tests/reuse.
+- Keep extracting pure editor command/status/persistence decisions behind focused modules when it improves tests/reuse.
 
 ## Compatibility helpers and removal candidates
 
@@ -249,7 +249,7 @@ Before risky refactors, add characterization tests for:
 - physics/gameplay input behavior when migrating old physics tests from legacy bind state to core input runtime; 
 - menu back/focus behavior if changing focus/page routing;
 - settings bind/remap behavior if changing input presentation or settings action dispatch;
-- editor save/preview/import/export if moving persistence logic;
+- editor save/preview/import/export when changing command payloads or browser storage side effects;
 - local draft validation if moving draft compiler modules;
 - HUD/message behavior if splitting `src/render.js`;
 - map render visual output if changing terrain/rendering.
@@ -473,34 +473,60 @@ bun run validate:map-render
 
 Known validation note: `bun run validate:map-render` rendered `.temp/full-map.png`; Vite also reported port 4174 already in use because an existing dev server was present.
 
-## Recommended next implementation slice
-
 ### Slice 9: Extract editor command/persistence/status logic behind the browser shell
 
-Why next:
+Completed on 2026-05-09.
 
-- Tilemap/compiler internals are now clearer, so the map editor can move toward shared, testable command/status/preview/persistence logic without increasing core/editor coupling.
-- `src/editor/map-editor.js` is still DOM-heavy and directly owns commands, status rules, preview payload creation, and persistence helpers.
+Changed files:
 
-Likely files:
-
+- `src/editor/map-editor-commands.js`
 - `src/editor/map-editor.js`
-- new focused editor modules under `src/editor/**`
-- map-editor tests
+- `tests/core-boundary.spec.js`
+- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/patterns/foundation-review.md`
+- `docs/patterns/map-editor.md`
+
+Implemented:
+
+- Share/export module generation, share import validation, preview payload construction, preference storage helpers, and local-save status rules moved out of the DOM-heavy map editor shell.
+- `src/editor/map-editor.js` remains responsible for DOM/canvas wiring, viewport/history orchestration, localStorage side effects, and popup/download effects.
+- Boundary coverage asserts the reusable editor command helpers do not reference browser globals directly.
 
 Validation:
 
 ```sh
 bun run build
-bunx playwright test tests/map-editor.spec.js tests/tilemap.spec.js --project=chromium
+bunx playwright test tests/map-editor.spec.js tests/tilemap.spec.js tests/core-boundary.spec.js --project=chromium
+```
+
+## Recommended next implementation slice
+
+### Slice 10: Clean up stale terrain docs and ADR terminology conflicts
+
+Why next:
+
+- The code already rejects `buildTerrain` in authored tilemaps and standardizes on `terrainLayer`, but `docs/patterns/terrain.md` still describes historical behavior.
+- ADR numbering has duplicate `0003` files; mark the historical context without rewriting decision history.
+
+Likely files:
+
+- `docs/patterns/terrain.md`
+- `docs/adr/0003-contained-terrain-scale.md`
+- `docs/adr/0003-core-input-system.md`
+- related README/index docs if they link stale terminology
+
+Validation:
+
+```sh
+bun run build
+bunx playwright test tests/tilemap.spec.js --project=chromium
 ```
 
 ## Candidate later slices
 
-1. Extract editor command/persistence/status logic behind a browser shell.
-2. Extract shared CSS tokens/primitives if both game and editor continue to duplicate them.
-3. Update stale terrain docs and mark superseded ADR details.
-4. Add a `validate` package script once the desired full validation gate is stable.
+1. Extract shared CSS tokens/primitives if both game and editor continue to duplicate them.
+2. Add a `validate` package script once the desired full validation gate is stable.
+3. Continue opportunistic editor shell decomposition if map-editor changes expose more pure command/status seams.
 
 ## Keep-up-to-date rule
 

@@ -132,9 +132,10 @@ Initial slice order:
    - Implemented: `src/core/tilemaps/tilemap.js` is now a compatibility facade over focused layer, compiler, terrain model, collision, render artifact, and query modules.
    - Implemented: authored map behavior and public imports are preserved; tilemap/core-boundary tests and map-render validation passed.
 
-6. **Extract editor command/persistence/status logic behind the browser shell**
+6. **Extract editor command/persistence/status logic behind the browser shell** — completed
    - Invariant: reusable editor logic is testable without living inside the DOM-heavy map editor shell.
-   - Likely target: keep browser wiring in editor shell while extracting commands, status rules, preview payload creation, and persistence helpers.
+   - Implemented: share/export module generation, imported-draft validation, preview payload creation, preference persistence helpers, and local-save status rules now live in `src/editor/map-editor-commands.js`.
+   - `src/editor/map-editor.js` remains the browser shell for DOM wiring, canvas interactions, viewport, history integration, and storage side effects.
 
 7. **Clean up docs, terminology, and validation scripts as follow-through slices**
    - Invariant: pattern docs describe current intended shape, ADR conflicts are marked as historical/superseded, and validation commands are easy to run.

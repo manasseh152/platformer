@@ -78,6 +78,13 @@ test('world renderer does not import HUD/input presentation modules', async () =
   expect(source).not.toMatch(/['"]\.\.\/input\.js['"]/);
 });
 
+test('editor command helpers do not reference browser globals directly', async () => {
+  const source = await readFile(path.resolve('src/editor/map-editor-commands.js'), 'utf8');
+  for (const name of bannedGlobals) {
+    expect(source, `src/editor/map-editor-commands.js references ${name}`).not.toMatch(new RegExp(`\\b${name}\\b`));
+  }
+});
+
 test('core and engine modules do not reference browser globals directly', async () => {
   for (const file of [...await jsFiles(coreRoot), ...await jsFiles(engineRoot)]) {
     const source = await readFile(file, 'utf8');
