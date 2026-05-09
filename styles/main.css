@@ -1165,11 +1165,9 @@ body[data-menu-origin="start"] #pauseScreen[data-menu-page="settings-category"] 
 }
 #pauseScreen[data-menu-page="settings"] .settings-actions,
 #pauseScreen[data-menu-page="settings-category"] .settings-actions {
-  position: sticky;
-  bottom: 0;
+  justify-content: flex-end;
   margin-top: 6px;
   padding-top: 10px;
-  background: linear-gradient(180deg, transparent, rgba(8, 11, 17, .82) 42%);
 }
 #pauseScreen[data-menu-page="settings"] .ds-setting-row,
 #pauseScreen[data-menu-page="settings"] .settings-category-card,
