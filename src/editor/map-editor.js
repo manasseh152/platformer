@@ -23,7 +23,7 @@ import { createHistory } from './editor-history.js';
 import { isKebabCaseId } from '../catalog/id.js';
 import { localDraftStorageKey, localDraftViewStorageKey, readLocalDraft, saveLocalDraft } from '../catalog/local-drafts/storage.js';
 import { createBrowserInputAdapter, createGameInputRuntime } from '../app/input/browser-input-adapter.js';
-import { hintPartsForAction } from '../app/input/input-hints.js';
+import { renderTabInputHints } from '../app/input/input-presentation.js';
 import { gameInputProfile } from '../app/input/game-input-profile.js';
 import { loadSettings } from '../settings.js';
 import { currentFocusElement, ensureMenuFocus, moveLinearFocus, visibleFocusables } from '../ui/navigation.js';
@@ -430,12 +430,8 @@ function activateFocusedEditorControl() {
   return true;
 }
 
-function syncTabHints() {
-  for (const hint of dom.tabHints) {
-    const action = hint.dataset.editorTabHint === 'previous' ? 'editor.previousTab' : 'editor.nextTab';
-    const control = hintPartsForAction(gameInputProfile, inputRuntime.settings, action, { runtime: inputRuntime, inputScheme: 'gamepad', deviceType: 'gamepad' }).parts[0];
-    hint.textContent = control?.label || (hint.dataset.editorTabHint === 'previous' ? 'LB' : 'RB');
-  }
+function syncTabHints({ consoleActive } = {}) {
+  renderTabInputHints({ inputScheme: 'wasd' }, document, { profile: gameInputProfile, settings: inputRuntime.settings, runtime: inputRuntime, consoleActive });
 }
 
 function navigateMainMenu() {
@@ -738,6 +734,7 @@ function processEditorKeyboardEvent(event) {
   inputAdapter.queueKeyboardEvent(event);
   inputAdapter.beginFrame({ controllerEnabled: false });
   const route = editorInputRoute();
+  syncTabHints({ consoleActive: false });
   if (route.wasPressed('editor.save')) { event.preventDefault(); route.consume('editor.save'); saveLocalExplicit(); inputRuntime.endFrame(); return; }
   if (route.wasPressed('editor.preview')) { event.preventDefault(); route.consume('editor.preview'); previewDraft(); inputRuntime.endFrame(); return; }
   if (['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target?.tagName)) { inputRuntime.endFrame(); return; }
@@ -748,6 +745,7 @@ function processEditorKeyboardEvent(event) {
 
 function processEditorControllerFrame() {
   inputAdapter.beginFrame({ controllerEnabled: true });
+  syncTabHints();
   const route = editorInputRoute();
   if (route.wasPressed('editor.previousTab')) { route.consume('editor.previousTab'); moveActiveTab(-1); }
   if (route.wasPressed('editor.nextTab')) { route.consume('editor.nextTab'); moveActiveTab(1); }
@@ -763,6 +761,7 @@ function processEditorControllerFrame() {
   }
   if (route.wasPressed('menu.accept')) { route.consume('menu.accept'); activateFocusedEditorControl(); }
   if (route.wasPressed('menu.back')) { route.consume('menu.back'); setActiveTab(activeTab, { show: false }); }
+  syncTabHints();
   inputRuntime.endFrame();
   requestAnimationFrame(processEditorControllerFrame);
 }

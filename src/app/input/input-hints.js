@@ -38,6 +38,7 @@ const GAMEPAD_ICON_ASSETS = {
       1: '/assets/kenney-input-prompts/xbox/xbox_button_b.png',
       2: '/assets/kenney-input-prompts/xbox/xbox_button_x.png',
       3: '/assets/kenney-input-prompts/xbox/xbox_button_y.png',
+      4: '/assets/kenney-input-prompts/xbox/xbox_lb.png',
       5: '/assets/kenney-input-prompts/xbox/xbox_rb.png',
       8: '/assets/kenney-input-prompts/xbox/xbox_button_view.png',
       9: '/assets/kenney-input-prompts/xbox/xbox_button_menu.png',

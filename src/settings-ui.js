@@ -144,14 +144,14 @@ export function activeSettingsCategory(game) {
 export function renderSettingsTabs(game) {
   const active = activeSettingsCategory(game).id;
   return `<div class="settings-tabs" role="tablist" aria-label="Settings categories">
-    <span class="settings-tabs__hint" data-settings-tab-hint="previous" aria-hidden="true">LB</span>
+    <span class="settings-tabs__hint" data-settings-tab-hint="previous" data-input-tab-hint data-input-action="menu.previousTab" aria-hidden="true" hidden>LB</span>
     ${settingsCategories.map(category => {
       const selected = category.id === active;
       return `<button type="button" role="tab" aria-selected="${selected ? 'true' : 'false'}" data-settings-tab="${category.id}">
         <span class="settings-tab__label">${category.title}</span>
       </button>`;
     }).join('')}
-    <span class="settings-tabs__hint" data-settings-tab-hint="next" aria-hidden="true">RB</span>
+    <span class="settings-tabs__hint" data-settings-tab-hint="next" data-input-tab-hint data-input-action="menu.nextTab" aria-hidden="true" hidden>RB</span>
   </div>`;
 }
 
