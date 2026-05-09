@@ -78,7 +78,7 @@ Confidence:
 | App/browser shell | top-level app modules, `src/app/**` | DOM, settings persistence, browser adapters, composition root | May compose all layers, but should pass smaller contexts over time. |
 | Game UI | `src/menu.js`, `src/app/ui/**`, `src/settings-ui.js`, `src/scenes/menu-dom.js`, `styles/main.css` | Start/pause/settings/scenario browser/HUD/devtools shell | `src/menu.js` remains the shell/focus/event hotspot while scenario browser, settings navigation, and settings actions are focused modules. |
 | Editor UI/tool | `src/editor/**`, `styles/map-editor.css` | Browser map editor shell, commands, viewport, persistence UI | Shared draft/data logic should move out of editor. |
-| Rendering | `src/render.js`, `src/render/**`, `src/rendering/**`, `src/gpu/**` | World drawing, render helpers, future renderer backends | World rendering and DOM HUD updates should separate. |
+| Rendering | `src/render.js`, `src/render/**`, `src/rendering/**`, `src/gpu/**` | World drawing, render helpers, future renderer backends | `src/render/world-renderer.js` owns canvas drawing; `src/render.js` remains the presentation facade. |
 | Devtools | `src/devtools/**` | Developer-only toolbox/overlays | Keep gated and out of core gameplay logic. |
 
 ## Findings
@@ -109,8 +109,8 @@ Evidence:
 - Transitional bind state now lives in `src/app/input/legacy-bind-state.js`.
 - DOM hint/scheme rendering now lives in `src/app/input/input-presentation.js`.
 - Browser gamepad polling, controller diagnostics, and bind-status UI helpers now live in `src/app/input/controller-diagnostics.js`.
-- `src/render.js` imports `renderGameplayHints` from the input presentation module instead of a legacy input facade.
-- `tests/core-boundary.spec.js` asserts the world renderer does not import the legacy input facade.
+- Gameplay HUD/input hint presentation is now isolated in `src/app/ui/gameplay-hud.js`.
+- `tests/core-boundary.spec.js` asserts the world renderer does not import HUD/input presentation modules or the legacy input facade.
 
 Follow-up:
 
@@ -145,18 +145,19 @@ Direction:
 - Introduce smaller contexts over time: gameplay, UI, render, editor.
 - Remove mirrored gameplay fields only after callers use `game.gameplaySession` consistently.
 
-### P1 / High — Rendering boundary mixes world drawing and DOM HUD/UI
+### Completed — World rendering is separated from DOM HUD/UI updates
 
 Evidence:
 
-- `src/render.js` draws world elements and also updates DOM state such as HUD level name, messages, body classes, speedrun HUD, hearts, and input hints.
-- The old `src/render.js -> src/input.js` dependency edge is removed; `src/render.js` still imports input presentation for HUD hint updates.
+- `src/render/world-renderer.js` owns canvas world drawing, camera snap/subpixel calculations, tilemap/decor/actor drawing, and devtools debug overlays.
+- `src/app/ui/gameplay-hud.js` owns HUD level name, messages, speedrun HUD, hearts, body classes, and input hint presentation.
+- `src/render.js` remains a small presentation facade that coordinates world drawing, HUD presentation, and presenter output.
+- `tests/core-boundary.spec.js` asserts the world renderer does not import HUD/input presentation modules or the legacy input facade.
 
-Direction:
+Follow-up:
 
-- Split world/camera rendering from HUD/message DOM updates.
-- Keep debug overlays in `src/devtools/debug-render.js` but call them from world renderer.
 - Before shaders/WebGPU work, represent renderable concepts as data/plans where useful.
+- Add characterization tests before changing HUD/message focus or speedrun display behavior.
 
 ### P1 / Medium — Tilemap compiler module is central but too broad
 
@@ -408,21 +409,25 @@ bunx playwright test tests/settings.spec.js tests/game-smoke.spec.js tests/devto
 
 Known validation note: this gate still has the existing two `tests/devtools-toolbox.spec.js` failures where the toolbox panel does not open for two devtools checks. A later parallel rerun without devtools also exposed the existing/intermittent controller diagonal focus check in `tests/game-smoke.spec.js`; the same test passes when run alone.
 
-## Recommended next implementation slice
-
 ### Slice 7: Split world rendering from HUD/message DOM updates
 
-Why next:
+Completed on 2026-05-09.
 
-- `src/render.js` still combines canvas world rendering with DOM HUD/message/body-class/input-hint updates.
-- Menu/settings ownership is now decomposed enough that the next P1 boundary with high confidence is rendering-vs-DOM UI.
-- This should preserve current canvas draw order and DOM message behavior while creating separate ownership for future renderer/WebGPU/shader work.
+Changed files:
 
-Likely files:
-
+- `src/render/world-renderer.js`
+- `src/app/ui/gameplay-hud.js`
 - `src/render.js`
-- new focused modules under `src/render/**` or `src/app/ui/**`
-- render/HUD/speedrun/game-smoke tests
+- `tests/core-boundary.spec.js`
+- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/patterns/foundation-review.md`
+
+Implemented:
+
+- Canvas world drawing, camera snap/subpixel calculations, tilemap/decor/actor drawing, and debug overlays moved out of `src/render.js` into `src/render/world-renderer.js`.
+- HUD level name, message modal state, speedrun HUD, hearts, body classes, and gameplay input hints moved into `src/app/ui/gameplay-hud.js`.
+- `src/render.js` remains a compatibility/presentation facade that preserves draw order and existing exports for map snapshots.
+- Boundary coverage now asserts the world renderer does not import HUD/input presentation modules or the removed legacy input facade.
 
 Validation:
 
@@ -432,14 +437,38 @@ bunx playwright test tests/game-smoke.spec.js tests/speedrun-ui.spec.js tests/co
 bun run validate:map-render
 ```
 
+Known validation note: `bun run validate:map-render` rendered `.temp/full-map.png`; Vite also reported port 4174 already in use because an existing dev server was present.
+
+## Recommended next implementation slice
+
+### Slice 8: Decompose tilemap compiler internals
+
+Why next:
+
+- `src/core/tilemaps/tilemap.js` remains the next P1 boundary with broad ownership: grid parsing, terrain compile, collision derivation, render artifact derivation, scene compilation, decor helpers, and compatibility queries.
+- Rendering-vs-HUD separation is complete, reducing risk around future render/tilemap changes.
+
+Likely files:
+
+- `src/core/tilemaps/tilemap.js`
+- new focused modules under `src/core/tilemaps/**`
+- tilemap/compiler/map-render tests
+
+Validation:
+
+```sh
+bun run build
+bunx playwright test tests/core-boundary.spec.js --project=chromium
+bun run validate:map-render
+```
+
 ## Candidate later slices
 
-1. Split `src/render.js` into world renderer and HUD/message DOM updater.
-2. Decompose tilemap compiler internals.
-3. Extract editor command/persistence/status logic behind a browser shell.
-4. Extract shared CSS tokens/primitives if both game and editor continue to duplicate them.
-5. Update stale terrain docs and mark superseded ADR details.
-6. Add a `validate` package script once the desired full validation gate is stable.
+1. Decompose tilemap compiler internals.
+2. Extract editor command/persistence/status logic behind a browser shell.
+3. Extract shared CSS tokens/primitives if both game and editor continue to duplicate them.
+4. Update stale terrain docs and mark superseded ADR details.
+5. Add a `validate` package script once the desired full validation gate is stable.
 
 ## Keep-up-to-date rule
 

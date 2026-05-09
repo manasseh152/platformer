@@ -120,9 +120,11 @@ Initial slice order:
    - `src/menu.js` remains the DOM event/input wiring facade for menu setup and semantic menu activation.
    - Do not migrate to scene-stack UI scenes until responsibilities are clear.
 
-4. **Split world rendering from HUD/message DOM updates**
+4. **Split world rendering from HUD/message DOM updates** — completed
    - Invariant: canvas world rendering can evolve independently from DOM HUD, message, speedrun, and input-hint updates.
-   - Likely target: split `src/render.js` into world renderer and HUD/message UI updater.
+   - Implemented: canvas drawing, camera snap/subpixel calculations, tilemap/decor/actor drawing, and debug overlays now live in `src/render/world-renderer.js`.
+   - Implemented: HUD level name, messages, speedrun HUD, hearts, body classes, and input hints now live in `src/app/ui/gameplay-hud.js`.
+   - Implemented: `src/render.js` remains a small presentation facade for draw order, HUD sync, and presenter output.
    - Rendering/tilemap changes require map render validation.
 
 5. **Decompose tilemap compiler internals**
