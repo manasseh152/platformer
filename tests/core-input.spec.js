@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { gameInputProfile } from '../src/app/input/game-input-profile.js';
 import { applyCapturedBinding, createBindCapture, createInputRuntime, findBindingConflict, normalizeInputSettings } from '../src/core/input/index.js';
 import { hintPartsForAction, textHintForAction } from '../src/app/input/input-hints.js';
+import { renderTabInputHints } from '../src/app/input/input-presentation.js';
 
 function key(runtime, type, code, modifiers = {}) {
   runtime.handleEvent({ type, device: { type: 'keyboard', id: 'keyboard' }, control: { type: 'key', code }, timestamp: runtime.state.frame, modifiers });
@@ -208,7 +209,7 @@ test('last active source records display group from the binding that triggered i
   expect(input.lastActiveSource('player1')).toMatchObject({ deviceType: 'keyboard', deviceId: 'keyboard', displayGroup: 'arrows' });
 });
 
-test('input hints derive controls from semantic bindings and last active source', () => {
+test('input hints derive controls from semantic bindings and explicit input scheme', () => {
   const { settings } = normalizeInputSettings(gameInputProfile, {});
   const input = createInputRuntime(gameInputProfile, settings);
 
@@ -218,7 +219,25 @@ test('input hints derive controls from semantic bindings and last active source'
   input.beginFrame();
   gamepad(input, [{ type: 'button', index: 3, value: 1 }]);
   expect(input.wasPressed('menu.settings')).toBe(true);
-  expect(hintPartsForAction(gameInputProfile, settings, 'menu.settings', { runtime: input, inputScheme: 'wasd', iconPack: 'xbox' }).parts[0]).toMatchObject({ label: 'Y', icon: '/assets/kenney-input-prompts/xbox/xbox_button_y.png' });
+  expect(hintPartsForAction(gameInputProfile, settings, 'menu.settings', { runtime: input, inputScheme: 'gamepad', iconPack: 'xbox' }).parts[0]).toMatchObject({ label: 'Y', icon: '/assets/kenney-input-prompts/xbox/xbox_button_y.png' });
+  expect(hintPartsForAction(gameInputProfile, settings, 'menu.settings', { runtime: input, inputScheme: 'wasd', iconPack: 'xbox' }).parts[0]).toMatchObject({ label: 'Tab', icon: null });
+});
+
+test('tab input hints only display for controller input scheme unless explicitly overridden', () => {
+  const { settings } = normalizeInputSettings(gameInputProfile, {});
+  const input = createInputRuntime(gameInputProfile, settings);
+  input.beginFrame();
+  gamepad(input, [{ type: 'button', index: 4, value: 1 }]);
+
+  const hintEl = { dataset: { inputAction: 'menu.previousTab' }, hidden: true, innerHTML: '' };
+  const root = { querySelectorAll: selector => selector === '[data-input-tab-hint]' ? [hintEl] : [] };
+
+  renderTabInputHints({ inputScheme: 'wasd' }, root, { profile: gameInputProfile, settings, runtime: input });
+  expect(hintEl.hidden).toBe(true);
+
+  renderTabInputHints({ inputScheme: 'gamepad' }, root, { profile: gameInputProfile, settings, runtime: input });
+  expect(hintEl.hidden).toBe(false);
+  expect(hintEl.innerHTML).toContain('LB');
 });
 
 test('bind capture captures keyboard bindings, supports cancel, and prevents duplicates', () => {

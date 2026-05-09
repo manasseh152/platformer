@@ -525,14 +525,76 @@ bun run build
 bunx playwright test tests/tilemap.spec.js --project=chromium
 ```
 
-## Recommended next implementation slice
+## Required next implementation slices
 
-### Slice 11: Decide and add a stable aggregate validation script
+### Slice 11: Update settings-tab UI validation and remove stale settings-hub expectations
 
 Why next:
 
-- Foundation slices repeatedly use the same gates, but the exact command set is still spread across ADR/pattern notes.
-- A stable `validate` script would make handoff and future agent work safer once the current expected full-suite behavior is clear.
+- The settings hub is deprecated and removed. Start/pause Settings now opens the new settings tab system directly with Keyboard selected by default.
+- Validation found tests still expecting the removed hub (`data-menu-page="settings"`) and category buttons such as `button[name="Advanced"]` instead of the new role=`tab` categories.
+- Scenario browser and devtools tests still need to enable Developer Mode, but should do so through the Advanced tab in the tab system.
+
+Likely files:
+
+- `tests/game-smoke.spec.js`
+- `tests/scenario-browser.spec.js`
+- `tests/devtools-toolbox.spec.js`
+- `docs/patterns/settings-and-ui.md`
+- any remaining docs/copy that describe the deprecated settings hub
+
+Validation:
+
+```sh
+bun run build
+bunx playwright test tests/settings.spec.js tests/game-smoke.spec.js tests/scenario-browser.spec.js tests/devtools-toolbox.spec.js --project=chromium
+```
+
+### Slice 12: Stabilize input-hint scheme behavior and commit/validate pending input changes
+
+Why next:
+
+- Validation found uncommitted changes in `src/app/input/input-hints.js` and `tests/core-input.spec.js`.
+- The foundation pass cannot be called complete while behavior changes are uncommitted or undecided.
+
+Likely files:
+
+- `src/app/input/input-hints.js`
+- `tests/core-input.spec.js`
+- any UI tests affected by input-hint scheme behavior
+
+Validation:
+
+```sh
+bun run build
+bunx playwright test tests/core-input.spec.js tests/game-smoke.spec.js --project=chromium
+```
+
+### Slice 13: Migrate known legacy physics tests to semantic core input runtime
+
+Why next:
+
+- Existing validation notes say `tests/physics.spec.js` still passes legacy input state directly to `updateGameplay`, while production gameplay now requires semantic core input runtime.
+- Full-suite confidence should not depend on known stale tests.
+
+Likely files:
+
+- `tests/physics.spec.js`
+- shared test helpers if useful
+
+Validation:
+
+```sh
+bun run build
+bunx playwright test tests/physics.spec.js tests/update-gameplay.spec.js --project=chromium
+```
+
+### Slice 14: Decide and add a stable aggregate validation script
+
+Why after slices 11–13:
+
+- Foundation slices repeatedly use the same gates, but the exact command set should not be frozen until current expected failures are resolved or explicitly documented.
+- A stable `validate` script would make handoff and future agent work safer once the expected full-suite behavior is clear.
 
 Likely files:
 
@@ -544,6 +606,7 @@ Validation:
 ```sh
 bun run build
 bunx playwright test --project=chromium
+bun run validate:map-render
 ```
 
 ## Candidate later slices

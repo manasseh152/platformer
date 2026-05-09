@@ -36,7 +36,7 @@ export function renderTabInputHints(input, root = document, gameOrOptions = {}) 
     const actionId = el.dataset.inputAction;
     const consoleActive = typeof options.consoleActive === 'boolean'
       ? options.consoleActive
-      : inputScheme === 'gamepad' || runtime?.lastActiveSource?.('player1')?.deviceType === 'gamepad';
+      : inputScheme === 'gamepad';
     if (!consoleActive || !actionId || !settings?.input?.bindings?.[actionId]) { el.hidden = true; return; }
     const hint = hintPartsForAction(profile, settings, actionId, {
       runtime,

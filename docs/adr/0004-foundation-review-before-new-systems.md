@@ -137,13 +137,53 @@ Initial slice order:
    - Implemented: share/export module generation, imported-draft validation, preview payload creation, preference persistence helpers, and local-save status rules now live in `src/editor/map-editor-commands.js`.
    - `src/editor/map-editor.js` remains the browser shell for DOM wiring, canvas interactions, viewport, history integration, and storage side effects.
 
-7. **Clean up docs, terminology, and validation scripts as follow-through slices** — in progress
-   - Invariant: pattern docs describe current intended shape, ADR conflicts are marked as historical/superseded, and validation commands are easy to run.
+7. **Clean up docs and terminology conflicts** — completed
+   - Invariant: pattern docs describe current intended shape, and ADR conflicts are marked as historical/superseded without rewriting decision history.
    - Implemented: terrain and tilemap pattern docs now describe current `terrainLayer()` authoring; archived `buildTerrain` references are limited to compatibility/migration notes.
-   - Implemented: conflicting terrain ADR authoring details and duplicate `0003` numbering are marked as historical without rewriting ADR history.
-   - Remaining follow-up: add an optional aggregate `validate` script once the desired full validation gate is stable.
+   - Implemented: conflicting terrain ADR authoring details and duplicate `0003` numbering are marked as historical.
 
-These slices are a starting order, not a permanent roadmap. Update `docs/patterns/foundation-review.md` when new evidence changes priority, scope, or ordering.
+8. **Update settings-tab UI validation and remove stale settings-hub expectations** — required before calling the foundation pass complete
+   - Invariant: start/pause Settings opens the new settings tab system directly, with Keyboard as the default tab and explicit tab navigation for Controller, Gameplay, Accessibility, Graphics, and Advanced.
+   - Trigger: validation found tests still expecting the removed settings hub (`data-menu-page="settings"`) and category buttons such as `button[name="Advanced"]`; the intended behavior is now `settings-category` with role=`tab` categories.
+   - Likely target: `tests/game-smoke.spec.js`, `tests/scenario-browser.spec.js`, `tests/devtools-toolbox.spec.js`, `docs/patterns/settings-and-ui.md`, and any remaining docs/copy that describe the deprecated settings hub.
+   - Validation:
+     ```sh
+     bun run build
+     bunx playwright test tests/settings.spec.js tests/game-smoke.spec.js tests/scenario-browser.spec.js tests/devtools-toolbox.spec.js --project=chromium
+     ```
+
+9. **Stabilize input-hint scheme behavior and commit/validate pending input changes** — required before calling the foundation pass complete
+   - Invariant: input hints follow the explicit UI input scheme when one is provided, without regressing last-active-source behavior where it is still desired.
+   - Trigger: validation found uncommitted changes in `src/app/input/input-hints.js` and `tests/core-input.spec.js`.
+   - Likely target: decide whether those changes are intentional, then either commit with tests or revert before final validation.
+   - Validation:
+     ```sh
+     bun run build
+     bunx playwright test tests/core-input.spec.js tests/game-smoke.spec.js --project=chromium
+     ```
+
+10. **Migrate known legacy physics tests to semantic core input runtime** — required for full-suite confidence
+   - Invariant: physics/gameplay tests exercise `updateGameplay` through the same semantic core input runtime required by production gameplay.
+   - Trigger: existing notes say `tests/physics.spec.js` still passes legacy input state directly to `updateGameplay`.
+   - Likely target: `tests/physics.spec.js` and shared test helpers, not production gameplay unless a real bug is exposed.
+   - Validation:
+     ```sh
+     bun run build
+     bunx playwright test tests/physics.spec.js tests/update-gameplay.spec.js --project=chromium
+     ```
+
+11. **Add a stable aggregate validation script** — final handoff slice
+   - Invariant: future agents and humans can run one documented command for the expected foundation gate.
+   - Prerequisite: slices 8–10 are green or explicitly documented as expected failures.
+   - Likely target: `package.json`, `docs/patterns/foundation-review.md`, and this ADR if the validation contract changes.
+   - Candidate command:
+     ```sh
+     bun run build
+     bunx playwright test --project=chromium
+     bun run validate:map-render
+     ```
+
+These slices are a starting order, not a permanent roadmap. Update `docs/patterns/foundation-review.md` when new evidence changes priority, scope, ordering, or validation status.
 
 ## Consequences
 

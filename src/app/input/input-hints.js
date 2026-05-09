@@ -89,10 +89,11 @@ function iconForBinding(binding, { iconPack = 'text' } = {}) {
 }
 
 function displayGroupFor(runtime, fallbackScheme = 'wasd', slot = 'player1') {
+  if (['gamepad', 'arrows', 'wasd'].includes(fallbackScheme)) return fallbackScheme;
   const active = runtime?.lastActiveSource?.(slot);
   if (active?.deviceType === 'gamepad') return 'gamepad';
   if (active?.displayGroup) return active.displayGroup;
-  return fallbackScheme === 'gamepad' ? 'gamepad' : (fallbackScheme === 'arrows' ? 'arrows' : 'wasd');
+  return 'wasd';
 }
 
 function matchesRequest(binding, request = {}) {
