@@ -127,9 +127,10 @@ Initial slice order:
    - Implemented: `src/render.js` remains a small presentation facade for draw order, HUD sync, and presenter output.
    - Rendering/tilemap changes require map render validation.
 
-5. **Decompose tilemap compiler internals**
+5. **Decompose tilemap compiler internals** — completed
    - Invariant: tilemap parsing, terrain compile, collision derivation, render artifact derivation, and compatibility query helpers have focused ownership.
-   - Likely target: split `src/core/tilemaps/tilemap.js` without changing authored map behavior.
+   - Implemented: `src/core/tilemaps/tilemap.js` is now a compatibility facade over focused layer, compiler, terrain model, collision, render artifact, and query modules.
+   - Implemented: authored map behavior and public imports are preserved; tilemap/core-boundary tests and map-render validation passed.
 
 6. **Extract editor command/persistence/status logic behind the browser shell**
    - Invariant: reusable editor logic is testable without living inside the DOM-heavy map editor shell.

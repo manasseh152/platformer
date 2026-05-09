@@ -31,15 +31,15 @@ Primary success criterion: future features should be easier to build because sys
 
 ## Current green baseline
 
-Validated for the scenario-browser/menu foundation slice on 2026-05-09; latest settings-actions extraction also passed `bun run build` and `bunx playwright test tests/settings.spec.js --project=chromium`:
+Validated for the tilemap compiler decomposition slice on 2026-05-09:
 
 ```sh
 bun run build
-bunx playwright test tests/scenario-browser.spec.js tests/settings.spec.js tests/game-smoke.spec.js --project=chromium
-bunx playwright test tests/gyms/ui-navigation.gym.spec.js --project=chromium
+bunx playwright test tests/tilemap.spec.js tests/core-boundary.spec.js --project=chromium
+bun run validate:map-render
 ```
 
-Full suite note: `bunx playwright test --project=chromium` still has the known legacy physics helper failures documented under Slice 2; unrelated UI navigation now passes.
+Full suite note: `bunx playwright test --project=chromium` still has known unrelated legacy/intermittent failures documented under earlier slices.
 
 Before implementation slices, run the full suite:
 
@@ -159,20 +159,21 @@ Follow-up:
 - Before shaders/WebGPU work, represent renderable concepts as data/plans where useful.
 - Add characterization tests before changing HUD/message focus or speedrun display behavior.
 
-### P1 / Medium — Tilemap compiler module is central but too broad
+### Completed — Tilemap compiler internals have focused ownership
 
 Evidence:
 
-- `src/core/tilemaps/tilemap.js` handles grid parsing, terrain validation, terrain normalization, collision derivation, render artifact derivation, scene compilation, decor helpers, and compatibility gameplay helpers.
-- It is imported by many modules by design, but has multiple reasons to change.
+- `src/core/tilemaps/tilemap.js` is now a compatibility facade that preserves public imports.
+- `src/core/tilemaps/layers.js` owns grid layer parsing and layer constants.
+- `src/core/tilemaps/compiler.js` owns tilemap definition validation and scene compilation.
+- `src/core/tilemaps/terrain-model.js` owns terrain normalization and terrain-cell lookup.
+- `src/core/tilemaps/collision.js` owns terrain collision primitive/rect derivation.
+- `src/core/tilemaps/render-artifacts.js` owns contained-terrain render artifact derivation.
+- `src/core/tilemaps/queries.js` owns compatibility gameplay/render query helpers.
 
-Direction:
+Follow-up:
 
-- Decompose when touching tilemap foundations:
-  - definition/parser/compiler;
-  - terrain compile;
-  - collision derivation;
-  - tilemap queries/compatibility helpers.
+- Keep the facade until consumers can move opportunistically to focused modules.
 - Continue using ECS-ish scene objects/components as the integration point.
 
 ### P1 / High — Current docs contain stale terrain contradictions
@@ -235,7 +236,7 @@ Direction:
 | Legacy bind state/helpers from former `src/input.js` | Deleted/focused | Transitional bind helpers now live in `src/app/input/legacy-bind-state.js`; remove individual helpers as menu/settings migrate to semantic input. |
 | `src/editor/tilemap-draft.js` compatibility facade | Delete after migration | Editor imports `src/core/tilemaps/draft.js` and `src/content/tilemaps/draft-compiler.js` directly. |
 | `game.player`, `game.enemies`, `game.camera` mirrors | Delete after migration | Callers use `game.gameplaySession.*`. |
-| Tilemap compatibility helpers in `src/core/tilemaps/tilemap.js` | Decompose/migrate | Render/snapshot/tests use scene queries or focused tilemap query modules. |
+| Tilemap compatibility facade in `src/core/tilemaps/tilemap.js` | Keep/migrate opportunistically | Consumers import focused modules directly when touching related code. |
 | Internal `level` terminology | Opportunistic cleanup | Rename when touching nearby code; user-facing “Level Select” may stay. |
 | Stale terrain docs | Fix soon | Update pattern doc to current `terrainLayer` model. |
 
@@ -439,36 +440,67 @@ bun run validate:map-render
 
 Known validation note: `bun run validate:map-render` rendered `.temp/full-map.png`; Vite also reported port 4174 already in use because an existing dev server was present.
 
-## Recommended next implementation slice
+## Completed implementation slices continued
 
 ### Slice 8: Decompose tilemap compiler internals
 
-Why next:
+Completed on 2026-05-09.
 
-- `src/core/tilemaps/tilemap.js` remains the next P1 boundary with broad ownership: grid parsing, terrain compile, collision derivation, render artifact derivation, scene compilation, decor helpers, and compatibility queries.
-- Rendering-vs-HUD separation is complete, reducing risk around future render/tilemap changes.
-
-Likely files:
+Changed files:
 
 - `src/core/tilemaps/tilemap.js`
-- new focused modules under `src/core/tilemaps/**`
-- tilemap/compiler/map-render tests
+- `src/core/tilemaps/layers.js`
+- `src/core/tilemaps/compiler.js`
+- `src/core/tilemaps/terrain-model.js`
+- `src/core/tilemaps/collision.js`
+- `src/core/tilemaps/render-artifacts.js`
+- `src/core/tilemaps/queries.js`
+- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/patterns/foundation-review.md`
+
+Implemented:
+
+- Grid layer parsing, tilemap compilation, terrain normalization, terrain collision derivation, contained-terrain render artifacts, and compatibility query helpers now have focused modules.
+- `src/core/tilemaps/tilemap.js` remains a public compatibility facade to preserve existing imports.
 
 Validation:
 
 ```sh
 bun run build
-bunx playwright test tests/core-boundary.spec.js --project=chromium
+bunx playwright test tests/tilemap.spec.js tests/core-boundary.spec.js --project=chromium
 bun run validate:map-render
+```
+
+Known validation note: `bun run validate:map-render` rendered `.temp/full-map.png`; Vite also reported port 4174 already in use because an existing dev server was present.
+
+## Recommended next implementation slice
+
+### Slice 9: Extract editor command/persistence/status logic behind the browser shell
+
+Why next:
+
+- Tilemap/compiler internals are now clearer, so the map editor can move toward shared, testable command/status/preview/persistence logic without increasing core/editor coupling.
+- `src/editor/map-editor.js` is still DOM-heavy and directly owns commands, status rules, preview payload creation, and persistence helpers.
+
+Likely files:
+
+- `src/editor/map-editor.js`
+- new focused editor modules under `src/editor/**`
+- map-editor tests
+
+Validation:
+
+```sh
+bun run build
+bunx playwright test tests/map-editor.spec.js tests/tilemap.spec.js --project=chromium
 ```
 
 ## Candidate later slices
 
-1. Decompose tilemap compiler internals.
-2. Extract editor command/persistence/status logic behind a browser shell.
-3. Extract shared CSS tokens/primitives if both game and editor continue to duplicate them.
-4. Update stale terrain docs and mark superseded ADR details.
-5. Add a `validate` package script once the desired full validation gate is stable.
+1. Extract editor command/persistence/status logic behind a browser shell.
+2. Extract shared CSS tokens/primitives if both game and editor continue to duplicate them.
+3. Update stale terrain docs and mark superseded ADR details.
+4. Add a `validate` package script once the desired full validation gate is stable.
 
 ## Keep-up-to-date rule
 
