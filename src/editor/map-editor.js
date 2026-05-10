@@ -540,7 +540,7 @@ function drawEntities(ctx, rect) {
   ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = 'bold 18px ui-monospace, monospace';
+  ctx.font = '700 18px "Geist Sans", ui-sans-serif, system-ui, sans-serif';
   for (let row = range.startRow; row <= range.endRow; row++) {
     const line = layer.rows[row];
     for (let col = range.startCol; col <= range.endCol; col++) {
