@@ -1,5 +1,6 @@
 import { menuButtons } from './app/input/legacy-bind-state.js';
 import { renderInputHints } from './app/input/input-presentation.js';
+import { syncHintLayer } from './app/ui/hint-layer.js';
 import { ensureMenuFocus } from './ui/navigation.js';
 import { setPausedFlag } from './state.js';
 import { setupMotionPreference } from './transitions.js';
@@ -59,6 +60,9 @@ function activateSemanticMenuAction(game, actionId) {
     else ui.startSettingsButton?.click?.();
     return true;
   }
+  if (actionId === 'system.restart') { game.resetGame?.(); return true; }
+  if (actionId === 'menu.levelSelect') { ui.messageLevelSelectButton?.click?.(); return true; }
+  if (actionId === 'menu.nextLevel') { ui.messageNextLevelButton?.click?.(); return true; }
   return false;
 }
 
@@ -177,6 +181,7 @@ export function setupMenu(game, runtime = browserRuntime) {
   renderSettings(game);
   updateMenuChrome(game);
   renderInputHints(game.input, document, game);
+  syncHintLayer(game);
 
   for (let i = 0; i < 5; i++) {
     const heart = document.createElement('span');
@@ -226,6 +231,11 @@ export function setupMenu(game, runtime = browserRuntime) {
   });
   ui.pauseScreen.addEventListener('click', e => { if (!handleHintActivation(e)) handleSettingsClick(game, e, runtime); });
   ui.pauseScreen.addEventListener('keydown', e => {
+    if (!['Enter', 'Space'].includes(e.code) || !handleHintActivation(e)) return;
+    e.preventDefault();
+  });
+  ui.hintLayerEl?.addEventListener('click', e => { handleHintActivation(e); });
+  ui.hintLayerEl?.addEventListener('keydown', e => {
     if (!['Enter', 'Space'].includes(e.code) || !handleHintActivation(e)) return;
     e.preventDefault();
   });

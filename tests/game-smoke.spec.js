@@ -69,6 +69,43 @@ async function expectFocusedLevelRow(page, levelId) {
   await expect.poll(() => page.evaluate(() => document.activeElement?.dataset.scenarioId || '')).toBe(levelId);
 }
 
+test('single hint layer owns global controls across start, gameplay, and pause', async ({ page }) => {
+  const hintLayer = page.locator('#hintLayer');
+  await expect(hintLayer).toHaveCount(1);
+  await expect(page.locator('#controls')).toHaveCount(0);
+  await expect(page.locator('.command-bar')).toHaveCount(0);
+  await expect(hintLayer).toBeVisible();
+  await expect(hintLayer).toContainText('Select');
+  await expect(hintLayer).toContainText('Settings');
+
+  await hintLayer.locator('button[data-input-action="menu.settings"]').click();
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'settings-category');
+  await expect(hintLayer).toContainText('Back');
+  await expect(hintLayer.locator('[data-input-action="menu.settings"]')).toHaveCount(0);
+  await hintLayer.locator('button[data-input-action="menu.back"]').click();
+  await expect(page.locator('#startScreen')).toBeVisible();
+
+  await page.locator('#startButton').click();
+  await expect(page.locator('body')).toHaveClass(/\bplaying\b/);
+  await expect(hintLayer).toContainText('Move');
+  await expect(hintLayer).toContainText('Jump');
+  await expect(hintLayer.locator('button')).toHaveCount(0);
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator('body')).toHaveClass(/\bpaused\b/);
+  await expect(hintLayer.locator('[data-input-action="player.jump"]')).toHaveCount(0);
+  await expect(hintLayer).toContainText('Resume');
+  await expect.poll(() => page.evaluate(() => {
+    const hints = Number(getComputedStyle(document.querySelector('#hintLayer')).zIndex);
+    const pause = Number(getComputedStyle(document.querySelector('#pauseScreen')).zIndex);
+    return hints > pause;
+  })).toBe(true);
+
+  await hintLayer.locator('button[data-input-action="menu.back"]').click();
+  await expect(page.locator('body')).not.toHaveClass(/\bpaused\b/);
+  await expect(hintLayer).toContainText('Move');
+});
+
 test('settings tabs, accessibility motion, advanced JSON, and start flow', async ({ page }) => {
   const body = page.locator('body');
   const pauseScreen = page.locator('#pauseScreen');

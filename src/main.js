@@ -1,6 +1,7 @@
 import { getUI } from './dom.js';
 import { pollGamepads } from './app/input/controller-diagnostics.js';
-import { controlsText, renderGameplayHints, setInputScheme } from './app/input/input-presentation.js';
+import { controlsText, setInputScheme } from './app/input/input-presentation.js';
+import { syncHintLayer } from './app/ui/hint-layer.js';
 import { handleMenuInput, handleListeningKey, activeMenuRoot, renderBinds, setupMenu, setPaused, startGame } from './menu.js';
 import { syncSettingsFromInput } from './settings.js';
 import { setupResize } from './resize.js';
@@ -22,7 +23,7 @@ const game = createGameApp(ui, runtime);
 const scenes = createSceneHost(runtime);
 runtime.scenes = scenes;
 game.controlsText = () => controlsText(game.input);
-renderGameplayHints(game);
+syncHintLayer(game);
 game.resetGame = () => resetGame(game, runtime);
 
 setupMenu(game, runtime);

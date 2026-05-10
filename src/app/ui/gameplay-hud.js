@@ -1,6 +1,6 @@
 import { isWon } from '../app-state.js';
-import { renderGameplayHints } from '../input/input-presentation.js';
 import { formatRunTime, getBestTime } from '../../speedrun.js';
+import { syncHintLayer } from './hint-layer.js';
 
 export function syncGameplayHud(game) {
   const { ui, player } = game;
@@ -47,5 +47,5 @@ export function syncGameplayHud(game) {
 
 export function syncGameplayHudPresentation(game) {
   syncGameplayHud(game);
-  renderGameplayHints(game, game.ui.controlsEl);
+  syncHintLayer(game);
 }

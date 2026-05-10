@@ -1,5 +1,6 @@
 import { hintActionAliases, hintPartsForAction } from './input-hints.js';
 import { gameInputProfile } from './game-input-profile.js';
+import { syncHintLayer } from '../ui/hint-layer.js';
 
 const inputPresets = {
   wasd: { move:'A/D', jump:'Space', dash:'Shift', attack:'J', pause:'Esc', restart:'R' },
@@ -54,7 +55,7 @@ export function setInputScheme(game, scheme) {
   const input = game.input;
   if (input.inputScheme === scheme) return;
   input.inputScheme = scheme;
-  renderGameplayHints(game);
+  syncHintLayer(game);
   renderInputHints(input, document, game);
 }
 
@@ -83,33 +84,6 @@ export function renderInputHints(input, root = document, gameOrOptions = {}) {
     }
     el.innerHTML = hintHtml(hint);
   });
-}
-
-const gameplayHintActions = [
-  { actionId: 'player.moveX', label: 'Move' },
-  { actionId: 'player.jump' },
-  { actionId: 'player.dash' },
-  { actionId: 'player.attack' },
-  { actionId: 'system.pause' },
-  { actionId: 'system.restart' }
-];
-
-export function renderGameplayHints(game, root = game?.ui?.controlsEl) {
-  if (!game || !root) return;
-  const settings = game.inputRuntime?.settings || game.settings;
-  if (!settings?.input?.bindings) {
-    root.textContent = controlsText(game.input);
-    return;
-  }
-  root.innerHTML = gameplayHintActions.map(({ actionId, label }) => {
-    const hint = hintPartsForAction(game.inputRuntime?.profile || gameInputProfile, settings, actionId, {
-      runtime: game.inputRuntime || null,
-      inputScheme: game.input.inputScheme,
-      iconPack: settings.input?.gamepad?.globalIconPack || null,
-      label
-    });
-    return `<span class="input-hint input-hint--inline" data-input-action="${escapeHtml(actionId)}" data-input-platform="${hint.deviceType === 'gamepad' ? 'gamepad' : platformForScheme(game.input.inputScheme)}">${hintHtml(hint)}</span>`;
-  }).join('');
 }
 
 export function controlsText(input) {

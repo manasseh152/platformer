@@ -1,4 +1,5 @@
 import { renderInputHints } from '../input/input-presentation.js';
+import { syncHintLayer } from './hint-layer.js';
 import { currentFocusElement, ensureMenuFocus, moveHorizontalGroupFocus as moveHorizontalFocus, moveLinearFocus } from '../../ui/navigation.js';
 import { setPausedFlag } from '../../state.js';
 import { applyMotionPreference, runDOMTransition, shouldReduceMotion } from '../../transitions.js';
@@ -32,11 +33,7 @@ export function updateMenuChrome(game) {
   ui.menuEyebrow.textContent = menu.page === 'main' ? 'Paused' : (menu.page === 'level-select' ? 'Choose your route' : (menu.page === 'settings-category' ? 'Settings' : (menu.origin === 'start' ? 'Before you begin' : 'Settings')));
   refreshDynamicRefs(game);
   renderInputHints(game.input, document, game);
-  if (ui.pauseBackHint) {
-    ui.pauseBackHint.removeAttribute('data-level-select-back');
-    ui.pauseBackHint.removeAttribute('data-settings-back');
-  }
-  if (ui.pauseSettingsHint) ui.pauseSettingsHint.hidden = menu.page === 'settings' || menu.page === 'settings-category';
+  syncHintLayer(game);
   if (ui.developerTools) ui.developerTools.hidden = !game.settings.developerMode;
   applyMotionPreference(game);
 }

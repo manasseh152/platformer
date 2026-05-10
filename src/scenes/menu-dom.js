@@ -23,7 +23,6 @@ function startScreenMarkup() {
         <div class="menu-actions ds-action-stack"><button id="startButton" class="ds-button ds-button--primary">Start</button><button id="startLevelSelectButton" class="secondary ds-button ds-button--secondary">Level Select</button><button id="startEditorButton" class="secondary ds-button ds-button--secondary">Map Editor</button><button id="startSettingsButton" class="secondary ds-button ds-button--secondary">Settings</button></div>
       </section>
       <aside class="hero-scene" aria-label="Quest preview"><div class="moon" aria-hidden="true"></div><div class="hero-scene__badge">Act 01</div><div class="hero-scene__title">Hollow Gate</div><div class="hero-pixel hero-pixel--torch" aria-hidden="true"></div><div class="hero-runner" aria-hidden="true"><div class="runner-head"></div><div class="runner-body"></div><div class="runner-sword"></div></div><div class="hero-gate" aria-hidden="true"></div><div class="hero-ground" aria-hidden="true"></div><dl class="hero-loadout" aria-label="Run loadout"><div><dt>Objective</dt><dd>Reach gate</dd></div><div><dt>Threat</dt><dd>Spike floor</dd></div><div><dt>Skill</dt><dd>Dash ready</dd></div></dl></aside>
-      <nav class="command-bar" aria-label="Menu shortcuts"><span class="input-hint" data-input-hint="accept"></span><span class="input-hint" data-input-hint="back"></span><span class="input-hint" data-input-hint="settings"></span></nav>
     </main>
   </div>`;
 }
@@ -35,6 +34,6 @@ function pauseOverlayMarkup() {
       <div id="levelSelectPage" class="menu-page settings-layout scene-scenario-browser" data-page="level-select"><p>Choose the level to load. Developer Mode reveals gyms, zoos, and other test maps.</p><button id="levelSelectBackButton" type="button" class="settings-back-button ds-button ds-button--secondary" data-level-select-back>Back</button><div id="levelSelectStatus" class="status-line" aria-live="polite"></div><div id="levelSelectList" class="level-select-list" aria-label="Available levels"></div></div>
       <div id="settingsHubPage" class="menu-page settings-layout scene-settings-overlay" data-page="settings"><p>Tune how the game feels before jumping in.</p><div id="settingsRootRows" class="settings-root-rows"></div><div id="settingsCategoryList" class="settings-category-list" aria-label="Settings categories"></div></div>
       <div id="settingsCategoryPage" class="menu-page settings-layout scene-settings-overlay" data-page="settings-category"><p id="settingsCategoryDescription">Adjust settings.</p><div id="settingsStatus" class="status-line" aria-live="polite"></div><div id="settingsCategoryBody" class="settings-category-body"></div></div>
-    </div><nav id="pauseCommandBar" class="command-bar pause-command-bar" aria-label="Menu shortcuts"><span class="input-hint" data-input-hint="accept"></span><span id="pauseBackHint" class="input-hint" data-input-hint="back"></span><span id="pauseSettingsHint" class="input-hint" data-input-hint="settings"></span></nav></div>
+    </div></div>
   </div>`;
 }
