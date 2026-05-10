@@ -606,6 +606,7 @@ kbd.ds-keycap {
 }
 #hintLayer {
   position: fixed;
+  view-transition-name: hint-layer;
   left: calc(18px + env(safe-area-inset-left));
   right: calc(18px + env(safe-area-inset-right));
   bottom: calc(18px + env(safe-area-inset-bottom));
@@ -830,6 +831,8 @@ body.playing:not(.paused):not([data-menu-origin="start"]) #pauseScreen { visibil
 ::view-transition-new(root),
 ::view-transition-old(menu-card),
 ::view-transition-new(menu-card) { animation-duration: .16s; animation-timing-function: ease; }
+::view-transition-old(hint-layer) { animation: none; opacity: 0; }
+::view-transition-new(hint-layer) { animation: none; opacity: 1; }
 #startScreen { view-transition-name: start-screen; }
 #pauseScreen { view-transition-name: pause-screen; }
 #startScreen .menu-card { view-transition-name: start-card; }

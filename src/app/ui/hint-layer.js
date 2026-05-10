@@ -69,15 +69,12 @@ export function hintLayerEntries(game) {
 function signatureFor(game, entries) {
   const settings = game.inputRuntime?.settings || game.settings;
   return JSON.stringify({
+    // Only include data that changes the rendered hint layer. Broader game/menu
+    // state can change several times during page transitions while producing the
+    // same hint entries; treating those as no-ops avoids unnecessary DOM teardown
+    // that reads as flicker.
     entries,
     scheme: game.input?.inputScheme,
-    page: game.menu?.page,
-    origin: document.body.dataset.menuOrigin || '',
-    started: isStarted(game),
-    paused: isPaused(game),
-    dead: Boolean(game.player?.dead),
-    won: isWon(game),
-    nextHidden: Boolean(game.ui?.messageNextLevelButton?.hidden),
     iconPack: settings?.input?.gamepad?.globalIconPack || null,
     bindings: settings?.input?.bindings || null
   });
