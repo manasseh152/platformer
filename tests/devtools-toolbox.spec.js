@@ -2,11 +2,10 @@ import { expect, test } from '@playwright/test';
 
 async function enableDeveloperMode(page) {
   await page.locator('#startSettingsButton').click();
-  await page.getByRole('button', { name: 'Advanced' }).click();
+  await page.getByRole('tab', { name: 'Advanced' }).click();
   await page.locator('[data-setting-row="developer-mode"]').click();
   await expect(page.locator('#developerTools')).toBeVisible();
-  await page.locator('#settingsCategoryBackButton').click();
-  await page.locator('#settingsBackButton').click();
+  await page.keyboard.press('Escape');
 }
 
 async function startGameplay(page) {
@@ -99,11 +98,10 @@ test('developer toolbox closes and hides while paused or when Developer Mode is 
   await expect(page.locator('#devtoolPanel')).toBeHidden();
 
   await page.locator('#settingsButton').click();
-  await page.getByRole('button', { name: 'Advanced' }).click();
+  await page.getByRole('tab', { name: 'Advanced' }).click();
   await page.locator('[data-setting-row="developer-mode"]').click();
   await expect(page.locator('#developerTools')).toBeHidden();
-  await page.locator('#settingsCategoryBackButton').click();
-  await page.locator('#settingsBackButton').click();
+  await page.keyboard.press('Escape');
   await page.locator('#resumeButton').click();
   await expect(page.locator('body')).not.toHaveClass(/\bpaused\b/);
   await expect(page.locator('#devtoolToggle')).toBeHidden();

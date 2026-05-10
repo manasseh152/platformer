@@ -23,10 +23,9 @@ function localDraft({ id = 'local-play-map', name = 'Local Play Map', updatedAt 
 test('developer mode presents Scenario Browser with tabs for acts local gyms and zoos', async ({ page }) => {
   await page.goto('/');
   await page.locator('#startSettingsButton').click();
-  await page.getByRole('button', { name: 'Advanced' }).click();
+  await page.getByRole('tab', { name: 'Advanced' }).click();
   await page.locator('[data-setting-row="developer-mode"]').click();
-  await page.locator('#settingsCategoryBackButton').click();
-  await page.locator('#settingsBackButton').click();
+  await page.keyboard.press('Escape');
   await page.locator('#startLevelSelectButton').click();
 
   await expect(page.locator('#menuTitle')).toHaveText('Scenario Browser');

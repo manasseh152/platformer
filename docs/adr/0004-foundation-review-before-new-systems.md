@@ -142,14 +142,15 @@ Initial slice order:
    - Implemented: terrain and tilemap pattern docs now describe current `terrainLayer()` authoring; archived `buildTerrain` references are limited to compatibility/migration notes.
    - Implemented: conflicting terrain ADR authoring details and duplicate `0003` numbering are marked as historical.
 
-8. **Update settings-tab UI validation and remove stale settings-hub expectations** — required before calling the foundation pass complete
+8. **Update settings-tab UI validation and remove stale settings-hub expectations** — completed
    - Invariant: start/pause Settings opens the new settings tab system directly, with Keyboard as the default tab and explicit tab navigation for Controller, Gameplay, Accessibility, Graphics, and Advanced.
-   - Trigger: validation found tests still expecting the removed settings hub (`data-menu-page="settings"`) and category buttons such as `button[name="Advanced"]`; the intended behavior is now `settings-category` with role=`tab` categories.
-   - Likely target: `tests/game-smoke.spec.js`, `tests/scenario-browser.spec.js`, `tests/devtools-toolbox.spec.js`, `docs/patterns/settings-and-ui.md`, and any remaining docs/copy that describe the deprecated settings hub.
-   - Validation:
+   - Implemented: `tests/game-smoke.spec.js`, `tests/scenario-browser.spec.js`, `tests/devtools-toolbox.spec.js`, and `tests/gyms/ui-navigation.gym.spec.js` now use role=`tab` settings categories and expect `settings-category` directly instead of the removed settings hub.
+   - Implemented: `docs/patterns/settings-and-ui.md` now describes the current tab-based settings page model.
+   - Validation passed:
      ```sh
      bun run build
      bunx playwright test tests/settings.spec.js tests/game-smoke.spec.js tests/scenario-browser.spec.js tests/devtools-toolbox.spec.js --project=chromium
+     bunx playwright test tests/gyms/ui-navigation.gym.spec.js --project=chromium
      ```
 
 9. **Stabilize input-hint scheme behavior and commit/validate pending input changes** — required before calling the foundation pass complete

@@ -8,15 +8,18 @@ test.beforeEach(async ({ page }) => {
 
 async function openStartSettings(page) {
   await page.locator('#startSettingsButton').click();
-  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'settings');
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'settings-category');
+  await expect(page.locator('#menuTitle')).toHaveText('Keyboard');
+  await expect(page.getByRole('tab', { name: 'Keyboard' })).toHaveAttribute('aria-selected', 'true');
 }
 
 async function openCategory(page, id, title) {
-  await page.locator(`[data-settings-category="${id}"]`).click();
+  await page.getByRole('tab', { name: title }).click();
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'settings-category');
   await expect(page.locator('#settingsHubPage')).toBeHidden();
   await expect(page.locator('#settingsCategoryPage')).toBeVisible();
   await expect(page.locator('#menuTitle')).toHaveText(title);
+  await expect(page.locator(`[role="tab"][data-settings-tab="${id}"]`)).toHaveAttribute('aria-selected', 'true');
 }
 
 async function installMockGamepad(page) {
@@ -66,7 +69,7 @@ async function expectFocusedLevelRow(page, levelId) {
   await expect.poll(() => page.evaluate(() => document.activeElement?.dataset.scenarioId || '')).toBe(levelId);
 }
 
-test('settings hub, accessibility motion, advanced JSON, and start flow', async ({ page }) => {
+test('settings tabs, accessibility motion, advanced JSON, and start flow', async ({ page }) => {
   const body = page.locator('body');
   const pauseScreen = page.locator('#pauseScreen');
 
@@ -74,8 +77,7 @@ test('settings hub, accessibility motion, advanced JSON, and start flow', async 
   await expect(page.locator('#startSettingsButton')).toHaveText('Settings');
 
   await openStartSettings(page);
-  await expect(page.locator('#menuTitle')).toHaveText('Settings');
-  await expect(page.locator('.settings-category-card__title')).toHaveText(['Keyboard', 'Controller', 'Gameplay', 'Accessibility', 'Graphics', 'Advanced']);
+  await expect(page.locator('[role="tab"][data-settings-tab]')).toHaveText(['Keyboard', 'Controller', 'Gameplay', 'Accessibility', 'Graphics', 'Advanced']);
 
   await openCategory(page, 'accessibility', 'Accessibility');
   await expect(page.locator('[data-setting-row="motion"]')).toContainText('System');
@@ -118,9 +120,7 @@ test('settings hub, accessibility motion, advanced JSON, and start flow', async 
   await page.getByRole('button', { name: 'Replace app settings' }).click();
   await expect(page.locator('#settingsJsonStatus')).toContainText('Replace failed');
 
-  await page.locator('[data-settings-back="category"]').click();
-  await expect(pauseScreen).toHaveAttribute('data-menu-page', 'settings');
-  await page.locator('[data-settings-back="root"]').click();
+  await page.keyboard.press('Escape');
   await expect(pauseScreen).toHaveAttribute('data-menu-page', 'main');
 });
 
@@ -140,8 +140,7 @@ test('developer maps are only available in the normal Level Select when Develope
   await expect(page.locator('#developerTools')).toBeHidden();
   await page.locator('[data-setting-row="developer-mode"]').click();
   await expect(page.locator('#developerTools')).toBeVisible();
-  await page.locator('[data-settings-back="category"]').click();
-  await page.locator('[data-settings-back="root"]').click();
+  await page.keyboard.press('Escape');
 
   await page.locator('#startLevelSelectButton').click();
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'level-select');
@@ -172,8 +171,7 @@ test('controller can navigate and choose levels in Level Select', async ({ page 
   await openCategory(page, 'advanced', 'Advanced');
   await page.locator('[data-setting-row="developer-mode"]').click();
   await expect(page.locator('#developerTools')).toBeVisible();
-  await page.locator('[data-settings-back="category"]').click();
-  await page.locator('[data-settings-back="root"]').click();
+  await page.keyboard.press('Escape');
 
   await page.locator('#startLevelSelectButton').click();
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'level-select');
@@ -239,7 +237,6 @@ test('keyboard and controller settings rows, binds, diagnostics, and pause flow'
   await expect(page.locator('[data-bind-action="left"]')).toContainText('A');
   await expect(page.locator('[data-bind-action="left"]')).toContainText('←');
 
-  await page.locator('[data-settings-back="category"]').click();
   await openCategory(page, 'controller', 'Controller');
   await expect(page.locator('[data-setting-row="controller-enabled"]')).toContainText('On');
   await expect(page.locator('#controllerName')).toContainText('None detected');
@@ -249,8 +246,7 @@ test('keyboard and controller settings rows, binds, diagnostics, and pause flow'
   await page.getByRole('button', { name: 'Reset Controller Defaults' }).click();
   await expect(page.locator('#settingsStatus')).toContainText('Restored controller defaults');
 
-  await page.locator('[data-settings-back="category"]').click();
-  await page.locator('[data-settings-back="root"]').click();
+  await page.keyboard.press('Escape');
 
   await page.locator('#startButton').click();
   await expect(body).toHaveClass(/\bplaying\b/);
@@ -260,8 +256,9 @@ test('keyboard and controller settings rows, binds, diagnostics, and pause flow'
   await page.keyboard.press('Escape');
   await expect(body).toHaveClass(/\bpaused\b/);
   await page.locator('#settingsButton').click();
-  await expect(pauseScreen).toHaveAttribute('data-menu-page', 'settings');
-  await page.locator('[data-settings-back="root"]').click();
+  await expect(pauseScreen).toHaveAttribute('data-menu-page', 'settings-category');
+  await expect(page.getByRole('tab', { name: 'Keyboard' })).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('Escape');
   await expect(pauseScreen).toHaveAttribute('data-menu-page', 'main');
   await pauseScreen.getByRole('button', { name: 'Continue' }).click();
   await expect(body).not.toHaveClass(/\bpaused\b/);

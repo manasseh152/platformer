@@ -319,8 +319,8 @@ Changed files:
 Implemented:
 
 - Scenario browser tab/render/local-draft/launch behavior moved out of `src/menu.js`.
-- Settings and level-select back controls are explicit DOM controls again instead of only command-bar hint metadata.
-- Start settings opens the settings hub, and category back returns to the hub.
+- Settings and level-select back controls were restored at this stage instead of only command-bar hint metadata; later settings-tab work removed the settings hub again.
+- At this stage, start settings opened the settings hub and category back returned to the hub; current behavior is direct `settings-category` tab navigation.
 - Developer-mode toggle preserves focus on the toggled row after rerender.
 
 Validation:
@@ -525,30 +525,35 @@ bun run build
 bunx playwright test tests/tilemap.spec.js --project=chromium
 ```
 
-## Required next implementation slices
-
 ### Slice 11: Update settings-tab UI validation and remove stale settings-hub expectations
 
-Why next:
+Completed on 2026-05-09.
 
-- The settings hub is deprecated and removed. Start/pause Settings now opens the new settings tab system directly with Keyboard selected by default.
-- Validation found tests still expecting the removed hub (`data-menu-page="settings"`) and category buttons such as `button[name="Advanced"]` instead of the new role=`tab` categories.
-- Scenario browser and devtools tests still need to enable Developer Mode, but should do so through the Advanced tab in the tab system.
-
-Likely files:
+Changed files:
 
 - `tests/game-smoke.spec.js`
 - `tests/scenario-browser.spec.js`
 - `tests/devtools-toolbox.spec.js`
+- `tests/gyms/ui-navigation.gym.spec.js`
 - `docs/patterns/settings-and-ui.md`
-- any remaining docs/copy that describe the deprecated settings hub
+- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/patterns/foundation-review.md`
+
+Implemented:
+
+- Browser tests now expect start/pause Settings to open `settings-category` directly with Keyboard selected.
+- Developer Mode setup in scenario-browser and devtools tests now uses the Advanced settings tab instead of stale hub category cards.
+- Settings pattern docs describe the current tab-based page model and removed settings hub expectations.
 
 Validation:
 
 ```sh
 bun run build
 bunx playwright test tests/settings.spec.js tests/game-smoke.spec.js tests/scenario-browser.spec.js tests/devtools-toolbox.spec.js --project=chromium
+bunx playwright test tests/gyms/ui-navigation.gym.spec.js --project=chromium
 ```
+
+## Required next implementation slices
 
 ### Slice 12: Stabilize input-hint scheme behavior and commit/validate pending input changes
 

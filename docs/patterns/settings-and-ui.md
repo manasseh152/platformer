@@ -38,7 +38,8 @@ game.settings = {
 game.menu = {
   page: 'main',
   origin: 'pause',
-  direction: 'forward'
+  direction: 'forward',
+  settingsCategory: null
 };
 ```
 
@@ -71,21 +72,18 @@ Normal setting commits include:
 Current pages:
 
 - `main`
-- `settings`
-- `keyboard`
-- `controller`
-- `accessibility`
-- `advanced`
+- `settings-category`
 - `level-select`
+
+Settings categories are tabs inside `settings-category`, tracked by transient `game.menu.settingsCategory`. Start and pause Settings open `settings-category` directly with Keyboard selected by default.
 
 Back behavior should be explicit and predictable:
 
-- category page → settings hub
-- settings hub from pause → pause main
-- settings hub from start → close overlay back to start
+- settings from pause → pause main
+- settings from start → close overlay back to start
 - level select from pause/start follows its caller context
 
-Do not persist or restore the last nested settings page automatically.
+Do not persist or restore the last settings tab automatically.
 
 ## DOM pattern
 
@@ -112,7 +110,7 @@ Use shared design-system primitives for reusable UI pieces:
 Prefer data attributes for state:
 
 ```html
-<div id="pauseScreen" data-menu-page="settings" data-menu-origin="pause"></div>
+<div id="pauseScreen" data-menu-page="settings-category" data-current-settings-category="keyboard" data-menu-origin="pause"></div>
 ```
 
 CSS should reveal pages from state, not from ad-hoc classes:
@@ -120,7 +118,7 @@ CSS should reveal pages from state, not from ad-hoc classes:
 ```css
 .menu-page { display: none; }
 
-#pauseScreen[data-menu-page="settings"] [data-page="settings"] {
+#pauseScreen[data-menu-page="settings-category"] [data-page="settings-category"] {
   display: block;
 }
 ```
@@ -159,7 +157,7 @@ If View Transition API is unavailable or motion is reduced, structural changes a
 
 ## Settings UI categories
 
-Settings hub lists categories, not implementation panels.
+Settings uses a direct tab system, not a separate settings hub. The category tabs render inside the settings category page and switch panels without changing the page model.
 
 Recommended order:
 
@@ -170,7 +168,7 @@ Recommended order:
 5. Graphics
 6. Advanced
 
-Category pages use the same row/section primitives. Add new settings by adding category metadata and renderers, not by inventing new page mechanics.
+Category tab panels use the same row/section primitives. Add new settings by adding category metadata and renderers, not by inventing new page mechanics.
 
 ## Advanced tools
 

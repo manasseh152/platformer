@@ -25,8 +25,9 @@ test(`${gym.name}: developer mode exposes clean scenarios and loads Movement Gym
   await page.screenshot({ path: testInfo.outputPath('00-start-screen.png'), fullPage: true });
 
   await page.locator('#startSettingsButton').click();
-  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'settings');
-  await page.locator('[data-settings-category="advanced"]').click();
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'settings-category');
+  await expect(page.getByRole('tab', { name: 'Keyboard' })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', { name: 'Advanced' }).click();
   await expect(page.locator('#menuTitle')).toHaveText('Advanced');
   await expect(page.locator('[data-setting-row="developer-mode"]')).toContainText('Off');
 
@@ -41,11 +42,9 @@ test(`${gym.name}: developer mode exposes clean scenarios and loads Movement Gym
     ui: { started: false, paused: false, menuPage: 'settings-category', menuOrigin: 'start' },
     settings: { developerMode: true }
   });
-  expect(developerSnapshot.ui.focused?.dataset?.settingRow).toBe('developer-mode');
+  expect(developerSnapshot.ui.focused?.dataset?.settingsTab).toBeTruthy();
 
-  await page.locator('[data-settings-back="category"]').click();
-  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'settings');
-  await page.locator('[data-settings-back="root"]').click();
+  await page.keyboard.press('Escape');
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'main');
 
   await page.locator('#startLevelSelectButton').click();
