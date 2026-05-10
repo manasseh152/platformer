@@ -1,6 +1,6 @@
 import { updateCamera } from '../core/camera.js';
 import { updateGameplay } from '../core/physics.js';
-import { drawGame } from '../render.js';
+import { renderGameplayFrame } from '../render/gameplay-render-pipeline.js';
 import { isPaused, isStarted, isWon } from '../app/app-state.js';
 import { resetGameplaySession, syncGameplaySessionToGame } from '../core/gameplay-session.js';
 
@@ -47,7 +47,7 @@ export function createGameplayScene(game, props = {}) {
       updateCamera(game, dt);
     },
     render(runtime) {
-      drawGame(runtime, game);
+      renderGameplayFrame(runtime, game);
     },
     snapshot() {
       return {

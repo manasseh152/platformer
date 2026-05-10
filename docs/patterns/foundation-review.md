@@ -37,7 +37,7 @@ Validated for the aggregate foundation gate on 2026-05-10:
 bun run validate:foundation
 ```
 
-This command runs build, the Chromium Playwright suite, and map-render validation. The latest run passed 166 Chromium tests and rendered `.temp/full-map.png`; Vite also reported port 4174 already in use during map rendering because an existing server was present.
+This command runs build, the Chromium Playwright suite, and map-render validation. The latest focused foundation validation passed build, 173 Chromium tests, and rendered `.temp/full-map.png`; Vite also reported port 4174 already in use during map rendering because an existing server was present.
 
 Before implementation slices, run the aggregate gate unless the slice has a narrower documented validation plan:
 
@@ -70,7 +70,7 @@ Confidence:
 | App/browser shell | top-level app modules, `src/app/**` | DOM, settings persistence, browser adapters, composition root | May compose all layers, but should pass smaller contexts over time. |
 | Game UI | `src/menu.js`, `src/app/ui/**`, `src/settings-ui.js`, `src/scenes/menu-dom.js`, `styles/main.css` | Start/pause/settings/scenario browser/HUD/devtools shell | `src/menu.js` remains the shell/focus/event hotspot while scenario browser, settings navigation, and settings actions are focused modules. |
 | Editor UI/tool | `src/editor/**`, `styles/map-editor.css` | Browser map editor shell, command/status/payload helpers, viewport, persistence UI | `src/editor/map-editor.js` owns DOM/canvas wiring; `src/editor/map-editor-commands.js` owns reusable draft commands/status/payload helpers. |
-| Rendering | `src/render.js`, `src/render/**`, `src/rendering/**`, `src/gpu/**` | World drawing, render helpers, future renderer backends | `src/render/world-renderer.js` owns canvas drawing; `src/render.js` remains the presentation facade. |
+| Rendering | `src/render.js`, `src/render/**`, `src/rendering/**`, `src/gpu/**` | Packet extraction, native-frame backends, presentation backends, render helpers | Gameplay and map snapshots render through packet extractors/backends; `src/render.js` is a deprecated facade. |
 | Devtools | `src/devtools/**` | Developer-only toolbox/overlays | Keep gated and out of core gameplay logic. |
 
 ## Findings
@@ -137,18 +137,18 @@ Direction:
 - Introduce smaller contexts over time: gameplay, UI, render, editor.
 - Remove mirrored gameplay fields only after callers use `game.gameplaySession` consistently.
 
-### Completed — World rendering is separated from DOM HUD/UI updates
+### Completed — World rendering is packetized and separated from DOM HUD/UI updates
 
 Evidence:
 
-- `src/render/world-renderer.js` owns canvas world drawing, camera snap/subpixel calculations, tilemap/decor/actor drawing, and devtools debug overlays.
+- Gameplay and map snapshots now render through packet extractors and `NativeFrameBackend` modules rather than the deleted legacy direct Canvas2D world renderer.
 - `src/app/ui/gameplay-hud.js` owns HUD level name, messages, speedrun HUD, hearts, body classes, and input hint presentation.
-- `src/render.js` remains a small presentation facade that coordinates world drawing, HUD presentation, and presenter output.
-- `tests/core-boundary.spec.js` asserts the world renderer does not import HUD/input presentation modules or the legacy input facade.
+- `src/render.js` remains a deprecated facade that forwards to new pipeline modules only.
+- `tests/core-boundary.spec.js` asserts the deleted legacy world renderer has no production call path.
 
 Follow-up:
 
-- Before shaders/WebGPU work, represent renderable concepts as data/plans where useful.
+- Keep extracting render-facing read models/adapters where that reduces mutable `game` coupling.
 - Add characterization tests before changing HUD/message focus or speedrun display behavior.
 
 ### Completed — Tilemap compiler internals have focused ownership
@@ -405,21 +405,20 @@ Known validation note: this gate still has the existing two `tests/devtools-tool
 
 Completed on 2026-05-09.
 
-Changed files:
+Changed files at the time:
 
-- `src/render/world-renderer.js`
 - `src/app/ui/gameplay-hud.js`
 - `src/render.js`
 - `tests/core-boundary.spec.js`
 - `docs/adr/0004-foundation-review-before-new-systems.md`
 - `docs/patterns/foundation-review.md`
 
-Implemented:
+Implemented at the time:
 
-- Canvas world drawing, camera snap/subpixel calculations, tilemap/decor/actor drawing, and debug overlays moved out of `src/render.js` into `src/render/world-renderer.js`.
+- Canvas world drawing, camera snap/subpixel calculations, tilemap/decor/actor drawing, and debug overlays were first moved out of `src/render.js` into a focused renderer module. That transitional direct Canvas2D renderer has since been superseded by the packet pipeline and deleted.
 - HUD level name, message modal state, speedrun HUD, hearts, body classes, and gameplay input hints moved into `src/app/ui/gameplay-hud.js`.
-- `src/render.js` remains a compatibility/presentation facade that preserves draw order and existing exports for map snapshots.
-- Boundary coverage now asserts the world renderer does not import HUD/input presentation modules or the removed legacy input facade.
+- `src/render.js` is now a deprecated compatibility facade that forwards to new pipeline/HUD modules only.
+- Boundary coverage now asserts the deleted legacy renderer has no production call path.
 
 Validation:
 

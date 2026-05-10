@@ -110,21 +110,23 @@ Validation at completion:
 
 ### Pass 3: Packet fidelity and legacy renderer deletion plan
 
-Goal: remove remaining reasons to keep `src/render/world-renderer.js` exports.
+Status: **done**.
 
-Recommended scope:
+Completed in the third implementation pass:
 
-- Audit every export still re-exported from deprecated `src/render.js`.
-- Replace test/tool/map snapshot usages with packet extractor/backend modules.
-- Add packet-level helpers for any remaining legacy draw helper use cases.
-- Decide whether `customCanvas` remains unused; if unused, remove it from the v1 vocabulary, or keep it documented as a deliberate escape hatch.
-- Compare visual output for gameplay and map snapshots against current expected artifacts; tune actor/backdrop packet conversion where needed.
+- Audited all `src/render.js` facade exports and removed the remaining legacy direct Canvas2D world-renderer forwards.
+- Switched gameplay scene rendering to import `renderGameplayFrame` from `src/render/gameplay-render-pipeline.js` directly.
+- Kept `src/render.js` as a deprecated facade that only forwards to new pipeline/HUD modules for compatibility.
+- Deleted `src/render/world-renderer.js`; there is no production call path to the legacy renderer.
+- Confirmed map snapshots already use packet extraction and the Canvas2D native-frame backend.
+- Kept `customCanvas` documented as a deliberate temporary escape hatch for the v1 packet vocabulary; current extraction does not rely on it.
+- Updated foundation-review docs and boundary coverage for the packetized renderer state.
 
-Acceptance criteria:
+Validation at completion:
 
-- `src/render/world-renderer.js` is either deleted or reduced to documented deprecated-only compatibility with no production call path.
-- `src/render.js` facade only forwards to new pipeline modules or is removed if imports are gone.
-- Map-render validation remains stable.
+- `bun run build` passed.
+- `bunx playwright test --project=chromium` passed.
+- `bun run validate:map-render` rendered `.temp/full-map.png`; Vite also reported port `4174` already in use because an existing server was present.
 
 ### Pass 4: Render extraction closer to ECS scene model
 

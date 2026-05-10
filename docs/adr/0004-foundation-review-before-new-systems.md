@@ -122,9 +122,9 @@ Initial slice order:
 
 4. **Split world rendering from HUD/message DOM updates** — completed
    - Invariant: canvas world rendering can evolve independently from DOM HUD, message, speedrun, and input-hint updates.
-   - Implemented: canvas drawing, camera snap/subpixel calculations, tilemap/decor/actor drawing, and debug overlays now live in `src/render/world-renderer.js`.
+   - Implemented: gameplay and map snapshots now render through packet extractors plus native-frame/presentation backends; the legacy direct Canvas2D world renderer was deleted after imports migrated.
    - Implemented: HUD level name, messages, speedrun HUD, hearts, body classes, and input hints now live in `src/app/ui/gameplay-hud.js`.
-   - Implemented: `src/render.js` remains a small presentation facade for draw order, HUD sync, and presenter output.
+   - Implemented: `src/render.js` remains a deprecated facade that forwards only to new pipeline/HUD modules.
    - Rendering/tilemap changes require map render validation.
 
 5. **Decompose tilemap compiler internals** — completed

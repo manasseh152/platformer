@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { readdir, readFile } from 'node:fs/promises';
+import { access, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const catalogRoot = path.resolve('src/catalog');
@@ -71,11 +71,12 @@ test('gameplay systems query scene components instead of tilemap compatibility h
   }
 });
 
-test('world renderer does not import HUD/input presentation modules', async () => {
-  const source = await readFile(path.resolve('src/render/world-renderer.js'), 'utf8');
-  expect(source).not.toMatch(/input-presentation/);
-  expect(source).not.toMatch(/gameplay-hud/);
-  expect(source).not.toMatch(/['"]\.\.\/input\.js['"]/);
+test('legacy world renderer has no production call path', async () => {
+  const legacyWorldRenderer = path.resolve('src/render/world-renderer.js');
+  await expect(access(legacyWorldRenderer)).rejects.toThrow();
+
+  const facade = await readFile(path.resolve('src/render.js'), 'utf8');
+  expect(facade).not.toMatch(/world-renderer/);
 });
 
 test('editor command helpers do not reference browser globals directly', async () => {
