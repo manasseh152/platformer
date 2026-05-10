@@ -150,22 +150,24 @@ Validation at completion:
 
 ### Pass 5: Asset atlas and sprite packet bridge
 
-Goal: prepare for WebGL/WebGPU-native rendering without changing extraction semantics.
+Status: **done**.
 
-Recommended scope:
+Completed in the fifth implementation pass:
 
-- Extend asset registry from image lookup to metadata lookup:
-  - `assetId -> image` for Canvas2D
-  - `assetId -> atlas/sprite rect` for future GPU backends
-- Add optional `sprite` or `texturedQuad` packet once real atlas metadata exists.
-- Keep current `image` packet as a compatibility path until atlas migration is complete.
-- Add padding/extrusion rules for atlas sprites before GPU sampling depends on them.
+- Extended the compatibility asset registry from direct image lookup to metadata lookup while preserving `assetId -> image` for Canvas2D consumers.
+- Added atlas sprite metadata helpers with explicit sprite rect, padding, and extrusion defaults for future GPU sampling.
+- Added `getMetadata`, `getSprite`, and `resolveDrawable` registry APIs so backends can resolve standalone images and atlas sprites behind the same asset ID.
+- Kept existing `image` packets as the compatibility path and taught the Canvas2D backend to draw them from either standalone images or atlas rect metadata.
+- Added Canvas2D support for optional `sprite` and `texturedQuad` packets behind the same drawable resolution path.
+- Confirmed extractors remain asset-layout agnostic: they still emit stable asset IDs and do not know whether an asset is standalone or atlas-backed.
+- Added focused coverage for atlas metadata lookup and Canvas2D atlas-rect drawing without requiring WebGPU.
 
-Acceptance criteria:
+Validation at completion:
 
-- Existing image packets still render on Canvas2D.
-- New atlas metadata can be tested without WebGPU.
-- No extractor needs to know whether an asset resolves to standalone image or atlas rect.
+- `bun run build` passed.
+- `bunx playwright test tests/render-pipeline.spec.js --project=chromium` passed.
+- Full Chromium Playwright suite had one unrelated map-editor timing failure; rerunning that test passed.
+- `render_full_map_png` rendered `.temp/full-map.png` at `1152×512`; Vite also reported port `4174` already in use because an existing server was present.
 
 ### Pass 6: WebGPU/WebGL native backend experiment
 

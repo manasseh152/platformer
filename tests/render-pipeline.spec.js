@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { createRenderFrameBuilder, resetRenderPacketSequenceForTests } from '../src/engine/render/frame-builder.js';
 import { computePresentationViewport, prepareRenderView, worldToNativeRect } from '../src/engine/render/viewport.js';
-import { createAssetRegistry, ASSET_IDS } from '../src/render/asset-registry.js';
+import { createAssetRegistry, ASSET_IDS, createAtlasSpriteMetadata } from '../src/render/asset-registry.js';
 import { createGameplayRenderReadModel } from '../src/render/extractors/gameplay-renderables.js';
 
 test('presentation viewport integer-scales and centers native frame', () => {
@@ -41,6 +41,76 @@ test('asset registry maps namespaced IDs to current image handles', () => {
 
   expect(registry.getImage(ASSET_IDS.HAZARD_SPIKES)).toBe(image);
   expect(registry.isLoaded(ASSET_IDS.HAZARD_SPIKES)).toBe(true);
+});
+
+test('asset registry exposes atlas sprite metadata without changing asset IDs', () => {
+  const atlas = { complete: true, naturalWidth: 64, naturalHeight: 32 };
+  const registry = createAssetRegistry(
+    { medievalAtlas: atlas },
+    {
+      metadata: {
+        [ASSET_IDS.HAZARD_SPIKES]: createAtlasSpriteMetadata({
+          atlasId: 'atlas.medieval',
+          imageKey: 'medievalAtlas',
+          x: 18,
+          y: 4,
+          w: 12,
+          h: 10
+        })
+      }
+    }
+  );
+
+  expect(registry.getImage(ASSET_IDS.HAZARD_SPIKES)).toBe(atlas);
+  expect(registry.getSprite(ASSET_IDS.HAZARD_SPIKES)).toMatchObject({
+    kind: 'atlas-sprite',
+    atlasId: 'atlas.medieval',
+    rect: { x: 18, y: 4, w: 12, h: 10 },
+    padding: 2,
+    extrude: 1
+  });
+  expect(registry.isLoaded(ASSET_IDS.HAZARD_SPIKES)).toBe(true);
+});
+
+test('canvas native backend draws image packets from atlas metadata', async ({ page }) => {
+  await page.goto('/');
+  const pixel = await page.evaluate(async () => {
+    const [{ createRenderFrameBuilder }, { createAssetRegistry, ASSET_IDS, createAtlasSpriteMetadata }, { createCanvas2DNativeFrameBackend }] = await Promise.all([
+      import('/src/engine/render/frame-builder.js'),
+      import('/src/render/asset-registry.js'),
+      import('/src/render/backends/canvas2d-native-frame-backend.js')
+    ]);
+
+    const source = document.createElement('canvas');
+    source.width = 4;
+    source.height = 2;
+    const sourceCtx = source.getContext('2d');
+    sourceCtx.fillStyle = '#ff0000';
+    sourceCtx.fillRect(0, 0, 2, 2);
+    sourceCtx.fillStyle = '#00ff00';
+    sourceCtx.fillRect(2, 0, 2, 2);
+
+    const atlas = new Image();
+    await new Promise(resolve => {
+      atlas.onload = resolve;
+      atlas.src = source.toDataURL();
+    });
+
+    const registry = createAssetRegistry(
+      { atlas },
+      { metadata: { [ASSET_IDS.HAZARD_SPIKES]: createAtlasSpriteMetadata({ atlasId: 'atlas.test', imageKey: 'atlas', x: 2, y: 0, w: 2, h: 2 }) } }
+    );
+    const backend = createCanvas2DNativeFrameBackend({ width: 2, height: 2, assetRegistry: registry });
+    const frame = createRenderFrameBuilder({ width: 2, height: 2 })
+      .add({ kind: 'clear', fill: '#000' })
+      .add({ kind: 'image', assetId: ASSET_IDS.HAZARD_SPIKES, x: 0, y: 0, w: 2, h: 2 })
+      .finalize();
+
+    backend.draw(frame);
+    return Array.from(backend.ctx.getImageData(0, 0, 1, 1).data);
+  });
+
+  expect(pixel).toEqual([0, 255, 0, 255]);
 });
 
 test('gameplay render read model separates authored scene, runtime actors, and transient effects', () => {

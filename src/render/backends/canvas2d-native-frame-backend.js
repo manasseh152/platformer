@@ -42,6 +42,26 @@ function strokeAndFill(ctx, packet) {
   }
 }
 
+function drawImageLikePacket(ctx, packet, assetRegistry) {
+  const drawable = assetRegistry?.resolveDrawable?.(packet.assetId) ?? { image: assetRegistry?.getImage?.(packet.assetId) };
+  if (!drawable?.image || !assetRegistry?.isLoaded(packet.assetId)) return;
+  const source = packet.sourceRect ?? drawable.rect ?? { x: 0, y: 0, w: drawable.image.naturalWidth ?? drawable.image.width, h: drawable.image.naturalHeight ?? drawable.image.height };
+  const x = packet.x;
+  const y = packet.y;
+  const w = packet.w;
+  const h = packet.h;
+  ctx.save();
+  if (packet.flipX || packet.flipY || packet.rotation) {
+    ctx.translate(x + w / 2, y + h / 2);
+    if (packet.rotation) ctx.rotate(packet.rotation);
+    ctx.scale(packet.flipX ? -1 : 1, packet.flipY ? -1 : 1);
+    ctx.drawImage(drawable.image, source.x, source.y, source.w, source.h, -w / 2, -h / 2, w, h);
+  } else {
+    ctx.drawImage(drawable.image, source.x, source.y, source.w, source.h, x, y, w, h);
+  }
+  ctx.restore();
+}
+
 export function createCanvas2DNativeFrameBackend({ width, height, canvas = document.createElement('canvas'), assetRegistry } = {}) {
   canvas.width = width;
   canvas.height = height;
@@ -64,19 +84,8 @@ export function createCanvas2DNativeFrameBackend({ width, height, canvas = docum
         ctx.beginPath(); ctx.ellipse(packet.x, packet.y, packet.radiusX, packet.radiusY, packet.rotation ?? 0, packet.startAngle ?? 0, packet.endAngle ?? Math.PI * 2); strokeAndFill(ctx, packet);
       } else if (packet.kind === 'path') {
         ctx.beginPath(); for (const command of packet.commands ?? []) applyPathCommand(ctx, command); strokeAndFill(ctx, packet);
-      } else if (packet.kind === 'image') {
-        const image = assetRegistry?.getImage(packet.assetId);
-        if (!image || !assetRegistry?.isLoaded(packet.assetId)) return;
-        ctx.save();
-        if (packet.flipX || packet.flipY || packet.rotation) {
-          ctx.translate(packet.x + packet.w / 2, packet.y + packet.h / 2);
-          if (packet.rotation) ctx.rotate(packet.rotation);
-          ctx.scale(packet.flipX ? -1 : 1, packet.flipY ? -1 : 1);
-          ctx.drawImage(image, -packet.w / 2, -packet.h / 2, packet.w, packet.h);
-        } else {
-          ctx.drawImage(image, packet.x, packet.y, packet.w, packet.h);
-        }
-        ctx.restore();
+      } else if (packet.kind === 'image' || packet.kind === 'sprite' || packet.kind === 'texturedQuad') {
+        drawImageLikePacket(ctx, packet, assetRegistry);
       } else if (packet.kind === 'customCanvas') {
         packet.draw?.(ctx, packet.payload);
       }
