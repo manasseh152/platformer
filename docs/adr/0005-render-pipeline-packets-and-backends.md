@@ -90,24 +90,23 @@ Validation at completion:
 
 ### Pass 2: Presentation backend cleanup
 
-Goal: replace the old presenter facade internals with explicit `PresentationBackend` contracts while preserving behavior.
+Status: **done**.
 
-Recommended scope:
+Completed in the second implementation pass:
 
-- Introduce concrete presentation modules for Canvas2D, WebGL, and WebGPU if they fit the narrow contract:
-  - input: `NativeFrameSource`
-  - input: computed `PresentationViewport`
-  - responsibility: draw native frame to the visible canvas only
-- Move presentation viewport computation out of the legacy presenter object and into the new presentation boundary.
-- Keep WebGL/WebGPU only if they do not pull in gameplay, packets, ECS, camera, or extraction concerns.
-- Add a dev/debug affordance to reveal the native frame canvas separately from the presented canvas.
-- Keep `src/presenter.js` as deprecated facade if broad call sites still need it.
+- Added concrete `PresentationBackend` modules for Canvas2D, WebGL, and WebGPU under `src/render/presentation`.
+- Refactored `src/presenter.js` into a deprecated compatibility facade over explicit native-frame source presentation.
+- Kept gameplay on Canvas2D native-frame rendering while presenting via `presentNativeFrame(nativeBackend.getSource())`.
+- Moved the WebGPU presenter implementation behind the presentation backend contract and left the old GPU presenter path as a deprecated re-export.
+- Added a native-frame debug affordance on the presenter facade via `setNativeFrameDebugVisible(true)`.
+- Exposed presentation scale/letterbox offsets on the game canvas for browser smoke visibility.
 
-Acceptance criteria:
+Validation at completion:
 
-- Gameplay still renders via Canvas2D native frame plus explicit presentation backend.
-- Existing optional WebGPU/WebGL presentation either conforms to the contract or is explicitly deprecated/removed.
-- Integer scaling/letterboxing behavior is covered by tests and visible in browser smoke tests.
+- `bun run build` passed.
+- Focused render pipeline and browser smoke tests passed with `bunx playwright test tests/render-pipeline.spec.js tests/game-smoke.spec.js --project=chromium`.
+- Full Chromium Playwright suite had one unrelated map-editor timeout on first run; rerunning that test passed.
+- `bun run validate:map-render` rendered `.temp/full-map.png`; Vite also reported port `4174` already in use because an existing server was present.
 
 ### Pass 3: Packet fidelity and legacy renderer deletion plan
 

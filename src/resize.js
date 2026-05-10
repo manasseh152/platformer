@@ -14,6 +14,9 @@ export function applyResize(game) {
   game.view.displayScale = viewport.scale;
   game.view.displayOffsetX = viewport.offsetX;
   game.view.displayOffsetY = viewport.offsetY;
+  game.canvas.dataset.presentationScale = String(viewport.scale);
+  game.canvas.dataset.presentationOffsetX = String(viewport.offsetX);
+  game.canvas.dataset.presentationOffsetY = String(viewport.offsetY);
   game.presenter.resize(game.canvas.width, game.canvas.height);
   game.ctx.imageSmoothingEnabled = false;
   game.canvas.classList.remove('resizing');

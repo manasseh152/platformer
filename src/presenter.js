@@ -1,25 +1,6 @@
-import { calculateViewport } from './engine/viewport.js';
-
-const VERTEX_SHADER = `
-attribute vec2 a_position;
-attribute vec2 a_texcoord;
-uniform vec2 u_offset;
-uniform vec2 u_padding;
-varying vec2 v_texcoord;
-void main() {
-  gl_Position = vec4(a_position * (vec2(1.0) + u_padding) + u_offset, 0.0, 1.0);
-  v_texcoord = a_texcoord;
-}
-`;
-
-const FRAGMENT_SHADER = `
-precision mediump float;
-uniform sampler2D u_texture;
-varying vec2 v_texcoord;
-void main() {
-  gl_FragColor = texture2D(u_texture, v_texcoord);
-}
-`;
+import { computePresentationViewport } from './engine/render/viewport.js';
+import { createCanvas2DPresentationBackend } from './render/presentation/canvas2d-presentation-backend.js';
+import { createWebGlPresentationBackend } from './render/presentation/webgl-presentation-backend.js';
 
 function makeRenderCanvas(width, height) {
   const canvas = document.createElement('canvas');
@@ -28,150 +9,101 @@ function makeRenderCanvas(width, height) {
   return canvas;
 }
 
-function compileShader(gl, type, source) {
-  const shader = gl.createShader(type);
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    const message = gl.getShaderInfoLog(shader) || 'Unknown shader compile error';
-    gl.deleteShader(shader);
-    throw new Error(message);
-  }
-  return shader;
+function nativeFrameSourceFromCanvas(canvas) {
+  return { kind: 'canvas2d', width: canvas.width, height: canvas.height, canvas };
 }
 
-function createProgram(gl) {
-  const program = gl.createProgram();
-  gl.attachShader(program, compileShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER));
-  gl.attachShader(program, compileShader(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER));
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    const message = gl.getProgramInfoLog(program) || 'Unknown WebGL link error';
-    gl.deleteProgram(program);
-    throw new Error(message);
+function createDefaultPresentationBackend(canvas) {
+  try {
+    return createWebGlPresentationBackend(canvas) || createCanvas2DPresentationBackend(canvas);
+  } catch (error) {
+    console.warn('WebGL presentation unavailable; falling back to 2D canvas.', error);
+    return createCanvas2DPresentationBackend(canvas);
   }
-  return program;
 }
 
-function createWebGlPresenter(canvas) {
-  const gl = canvas.getContext('webgl', {
-    alpha: false,
-    antialias: false,
-    depth: false,
-    preserveDrawingBuffer: false,
-    stencil: false
+function syncDebugNativeFrameCanvas(renderCanvas, visible) {
+  if (!visible) {
+    renderCanvas.remove?.();
+    return;
+  }
+  renderCanvas.id = 'nativeFrameDebugCanvas';
+  renderCanvas.dataset.debugNativeFrame = 'true';
+  Object.assign(renderCanvas.style, {
+    position: 'fixed',
+    right: '12px',
+    bottom: '12px',
+    width: `${renderCanvas.width}px`,
+    height: `${renderCanvas.height}px`,
+    imageRendering: 'pixelated',
+    zIndex: '10000',
+    border: '1px solid rgba(255,255,255,.45)',
+    background: '#080b11',
+    pointerEvents: 'none'
   });
-  if (!gl) return null;
-
-  const program = createProgram(gl);
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-    -1, -1, 0, 0,
-     1, -1, 1, 0,
-    -1,  1, 0, 1,
-     1,  1, 1, 1
-  ]), gl.STATIC_DRAW);
-
-  const texture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-
-  const positionLocation = gl.getAttribLocation(program, 'a_position');
-  const texcoordLocation = gl.getAttribLocation(program, 'a_texcoord');
-  const offsetLocation = gl.getUniformLocation(program, 'u_offset');
-  const paddingLocation = gl.getUniformLocation(program, 'u_padding');
-
-  return {
-    mode: 'webgl',
-    present(source, viewport, subpixelOffsetX = 0, subpixelOffsetY = 0) {
-      gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.clearColor(0.03, 0.045, 0.07, 1);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-
-      gl.viewport(viewport.offsetX, viewport.offsetY, Math.round(source.width * viewport.scale), Math.round(source.height * viewport.scale));
-      gl.useProgram(program);
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      gl.enableVertexAttribArray(positionLocation);
-      gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 16, 0);
-      gl.enableVertexAttribArray(texcoordLocation);
-      gl.vertexAttribPointer(texcoordLocation, 2, gl.FLOAT, false, 16, 8);
-      gl.uniform2f(offsetLocation, 2 * subpixelOffsetX / source.width, -2 * subpixelOffsetY / source.height);
-      gl.uniform2f(paddingLocation, 2 / source.width, 2 / source.height);
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    }
-  };
+  if (!renderCanvas.isConnected) document.body.append(renderCanvas);
 }
 
-function create2dPresenter(canvas) {
-  const ctx = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled = false;
-  return {
-    mode: '2d',
-    present(source, viewport, subpixelOffsetX = 0, subpixelOffsetY = 0) {
-      ctx.imageSmoothingEnabled = false;
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.fillStyle = '#080b11';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(
-        source,
-        viewport.offsetX + subpixelOffsetX * viewport.scale,
-        viewport.offsetY + subpixelOffsetY * viewport.scale,
-        Math.round(source.width * viewport.scale),
-        Math.round(source.height * viewport.scale)
-      );
-    }
-  };
-}
-
+/**
+ * @deprecated Compatibility facade. New rendering code should use native-frame
+ * backends plus render/presentation/* backends directly.
+ */
 export function createPresenter(canvas, width, height) {
   const renderCanvas = makeRenderCanvas(width, height);
   const renderCtx = renderCanvas.getContext('2d');
   renderCtx.imageSmoothingEnabled = false;
 
-  let output;
-  try {
-    output = createWebGlPresenter(canvas) || create2dPresenter(canvas);
-  } catch (error) {
-    console.warn('WebGL presenter unavailable; falling back to 2D canvas.', error);
-    output = create2dPresenter(canvas);
-  }
+  let presentationBackend = createDefaultPresentationBackend(canvas);
+  let debugNativeFrameVisible = false;
 
-  return {
+  const presenter = {
     canvas,
     renderCanvas,
     renderCtx,
-    viewport: { scale: 1, offsetX: 0, offsetY: 0 },
-    mode: output.mode,
+    viewport: computePresentationViewport(canvas.width, canvas.height, width, height),
+    get presentationBackend() { return presentationBackend; },
+    get mode() { return presentationBackend.mode; },
+    set mode(_) {},
     async tryEnableWebGpu(gpuSystem) {
-      if (this.mode === 'webgpu') return true;
+      if (presentationBackend.mode === 'webgpu') return true;
       try {
         const gpuContext = await gpuSystem?.ready;
         if (!gpuContext?.enabled) return false;
-        const { createWebGpuPresenter } = await import('./gpu/presenters/webgpu-presenter.js');
-        const webgpu = await createWebGpuPresenter(canvas, gpuContext);
+        const { createWebGpuPresentationBackend } = await import('./render/presentation/webgpu-presentation-backend.js');
+        const webgpu = await createWebGpuPresentationBackend(canvas, gpuContext);
         if (!webgpu) return false;
-        output.destroy?.();
-        output = webgpu;
-        this.mode = output.mode;
+        presentationBackend.destroy?.();
+        presentationBackend = webgpu;
         return true;
       } catch (error) {
-        console.warn('WebGPU presenter unavailable; keeping current presenter.', error);
+        console.warn('WebGPU presentation unavailable; keeping current presenter.', error);
         return false;
       }
     },
     resize(displayWidth, displayHeight) {
-      this.viewport = calculateViewport(displayWidth, displayHeight, width, height);
+      this.viewport = computePresentationViewport(displayWidth, displayHeight, width, height);
+    },
+    presentNativeFrame(source = nativeFrameSourceFromCanvas(renderCanvas), options = {}) {
+      presentationBackend.present(source, this.viewport, options);
     },
     present(subpixelOffsetX = 0, subpixelOffsetY = 0) {
-      output.present(renderCanvas, this.viewport, subpixelOffsetX, subpixelOffsetY);
+      this.presentNativeFrame(nativeFrameSourceFromCanvas(renderCanvas), { subpixelOffsetX, subpixelOffsetY });
+    },
+    setNativeFrameDebugVisible(visible) {
+      debugNativeFrameVisible = Boolean(visible);
+      syncDebugNativeFrameCanvas(renderCanvas, debugNativeFrameVisible);
+    },
+    getNativeFrameDebugVisible() {
+      return debugNativeFrameVisible;
     }
   };
+
+  presenter.presentation = {
+    get backend() { return presentationBackend; },
+    get viewport() { return presenter.viewport; },
+    present(source, options) { presenter.presentNativeFrame(source, options); },
+    resize(displayWidth, displayHeight) { presenter.resize(displayWidth, displayHeight); }
+  };
+
+  return presenter;
 }

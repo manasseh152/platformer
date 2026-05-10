@@ -69,6 +69,21 @@ async function expectFocusedLevelRow(page, levelId) {
   await expect.poll(() => page.evaluate(() => document.activeElement?.dataset.scenarioId || '')).toBe(levelId);
 }
 
+test('canvas presentation exposes integer scale and letterbox offsets', async ({ page }) => {
+  const canvas = page.locator('#game');
+  await expect(canvas).toHaveAttribute('data-presentation-scale', /^\d+(\.\d+)?$/);
+  const viewport = await canvas.evaluate(node => ({
+    width: node.width,
+    height: node.height,
+    scale: Number(node.dataset.presentationScale),
+    offsetX: Number(node.dataset.presentationOffsetX),
+    offsetY: Number(node.dataset.presentationOffsetY)
+  }));
+  expect(viewport.scale).toBe(Math.max(1, Math.floor(Math.min(viewport.width / 320, viewport.height / 180))));
+  expect(viewport.offsetX).toBe(Math.floor((viewport.width - 320 * viewport.scale) / 2));
+  expect(viewport.offsetY).toBe(Math.floor((viewport.height - 180 * viewport.scale) / 2));
+});
+
 test('single hint layer owns global controls across start, gameplay, and pause', async ({ page }) => {
   const hintLayer = page.locator('#hintLayer');
   await expect(hintLayer).toHaveCount(1);

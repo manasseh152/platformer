@@ -34,6 +34,7 @@ export function createGame(ui, runtime = browserRuntime) {
     renderCanvas: presenter.renderCanvas,
     ctx: presenter.renderCtx,
     presenter,
+    presentation: presenter.presentation,
     gpu,
     ui,
     view: {
