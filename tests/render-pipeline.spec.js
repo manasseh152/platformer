@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { createRenderFrameBuilder, resetRenderPacketSequenceForTests } from '../src/engine/render/frame-builder.js';
 import { computePresentationViewport, prepareRenderView, worldToNativeRect } from '../src/engine/render/viewport.js';
 import { createAssetRegistry, ASSET_IDS } from '../src/render/asset-registry.js';
+import { createGameplayRenderReadModel } from '../src/render/extractors/gameplay-renderables.js';
 
 test('presentation viewport integer-scales and centers native frame', () => {
   expect(computePresentationViewport(800, 600, 320, 180)).toEqual({ scale: 2, width: 640, height: 360, offsetX: 80, offsetY: 120 });
@@ -40,4 +41,25 @@ test('asset registry maps namespaced IDs to current image handles', () => {
 
   expect(registry.getImage(ASSET_IDS.HAZARD_SPIKES)).toBe(image);
   expect(registry.isLoaded(ASSET_IDS.HAZARD_SPIKES)).toBe(true);
+});
+
+test('gameplay render read model separates authored scene, runtime actors, and transient effects', () => {
+  const tilemap = { id: 'scene-a' };
+  const model = createGameplayRenderReadModel({
+    tilemap,
+    devTools: { flags: { showPhysicsBodyRects: true } },
+    player: { x: 1, y: 2, w: 20, h: 30, dir: -1, inv: 0, attack: 1, hp: 5 },
+    enemies: [
+      { x: 10, y: 20, w: 40, h: 32, hp: 3, hurt: 0 },
+      { x: 50, y: 20, w: 40, h: 32, hp: 0, hurt: 0 }
+    ],
+    dust: [{ x: 5, y: 6, life: 0.25 }],
+    particles: [{ x: 7, y: 8, life: 0.5, color: '#fff' }]
+  });
+
+  expect(model.authoredScene.tilemap).toBe(tilemap);
+  expect(model.runtimeActors.map(actor => actor.render.actor)).toEqual(['player', 'slime']);
+  expect(model.runtimeActors[0].transform).toEqual({ x: 1, y: 2, w: 20, h: 30 });
+  expect(model.transientEffects.map(effect => effect.effect)).toEqual(['dust', 'particle']);
+  expect(model.debug.physicsBodies).toHaveLength(2);
 });

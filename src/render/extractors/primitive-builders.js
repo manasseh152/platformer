@@ -77,18 +77,20 @@ function addActorPath(builder, view, actor, layer, commands, packet) {
   });
 }
 
-export function addPlayerPackets(builder, view, player, layer, runtimeNow = 0) {
-  const flicker = player.inv > 0 && Math.floor(runtimeNow / 70) % 2 === 0;
-  if (flicker) return;
+export function addPlayerPackets(builder, view, playerRenderable, layer, runtimeNow = 0) {
+  const transform = playerRenderable?.transform ?? playerRenderable;
+  const render = playerRenderable?.render ?? {};
+  const flicker = (render.flickerMs > 0 || playerRenderable?.inv > 0) && Math.floor(runtimeNow / (render.flickerMs || 70)) % 2 === 0;
+  if (flicker || !transform) return;
   const draw = ACTOR_DRAW.PLAYER;
   const actor = {
     draw,
     sourceW: 34,
     sourceH: 50,
     pivotX: 17,
-    originX: player.x + draw.offsetX + draw.w / 2,
-    originY: player.y + player.h - draw.h + draw.offsetY,
-    facing: player.dir || 1
+    originX: transform.x + draw.offsetX + draw.w / 2,
+    originY: transform.y + transform.h - draw.h + draw.offsetY,
+    facing: render.facing || playerRenderable?.dir || 1
   };
   addActorRoundRect(builder, view, actor, layer, 4, 18, 26, 31, 10, '#171729');
   addActorRoundRect(builder, view, actor, layer, 1, 0, 32, 27, 13, '#f4f1ff');
@@ -99,18 +101,21 @@ export function addPlayerPackets(builder, view, player, layer, runtimeNow = 0) {
   addActorPath(builder, view, actor, layer, [{ op: 'moveTo', x: 25, y: 4 }, { op: 'quadraticCurveTo', cpx: 37, cpy: -12, x: 23, y: -2 }], { stroke: '#f4f1ff', lineWidth: 5 * view.worldToNativeX });
   addActorRect(builder, view, actor, layer, 7, 46, 7, 5, '#0d0d19');
   addActorRect(builder, view, actor, layer, 22, 46, 7, 5, '#0d0d19');
-  if (player.attack > 0) {
+  if ((render.attack ?? playerRenderable?.attack ?? 0) > 0) {
     const center = actorToNative(view, actor, 49, 23);
     builder.add({ kind: 'ellipse', layer, x: center.x, y: center.y, radiusX: 34 * draw.w / 34 * view.worldToNativeX, radiusY: 12 * draw.h / 50 * view.worldToNativeY, rotation: -0.25, fill: '#cfffff', alpha: 0.86 });
     addActorPath(builder, view, actor, layer, [{ op: 'moveTo', x: 20, y: 25 }, { op: 'lineTo', x: 73, y: 13 }], { stroke: '#ffffff', lineWidth: 2 * view.worldToNativeX });
   }
 }
 
-export function addEnemyPackets(builder, view, enemy, layer) {
-  if (enemy.hp <= 0) return;
+export function addEnemyPackets(builder, view, enemyRenderable, layer) {
+  const transform = enemyRenderable?.transform ?? enemyRenderable;
+  const render = enemyRenderable?.render ?? {};
+  const health = enemyRenderable?.health;
+  if ((health?.hp ?? enemyRenderable?.hp ?? 1) <= 0 || !transform) return;
   const draw = ACTOR_DRAW.SLIME;
-  const actor = { draw, sourceW: draw.w, sourceH: draw.h, pivotX: 0, originX: enemy.x + draw.offsetX, originY: enemy.y + enemy.h - draw.h + draw.offsetY, facing: 1 };
-  addActorRoundRect(builder, view, actor, layer, 0, 8, draw.w, draw.h - 4, 13, enemy.hurt > 0 ? '#ffffff' : '#4a183f');
+  const actor = { draw, sourceW: draw.w, sourceH: draw.h, pivotX: 0, originX: transform.x + draw.offsetX, originY: transform.y + transform.h - draw.h + draw.offsetY, facing: 1 };
+  addActorRoundRect(builder, view, actor, layer, 0, 8, draw.w, draw.h - 4, 13, (render.hurt ?? enemyRenderable?.hurt ?? 0) > 0 ? '#ffffff' : '#4a183f');
   addActorRect(builder, view, actor, layer, 10, 20, 5, 5, '#ff7bd5');
   addActorRect(builder, view, actor, layer, 27, 20, 5, 5, '#ff7bd5');
   addActorPath(builder, view, actor, layer, [{ op: 'moveTo', x: 8, y: 12 }, { op: 'quadraticCurveTo', cpx: 2, cpy: 0, x: 17, y: 8 }], { stroke: '#8e497b', lineWidth: 3 * view.worldToNativeX });

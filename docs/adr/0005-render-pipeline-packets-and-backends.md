@@ -130,20 +130,23 @@ Validation at completion:
 
 ### Pass 4: Render extraction closer to ECS scene model
 
-Goal: reduce the hybrid runtime/session coupling in gameplay extraction.
+Status: **done**.
 
-Recommended scope:
+Completed in the fourth implementation pass:
 
-- Introduce render-facing components or adapters for runtime actors, particles, and transient effects.
-- Move player/enemy visual extraction behind component-like read models instead of special-casing mutable arrays in the main extractor.
-- Keep simulation ownership unchanged unless a separate ECS runtime migration is explicitly accepted.
-- Make authored scene render components (`render:*`) the primary source for static renderables.
+- Added `src/render/extractors/gameplay-renderables.js` as a render-facing read-model adapter for authored scene state, runtime actors, transient effects, and debug bodies.
+- Moved player/enemy visual extraction behind component-like runtime actor renderables instead of iterating mutable gameplay arrays directly in the main extractor.
+- Moved dust/particle extraction behind transient effect renderables.
+- Split gameplay extraction into explicit authored scene renderables, runtime actor renderables, and transient effect renderables sections.
+- Kept simulation ownership unchanged and did not introduce browser/GPU handles into ECS or gameplay components.
+- Removed the temporary `tilemap.devToolsFlags` mutation by passing debug render flags into authored scene packet extraction.
+- Added focused coverage for the gameplay render read model separation.
 
-Acceptance criteria:
+Validation at completion:
 
-- Gameplay extractor has clear sections for authored scene renderables, runtime actor renderables, and transient effect renderables.
-- Backends remain unchanged.
-- No WebGPU/browser handles are introduced into ECS or gameplay components.
+- `bun run build` passed.
+- `bunx playwright test --project=chromium` passed.
+- `render_full_map_png` rendered `.temp/full-map.png` at `1152×512`; Vite also reported port `4174` already in use because an existing server was present.
 
 ### Pass 5: Asset atlas and sprite packet bridge
 

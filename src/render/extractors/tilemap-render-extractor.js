@@ -49,7 +49,7 @@ export function addDungeonBackdropPackets(builder, view, layer = L.Backdrop) {
   builder.add({ kind: 'rect', layer, x: 0, y: 0, w: view.bufferWidth, h: view.bufferHeight, fill: { kind: 'radialGradient', x0: view.bufferWidth * .54, y0: view.bufferHeight * .45, r0: 20, x1: view.bufferWidth * .54, y1: view.bufferHeight * .45, r1: view.bufferWidth * .78, stops: [{ offset: 0, color: 'rgba(255, 245, 205, .10)' }, { offset: .55, color: 'rgba(255, 245, 205, .025)' }, { offset: 1, color: 'rgba(0, 0, 0, .38)' }] } });
 }
 
-export function addTilemapVisualPackets(builder, tilemap, view, { assetRegistry = emptyAssetRegistry, includeBackdrop = true, layers = L } = {}) {
+export function addTilemapVisualPackets(builder, tilemap, view, { assetRegistry = emptyAssetRegistry, includeBackdrop = true, layers = L, devToolsFlags = tilemap?.devToolsFlags } = {}) {
   if (includeBackdrop) {
     forEachLayerTile(tilemap, 'backdrop', (ch, col, row) => {
       if (ch !== '.') addBackdropGlyph(builder, view, ch, col * TILE_SIZE, row * TILE_SIZE, col, row, layers.Backdrop);
@@ -64,7 +64,7 @@ export function addTilemapVisualPackets(builder, tilemap, view, { assetRegistry 
 
   for (const tile of tilemap.renderLayers?.containedTerrainTiles ?? []) {
     for (const primitive of planContainedTerrainTileVisuals(tile)) addWorldRect(builder, view, primitive, { kind: 'rect', layer: layers.Terrain, fill: primitive.color });
-    if (tilemap.devToolsFlags?.showBuildTerrainCells) addWorldRect(builder, view, tile, { kind: 'rect', layer: layers.DebugCollision, stroke: 'rgba(0,0,0,.26)', lineWidth: 1 });
+    if (devToolsFlags?.showBuildTerrainCells) addWorldRect(builder, view, tile, { kind: 'rect', layer: layers.DebugCollision, stroke: 'rgba(0,0,0,.26)', lineWidth: 1 });
   }
 
   addGoalPackets(builder, tilemap, view, { assetRegistry, layer: layers.Goal });

@@ -4,6 +4,7 @@ import { prepareRenderView } from '../../engine/render/viewport.js';
 import { emptyAssetRegistry } from '../asset-registry.js';
 import { addDungeonBackdropPackets, addTilemapVisualPackets } from './tilemap-render-extractor.js';
 import { GameplayRenderLayer as L } from './gameplay-render-layers.js';
+import { createGameplayRenderReadModel } from './gameplay-renderables.js';
 import { addEnemyPackets, addPlayerPackets, addWorldEllipse, addWorldRect } from './primitive-builders.js';
 
 const DEBUG_STYLES = Object.freeze({
@@ -25,11 +26,29 @@ function addCollisionDebugPackets(builder, tilemap, view, flags = {}) {
   if (flags.showCollisionRects) for (const rect of tilemap.collisionLayers?.terrainRects ?? []) addDebugRect(builder, view, rect, DEBUG_STYLES.collisionRect, L.DebugCollision);
 }
 
-function addPhysicsDebugPackets(builder, game, view, flags = {}) {
-  if (!flags.showPhysicsBodyRects) return;
-  const rects = [game?.player, ...(game?.enemies ?? []).filter(enemy => enemy.hp === undefined || enemy.hp > 0)]
-    .filter(rect => rect && Number.isFinite(rect.x) && Number.isFinite(rect.y) && Number.isFinite(rect.w) && Number.isFinite(rect.h) && rect.w > 0 && rect.h > 0);
-  for (const rect of rects) addDebugRect(builder, view, rect, DEBUG_STYLES.physicsBody, L.DebugPhysics);
+function addPhysicsDebugPackets(builder, readModel, view) {
+  if (!readModel.debug.devToolsFlags?.showPhysicsBodyRects) return;
+  for (const actor of readModel.debug.physicsBodies) addDebugRect(builder, view, actor.transform, DEBUG_STYLES.physicsBody, L.DebugPhysics);
+}
+
+function addAuthoredSceneRenderablePackets(builder, readModel, renderView, assetRegistry) {
+  const { tilemap, devToolsFlags } = readModel.authoredScene;
+  addDungeonBackdropPackets(builder, renderView, L.Backdrop);
+  addTilemapVisualPackets(builder, tilemap, renderView, { assetRegistry, includeBackdrop: true, layers: L, devToolsFlags });
+}
+
+function addRuntimeActorRenderablePackets(builder, readModel, renderView, runtimeNow) {
+  for (const actor of readModel.runtimeActors) {
+    if (actor.render.actor === 'player') addPlayerPackets(builder, renderView, actor, L.Player, runtimeNow);
+    else if (actor.render.actor === 'slime') addEnemyPackets(builder, renderView, actor, L.Enemy);
+  }
+}
+
+function addTransientEffectRenderablePackets(builder, readModel, renderView) {
+  for (const effect of readModel.transientEffects) {
+    if (effect.render.shape === 'ellipse') addWorldEllipse(builder, renderView, effect.transform, { layer: L.Dust, fill: effect.render.fill, alpha: effect.render.alpha });
+    else if (effect.render.shape === 'rect') addWorldRect(builder, renderView, effect.transform, { kind: 'rect', layer: L.Particle, fill: effect.render.fill, alpha: effect.render.alpha });
+  }
 }
 
 export function extractGameplayRenderFrame({ game, runtime = { now: () => performance.now(), random: Math.random }, assetRegistry = emptyAssetRegistry } = {}) {
@@ -43,21 +62,16 @@ export function extractGameplayRenderFrame({ game, runtime = { now: () => perfor
     shake: game.camera?.shake ?? 0,
     random: runtime.random ?? Math.random
   });
+  const readModel = createGameplayRenderReadModel(game);
   const builder = createRenderFrameBuilder({ width: viewConfig.bufferWidth, height: viewConfig.bufferHeight, coordinateSpace: 'native' });
   builder.add({ kind: 'clear', layer: L.Clear, color: '#080b11' });
-  addDungeonBackdropPackets(builder, renderView, L.Backdrop);
-  const previousFlags = game.tilemap.devToolsFlags;
-  game.tilemap.devToolsFlags = game.devTools?.flags;
-  addTilemapVisualPackets(builder, game.tilemap, renderView, { assetRegistry, includeBackdrop: true, layers: L });
-  game.tilemap.devToolsFlags = previousFlags;
 
-  for (const d of game.dust ?? []) addWorldEllipse(builder, renderView, { x: d.x, y: d.y, radiusX: 5, radiusY: 5 }, { layer: L.Dust, fill: '#bfffff', alpha: Math.max(0, d.life * 3) });
-  for (const enemy of game.enemies ?? []) addEnemyPackets(builder, renderView, enemy, L.Enemy);
-  addPlayerPackets(builder, renderView, game.player, L.Player, runtime.now?.() ?? 0);
-  for (const p of game.particles ?? []) addWorldRect(builder, renderView, { x: p.x, y: p.y, w: 4, h: 4 }, { kind: 'rect', layer: L.Particle, fill: p.color, alpha: Math.max(0, p.life * 2) });
+  addAuthoredSceneRenderablePackets(builder, readModel, renderView, assetRegistry);
+  addRuntimeActorRenderablePackets(builder, readModel, renderView, runtime.now?.() ?? 0);
+  addTransientEffectRenderablePackets(builder, readModel, renderView);
 
-  addCollisionDebugPackets(builder, game.tilemap, renderView, game.devTools?.flags);
-  addPhysicsDebugPackets(builder, game, renderView, game.devTools?.flags);
+  addCollisionDebugPackets(builder, readModel.authoredScene.tilemap, renderView, readModel.debug.devToolsFlags);
+  addPhysicsDebugPackets(builder, readModel, renderView);
 
   if (DEBUG_CAMERA) {
     addWorldRect(builder, renderView, { x: renderView.cameraX + game.camera.deadzone.left, y: renderView.cameraY + game.camera.deadzone.top, w: game.camera.deadzone.right - game.camera.deadzone.left, h: game.camera.deadzone.bottom - game.camera.deadzone.top }, { kind: 'rect', layer: L.DebugCamera, stroke: 'rgba(255,255,0,.8)', lineWidth: 1 });
