@@ -153,35 +153,32 @@ Initial slice order:
      bunx playwright test tests/gyms/ui-navigation.gym.spec.js --project=chromium
      ```
 
-9. **Stabilize input-hint scheme behavior and commit/validate pending input changes** — required before calling the foundation pass complete
+9. **Stabilize input-hint scheme behavior and commit/validate pending input changes** — completed
    - Invariant: input hints follow the explicit UI input scheme when one is provided, without regressing last-active-source behavior where it is still desired.
-   - Trigger: validation found uncommitted changes in `src/app/input/input-hints.js` and `tests/core-input.spec.js`.
-   - Likely target: decide whether those changes are intentional, then either commit with tests or revert before final validation.
-   - Validation:
+   - Implemented: repo-local pending input-hint changes were validated as intentional/current behavior; no uncommitted input changes remain.
+   - Implemented: `tests/core-input.spec.js` covers explicit `wasd`, `arrows`, and `gamepad` input-scheme hint selection, including Xbox icon presentation.
+   - Validation passed:
      ```sh
      bun run build
      bunx playwright test tests/core-input.spec.js tests/game-smoke.spec.js --project=chromium
      ```
 
-10. **Migrate known legacy physics tests to semantic core input runtime** — required for full-suite confidence
+10. **Migrate known legacy physics tests to semantic core input runtime** — completed
    - Invariant: physics/gameplay tests exercise `updateGameplay` through the same semantic core input runtime required by production gameplay.
-   - Trigger: existing notes say `tests/physics.spec.js` still passes legacy input state directly to `updateGameplay`.
-   - Likely target: `tests/physics.spec.js` and shared test helpers, not production gameplay unless a real bug is exposed.
-   - Validation:
+   - Implemented: repo-local inspection confirmed `tests/physics.spec.js` creates a `createInputRuntime(gameInputProfile)` semantic input runtime for `updateGameplay` tests.
+   - Implemented: focused physics/update-gameplay validation passes with the current semantic input runtime coverage.
+   - Validation passed:
      ```sh
-     bun run build
      bunx playwright test tests/physics.spec.js tests/update-gameplay.spec.js --project=chromium
      ```
 
-11. **Add a stable aggregate validation script** — final handoff slice
+11. **Add a stable aggregate validation script** — completed
    - Invariant: future agents and humans can run one documented command for the expected foundation gate.
-   - Prerequisite: slices 8–10 are green or explicitly documented as expected failures.
-   - Likely target: `package.json`, `docs/patterns/foundation-review.md`, and this ADR if the validation contract changes.
-   - Candidate command:
+   - Implemented: `package.json` now exposes `bun run validate:foundation`.
+   - Implemented: the aggregate gate runs build, the Chromium Playwright suite, and map-render validation.
+   - Validation passed:
      ```sh
-     bun run build
-     bunx playwright test --project=chromium
-     bun run validate:map-render
+     bun run validate:foundation
      ```
 
 These slices are a starting order, not a permanent roadmap. Update `docs/patterns/foundation-review.md` when new evidence changes priority, scope, ordering, or validation status.

@@ -6,7 +6,8 @@
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "render:map": "node tools/render-map.js",
-    "validate:map-render": "node tools/render-map.js .temp/full-map.png"
+    "validate:map-render": "node tools/render-map.js .temp/full-map.png",
+    "validate:foundation": "bun run build && bunx playwright test --project=chromium && bun run validate:map-render"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",

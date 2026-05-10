@@ -31,25 +31,18 @@ Primary success criterion: future features should be easier to build because sys
 
 ## Current green baseline
 
-Validated for the docs/terminology cleanup slice on 2026-05-09:
+Validated for the aggregate foundation gate on 2026-05-10:
 
 ```sh
-bun run build
-bunx playwright test tests/tilemap.spec.js --project=chromium
+bun run validate:foundation
 ```
 
-Full suite note: `bunx playwright test --project=chromium` still has known unrelated legacy/intermittent failures documented under earlier slices.
+This command runs build, the Chromium Playwright suite, and map-render validation. The latest run passed 166 Chromium tests and rendered `.temp/full-map.png`; Vite also reported port 4174 already in use during map rendering because an existing server was present.
 
-Before implementation slices, run the full suite:
-
-```sh
-bunx playwright test --project=chromium
-```
-
-For visual/tilemap/rendering slices, also run:
+Before implementation slices, run the aggregate gate unless the slice has a narrower documented validation plan:
 
 ```sh
-bun run validate:map-render
+bun run validate:foundation
 ```
 
 ## Priority and confidence labels
@@ -553,20 +546,22 @@ bunx playwright test tests/settings.spec.js tests/game-smoke.spec.js tests/scena
 bunx playwright test tests/gyms/ui-navigation.gym.spec.js --project=chromium
 ```
 
-## Required next implementation slices
-
 ### Slice 12: Stabilize input-hint scheme behavior and commit/validate pending input changes
 
-Why next:
+Completed on 2026-05-10.
 
-- Validation found uncommitted changes in `src/app/input/input-hints.js` and `tests/core-input.spec.js`.
-- The foundation pass cannot be called complete while behavior changes are uncommitted or undecided.
-
-Likely files:
+Changed files:
 
 - `src/app/input/input-hints.js`
 - `tests/core-input.spec.js`
-- any UI tests affected by input-hint scheme behavior
+- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/patterns/foundation-review.md`
+
+Implemented:
+
+- Repo-local pending input-hint changes were validated as intentional/current behavior; no uncommitted input changes remain.
+- Input hints prefer an explicit UI `inputScheme` when provided (`wasd`, `arrows`, or `gamepad`) instead of being overridden by last-active-source state.
+- Core input coverage asserts explicit keyboard/gamepad scheme selection, axis-scale hint filtering, and Xbox icon presentation.
 
 Validation:
 
@@ -577,42 +572,54 @@ bunx playwright test tests/core-input.spec.js tests/game-smoke.spec.js --project
 
 ### Slice 13: Migrate known legacy physics tests to semantic core input runtime
 
-Why next:
+Completed on 2026-05-10.
 
-- Existing validation notes say `tests/physics.spec.js` still passes legacy input state directly to `updateGameplay`, while production gameplay now requires semantic core input runtime.
-- Full-suite confidence should not depend on known stale tests.
-
-Likely files:
+Changed files:
 
 - `tests/physics.spec.js`
-- shared test helpers if useful
+- `tests/update-gameplay.spec.js`
+- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/patterns/foundation-review.md`
+
+Implemented:
+
+- Repo-local inspection confirmed physics gameplay tests create a `createInputRuntime(gameInputProfile)` semantic input runtime before calling `updateGameplay`.
+- Focused validation confirmed `tests/physics.spec.js` and `tests/update-gameplay.spec.js` pass together under Chromium.
+- The earlier stale-test concern is resolved; no production gameplay changes were needed.
 
 Validation:
 
 ```sh
-bun run build
 bunx playwright test tests/physics.spec.js tests/update-gameplay.spec.js --project=chromium
 ```
 
 ### Slice 14: Decide and add a stable aggregate validation script
 
-Why after slices 11–13:
+Completed on 2026-05-10.
 
-- Foundation slices repeatedly use the same gates, but the exact command set should not be frozen until current expected failures are resolved or explicitly documented.
-- A stable `validate` script would make handoff and future agent work safer once the expected full-suite behavior is clear.
-
-Likely files:
+Changed files:
 
 - `package.json`
-- docs that mention validation gates, if the script is added
+- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/patterns/foundation-review.md`
+
+Implemented:
+
+- Added `bun run validate:foundation` as the stable handoff gate.
+- The aggregate command runs `bun run build`, `bunx playwright test --project=chromium`, and `bun run validate:map-render`.
+- Full Chromium suite now passes as part of the aggregate gate.
 
 Validation:
 
 ```sh
-bun run build
-bunx playwright test --project=chromium
-bun run validate:map-render
+bun run validate:foundation
 ```
+
+Known validation note: map-render validation rendered `.temp/full-map.png`; Vite also reported port 4174 already in use because an existing dev server was present.
+
+## Required next implementation slices
+
+No required foundation-review slices remain from ADR 0004's initial implementation list. Keep this section updated if new evidence adds required handoff work.
 
 ## Candidate later slices
 
