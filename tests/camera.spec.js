@@ -2,14 +2,14 @@ import { expect, test } from '@playwright/test';
 import { approachExp, clampCameraToWorld, createCamera, updateFollowCamera } from '../src/core/camera.js';
 import { calculateViewport } from '../src/engine/viewport.js';
 
-test('default viewport fills the available canvas with fractional scale', () => {
+test('default viewport uses integer scale with letterboxing', () => {
   expect(calculateViewport(1920, 1080, 480, 270)).toEqual({ scale: 4, offsetX: 0, offsetY: 0 });
-  expect(calculateViewport(1280, 720, 480, 270)).toEqual({ scale: 1280 / 480, offsetX: 0, offsetY: 0 });
-  expect(calculateViewport(800, 600, 480, 270)).toEqual({ scale: 800 / 480, offsetX: 0, offsetY: 75 });
+  expect(calculateViewport(1280, 720, 480, 270)).toEqual({ scale: 2, offsetX: 160, offsetY: 90 });
+  expect(calculateViewport(800, 600, 480, 270)).toEqual({ scale: 1, offsetX: 160, offsetY: 165 });
 });
 
-test('pixel-perfect viewport can still be requested explicitly', () => {
-  expect(calculateViewport(800, 600, 480, 270, true)).toEqual({ scale: 1, offsetX: 160, offsetY: 165 });
+test('fractional viewport can still be requested explicitly', () => {
+  expect(calculateViewport(800, 600, 480, 270, false)).toEqual({ scale: 800 / 480, offsetX: 0, offsetY: 75 });
 });
 
 test('camera clamps to world bounds when viewport is smaller than world', () => {

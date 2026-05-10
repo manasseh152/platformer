@@ -1,3 +1,7 @@
+/**
+ * @deprecated Legacy direct Canvas2D world renderer. New code should use
+ * packet extraction plus NativeFrameBackend modules.
+ */
 import { assets, isLoaded } from '../assets.js';
 import { ACTOR_DRAW, DEBUG_CAMERA, TILE_SIZE } from '../core/constants.js';
 import { forEachLayerTile, getDecorType } from '../core/tilemaps/tilemap.js';

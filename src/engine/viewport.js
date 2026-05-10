@@ -1,9 +1,14 @@
-export function calculateViewport(canvasWidth, canvasHeight, viewWidth, viewHeight, pixelPerfect = false) {
+import { computePresentationViewport } from './render/viewport.js';
+
+export function calculateViewport(canvasWidth, canvasHeight, viewWidth, viewHeight, pixelPerfect = true) {
+  if (pixelPerfect) {
+    const viewport = computePresentationViewport(canvasWidth, canvasHeight, viewWidth, viewHeight);
+    return { scale: viewport.scale, offsetX: viewport.offsetX, offsetY: viewport.offsetY };
+  }
   const fitScale = Math.min(canvasWidth / viewWidth, canvasHeight / viewHeight);
-  const scale = pixelPerfect ? Math.max(1, Math.floor(fitScale)) : fitScale;
   return {
-    scale,
-    offsetX: Math.floor((canvasWidth - viewWidth * scale) / 2),
-    offsetY: Math.floor((canvasHeight - viewHeight * scale) / 2)
+    scale: fitScale,
+    offsetX: Math.floor((canvasWidth - viewWidth * fitScale) / 2),
+    offsetY: Math.floor((canvasHeight - viewHeight * fitScale) / 2)
   };
 }
