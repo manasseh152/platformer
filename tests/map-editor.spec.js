@@ -313,11 +313,15 @@ test('map editor shoulder buttons switch tabs and show controller hints', async 
   });
   await page.goto('/editor.html');
 
-  await expect(page.locator('[data-editor-tab-hint="previous"]')).toHaveText('LB');
-  await expect(page.locator('[data-editor-tab-hint="next"]')).toHaveText('RB');
+  await expect(page.locator('[data-editor-tab-hint="previous"]')).toBeHidden();
+  await expect(page.locator('[data-editor-tab-hint="next"]')).toBeHidden();
 
   await page.evaluate(() => window.__setMockGamepadButton(5, true));
   await expect(page.locator('#viewPanel')).toBeVisible();
+  await expect(page.locator('[data-editor-tab-hint="previous"]')).toBeVisible();
+  await expect(page.locator('[data-editor-tab-hint="previous"] .input-hint__icon')).toHaveAttribute('alt', 'LB');
+  await expect(page.locator('[data-editor-tab-hint="next"]')).toBeVisible();
+  await expect(page.locator('[data-editor-tab-hint="next"] .input-hint__icon')).toHaveAttribute('alt', 'RB');
   await page.evaluate(() => window.__setMockGamepadButton(5, false));
   await page.evaluate(() => window.__setMockGamepadButton(4, true));
   await expect(page.locator('#editPanel')).toBeVisible();

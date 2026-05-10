@@ -1193,6 +1193,7 @@ body[data-menu-origin="start"] #pauseScreen[data-menu-page="settings-category"] 
   text-transform: uppercase;
   box-shadow: inset 0 -2px 0 rgba(0,0,0,.14), 0 4px 10px rgba(0,0,0,.16);
 }
+.settings-tabs__hint[hidden] { display: none; }
 .settings-tabs button {
   flex: 0 0 auto;
   min-height: 34px;

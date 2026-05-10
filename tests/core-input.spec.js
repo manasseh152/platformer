@@ -223,7 +223,7 @@ test('input hints derive controls from semantic bindings and explicit input sche
   expect(hintPartsForAction(gameInputProfile, settings, 'menu.settings', { runtime: input, inputScheme: 'wasd', iconPack: 'xbox' }).parts[0]).toMatchObject({ label: 'Tab', icon: null });
 });
 
-test('tab input hints only display for controller input scheme unless explicitly overridden', () => {
+test('tab input hints only display when controller input is active', () => {
   const { settings } = normalizeInputSettings(gameInputProfile, {});
   const input = createInputRuntime(gameInputProfile, settings);
   input.beginFrame();
@@ -235,9 +235,13 @@ test('tab input hints only display for controller input scheme unless explicitly
   renderTabInputHints({ inputScheme: 'wasd' }, root, { profile: gameInputProfile, settings, runtime: input });
   expect(hintEl.hidden).toBe(true);
 
-  renderTabInputHints({ inputScheme: 'gamepad' }, root, { profile: gameInputProfile, settings, runtime: input });
+  expect(input.wasPressed('menu.previousTab')).toBe(true);
+  renderTabInputHints({ inputScheme: 'wasd' }, root, { profile: gameInputProfile, settings, runtime: input });
   expect(hintEl.hidden).toBe(false);
   expect(hintEl.innerHTML).toContain('LB');
+
+  renderTabInputHints({ inputScheme: 'wasd' }, root, { profile: gameInputProfile, settings, runtime: input, consoleActive: false });
+  expect(hintEl.hidden).toBe(true);
 });
 
 test('bind capture captures keyboard bindings, supports cancel, and prevents duplicates', () => {

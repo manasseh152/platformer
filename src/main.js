@@ -95,6 +95,10 @@ addEventListener('keyup', e => {
   game.input.keys.delete(e.code);
 });
 
+addEventListener('pointerup', () => {
+  if (game.input.inputScheme === 'gamepad') setTimeout(() => setInputScheme(game, 'wasd'), 0);
+});
+
 function frame(now = runtime.now()) {
   const dt = Math.min(.033, (now - game.clock.last) / 1000);
   game.clock.last = now;

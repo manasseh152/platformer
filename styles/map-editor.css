@@ -126,6 +126,7 @@ kbd {
   text-transform: uppercase;
   box-shadow: inset 0 -2px 0 rgba(0,0,0,.14), 0 4px 10px rgba(0,0,0,.16);
 }
+.editor-tabs__hint[hidden] { display: none; }
 .editor-tabs button {
   min-height: 34px;
   min-width: 78px;

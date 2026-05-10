@@ -790,6 +790,7 @@ function setup() {
   setActiveTab('edit', { show: true });
 
   new ResizeObserver(() => { resizeViewport(viewport); clampCamera(viewport, worldWidth(), worldHeight()); render(); }).observe(dom.canvas.parentElement);
+  document.addEventListener('pointerup', () => setTimeout(() => syncTabHints({ consoleActive: false }), 0));
   dom.mainMenuButton?.addEventListener('click', navigateMainMenu);
   dom.hideOverlayButton?.addEventListener('click', () => setActiveTab(activeTab, { show: false }));
   for (const tab of dom.tabs) {
