@@ -171,18 +171,20 @@ Validation at completion:
 
 ### Pass 6: WebGPU/WebGL native backend experiment
 
-Goal: add a GPU native-frame backend behind the existing packet contract.
+Status: **done**.
 
-Recommended scope:
+Completed in the sixth implementation pass:
 
-- Start with a small subset: clear, rect, image/sprite packets.
-- Render to a fixed native texture matching the configured native frame.
-- Present via the cleaned presentation backend with integer viewport/letterbox.
-- Keep Canvas2D as fallback and reference backend.
-- Add checkerboard/1px line visual tests before expanding packet coverage.
+- Added `src/render/backends/webgl-native-frame-backend.js` as the first GPU native-frame backend behind the existing packet contract.
+- Implemented the initial packet subset for the WebGL backend: `clear`, solid/stroked `rect`, and `image`/`sprite`/`texturedQuad` packets.
+- Rendered GPU native frames into a fixed native-size WebGL canvas that exposes the same `NativeFrameSource` shape used by presentation backends.
+- Reused the compatibility asset registry and atlas sprite metadata path so Canvas2D and WebGL consume the same finalized `RenderFrame` asset IDs.
+- Added `ensureNativeFrameBackend(...)` to toggle Canvas2D/WebGL native-frame backends without changing extraction code, while keeping Canvas2D as the default fallback/reference backend.
+- Isolated WebGL context loss/restoration and resource recreation inside the native backend.
+- Added focused WebGL checkerboard/1px-line and atlas sprite drawing coverage before expanding GPU packet support.
 
-Acceptance criteria:
+Validation at completion:
 
-- GPU backend can be toggled without changing extraction code.
-- Canvas2D and GPU backends consume the same finalized `RenderFrame`.
-- Device loss/resource recreation is isolated to GPU backend/device context.
+- `bun run build` passed.
+- `bunx playwright test tests/render-pipeline.spec.js --project=chromium` passed.
+- `render_full_map_png` rendered `.temp/full-map.png` at `1152×512`; Vite also reported port `4174` already in use because an existing server was present.

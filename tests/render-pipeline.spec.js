@@ -113,6 +113,96 @@ test('canvas native backend draws image packets from atlas metadata', async ({ p
   expect(pixel).toEqual([0, 255, 0, 255]);
 });
 
+test('webgl native backend draws clear and 1px rect packets from finalized frames', async ({ page }) => {
+  await page.goto('/');
+  const result = await page.evaluate(async () => {
+    const [{ createRenderFrameBuilder }, { createWebGlNativeFrameBackend }] = await Promise.all([
+      import('/src/engine/render/frame-builder.js'),
+      import('/src/render/backends/webgl-native-frame-backend.js')
+    ]);
+    const backend = createWebGlNativeFrameBackend({ width: 4, height: 4 });
+    if (!backend) return { supported: false };
+    const frame = createRenderFrameBuilder({ width: 4, height: 4 })
+      .add({ kind: 'clear', fill: '#000000' })
+      .add({ kind: 'rect', x: 1, y: 0, w: 1, h: 4, fill: '#ffffff' })
+      .add({ kind: 'rect', x: 0, y: 2, w: 4, h: 1, fill: '#00ff00' })
+      .finalize();
+    backend.draw(frame);
+    const gl = backend.gl;
+    const pixels = new Uint8Array(4 * 4 * 4);
+    gl.readPixels(0, 0, 4, 4, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    const at = (x, y) => Array.from(pixels.slice(((3 - y) * 4 + x) * 4, ((3 - y) * 4 + x) * 4 + 4));
+    return { supported: true, black: at(0, 0), whiteLine: at(1, 0), greenLine: at(3, 2), greenOverWhite: at(1, 2) };
+  });
+
+  test.skip(!result.supported, 'WebGL unavailable in this browser');
+  expect(result.black).toEqual([0, 0, 0, 255]);
+  expect(result.whiteLine).toEqual([255, 255, 255, 255]);
+  expect(result.greenLine).toEqual([0, 255, 0, 255]);
+  expect(result.greenOverWhite).toEqual([0, 255, 0, 255]);
+});
+
+test('webgl native backend draws atlas sprite packets through the same asset IDs', async ({ page }) => {
+  await page.goto('/');
+  const result = await page.evaluate(async () => {
+    const [{ createRenderFrameBuilder }, { createAssetRegistry, ASSET_IDS, createAtlasSpriteMetadata }, { createWebGlNativeFrameBackend }] = await Promise.all([
+      import('/src/engine/render/frame-builder.js'),
+      import('/src/render/asset-registry.js'),
+      import('/src/render/backends/webgl-native-frame-backend.js')
+    ]);
+
+    const source = document.createElement('canvas');
+    source.width = 4;
+    source.height = 2;
+    const sourceCtx = source.getContext('2d');
+    sourceCtx.fillStyle = '#ff0000';
+    sourceCtx.fillRect(0, 0, 2, 2);
+    sourceCtx.fillStyle = '#00ff00';
+    sourceCtx.fillRect(2, 0, 2, 2);
+    const atlas = new Image();
+    await new Promise(resolve => {
+      atlas.onload = resolve;
+      atlas.src = source.toDataURL();
+    });
+    const registry = createAssetRegistry(
+      { atlas },
+      { metadata: { [ASSET_IDS.HAZARD_SPIKES]: createAtlasSpriteMetadata({ atlasId: 'atlas.test', imageKey: 'atlas', x: 2, y: 0, w: 2, h: 2 }) } }
+    );
+    const backend = createWebGlNativeFrameBackend({ width: 2, height: 2, assetRegistry: registry });
+    if (!backend) return { supported: false };
+    const frame = createRenderFrameBuilder({ width: 2, height: 2 })
+      .add({ kind: 'clear', fill: '#000' })
+      .add({ kind: 'sprite', assetId: ASSET_IDS.HAZARD_SPIKES, x: 0, y: 0, w: 2, h: 2 })
+      .finalize();
+    backend.draw(frame);
+    const pixel = new Uint8Array(4);
+    backend.gl.readPixels(0, 1, 1, 1, backend.gl.RGBA, backend.gl.UNSIGNED_BYTE, pixel);
+    return { supported: true, pixel: Array.from(pixel), source: backend.getSource() };
+  });
+
+  test.skip(!result.supported, 'WebGL unavailable in this browser');
+  expect(result.pixel).toEqual([0, 255, 0, 255]);
+  expect(result.source).toMatchObject({ kind: 'canvas2d', width: 2, height: 2 });
+});
+
+test('gameplay native backend can be toggled without changing extraction', async ({ page }) => {
+  await page.goto('/');
+  const result = await page.evaluate(async () => {
+    const [{ ensureNativeFrameBackend }, { createAssetRegistry }] = await Promise.all([
+      import('/src/render/gameplay-render-pipeline.js'),
+      import('/src/render/asset-registry.js')
+    ]);
+    const game = { view: { bufferWidth: 8, bufferHeight: 8 }, renderCanvas: document.createElement('canvas'), renderPipeline: {} };
+    const assetRegistry = createAssetRegistry({});
+    const gpu = ensureNativeFrameBackend(game, { assetRegistry, nativeBackendKind: 'webgl' });
+    const fallback = ensureNativeFrameBackend(game, { assetRegistry, nativeBackendKind: 'canvas2d' });
+    return { gpuKind: gpu.kind, fallbackKind: fallback.kind };
+  });
+
+  expect(['webgl-native-frame-backend', 'canvas2d-native-frame-backend']).toContain(result.gpuKind);
+  expect(result.fallbackKind).toBe('canvas2d-native-frame-backend');
+});
+
 test('gameplay render read model separates authored scene, runtime actors, and transient effects', () => {
   const tilemap = { id: 'scene-a' };
   const model = createGameplayRenderReadModel({
