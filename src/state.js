@@ -1,6 +1,6 @@
 /**
  * Application composition root for the mutable compatibility game object.
- * Intentionally outside `src/core`: wires UI canvas, presenter, browser runtime, DOM mirrors,
+ * Intentionally outside `src/core`: wires UI canvas, presentation, browser runtime, DOM mirrors,
  * app adapters, and core gameplay state together.
  */
 import { CAMERA_HEIGHT, CAMERA_WIDTH, CAMERA_WORLD_HEIGHT, CAMERA_WORLD_WIDTH } from './core/constants.js';
@@ -8,7 +8,7 @@ import { createGameplaySession, resetGameplaySession, syncGameplaySessionToGame 
 import { createTilemapManager, resolveInitialTilemap } from './tilemap-manager.js';
 import { createInputState } from './app/input/legacy-bind-state.js';
 import { createBrowserInputAdapter, createGameInputRuntime } from './app/input/browser-input-adapter.js';
-import { createPresenter } from './presenter.js';
+import { createPresentation } from './app/presentation/presentation.js';
 import { applySettingsToGame, loadSettings } from './settings.js';
 import { browserRuntime } from './runtime.js';
 import { createScenarioService } from './catalog/scenarios/service.js';
@@ -23,7 +23,7 @@ import { createSpeedRunState, prepareSpeedRunAttempt } from './speedrun.js';
  * Creates the mutable game context shared by systems.
  */
 export function createGame(ui, runtime = browserRuntime) {
-  const presenter = createPresenter(ui.canvas, CAMERA_WIDTH, CAMERA_HEIGHT);
+  const presentation = createPresentation(ui.canvas, CAMERA_WIDTH, CAMERA_HEIGHT);
   const settings = loadSettings(runtime.storage);
   const activeTilemap = resolveInitialTilemap(settings);
   const gpu = createGpuSystem({ settings });
@@ -31,10 +31,9 @@ export function createGame(ui, runtime = browserRuntime) {
   const game = {
     runtime,
     canvas: ui.canvas,
-    renderCanvas: presenter.renderCanvas,
-    ctx: presenter.renderCtx,
-    presenter,
-    presentation: presenter.presentation,
+    renderCanvas: presentation.renderCanvas,
+    ctx: presentation.renderCtx,
+    presentation,
     gpu,
     ui,
     view: {
@@ -84,8 +83,8 @@ export function createGame(ui, runtime = browserRuntime) {
   registerDebugRenderDevTools(game);
   applySettingsToGame(game);
   if (game.settings.gpuExtras === 'auto') {
-    game.presenter.tryEnableWebGpu?.(game.gpu).then(enabled => {
-      if (enabled) runtime.emit('gpu.presenter-enabled', { mode: game.presenter.mode });
+    game.presentation.tryEnableWebGpu?.(game.gpu).then(enabled => {
+      if (enabled) runtime.emit('gpu.presentation-enabled', { mode: game.presentation.mode });
     });
   }
   const tilemapId = game.tilemap?.id || 'act-01-level-1';

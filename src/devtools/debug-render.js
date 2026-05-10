@@ -56,6 +56,16 @@ export function registerDebugRenderDevTools(game) {
         label: 'Show physics body rects',
         get: game => Boolean(game.devTools.flags.showPhysicsBodyRects),
         set: (game, value) => { game.devTools.flags.showPhysicsBodyRects = value; }
+      },
+      {
+        id: 'show-native-frame-canvas',
+        kind: 'toggle',
+        label: 'Show native frame canvas',
+        get: game => Boolean(game.presentation?.getNativeFrameDebugVisible?.()),
+        set: (game, value) => {
+          game.devTools.flags.showNativeFrameCanvas = value;
+          game.presentation?.setNativeFrameDebugVisible?.(value);
+        }
       }
     ]
   });

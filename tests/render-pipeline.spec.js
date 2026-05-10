@@ -72,6 +72,93 @@ test('asset registry exposes atlas sprite metadata without changing asset IDs', 
   expect(registry.isLoaded(ASSET_IDS.HAZARD_SPIKES)).toBe(true);
 });
 
+test('canvas2d and webgl native backends match on tiny reference frames', async ({ page }) => {
+  await page.goto('/');
+  const result = await page.evaluate(async () => {
+    const [{ createRenderFrameBuilder }, { createAssetRegistry, ASSET_IDS, createAtlasSpriteMetadata }, { createCanvas2DNativeFrameBackend }, { createWebGlNativeFrameBackend }] = await Promise.all([
+      import('/src/engine/render/frame-builder.js'),
+      import('/src/render/asset-registry.js'),
+      import('/src/render/backends/canvas2d-native-frame-backend.js'),
+      import('/src/render/backends/webgl-native-frame-backend.js')
+    ]);
+
+    const source = document.createElement('canvas');
+    source.width = 4;
+    source.height = 2;
+    const sourceCtx = source.getContext('2d');
+    sourceCtx.fillStyle = '#ff0000';
+    sourceCtx.fillRect(0, 0, 2, 2);
+    sourceCtx.fillStyle = '#00ff00';
+    sourceCtx.fillRect(2, 0, 2, 2);
+    const atlas = new Image();
+    await new Promise(resolve => {
+      atlas.onload = resolve;
+      atlas.src = source.toDataURL();
+    });
+
+    const registry = createAssetRegistry(
+      { atlas },
+      { metadata: { [ASSET_IDS.HAZARD_SPIKES]: createAtlasSpriteMetadata({ atlasId: 'atlas.test', imageKey: 'atlas', x: 2, y: 0, w: 2, h: 2 }) } }
+    );
+    const canvas = createCanvas2DNativeFrameBackend({ width: 4, height: 4, assetRegistry: registry });
+    const webgl = createWebGlNativeFrameBackend({ width: 4, height: 4, assetRegistry: registry });
+    if (!webgl) return { supported: false };
+
+    const cases = [
+      createRenderFrameBuilder({ width: 4, height: 4 })
+        .add({ kind: 'clear', fill: '#123456' })
+        .finalize(),
+      createRenderFrameBuilder({ width: 4, height: 4 })
+        .add({ kind: 'clear', fill: '#000000' })
+        .add({ kind: 'rect', x: 1, y: 0, w: 1, h: 4, fill: '#ffffff' })
+        .finalize(),
+      createRenderFrameBuilder({ width: 4, height: 4 })
+        .add({ kind: 'clear', fill: '#000000' })
+        .add({ kind: 'rect', x: 0, y: 2, w: 4, h: 1, fill: '#00ff00' })
+        .finalize(),
+      createRenderFrameBuilder({ width: 4, height: 4 })
+        .add({ kind: 'clear', fill: '#000000' })
+        .add({ kind: 'sprite', assetId: ASSET_IDS.HAZARD_SPIKES, x: 1, y: 1, w: 2, h: 2 })
+        .finalize()
+    ];
+
+    function canvasPixels() {
+      return Array.from(canvas.ctx.getImageData(0, 0, 4, 4).data);
+    }
+
+    function webglPixelsTopLeft() {
+      const raw = new Uint8Array(4 * 4 * 4);
+      webgl.gl.readPixels(0, 0, 4, 4, webgl.gl.RGBA, webgl.gl.UNSIGNED_BYTE, raw);
+      const topLeft = new Uint8Array(raw.length);
+      for (let y = 0; y < 4; y++) {
+        for (let x = 0; x < 4; x++) {
+          const src = ((3 - y) * 4 + x) * 4;
+          const dst = (y * 4 + x) * 4;
+          topLeft.set(raw.slice(src, src + 4), dst);
+        }
+      }
+      return Array.from(topLeft);
+    }
+
+    return {
+      supported: true,
+      pairs: cases.map(frame => {
+        canvas.draw(frame);
+        webgl.draw(frame);
+        return { canvas: canvasPixels(), webgl: webglPixelsTopLeft() };
+      })
+    };
+  });
+
+  test.skip(!result.supported, 'WebGL unavailable in this browser');
+  for (const { canvas, webgl } of result.pairs) {
+    expect(webgl).toHaveLength(canvas.length);
+    for (let i = 0; i < canvas.length; i++) {
+      expect(Math.abs(webgl[i] - canvas[i]), `channel ${i}: canvas=${canvas[i]} webgl=${webgl[i]}`).toBeLessThanOrEqual(1);
+    }
+  }
+});
+
 test('canvas native backend draws image packets from atlas metadata', async ({ page }) => {
   await page.goto('/');
   const pixel = await page.evaluate(async () => {

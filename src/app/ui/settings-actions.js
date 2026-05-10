@@ -100,9 +100,9 @@ function cycleGpuExtras(game, runtime = browserRuntime) {
   game.settings = saveSettings(game.settings, runtime.storage);
   runtime.emit('settings.change', { key: 'gpuExtras', value: game.settings.gpuExtras });
   if (game.settings.gpuExtras === 'auto') {
-    game.presenter.tryEnableWebGpu?.(game.gpu).then(enabled => {
+    game.presentation.tryEnableWebGpu?.(game.gpu).then(enabled => {
       if (enabled) {
-        runtime.emit('gpu.presenter-enabled', { mode: game.presenter.mode });
+        runtime.emit('gpu.presentation-enabled', { mode: game.presentation.mode });
         if (game.menu.page === 'settings-category') renderSettingsCategory(game);
       }
     });

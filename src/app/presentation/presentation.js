@@ -1,6 +1,6 @@
-import { computePresentationViewport } from './engine/render/viewport.js';
-import { createCanvas2DPresentationBackend } from './render/presentation/canvas2d-presentation-backend.js';
-import { createWebGlPresentationBackend } from './render/presentation/webgl-presentation-backend.js';
+import { computePresentationViewport } from '../../engine/render/viewport.js';
+import { createCanvas2DPresentationBackend } from '../../render/presentation/canvas2d-presentation-backend.js';
+import { createWebGlPresentationBackend } from '../../render/presentation/webgl-presentation-backend.js';
 
 function makeRenderCanvas(width, height) {
   const canvas = document.createElement('canvas');
@@ -44,50 +44,48 @@ function syncDebugNativeFrameCanvas(renderCanvas, visible) {
   if (!renderCanvas.isConnected) document.body.append(renderCanvas);
 }
 
-/**
- * @deprecated Compatibility facade. New rendering code should use native-frame
- * backends plus render/presentation/* backends directly.
- */
-export function createPresenter(canvas, width, height) {
+export function createPresentation(canvas, width, height) {
   const renderCanvas = makeRenderCanvas(width, height);
   const renderCtx = renderCanvas.getContext('2d');
   renderCtx.imageSmoothingEnabled = false;
 
-  let presentationBackend = createDefaultPresentationBackend(canvas);
+  let backend = createDefaultPresentationBackend(canvas);
+  let viewport = computePresentationViewport(canvas.width, canvas.height, width, height);
   let debugNativeFrameVisible = false;
 
-  const presenter = {
+  return {
     canvas,
     renderCanvas,
     renderCtx,
-    viewport: computePresentationViewport(canvas.width, canvas.height, width, height),
-    get presentationBackend() { return presentationBackend; },
-    get mode() { return presentationBackend.mode; },
-    set mode(_) {},
+    get backend() { return backend; },
+    get mode() { return backend.mode; },
+    get viewport() { return viewport; },
     async tryEnableWebGpu(gpuSystem) {
-      if (presentationBackend.mode === 'webgpu') return true;
+      if (backend.mode === 'webgpu') return true;
       try {
         const gpuContext = await gpuSystem?.ready;
         if (!gpuContext?.enabled) return false;
-        const { createWebGpuPresentationBackend } = await import('./render/presentation/webgpu-presentation-backend.js');
+        const { createWebGpuPresentationBackend } = await import('../../render/presentation/webgpu-presentation-backend.js');
         const webgpu = await createWebGpuPresentationBackend(canvas, gpuContext);
         if (!webgpu) return false;
-        presentationBackend.destroy?.();
-        presentationBackend = webgpu;
+        backend.destroy?.();
+        backend = webgpu;
         return true;
       } catch (error) {
-        console.warn('WebGPU presentation unavailable; keeping current presenter.', error);
+        console.warn('WebGPU presentation unavailable; keeping current presentation backend.', error);
         return false;
       }
     },
     resize(displayWidth, displayHeight) {
-      this.viewport = computePresentationViewport(displayWidth, displayHeight, width, height);
+      viewport = computePresentationViewport(displayWidth, displayHeight, width, height);
+      if (debugNativeFrameVisible) syncDebugNativeFrameCanvas(renderCanvas, true);
+      return viewport;
     },
-    presentNativeFrame(source = nativeFrameSourceFromCanvas(renderCanvas), options = {}) {
-      presentationBackend.present(source, this.viewport, options);
+    present(source = nativeFrameSourceFromCanvas(renderCanvas), options = {}) {
+      backend.present(source, viewport, options);
     },
-    present(subpixelOffsetX = 0, subpixelOffsetY = 0) {
-      this.presentNativeFrame(nativeFrameSourceFromCanvas(renderCanvas), { subpixelOffsetX, subpixelOffsetY });
+    presentRenderCanvas(options = {}) {
+      this.present(nativeFrameSourceFromCanvas(renderCanvas), options);
     },
     setNativeFrameDebugVisible(visible) {
       debugNativeFrameVisible = Boolean(visible);
@@ -95,15 +93,10 @@ export function createPresenter(canvas, width, height) {
     },
     getNativeFrameDebugVisible() {
       return debugNativeFrameVisible;
+    },
+    destroy() {
+      backend.destroy?.();
+      renderCanvas.remove?.();
     }
   };
-
-  presenter.presentation = {
-    get backend() { return presentationBackend; },
-    get viewport() { return presenter.viewport; },
-    present(source, options) { presenter.presentNativeFrame(source, options); },
-    resize(displayWidth, displayHeight) { presenter.resize(displayWidth, displayHeight); }
-  };
-
-  return presenter;
 }

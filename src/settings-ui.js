@@ -117,7 +117,7 @@ function renderGraphics(game) {
   const labels = { auto: 'Auto', off: 'Off' };
   return section('GPU Extras', `<div class="settings-row-list">
     ${valueRow({ id: 'gpu-extras', label: 'GPU Extras', value: labels[game.settings.gpuExtras], description: 'Enables optional WebGPU-backed render, compute, and shader features when supported. Turning off takes effect after reload.', kind: 'cycle' })}
-    ${infoRow('Active Presenter', game.presenter?.mode?.toUpperCase?.() || 'Unknown')}
+    ${infoRow('Active Presentation', game.presentation?.mode?.toUpperCase?.() || 'Unknown')}
   </div>`);
 }
 

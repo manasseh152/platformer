@@ -42,5 +42,5 @@ export function renderGameplayFrame(runtime, game, { assetRegistry = defaultAsse
   const { frame } = extractGameplayRenderFrame({ game, runtime, assetRegistry });
   nativeBackend.draw(frame);
   syncGameplayHudPresentation(game);
-  game.presenter.presentNativeFrame(nativeBackend.getSource());
+  game.presentation.present(nativeBackend.getSource());
 }

@@ -4,7 +4,7 @@ import { controlsText, setInputScheme } from './app/input/input-presentation.js'
 import { syncHintLayer } from './app/ui/hint-layer.js';
 import { handleMenuInput, handleListeningKey, activeMenuRoot, renderBinds, setupMenu, setPaused, startGame } from './menu.js';
 import { syncSettingsFromInput } from './settings.js';
-import { setupResize } from './resize.js';
+import { setupPresentationResize } from './app/presentation/resize.js';
 import { resetGame } from './state.js';
 import { createGameApp } from './app/game-app.js';
 import { syncGymApi } from './gym.js';
@@ -35,7 +35,7 @@ const previewLaunch = applyTilemapPreviewFromUrl(game, runtime);
 const urlLaunch = previewLaunch.handled ? previewLaunch : applyScenarioLaunchParams(game, launchParams, runtime);
 if (urlLaunch.ok && launchParams.autorun) startGame(game, runtime);
 syncGymApi(game, runtime);
-setupResize(game);
+setupPresentationResize(game);
 
 addEventListener('keydown', e => {
   const { input, player } = game;
@@ -129,7 +129,7 @@ function frame(now = runtime.now()) {
   game.gpu?.update?.(dt);
   syncDevTools(game);
   scenes.render();
-  game.gpu?.render?.({ game, presenter: game.presenter });
+  game.gpu?.render?.({ game });
 }
 
 function loop(now) {

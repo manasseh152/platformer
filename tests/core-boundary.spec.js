@@ -71,12 +71,14 @@ test('gameplay systems query scene components instead of tilemap compatibility h
   }
 });
 
-test('legacy world renderer has no production call path', async () => {
-  const legacyWorldRenderer = path.resolve('src/render/world-renderer.js');
-  await expect(access(legacyWorldRenderer)).rejects.toThrow();
-
-  const facade = await readFile(path.resolve('src/render.js'), 'utf8');
-  expect(facade).not.toMatch(/world-renderer/);
+test('legacy render facades have no production call path', async () => {
+  await expect(access(path.resolve('src/render/world-renderer.js'))).rejects.toThrow();
+  await expect(access(path.resolve('src/render.js'))).rejects.toThrow();
+  await expect(access(path.resolve('src/presenter.js'))).rejects.toThrow();
+  await expect(access(path.resolve('src/resize.js'))).rejects.toThrow();
+  await expect(access(path.resolve('src/engine/viewport.js'))).rejects.toThrow();
+  await expect(access(path.resolve('src/render/presentation/presentation-backend.js'))).rejects.toThrow();
+  await expect(access(path.resolve('src/gpu/presenters/webgpu-presenter.js'))).rejects.toThrow();
 });
 
 test('editor command helpers do not reference browser globals directly', async () => {
