@@ -1,6 +1,6 @@
 import { clone, samePhysicalBinding } from '#/core/input/utils.js';
 import { gameInputProfile } from './game-input-profile.js';
-import { bindingLabel, keyLabel, gamepadLabel } from './input-hints.js';
+import { bindingLabel, gamepadLabel, hintPartForBinding, keyLabel } from './input-hints.js';
 
 export const bindRows = {
   left: { actionId: 'player.moveX', label: 'Move Left', scale: -1 },
@@ -46,10 +46,29 @@ export function rowBindings(settings, rowId, device = 'keyboard') {
   return (settings?.input?.bindings?.[row.actionId] || []).filter(binding => rowMatchesBinding(row, binding, deviceType));
 }
 
+function rowDisplayBinding(row, binding, device) {
+  if (device === 'controller' && row?.scale !== undefined && binding?.control === 'axis') {
+    return { ...binding, control: 'axisDirection', direction: row.scale };
+  }
+  return binding;
+}
+
+export function rowHintParts(settings, rowId, device = 'keyboard', options = {}) {
+  const row = rowForId(rowId);
+  if (!row) return [];
+  return rowBindings(settings, rowId, device)
+    .map(binding => rowDisplayBinding(row, binding, device))
+    .map(binding => hintPartForBinding(binding, options));
+}
+
 export function rowText(settings, rowId, device = 'keyboard') {
+  const row = rowForId(rowId);
   const bindings = rowBindings(settings, rowId, device);
   if (!bindings.length) return 'Unbound';
-  return bindings.map(binding => device === 'controller' ? gamepadLabel(binding) : bindingLabel(binding)).join(' / ');
+  return bindings.map(binding => {
+    const displayBinding = rowDisplayBinding(row, binding, device);
+    return device === 'controller' ? gamepadLabel(displayBinding) : bindingLabel(displayBinding);
+  }).join(' / ');
 }
 
 export function findBindRowConflict(settings, rowId, binding) {

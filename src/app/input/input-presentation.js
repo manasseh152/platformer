@@ -73,7 +73,7 @@ export function renderInputHints(input, root = document, gameOrOptions = {}) {
     const hint = hintPartsForAction(profile, settings, actionId, {
       runtime: game?.inputRuntime || options.runtime || null,
       inputScheme: input.inputScheme,
-      iconPack: settings.input?.gamepad?.globalIconPack || null,
+      iconPack: settings.input?.gamepad?.globalIconPack || 'xbox',
       label: el.dataset.inputLabel || undefined
     });
     el.dataset.inputAction = actionId;

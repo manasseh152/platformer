@@ -75,7 +75,7 @@ function signatureFor(game, entries) {
     // that reads as flicker.
     entries,
     scheme: game.input?.inputScheme,
-    iconPack: settings?.input?.gamepad?.globalIconPack || null,
+    iconPack: settings?.input?.gamepad?.globalIconPack || 'xbox',
     bindings: settings?.input?.bindings || null
   });
 }
@@ -100,7 +100,7 @@ export function syncHintLayer(game, root = game?.ui?.hintLayerEl) {
     const hint = hasBinding ? hintPartsForAction(profile, settings, entry.actionId, {
       runtime: game.inputRuntime || null,
       inputScheme: game.input?.inputScheme || 'wasd',
-      iconPack: settings.input?.gamepad?.globalIconPack || null,
+      iconPack: settings.input?.gamepad?.globalIconPack || 'xbox',
       label: entry.label || undefined
     }) : { parts: [], label: entry.label || entry.fallbackLabel || entry.actionId, deviceType: platform };
     const attrs = `class="input-hint input-hint--layer" data-input-action="${escapeHtml(entry.actionId)}" data-input-platform="${hint.deviceType === 'gamepad' ? 'gamepad' : platform}"`;

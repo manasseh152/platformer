@@ -1,4 +1,4 @@
-import { bindGroups, bindLabel, rowText } from '../../input/semantic-bind-rows.js';
+import { bindGroups, bindLabel, rowHintParts, rowText } from '../../input/semantic-bind-rows.js';
 import { motionStatusText } from '../transitions.js';
 import { browserRuntime } from '../../runtime/browser-runtime.js';
 import { formatRunTime, getBestTime } from '../../speedrun/speedrun.js';
@@ -25,7 +25,15 @@ export const settingsCategories = [
   { id: 'advanced', title: 'Advanced', description: categoryDescriptions.advanced }
 ];
 
-const keycaps = text => text.split(' / ').map(part => `<span class="ds-keycap">${part}</span>`).join(' ');
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+}
+
+const keycaps = text => text.split(' / ').map(part => `<span class="ds-keycap">${escapeHtml(part)}</span>`).join(' ');
+const controlGlyphs = parts => parts.map(part => part.icon
+  ? `<img class="input-hint__icon bind-keycaps__icon" src="${escapeHtml(part.icon)}" alt="${escapeHtml(part.label)}">`
+  : `<span class="ds-keycap">${escapeHtml(part.label)}</span>`
+).join(' ');
 const onOff = value => value ? 'On' : 'Off';
 
 function section(title, body) {
@@ -104,7 +112,8 @@ function bindRow(game, device, action) {
   const listening = device === 'controller' ? game.input.controllerBindAction === action : game.input.listeningFor === action;
   const text = rowText(game.settings, action, device);
   const prompt = device === 'controller' ? 'Press controller input…' : 'Press a key…';
-  const value = listening ? prompt : keycaps(text);
+  const parts = rowHintParts(game.settings, action, device, { iconPack: game.settings.input?.gamepad?.globalIconPack || 'xbox' });
+  const value = listening ? escapeHtml(prompt) : (parts.length ? controlGlyphs(parts) : keycaps(text));
   const error = game.input.bindError?.device === device && game.input.bindError?.action === action;
   return `<button type="button" class="ds-setting-row ds-setting-row--bind${listening ? ' is-listening' : ''}${error ? ' is-error' : ''}" data-bind-action="${action}" data-bind-device="${device}">
     <span class="ds-setting-row__copy"><span class="ds-setting-row__label">${bindLabel(action)}</span></span>

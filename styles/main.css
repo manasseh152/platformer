@@ -647,6 +647,17 @@ span.input-hint { pointer-events: none; }
 .input-hint__joiner { margin: 0 -6px; color: rgba(255, 246, 232, .38); }
 .input-hint__icon { width: 30px; height: 30px; object-fit: contain; image-rendering: auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,.25)); }
 .input-hint__label { color: rgba(255, 246, 232, .66); }
+.bind-keycaps {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.bind-keycaps__icon {
+  width: 34px;
+  height: 34px;
+}
 .input-hint[data-input-platform="gamepad"] .ds-keycap {
   min-width: 30px;
   width: 30px;

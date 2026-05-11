@@ -9,6 +9,12 @@ const KEY_LABELS = {
   ArrowDown: '↓',
   ShiftLeft: 'Left Shift',
   ShiftRight: 'Right Shift',
+  ControlLeft: 'Ctrl',
+  ControlRight: 'Ctrl',
+  AltLeft: 'Alt',
+  AltRight: 'Alt',
+  MetaLeft: 'Command',
+  MetaRight: 'Command',
   Backquote: '`'
 };
 
@@ -31,21 +37,95 @@ const GAMEPAD_BUTTON_LABELS = {
   15: 'D-pad →'
 };
 
+const xboxAsset = file => `/assets/kenney-input-prompts/xbox/${file}`;
+const keyboardAsset = file => `/assets/kenney-input-prompts/keyboard/${file}`;
+
+const KEYBOARD_ICON_FILES = {
+  Space: 'keyboard_space.svg',
+  Enter: 'keyboard_enter.svg',
+  Tab: 'keyboard_tab.svg',
+  Escape: 'keyboard_escape.svg',
+  ArrowLeft: 'keyboard_arrow_left.svg',
+  ArrowRight: 'keyboard_arrow_right.svg',
+  ArrowUp: 'keyboard_arrow_up.svg',
+  ArrowDown: 'keyboard_arrow_down.svg',
+  ShiftLeft: 'keyboard_shift.svg',
+  ShiftRight: 'keyboard_shift.svg',
+  ControlLeft: 'keyboard_ctrl.svg',
+  ControlRight: 'keyboard_ctrl.svg',
+  AltLeft: 'keyboard_alt.svg',
+  AltRight: 'keyboard_alt.svg',
+  MetaLeft: 'keyboard_command.svg',
+  MetaRight: 'keyboard_command.svg',
+  Backspace: 'keyboard_backspace.svg',
+  Delete: 'keyboard_delete.svg',
+  Insert: 'keyboard_insert.svg',
+  Home: 'keyboard_home.svg',
+  End: 'keyboard_end.svg',
+  PageUp: 'keyboard_page_up.svg',
+  PageDown: 'keyboard_page_down.svg',
+  CapsLock: 'keyboard_capslock.svg',
+  NumLock: 'keyboard_numlock.svg',
+  ScrollLock: 'keyboard_scroll_lock.svg',
+  Pause: 'keyboard_pause.svg',
+  PrintScreen: 'keyboard_printscreen.svg',
+  Backquote: 'keyboard_tilde.svg',
+  Minus: 'keyboard_minus.svg',
+  Equal: 'keyboard_equals.svg',
+  BracketLeft: 'keyboard_bracket_open.svg',
+  BracketRight: 'keyboard_bracket_close.svg',
+  Backslash: 'keyboard_slash_back.svg',
+  Semicolon: 'keyboard_semicolon.svg',
+  Quote: 'keyboard_quote.svg',
+  Comma: 'keyboard_comma.svg',
+  Period: 'keyboard_period.svg',
+  Slash: 'keyboard_slash_forward.svg',
+  NumpadEnter: 'keyboard_numpad_enter.svg',
+  NumpadAdd: 'keyboard_numpad_plus.svg'
+};
+
+function keyboardIconFileForCode(code = '') {
+  if (/^Key[A-Z]$/.test(code)) return `keyboard_${code.slice(3).toLowerCase()}.svg`;
+  if (/^Digit[0-9]$/.test(code)) return `keyboard_${code.slice(5)}.svg`;
+  if (/^Numpad[0-9]$/.test(code)) return `keyboard_${code.slice(6)}.svg`;
+  if (/^F(?:[1-9]|1[0-2])$/.test(code)) return `keyboard_${code.toLowerCase()}.svg`;
+  return KEYBOARD_ICON_FILES[code] || null;
+}
+
 const GAMEPAD_ICON_ASSETS = {
   xbox: {
     button: {
-      0: '/assets/kenney-input-prompts/xbox/xbox_button_a.svg',
-      1: '/assets/kenney-input-prompts/xbox/xbox_button_b.svg',
-      2: '/assets/kenney-input-prompts/xbox/xbox_button_x.svg',
-      3: '/assets/kenney-input-prompts/xbox/xbox_button_y.svg',
-      4: '/assets/kenney-input-prompts/xbox/xbox_lb.svg',
-      5: '/assets/kenney-input-prompts/xbox/xbox_rb.svg',
-      8: '/assets/kenney-input-prompts/xbox/xbox_button_view.svg',
-      9: '/assets/kenney-input-prompts/xbox/xbox_button_menu.svg',
-      14: '/assets/kenney-input-prompts/xbox/xbox_dpad_left.svg',
-      15: '/assets/kenney-input-prompts/xbox/xbox_dpad_right.svg'
+      0: xboxAsset('xbox_button_a.svg'),
+      1: xboxAsset('xbox_button_b.svg'),
+      2: xboxAsset('xbox_button_x.svg'),
+      3: xboxAsset('xbox_button_y.svg'),
+      4: xboxAsset('xbox_lb.svg'),
+      5: xboxAsset('xbox_rb.svg'),
+      6: xboxAsset('xbox_lt.svg'),
+      7: xboxAsset('xbox_rt.svg'),
+      8: xboxAsset('xbox_button_view.svg'),
+      9: xboxAsset('xbox_button_menu.svg'),
+      10: xboxAsset('xbox_stick_l_press.svg'),
+      11: xboxAsset('xbox_stick_r_press.svg'),
+      12: xboxAsset('xbox_dpad_up.svg'),
+      13: xboxAsset('xbox_dpad_down.svg'),
+      14: xboxAsset('xbox_dpad_left.svg'),
+      15: xboxAsset('xbox_dpad_right.svg'),
+      16: xboxAsset('xbox_guide.svg'),
+      17: xboxAsset('xbox_button_share.svg')
     },
-    axis: { 0: '/assets/kenney-input-prompts/xbox/xbox_stick_l_horizontal.svg', 1: '/assets/kenney-input-prompts/xbox/xbox_stick_l_vertical.svg' }
+    axis: {
+      0: xboxAsset('xbox_stick_l_horizontal.svg'),
+      1: xboxAsset('xbox_stick_l_vertical.svg'),
+      2: xboxAsset('xbox_stick_r_horizontal.svg'),
+      3: xboxAsset('xbox_stick_r_vertical.svg')
+    },
+    axisDirection: {
+      0: { '-1': xboxAsset('xbox_stick_l_left.svg'), 1: xboxAsset('xbox_stick_l_right.svg') },
+      1: { '-1': xboxAsset('xbox_stick_l_up.svg'), 1: xboxAsset('xbox_stick_l_down.svg') },
+      2: { '-1': xboxAsset('xbox_stick_r_left.svg'), 1: xboxAsset('xbox_stick_r_right.svg') },
+      3: { '-1': xboxAsset('xbox_stick_r_up.svg'), 1: xboxAsset('xbox_stick_r_down.svg') }
+    }
   }
 };
 
@@ -81,11 +161,21 @@ export function bindingLabel(binding = {}) {
   return binding.label || 'Input';
 }
 
-function iconForBinding(binding, { iconPack = 'text' } = {}) {
+export function iconForBinding(binding, { iconPack = 'text' } = {}) {
+  if (iconPack === 'text') return null;
+  if (binding.deviceType === 'keyboard') {
+    const file = keyboardIconFileForCode(binding.code);
+    return file ? keyboardAsset(file) : null;
+  }
   if (iconPack !== 'xbox' || binding.deviceType !== 'gamepad') return null;
   if (binding.control === 'button') return GAMEPAD_ICON_ASSETS.xbox.button[binding.index] || null;
   if (binding.control === 'axis') return GAMEPAD_ICON_ASSETS.xbox.axis[binding.index] || null;
+  if (binding.control === 'axisDirection') return GAMEPAD_ICON_ASSETS.xbox.axisDirection[binding.index]?.[binding.direction] || null;
   return null;
+}
+
+export function hintPartForBinding(binding, options = {}) {
+  return { type: 'control', label: bindingLabel(binding), icon: iconForBinding(binding, options), binding };
 }
 
 function displayGroupFor(runtime, fallbackScheme = 'wasd', slot = 'player1') {
@@ -121,7 +211,7 @@ export function hintPartsForAction(profile, settings, actionId, options = {}) {
     actionId,
     label,
     deviceType: bindings[0]?.deviceType || 'keyboard',
-    parts: bindings.map(binding => ({ type: 'control', label: bindingLabel(binding), icon: iconForBinding(binding, options), binding }))
+    parts: bindings.map(binding => hintPartForBinding(binding, options))
   };
 }
 

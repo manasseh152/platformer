@@ -3,6 +3,7 @@ import { gameInputProfile } from '#/app/input/game-input-profile.js';
 import { applyCapturedBinding, createBindCapture, createInputRuntime, findBindingConflict, normalizeInputSettings } from '#/core/input/index.js';
 import { hintPartsForAction, textHintForAction } from '#/app/input/input-hints.js';
 import { renderTabInputHints } from '#/app/input/input-presentation.js';
+import { rowHintParts } from '#/app/input/semantic-bind-rows.js';
 
 function key(runtime, type, code, modifiers = {}) {
   runtime.handleEvent({ type, device: { type: 'keyboard', id: 'keyboard' }, control: { type: 'key', code }, timestamp: runtime.state.frame, modifiers });
@@ -220,7 +221,33 @@ test('input hints derive controls from semantic bindings and explicit input sche
   gamepad(input, [{ type: 'button', index: 3, value: 1 }]);
   expect(input.wasPressed('menu.settings')).toBe(true);
   expect(hintPartsForAction(gameInputProfile, settings, 'menu.settings', { runtime: input, inputScheme: 'gamepad', iconPack: 'xbox' }).parts[0]).toMatchObject({ label: 'Y', icon: '/assets/kenney-input-prompts/xbox/xbox_button_y.svg' });
-  expect(hintPartsForAction(gameInputProfile, settings, 'menu.settings', { runtime: input, inputScheme: 'wasd', iconPack: 'xbox' }).parts[0]).toMatchObject({ label: 'Tab', icon: null });
+  expect(hintPartsForAction(gameInputProfile, settings, 'player.dash', { runtime: input, inputScheme: 'gamepad', iconPack: 'xbox' }).parts.map(part => part.icon)).toEqual([
+    '/assets/kenney-input-prompts/xbox/xbox_rb.svg',
+    '/assets/kenney-input-prompts/xbox/xbox_rt.svg'
+  ]);
+  expect(hintPartsForAction(gameInputProfile, settings, 'menu.navigateY', { runtime: input, inputScheme: 'gamepad', iconPack: 'xbox' }).parts.map(part => part.icon)).toEqual([
+    '/assets/kenney-input-prompts/xbox/xbox_stick_l_vertical.svg',
+    '/assets/kenney-input-prompts/xbox/xbox_dpad_up.svg'
+  ]);
+  expect(rowHintParts(settings, 'left', 'controller', { iconPack: 'xbox' }).map(part => part.icon)).toEqual([
+    '/assets/kenney-input-prompts/xbox/xbox_stick_l_left.svg',
+    '/assets/kenney-input-prompts/xbox/xbox_dpad_left.svg'
+  ]);
+  expect(rowHintParts(settings, 'right', 'controller', { iconPack: 'xbox' }).map(part => part.icon)).toEqual([
+    '/assets/kenney-input-prompts/xbox/xbox_stick_l_right.svg',
+    '/assets/kenney-input-prompts/xbox/xbox_dpad_right.svg'
+  ]);
+  expect(hintPartsForAction(gameInputProfile, settings, 'menu.settings', { runtime: input, inputScheme: 'wasd', iconPack: 'xbox' }).parts[0]).toMatchObject({ label: 'Tab', icon: '/assets/kenney-input-prompts/keyboard/keyboard_tab.svg' });
+  expect(rowHintParts(settings, 'jump', 'keyboard', { iconPack: 'xbox' }).map(part => part.icon)).toEqual([
+    '/assets/kenney-input-prompts/keyboard/keyboard_w.svg',
+    '/assets/kenney-input-prompts/keyboard/keyboard_space.svg',
+    '/assets/kenney-input-prompts/keyboard/keyboard_arrow_up.svg'
+  ]);
+  expect(rowHintParts(settings, 'dash', 'keyboard', { iconPack: 'xbox' }).map(part => part.icon)).toEqual([
+    '/assets/kenney-input-prompts/keyboard/keyboard_shift.svg',
+    '/assets/kenney-input-prompts/keyboard/keyboard_shift.svg',
+    '/assets/kenney-input-prompts/keyboard/keyboard_k.svg'
+  ]);
 });
 
 test('tab input hints only display when controller input is active', () => {

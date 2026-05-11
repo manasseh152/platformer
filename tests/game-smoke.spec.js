@@ -295,7 +295,7 @@ test('keyboard and controller settings rows, binds, diagnostics, and pause flow'
   await expect(page.locator('[data-bind-action="jump"]')).toContainText('Press a key');
   await page.keyboard.press('KeyZ');
   await expect(page.locator('#settingsStatus')).toContainText('Jump updated');
-  await expect(page.locator('[data-bind-action="jump"]')).toContainText('Z');
+  await expect(page.locator('[data-bind-device="keyboard"][data-bind-action="jump"] img')).toHaveAttribute('alt', 'Z');
 
   await page.locator('[data-bind-device="keyboard"][data-bind-action="attack"]').click();
   await page.keyboard.press('KeyZ');
@@ -304,12 +304,22 @@ test('keyboard and controller settings rows, binds, diagnostics, and pause flow'
 
   await page.getByRole('button', { name: 'Reset Keyboard Defaults' }).click();
   await expect(page.locator('#settingsStatus')).toContainText('Restored keyboard defaults');
-  await expect(page.locator('[data-bind-action="left"]')).toContainText('A');
-  await expect(page.locator('[data-bind-action="left"]')).toContainText('←');
+  const keyboardLeftIcons = page.locator('[data-bind-device="keyboard"][data-bind-action="left"] img');
+  await expect(keyboardLeftIcons).toHaveCount(2);
+  await expect(keyboardLeftIcons.nth(0)).toHaveAttribute('alt', 'A');
+  await expect(keyboardLeftIcons.nth(1)).toHaveAttribute('alt', '←');
 
   await openCategory(page, 'controller', 'Controller');
   await expect(page.locator('[data-setting-row="controller-enabled"]')).toContainText('On');
   await expect(page.locator('[data-bind-device="controller"]')).toHaveCount(7);
+  const controllerLeftIcons = page.locator('[data-bind-device="controller"][data-bind-action="left"] img');
+  await expect(controllerLeftIcons).toHaveCount(2);
+  await expect(controllerLeftIcons.nth(0)).toHaveAttribute('alt', 'Left Stick ←');
+  await expect(controllerLeftIcons.nth(1)).toHaveAttribute('alt', 'D-pad ←');
+  const controllerDashIcons = page.locator('[data-bind-device="controller"][data-bind-action="dash"] img');
+  await expect(controllerDashIcons).toHaveCount(2);
+  await expect(controllerDashIcons.nth(0)).toHaveAttribute('alt', 'RB');
+  await expect(controllerDashIcons.nth(1)).toHaveAttribute('alt', 'RT');
   await expect(page.locator('[data-controller-settings-page="diagnostics"]')).toContainText('Verify & Debug');
   await page.locator('[data-setting-row="controller-enabled"]').click();
   await expect(page.locator('[data-setting-row="controller-enabled"]')).toContainText('Off');
