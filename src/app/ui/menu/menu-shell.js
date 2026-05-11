@@ -74,7 +74,7 @@ export function setSettingsTab(game, categoryId) {
 }
 
 export function moveSettingsTab(game, direction) {
-  return moveSettingsTabSelection(game, direction, { updateMenuChrome, focusElement: el => focusAndReveal(game, el) });
+  return moveSettingsTabSelection(game, direction, { updateMenuChrome, focusElement: () => focusFirstMenuItem(game) });
 }
 
 function commitMenuPageChange(game, change, after, context = 'menu-forward') {

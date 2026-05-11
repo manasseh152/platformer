@@ -1204,10 +1204,10 @@ body[data-menu-origin="start"] #pauseScreen[data-menu-page="settings-category"] 
   min-width: 30px;
   min-height: 28px;
   padding: 0 10px;
-  border: 1px solid rgba(16,16,22,.45);
+  border: 1px solid rgba(255, 246, 232, .24);
   border-radius: 999px;
-  background: #fff7ea;
-  color: #14151a;
+  background: #2b3342;
+  color: var(--color-cream);
   font: 900 .72rem/1 var(--font-ui);
   letter-spacing: .055em;
   text-transform: uppercase;
@@ -1221,7 +1221,7 @@ body[data-menu-origin="start"] #pauseScreen[data-menu-page="settings-category"] 
   padding: 8px 14px;
   border: 1px solid transparent;
   border-radius: 999px;
-  color: var(--color-muted);
+  color: rgba(255, 246, 232, .78);
   background: transparent;
   font: 900 12px/1 var(--font-ui);
   letter-spacing: .08em;

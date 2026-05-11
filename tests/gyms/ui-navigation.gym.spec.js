@@ -42,7 +42,7 @@ test(`${gym.name}: developer mode exposes clean scenarios and loads Movement Gym
     ui: { started: false, paused: false, menuPage: 'settings-category', menuOrigin: 'start' },
     settings: { developerMode: true }
   });
-  expect(developerSnapshot.ui.focused?.dataset?.settingsTab).toBeTruthy();
+  expect(developerSnapshot.ui.focused?.dataset?.settingRow).toBe('developer-mode');
 
   await page.keyboard.press('Escape');
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'main');

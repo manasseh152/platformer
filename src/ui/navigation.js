@@ -1,5 +1,6 @@
 export function visibleFocusables(root) {
   return [...root.querySelectorAll('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled)')]
+    .filter(el => el.getAttribute('role') !== 'tab')
     .filter(el => el.offsetParent !== null && getComputedStyle(el).visibility !== 'hidden');
 }
 
