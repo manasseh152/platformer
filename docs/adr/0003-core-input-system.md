@@ -166,7 +166,7 @@ Gameplay is now wired to the new semantic core input runtime while menu/settings
 Added/changed modules:
 
 - `src/app/input/browser-input-adapter.js`: browser-owned adapter that queues DOM keyboard events, polls Gamepad API snapshots, and feeds normalized events/snapshots into `createInputRuntime` at frame boundaries.
-- `src/state.js` / `src/settings.js`: create and refresh `game.inputRuntime` from normalized/migrated app settings so existing v1 gameplay binds still route through semantic actions.
+- `src/app/game-state.js` / `src/app/settings/settings.js`: create and refresh `game.inputRuntime` from normalized/migrated app settings so existing v1 gameplay binds still route through semantic actions.
 - `src/main.js`: queues keyboard events for the new runtime, begins/ends core input frames, and checks semantic `system.pause` for gameplay pause.
 - `src/scenes/gameplay-scene.js` / `src/core/physics.js`: gameplay updates query `player.moveX`, `player.jump`, `player.dash`, `player.attack`, and `system.restart` when passed a core input runtime, while preserving old tests during the transition.
 - `tests/update-gameplay.spec.js`: covers gameplay movement/jump through `createInputRuntime` semantic actions.
@@ -184,7 +184,7 @@ Menu navigation now uses the semantic core input route while settings/editor bin
 Added/changed modules:
 
 - `src/ui/navigation.js`: reusable DOM focus helpers for visible focusables, current/fallback focus, linear movement, and horizontal button-group movement.
-- `src/menu.js`: routes active menu input through `menu.navigateX`, `menu.navigateY`, `menu.accept`, and `menu.back`; keeps page-specific back/activation behavior in menu code and retains the old gamepad fallback for transitional settings/bind paths.
+- `src/app/ui/menu/**`: routes active menu input through `menu.navigateX`, `menu.navigateY`, `menu.accept`, and `menu.back`; keeps page-specific back/activation behavior in menu code and retains the old gamepad fallback for transitional settings/bind paths.
 - `src/main.js`: lets queued keyboard events reach the core input frame before menu activation/back handling so keyboard and controller menu actions share the same semantic route where practical.
 - `src/core/input/runtime.js`: detects semantic press/release transitions after deadzone processing, so analog stick menu navigation fires when crossing the effective action threshold, not only when the raw axis leaves zero.
 - `tests/core-input.spec.js`: covers effective deadzone threshold press behavior for axis actions.
@@ -201,9 +201,9 @@ Unified input settings are now the app-level persisted source of truth while the
 
 Added/changed modules:
 
-- `src/settings.js`: normalizes persisted app settings to `schemaVersion: 2` with `settings.input`, migrates old v1 `keyboardBinds` / `gamepadBinds` / `controllerEnabled` on load/save, derives temporary legacy UI rows from structured bindings, and syncs remap UI edits back into semantic action bindings without persisting old bind fields.
+- `src/app/settings/settings.js`: normalizes persisted app settings to `schemaVersion: 2` with `settings.input`, migrates old v1 `keyboardBinds` / `gamepadBinds` / `controllerEnabled` on load/save, derives temporary legacy UI rows from structured bindings, and syncs remap UI edits back into semantic action bindings without persisting old bind fields.
 - `src/app/input/browser-input-adapter.js`: creates runtimes directly from `settings.input` instead of overlaying old `controllerEnabled`.
-- `src/main.js`, `src/menu.js`, `src/gym.js`: read controller enabled state from `settings.input.slots.player1.devices.gamepad.enabled` for events/status while preserving current UI behavior.
+- `src/main.js`, `src/app/ui/menu/**`, `src/app/testing/gym.js`: read controller enabled state from `settings.input.slots.player1.devices.gamepad.enabled` for events/status while preserving current UI behavior.
 - `tests/settings.spec.js`: covers v1-to-v2 persistence and transitional UI sync preserving both sides of `player.moveX`.
 - `tests/game-smoke.spec.js`: verifies advanced settings JSON now dumps structured `input.bindings` rather than old `keyboardBinds` / `gamepadBinds`.
 
@@ -221,7 +221,7 @@ Added/changed modules:
 
 - `src/core/input/capture.js`: pure bind-capture helpers for keyboard events and gamepad button/axis snapshots, duplicate/conflict checks, cancellation, and immutable captured-binding application.
 - `src/core/input/runtime.js`: exposes connected device snapshots, explicit gamepad selection by slot, selected runtime/fingerprint persistence, and selected-controller routing that avoids silent switching to a different controller after disconnect.
-- `src/settings-ui.js` / `src/menu.js`: add a Controller settings selector for connected gamepads and persist the selected runtime/fingerprint separately from controller enable/disable.
+- `src/app/ui/settings/settings-view.js` / `src/app/ui/menu/**`: add a Controller settings selector for connected gamepads and persist the selected runtime/fingerprint separately from controller enable/disable.
 - `tests/core-input.spec.js`: covers bind capture, duplicate prevention, controller selection, and no-silent-switch routing after disconnect.
 
 Validation command for this slice:
@@ -239,7 +239,7 @@ Added/changed modules and assets:
 - `src/app/input/input-hints.js`: control label and hint-part helpers for semantic actions, display-group-aware binding selection, text fallback, and a first Xbox icon-pack mapping hook.
 - `src/input.js`: renders `[data-input-hint]` elements from semantic action ids (`menu.accept`, `menu.back`, `menu.settings`, etc.), actual bindings, last active source/display group, and optional icon-pack assets.
 - `src/core/input/runtime.js`: records last active source when press/release transition queries match, so hints can follow controller/menu button usage as well as continuous gameplay values.
-- `src/menu.js`: routes `menu.settings` through the menu semantic input path and lets clickable back/settings hints invoke the same menu action handler.
+- `src/app/ui/menu/**`: routes `menu.settings` through the menu semantic input path and lets clickable back/settings hints invoke the same menu action handler.
 - `public/assets/kenney-input-prompts/`: first minimal Kenney Input Prompts runtime asset subset with CC0 license/source attribution.
 - `tests/core-input.spec.js`: covers semantic hint derivation, keyboard display groups, last-active gamepad source selection, and Xbox icon presenter fallback.
 
@@ -294,7 +294,7 @@ Added/changed modules and docs:
 - `src/core/physics.js`: requires a semantic core input runtime for gameplay updates instead of accepting old `left` / `jump` string-bind state.
 - `src/main.js`: gameplay pause now reads only semantic `system.pause`; the old `hasPressed(input, 'pause')` fallback is gone.
 - `src/core/settings.js`: no longer imports legacy bind defaults; it only normalizes non-input core settings used by core/domain tests.
-- `src/settings.js`: imports shared cloning from `src/core/input/utils.js` rather than the deleted legacy module.
+- `src/app/settings/settings.js`: imports shared cloning from `src/core/input/utils.js` rather than the deleted legacy module.
 - `docs/patterns/settings-and-ui.md`: documents `schemaVersion: 2`, `settings.input` ownership, semantic binding persistence, and controller selection conventions.
 - `tests/update-gameplay.spec.js`: old gameplay fallback tests now use `createInputRuntime` semantic controls.
 

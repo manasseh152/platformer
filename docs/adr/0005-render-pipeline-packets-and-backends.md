@@ -45,7 +45,7 @@ Gameplay packets are emitted in native-frame coordinates after a `RenderView` pr
 
 ## Assets
 
-Packets reference stable namespaced asset IDs, not raw image objects. A compatibility asset registry maps those IDs to the current `assets.js` images. Future registries can map the same IDs to atlas/sprite/WebGPU resources.
+Packets reference stable namespaced asset IDs, not raw image objects. A compatibility asset registry maps those IDs to the current `src/render/assets/browser-assets.js` images. Future registries can map the same IDs to atlas/sprite/WebGPU resources.
 
 Fallback drawing is a semantic extraction concern. Backends defensively skip unresolved or unloaded images.
 
@@ -55,7 +55,7 @@ Presentation uses integer scale when the canvas can fit the native frame. Below 
 
 ## Migration rule
 
-`src/render.js` remains as a deprecated facade during migration. New code should import the new pipeline modules directly. Deprecated compatibility modules are marked with comments/JSDoc rather than runtime warnings or import-forbid tests in this pass.
+Deprecated compatibility facades are temporary and should be deleted once no production or test imports remain. New code should import concrete pipeline, extractor, backend, and HUD modules directly. Runtime warnings are avoided for render-loop compatibility; cleanup is tracked in this ADR and boundary coverage.
 
 ## Acceptance criteria
 
@@ -75,9 +75,9 @@ Completed in the first implementation pass:
 - Added generic frame builder and render-view/viewport helpers under `src/engine/render`.
 - Switched default presentation viewport policy to integer scaling with soft-fit below native size.
 - Added a Canvas2D `NativeFrameBackend` that consumes finalized packets.
-- Added stable namespaced asset IDs and a browser compatibility registry over `assets.js`.
+- Added stable namespaced asset IDs and a browser compatibility registry over `src/render/assets/browser-assets.js`.
 - Added gameplay packet extraction for backdrop, tilemap visuals, goals, hazards, actors, particles, and debug overlays.
-- Migrated gameplay rendering through `src/render/gameplay-render-pipeline.js` while keeping `src/render.js` as a deprecated facade.
+- Migrated gameplay rendering through `src/render/gameplay-render-pipeline.js` while keeping `src/render.js` as a deprecated facade for the first pass.
 - Migrated map snapshot rendering to the packet extractor/backend.
 - Marked legacy direct Canvas2D world renderer as deprecated.
 - Added focused tests for viewport scaling, frame sorting, render-view conversion, and asset lookup.
@@ -116,7 +116,7 @@ Completed in the third implementation pass:
 
 - Audited all `src/render.js` facade exports and removed the remaining legacy direct Canvas2D world-renderer forwards.
 - Switched gameplay scene rendering to import `renderGameplayFrame` from `src/render/gameplay-render-pipeline.js` directly.
-- Kept `src/render.js` as a deprecated facade that only forwards to new pipeline/HUD modules for compatibility.
+- Kept `src/render.js` as a deprecated facade that only forwards to new pipeline/HUD modules for compatibility until the post-migration seam cleanup.
 - Deleted `src/render/world-renderer.js`; there is no production call path to the legacy renderer.
 - Confirmed map snapshots already use packet extraction and the Canvas2D native-frame backend.
 - Kept `customCanvas` documented as a deliberate temporary escape hatch for the v1 packet vocabulary; current extraction does not rely on it.
@@ -188,3 +188,39 @@ Validation at completion:
 - `bun run build` passed.
 - `bunx playwright test tests/render-pipeline.spec.js --project=chromium` passed.
 - `render_full_map_png` rendered `.temp/full-map.png` at `1152×512`; Vite also reported port `4174` already in use because an existing server was present.
+
+### Pass 7: Visual review and old seam cleanup
+
+Status: **done**.
+
+Completed in the post-migration cleanup pass:
+
+- Rendered a review artifact at `.temp/render-pipeline-visual-review-full-map.png` for full-map packet/backend inspection.
+- Re-audited old render seams after passes 1-6.
+- Deleted the now-unused `src/render.js` deprecated facade after confirming gameplay imports `src/render/gameplay-render-pipeline.js` directly.
+- Deleted the now-unused first-pass legacy presentation compatibility adapter `src/render/presentation/presentation-backend.js`.
+- Deleted the now-unused deprecated WebGPU presenter re-export path `src/gpu/presenters/webgpu-presenter.js`.
+- Updated boundary coverage so the legacy renderer, render facade, legacy presentation adapter, and old GPU presenter path are expected to be absent.
+
+Validation note:
+
+- `render_full_map_png` rendered `.temp/render-pipeline-visual-review-full-map.png` at `1152×512`; Vite also reported port `4174` already in use because an existing server was present.
+
+## Current state after migration
+
+The active render path is now:
+
+```txt
+gameplay scene
+  -> renderGameplayFrame
+  -> gameplay render read model / packet extraction
+  -> finalized RenderFrame
+  -> Canvas2D or WebGL NativeFrameBackend
+  -> NativeFrameSource
+  -> Canvas2D/WebGL/WebGPU PresentationBackend
+  -> browser canvas
+```
+
+Map snapshots use the same packet backend family through `extractTilemapSnapshotRenderFrame`, not the old gameplay renderer.
+
+The remaining intentional compatibility seam is `src/presenter.js`, which is still created by `src/app/game-state.js` and exposes presentation state to existing app/settings/resize code. It is a compatibility facade over concrete presentation backends, not a gameplay renderer. Remove it only after app composition owns presentation backends directly.

@@ -68,9 +68,9 @@ Confidence:
 | Content | `src/content/**` | Authored campaigns, gyms, zoos, tilemaps, reusable authored objects, Chibi tilemap draft compilation | Should not depend on app/editor/UI. |
 | Catalog | `src/catalog/**` | Scenario/category registries, scenario service, local-draft catalog integration | Does not import editor modules; protected by boundary test. |
 | App/browser shell | top-level app modules, `src/app/**` | DOM, settings persistence, browser adapters, composition root | May compose all layers, but should pass smaller contexts over time. |
-| Game UI | `src/menu.js`, `src/app/ui/**`, `src/settings-ui.js`, `src/scenes/menu-dom.js`, `styles/main.css` | Start/pause/settings/scenario browser/HUD/devtools shell | `src/menu.js` remains the shell/focus/event hotspot while scenario browser, settings navigation, and settings actions are focused modules. |
+| Game UI | `src/app/ui/menu/**`, `src/app/ui/**`, `src/app/ui/settings/settings-view.js`, `src/scenes/menu-dom.js`, `styles/main.css` | Start/pause/settings/scenario browser/HUD/devtools shell | `src/app/ui/menu/**` remains the shell/focus/event hotspot while scenario browser, settings navigation, and settings actions are focused modules. |
 | Editor UI/tool | `src/editor/**`, `styles/map-editor.css` | Browser map editor shell, command/status/payload helpers, viewport, persistence UI | `src/editor/map-editor.js` owns DOM/canvas wiring; `src/editor/map-editor-commands.js` owns reusable draft commands/status/payload helpers. |
-| Rendering | `src/render.js`, `src/render/**`, `src/rendering/**`, `src/gpu/**` | Packet extraction, native-frame backends, presentation backends, render helpers | Gameplay and map snapshots render through packet extractors/backends; `src/render.js` is a deprecated facade. |
+| Rendering | `src/render/**`, `src/rendering/**`, `src/gpu/**` | Packet extraction, native-frame backends, presentation backends, render helpers | Gameplay and map snapshots render through packet extractors/backends; the old `src/render.js` facade and direct world renderer have been deleted. |
 | Devtools | `src/devtools/**` | Developer-only toolbox/overlays | Keep gated and out of core gameplay logic. |
 
 ## Findings
@@ -79,17 +79,17 @@ Confidence:
 
 Evidence:
 
-- `src/menu.js` remains the menu setup, semantic-action, input-routing, and broad DOM event wiring facade.
+- `src/app/ui/menu/**` remains the menu setup, semantic-action, input-routing, and broad DOM event wiring facade.
 - Scenario browser rendering/launch handling has been extracted to `src/app/ui/scenario-browser.js`.
-- Settings category tab switching has been extracted to `src/app/ui/settings-navigation.js`.
-- Settings actions, bind-listening, controller selection, raw settings, motion/GPU/developer toggles, and speedrun setting actions have been extracted to `src/app/ui/settings-actions.js`.
-- Menu shell/focus, page transitions, menu chrome updates, pause/start flow, and main-menu return flow now live in `src/app/ui/menu-shell.js`.
+- Settings category tab switching has been extracted to `src/app/ui/settings/settings-navigation.js`.
+- Settings actions, bind-listening, controller selection, raw settings, motion/GPU/developer toggles, and speedrun setting actions have been extracted to `src/app/ui/settings/settings-actions.js`.
+- Menu shell/focus, page transitions, menu chrome updates, pause/start flow, and main-menu return flow now live in `src/app/ui/menu/menu-shell.js`.
 - Docs describe scene-owned DOM and scene stack concepts, but only gameplay is a registered runtime scene today.
-- `src/scenes/menu-dom.js` creates start/pause/settings/scenario browser markup, while behavior is split across `src/menu.js` and `src/app/ui/**` modules.
+- `src/scenes/menu-dom.js` creates start/pause/settings/scenario browser markup, while behavior is split across `src/app/ui/menu/**` and `src/app/ui/**` modules.
 
 Direction:
 
-- Keep `src/menu.js` as the compatibility facade until callers can depend on focused UI modules directly.
+- Keep `src/app/ui/menu/**` as the compatibility facade until callers can depend on focused UI modules directly.
 - Do not immediately migrate UI into scene-stack scenes.
 - After decomposition, evaluate migrating one overlay/page at a time if scene ownership simplifies lifecycle/input.
 
@@ -116,7 +116,7 @@ Evidence:
 
 - Pure draft schema/normalization/layer/entity helpers now live in `src/core/tilemaps/draft.js`.
 - Chibi content symbol mapping and draft compilation now live in `src/content/tilemaps/draft-compiler.js`.
-- `src/catalog/local-drafts/storage.js` and `src/tilemap-preview.js` import the shared modules directly instead of `src/editor/tilemap-draft.js`.
+- `src/catalog/local-drafts/storage.js` and `src/app/tilemaps/tilemap-preview.js` import the shared modules directly instead of `src/editor/tilemap-draft.js`.
 - `tests/core-boundary.spec.js` now asserts catalog modules do not import editor modules.
 
 Follow-up:
@@ -127,7 +127,7 @@ Follow-up:
 
 Evidence:
 
-- `src/state.js` creates `game` with runtime, UI, presenter, GPU, app state, gameplay session, mirrored player/enemy/camera fields, legacy input, semantic input runtime, settings, speedrun, devtools, scenarios, scene library, menu, and clock.
+- `src/app/game-state.js` creates `game` with runtime, UI, presenter, GPU, app state, gameplay session, mirrored player/enemy/camera fields, legacy input, semantic input runtime, settings, speedrun, devtools, scenarios, scene library, menu, and clock.
 - It also writes `document.body.dataset.tilemapId`.
 
 Direction:
@@ -143,12 +143,13 @@ Evidence:
 
 - Gameplay and map snapshots now render through packet extractors and `NativeFrameBackend` modules rather than the deleted legacy direct Canvas2D world renderer.
 - `src/app/ui/gameplay-hud.js` owns HUD level name, messages, speedrun HUD, hearts, body classes, and input hint presentation.
-- `src/render.js` remains a deprecated facade that forwards to new pipeline modules only.
-- `tests/core-boundary.spec.js` asserts the deleted legacy world renderer has no production call path.
+- The old `src/render.js` facade was deleted after gameplay callers moved to the pipeline directly.
+- `tests/core-boundary.spec.js` asserts deleted legacy render facades have no production call path.
 
 Follow-up:
 
 - Keep extracting render-facing read models/adapters where that reduces mutable `game` coupling.
+- Remove the remaining `src/presenter.js` compatibility facade only after app composition owns presentation backends directly.
 - Add characterization tests before changing HUD/message focus or speedrun display behavior.
 
 ### Completed — Tilemap compiler internals have focused ownership
@@ -242,7 +243,7 @@ Before risky refactors, add characterization tests for:
 - settings bind/remap behavior if changing input presentation or settings action dispatch;
 - editor save/preview/import/export when changing command payloads or browser storage side effects;
 - local draft validation if moving draft compiler modules;
-- HUD/message behavior if splitting `src/render.js`;
+- HUD/message behavior if changing gameplay HUD presentation;
 - map render visual output if changing terrain/rendering.
 
 ## Completed implementation slices
@@ -257,7 +258,7 @@ Changed files:
 - `src/content/tilemaps/draft-compiler.js`
 - `src/editor/tilemap-draft.js`
 - `src/catalog/local-drafts/storage.js`
-- `src/tilemap-preview.js`
+- `src/app/tilemaps/tilemap-preview.js`
 - `tests/core-boundary.spec.js`
 
 Validation:
@@ -278,11 +279,11 @@ Changed files:
 - `src/app/input/controller-diagnostics.js`
 - removed `src/input.js`
 - `src/main.js`
-- `src/menu.js`
-- `src/render.js`
-- `src/settings.js`
-- `src/settings-ui.js`
-- `src/state.js`
+- `src/app/ui/menu/**`
+- removed `src/render.js` later during render packet migration
+- `src/app/settings/settings.js`
+- `src/app/ui/settings/settings-view.js`
+- `src/app/game-state.js`
 - `tests/core-boundary.spec.js`
 - `tests/settings.spec.js`
 - `tests/physics.spec.js`
@@ -304,14 +305,14 @@ Partially completed on 2026-05-09.
 Changed files:
 
 - `src/app/ui/scenario-browser.js`
-- `src/menu.js`
+- `src/app/ui/menu/**`
 - `src/scenes/menu-dom.js`
 - `docs/adr/0004-foundation-review-before-new-systems.md`
 - `docs/patterns/foundation-review.md`
 
 Implemented:
 
-- Scenario browser tab/render/local-draft/launch behavior moved out of `src/menu.js`.
+- Scenario browser tab/render/local-draft/launch behavior moved out of `src/app/ui/menu/**`.
 - Settings and level-select back controls were restored at this stage instead of only command-bar hint metadata; later settings-tab work removed the settings hub again.
 - At this stage, start settings opened the settings hub and category back returned to the hub; current behavior is direct `settings-category` tab navigation.
 - Developer-mode toggle preserves focus on the toggled row after rerender.
@@ -334,14 +335,14 @@ Completed on 2026-05-09.
 
 Changed files:
 
-- `src/app/ui/settings-navigation.js`
-- `src/menu.js`
+- `src/app/ui/settings/settings-navigation.js`
+- `src/app/ui/menu/**`
 - `docs/adr/0004-foundation-review-before-new-systems.md`
 - `docs/patterns/foundation-review.md`
 
 Implemented:
 
-- Settings category tab switching moved out of `src/menu.js` into `src/app/ui/settings-navigation.js`.
+- Settings category tab switching moved out of `src/app/ui/menu/**` into `src/app/ui/settings/settings-navigation.js`.
 - At the time of this slice, menu kept ownership of focus callbacks and chrome updates while delegating category validation and tab movement; later Slice 6 moved that shell ownership too.
 
 Validation:
@@ -357,15 +358,15 @@ Completed on 2026-05-09.
 
 Changed files:
 
-- `src/app/ui/settings-actions.js`
-- `src/menu.js`
+- `src/app/ui/settings/settings-actions.js`
+- `src/app/ui/menu/**`
 - `docs/adr/0004-foundation-review-before-new-systems.md`
 - `docs/patterns/foundation-review.md`
 
 Implemented:
 
-- Settings bind-listening, bind commits, resets, controller enable/select, motion/GPU/developer toggles, speedrun setting actions, and raw settings dump/replace actions moved out of `src/menu.js`.
-- `src/menu.js` now routes settings/scenario clicks and passes shell callbacks for chrome, focus, and transitions.
+- Settings bind-listening, bind commits, resets, controller enable/select, motion/GPU/developer toggles, speedrun setting actions, and raw settings dump/replace actions moved out of `src/app/ui/menu/**`.
+- `src/app/ui/menu/**` now routes settings/scenario clicks and passes shell callbacks for chrome, focus, and transitions.
 
 Validation:
 
@@ -382,15 +383,15 @@ Completed on 2026-05-09.
 
 Changed files:
 
-- `src/app/ui/menu-shell.js`
-- `src/menu.js`
+- `src/app/ui/menu/menu-shell.js`
+- `src/app/ui/menu/**`
 - `docs/adr/0004-foundation-review-before-new-systems.md`
 - `docs/patterns/foundation-review.md`
 
 Implemented:
 
-- Menu chrome updates, active-root selection, focus restoration/reveal behavior, settings tab focus callbacks, page transitions, settings/level-select open/close flow, pause/start, and main-menu return flow moved out of `src/menu.js` into `src/app/ui/menu-shell.js`.
-- `src/menu.js` remains the compatibility facade for setup, semantic menu activation, input routing, and delegated settings/scenario click routing.
+- Menu chrome updates, active-root selection, focus restoration/reveal behavior, settings tab focus callbacks, page transitions, settings/level-select open/close flow, pause/start, and main-menu return flow moved out of `src/app/ui/menu/**` into `src/app/ui/menu/menu-shell.js`.
+- `src/app/ui/menu/**` remains the compatibility facade for setup, semantic menu activation, input routing, and delegated settings/scenario click routing.
 
 Validation:
 
@@ -417,8 +418,8 @@ Implemented at the time:
 
 - Canvas world drawing, camera snap/subpixel calculations, tilemap/decor/actor drawing, and debug overlays were first moved out of `src/render.js` into a focused renderer module. That transitional direct Canvas2D renderer has since been superseded by the packet pipeline and deleted.
 - HUD level name, message modal state, speedrun HUD, hearts, body classes, and gameplay input hints moved into `src/app/ui/gameplay-hud.js`.
-- `src/render.js` is now a deprecated compatibility facade that forwards to new pipeline/HUD modules only.
-- Boundary coverage now asserts the deleted legacy renderer has no production call path.
+- The later packet-pipeline migration deleted the old `src/render.js` facade after direct callers moved to focused pipeline/HUD modules.
+- Boundary coverage now asserts the deleted legacy render facades have no production call path.
 
 Validation:
 

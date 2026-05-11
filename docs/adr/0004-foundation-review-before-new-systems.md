@@ -111,20 +111,20 @@ Initial slice order:
    - Remaining follow-up: add characterization tests before changing actual bind/remap behavior.
 
 3. **Decompose menu/settings/scenario browser ownership** — completed
-   - Invariant: `src/menu.js` stops being the single owner of unrelated UI flows while preserving current DOM behavior.
+   - Invariant: `src/app/ui/menu/**` stops being the single owner of unrelated UI flows while preserving current DOM behavior.
    - Implemented: scenario browser rendering, local draft rows, tab persistence, selected-level summary updates, and scenario launch handling now live in `src/app/ui/scenario-browser.js`.
    - Implemented: settings now opens through the hub again with explicit back buttons for hub/category/level-select flows, restoring existing DOM characterization tests.
-   - Implemented: settings tab navigation now lives in `src/app/ui/settings-navigation.js`.
-   - Implemented: settings action handlers and bind-listening helpers now live in `src/app/ui/settings-actions.js`.
-   - Implemented: menu shell, focus restoration, page transitions, pause/start/main-menu transitions, and menu chrome updates now live in `src/app/ui/menu-shell.js`.
-   - `src/menu.js` remains the DOM event/input wiring facade for menu setup and semantic menu activation.
+   - Implemented: settings tab navigation now lives in `src/app/ui/settings/settings-navigation.js`.
+   - Implemented: settings action handlers and bind-listening helpers now live in `src/app/ui/settings/settings-actions.js`.
+   - Implemented: menu shell, focus restoration, page transitions, pause/start/main-menu transitions, and menu chrome updates now live in `src/app/ui/menu/menu-shell.js`.
+   - `src/app/ui/menu/**` remains the DOM event/input wiring facade for menu setup and semantic menu activation.
    - Do not migrate to scene-stack UI scenes until responsibilities are clear.
 
 4. **Split world rendering from HUD/message DOM updates** — completed
    - Invariant: canvas world rendering can evolve independently from DOM HUD, message, speedrun, and input-hint updates.
    - Implemented: gameplay and map snapshots now render through packet extractors plus native-frame/presentation backends; the legacy direct Canvas2D world renderer was deleted after imports migrated.
    - Implemented: HUD level name, messages, speedrun HUD, hearts, body classes, and input hints now live in `src/app/ui/gameplay-hud.js`.
-   - Implemented: `src/render.js` remains a deprecated facade that forwards only to new pipeline/HUD modules.
+   - Implemented: the old `src/render.js` facade was later deleted after gameplay callers moved to focused packet pipeline/HUD modules.
    - Rendering/tilemap changes require map render validation.
 
 5. **Decompose tilemap compiler internals** — completed
