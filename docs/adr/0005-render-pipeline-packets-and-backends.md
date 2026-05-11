@@ -37,7 +37,6 @@ V1 packet vocabulary:
 - `image`
 - `path`
 - `ellipse`
-- `customCanvas` as temporary escape hatch only
 
 Packets have `layer`, `order`, and insertion `sequence`; finalized frames are sorted by those keys and treated as read-only by backends.
 
@@ -119,7 +118,7 @@ Completed in the third implementation pass:
 - Kept `src/render.js` as a deprecated facade that only forwards to new pipeline/HUD modules for compatibility until the post-migration seam cleanup.
 - Deleted `src/render/world-renderer.js`; there is no production call path to the legacy renderer.
 - Confirmed map snapshots already use packet extraction and the Canvas2D native-frame backend.
-- Kept `customCanvas` documented as a deliberate temporary escape hatch for the v1 packet vocabulary; current extraction does not rely on it.
+- Confirmed current extraction does not rely on the former `customCanvas` escape hatch.
 - Updated foundation-review docs and boundary coverage for the packetized renderer state.
 
 Validation at completion:
@@ -223,4 +222,23 @@ gameplay scene
 
 Map snapshots use the same packet backend family through `extractTilemapSnapshotRenderFrame`, not the old gameplay renderer.
 
-The remaining intentional compatibility seam is `src/presenter.js`, which is still created by `src/app/game-state.js` and exposes presentation state to existing app/settings/resize code. It is a compatibility facade over concrete presentation backends, not a gameplay renderer. Remove it only after app composition owns presentation backends directly.
+Presentation composition now lives under `src/app/presentation/**`; the old root `src/presenter.js` seam has been removed. App code still owns presentation lifecycle and settings/resize integration, while render backends remain under `src/render/**`.
+
+### Pass 8: WebGL native backend capability guard
+
+Status: **done**.
+
+Completed in the eighth implementation pass:
+
+- Added an explicit WebGL native-frame capability check for finalized frames.
+- Guarded gameplay rendering so a requested WebGL native backend falls back to Canvas2D instead of silently dropping unsupported gameplay packets.
+- Removed the unused Canvas2D `customCanvas` packet escape hatch from backend drawing support.
+- Added coverage against a real extracted gameplay frame so WebGL parity gaps remain visible.
+
+Known WebGL native backend gaps after this pass:
+
+- `roundRect`, `ellipse`, and `path` packets are not yet implemented.
+- Gradient fills are not yet implemented.
+- Rotated image packets are not yet implemented.
+
+Canvas2D remains the default/reference native-frame backend until those gaps close.

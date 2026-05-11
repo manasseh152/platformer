@@ -86,8 +86,6 @@ export function createCanvas2DNativeFrameBackend({ width, height, canvas = docum
         ctx.beginPath(); for (const command of packet.commands ?? []) applyPathCommand(ctx, command); strokeAndFill(ctx, packet);
       } else if (packet.kind === 'image' || packet.kind === 'sprite' || packet.kind === 'texturedQuad') {
         drawImageLikePacket(ctx, packet, assetRegistry);
-      } else if (packet.kind === 'customCanvas') {
-        packet.draw?.(ctx, packet.payload);
       }
     });
   }

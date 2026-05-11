@@ -38,8 +38,15 @@ export function renderGameplayFrame(runtime, game, { assetRegistry = defaultAsse
     game = runtime;
     runtime = { now: () => performance.now(), random: Math.random };
   }
-  const nativeBackend = ensureNativeFrameBackend(game, { assetRegistry, nativeBackendKind });
   const { frame } = extractGameplayRenderFrame({ game, runtime, assetRegistry });
+  let nativeBackend = ensureNativeFrameBackend(game, { assetRegistry, nativeBackendKind });
+  const support = nativeBackend.supportsFrame?.(frame);
+  if (nativeBackend.kind === 'webgl-native-frame-backend' && support && !support.supported) {
+    game.renderPipeline.webglFallbackReason = support.issues;
+    nativeBackend = ensureNativeFrameBackend(game, { assetRegistry, nativeBackendKind: 'canvas2d' });
+  } else if (game.renderPipeline) {
+    delete game.renderPipeline.webglFallbackReason;
+  }
   nativeBackend.draw(frame);
   syncGameplayHudPresentation(game);
   game.presentation.present(nativeBackend.getSource());

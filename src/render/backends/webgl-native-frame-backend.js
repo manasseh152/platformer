@@ -1,3 +1,5 @@
+import { analyzeWebGlNativeFrameSupport } from './webgl-native-frame-capabilities.js';
+
 const VERTEX_SHADER = `
 attribute vec2 a_position;
 attribute vec2 a_texcoord;
@@ -223,6 +225,9 @@ export function createWebGlNativeFrameBackend({ width, height, canvas = document
       if (canvas.width !== nextWidth) canvas.width = nextWidth;
       if (canvas.height !== nextHeight) canvas.height = nextHeight;
       gl.viewport(0, 0, canvas.width, canvas.height);
+    },
+    supportsFrame(frame) {
+      return analyzeWebGlNativeFrameSupport(frame);
     },
     draw(frame) {
       if (lost) return;

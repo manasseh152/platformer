@@ -2,7 +2,11 @@ import { expect, test } from '@playwright/test';
 import { createRenderFrameBuilder, resetRenderPacketSequenceForTests } from '#/engine/render/frame-builder.js';
 import { computePresentationViewport, prepareRenderView, worldToNativeRect } from '#/engine/render/viewport.js';
 import { createAssetRegistry, ASSET_IDS, createAtlasSpriteMetadata } from '#/render/asset-registry.js';
+import { analyzeWebGlNativeFrameSupport } from '#/render/backends/webgl-native-frame-capabilities.js';
+import { extractGameplayRenderFrame } from '#/render/extractors/gameplay-render-extractor.js';
 import { createGameplayRenderReadModel } from '#/render/extractors/gameplay-renderables.js';
+import { createGameplaySession, syncGameplaySessionToGame } from '#/core/gameplay-session.js';
+import { getTilemapById } from '#/content/tilemaps/registry.js';
 
 test('presentation viewport integer-scales and centers native frame', () => {
   expect(computePresentationViewport(800, 600, 320, 180)).toEqual({ scale: 2, width: 640, height: 360, offsetX: 80, offsetY: 120 });
@@ -198,6 +202,74 @@ test('canvas native backend draws image packets from atlas metadata', async ({ p
   });
 
   expect(pixel).toEqual([0, 255, 0, 255]);
+});
+
+test('webgl native backend capability check rejects unsupported real gameplay packets', () => {
+  const view = { width: 640, height: 360, bufferWidth: 320, bufferHeight: 180 };
+  const session = createGameplaySession(getTilemapById('act-01-level-1'), { view, scenarioId: 'act-01-level-1' });
+  const game = { view, devTools: { flags: {} } };
+  syncGameplaySessionToGame(game, session);
+
+  const { frame } = extractGameplayRenderFrame({ game, runtime: { now: () => 0, random: () => 0.5 }, assetRegistry: createAssetRegistry({}) });
+  const support = analyzeWebGlNativeFrameSupport(frame);
+  const reasons = support.issues.map(issue => issue.reason);
+
+  expect(support.supported).toBe(false);
+  expect(reasons).toContain('unsupported packet kind: roundRect');
+  expect(reasons).toContain('unsupported packet kind: ellipse');
+  expect(reasons).toContain('unsupported packet kind: path');
+  expect(reasons).toContain('unsupported fill kind for rect: linearGradient');
+  expect(reasons).toContain('unsupported fill kind for rect: radialGradient');
+});
+
+test('renderGameplayFrame falls back to canvas2d when requested webgl cannot draw extracted packets', async ({ page }) => {
+  await page.goto('/');
+  const result = await page.evaluate(async () => {
+    const [{ renderGameplayFrame }, { createAssetRegistry }, { createGameplaySession, syncGameplaySessionToGame }, { getTilemapById }] = await Promise.all([
+      import('/src/render/gameplay-render-pipeline.js'),
+      import('/src/render/asset-registry.js'),
+      import('/src/core/gameplay-session.js'),
+      import('/src/content/tilemaps/registry.js')
+    ]);
+    const view = { width: 640, height: 360, bufferWidth: 320, bufferHeight: 180 };
+    const session = createGameplaySession(getTilemapById('act-01-level-1'), { view, scenarioId: 'act-01-level-1' });
+    const heartsEl = document.createElement('div');
+    for (let i = 0; i < 5; i++) heartsEl.append(document.createElement('span'));
+    const game = {
+      view,
+      renderCanvas: document.createElement('canvas'),
+      renderPipeline: {},
+      presentation: { present(source) { this.lastSource = source; } },
+      devTools: { flags: {} },
+      settings: {},
+      appState: { started: true, paused: false },
+      input: { inputScheme: 'wasd' },
+      ui: {
+        hudLevelName: document.createElement('div'),
+        heartsEl,
+        dashStatusEl: document.createElement('div'),
+        messageEl: document.createElement('div'),
+        messageTitleEl: document.createElement('div'),
+        messageNextLevelButton: document.createElement('button'),
+        hintLayerEl: null
+      }
+    };
+    syncGameplaySessionToGame(game, session);
+    game.tilemaps = { getNextTilemap: () => null };
+
+    renderGameplayFrame({ now: () => 0, random: () => 0.5 }, game, { assetRegistry: createAssetRegistry({}), nativeBackendKind: 'webgl' });
+    return {
+      backendKind: game.renderPipeline.nativeBackendKind,
+      backend: game.renderPipeline.nativeBackend.kind,
+      fallbackReasons: game.renderPipeline.webglFallbackReason?.map(issue => issue.reason) ?? [],
+      presentedWidth: game.presentation.lastSource?.width
+    };
+  });
+
+  expect(result.backendKind).toBe('canvas2d');
+  expect(result.backend).toBe('canvas2d-native-frame-backend');
+  expect(result.fallbackReasons).toContain('unsupported packet kind: roundRect');
+  expect(result.presentedWidth).toBe(320);
 });
 
 test('webgl native backend draws clear and 1px rect packets from finalized frames', async ({ page }) => {

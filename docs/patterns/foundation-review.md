@@ -144,7 +144,7 @@ Evidence:
 Follow-up:
 
 - Keep extracting render-facing read models/adapters where that reduces mutable `game` coupling.
-- Remove the remaining `src/presenter.js` compatibility facade only after app composition owns presentation backends directly.
+- Keep app presentation composition in `src/app/presentation/**`; the old root `src/presenter.js` compatibility facade has been removed.
 - Add characterization tests before changing HUD/message focus or speedrun display behavior.
 
 ### Completed — Tilemap compiler internals have focused ownership
