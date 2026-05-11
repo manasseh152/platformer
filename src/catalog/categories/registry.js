@@ -13,7 +13,8 @@ export const categories = {
   hazards: { id: 'hazards', name: 'Hazards', role: 'filter', visibility: 'developer', order: 210 },
   'finish-gate': { id: 'finish-gate', name: 'Finish Gate', role: 'filter', visibility: 'developer', order: 220 },
   enemy: { id: 'enemy', name: 'Enemy', role: 'filter', visibility: 'developer', order: 230 },
-  ui: { id: 'ui', name: 'UI', role: 'filter', visibility: 'developer', order: 240 },
+  rendering: { id: 'rendering', name: 'Rendering', role: 'filter', visibility: 'developer', order: 240 },
+  ui: { id: 'ui', name: 'UI', role: 'filter', visibility: 'developer', order: 250 },
   uncategorized: { id: 'uncategorized', name: 'Other', role: 'group', visibility: 'public', order: 9999 }
 };
 

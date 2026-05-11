@@ -1,5 +1,6 @@
 import { createCatalogRegistry } from '../../catalog/registry.js';
 import { movementGymScenario } from './movement-gym.js';
+import { renderingGymScenario } from './rendering-gym.js';
 
 function assertGymScenario(gym) {
   if (gym.source !== 'gyms') throw new Error(`${gym.id} must use gyms source`);
@@ -24,6 +25,7 @@ const registry = createCatalogRegistry({
 });
 
 export const movementGym = registry.register(movementGymScenario);
+export const renderingGym = registry.register(renderingGymScenario);
 export const gyms = Object.fromEntries(registry.getAll().map(entry => [entry.id, entry]));
 
 export function getGymById(id) {

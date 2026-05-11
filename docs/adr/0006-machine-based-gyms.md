@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted.
+Accepted. Implemented through Slice 4; Slice 5 remains open.
 
 ## Context
 
@@ -21,15 +21,17 @@ A gym machine is a runtime-agnostic validation controller. Machine definitions l
 
 Scenario entries own machine metadata and machine policy. Scenario launch enriches gameplay scene props with gym metadata rather than making gameplay scenes query catalog globals.
 
-Gym pass/fail is reported as runner state. Machine failures do not crash the runtime during normal execution. `window.__gym` remains read-only for this slice and exposes snapshots only. Devtools adapt the runner control surface for start/pause/reset.
+Gym pass/fail is reported as runner state. Machine failures do not crash the runtime during normal execution. `window.__gym` remains read-only and exposes snapshots/diagnostics only. Devtools adapt the runner control surface for start/pause/reset.
 
 Gym maps should be minimal fixtures containing only the geometry/entities needed by their machines. Machine-based gyms use `goal: null` unless validating a goal system.
 
-Free camera is deferred. It should become a devtools inspection feature for viewing gym worlds/machines without changing machine simulation.
+Free camera is a devtools inspection feature for viewing gym worlds/machines without changing machine simulation.
 
 ## Implementation slices
 
 ### Slice 1: Foundation and Movement Gym tracer bullet
+
+Status: Implemented.
 
 - Add gym pattern documentation.
 - Add core machine runner with before/after gameplay phases.
@@ -44,17 +46,25 @@ Free camera is deferred. It should become a devtools inspection feature for view
 
 ### Slice 2: Broader movement coverage
 
-Add focused machines/fixtures for jump gap, run+jump coupling, air correction, dash, and NPC movement as separate lanes or maps only when each machine needs them.
+Status: Implemented.
+
+Implemented in Movement Gym as focused machine coverage for jump gap, run+jump coupling, air correction, dash burst, and NPC patrol movement. The fixture uses separate lanes in `movement-gym-map` where needed by each machine.
 
 ### Slice 3: Devtools inspection
 
-Implemented: gym devtools now include a free-camera toggle, camera nudges, follow-player reset, and machine-focused viewing. The inspection controls mutate only camera/devtools state and do not drive gameplay input or machine simulation.
+Status: Implemented.
+
+Gym devtools now include a free-camera toggle, camera nudges, follow-player reset, and machine-focused viewing. The inspection controls mutate only camera/devtools state and do not drive gameplay input or machine simulation.
 
 ### Slice 4: Showcase/observer gyms
 
-Add animation/rendering gyms using `state-fixture` and `observer` machines. These gyms may be primarily viewed with devtools/free cam rather than normal player controls.
+Status: Implemented.
+
+Rendering Gym adds a minimal in-engine fixture using a `state-fixture` machine to pin actor/effect showcase state and an `observer` machine to validate the gameplay render read model. These gyms may be primarily viewed with devtools/free cam rather than normal player controls.
 
 ### Slice 5: Reintroduce removed validations as real gyms
+
+Status: Open.
 
 Finish-gate or UI-adjacent validations may return only if they are in-engine system fixtures with machines. Browser shell/navigation coverage should remain ordinary smoke tests, not gyms.
 

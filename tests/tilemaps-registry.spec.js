@@ -5,7 +5,8 @@ import {
   getAllTilemaps,
   getDefaultTilemap,
   getTilemapById,
-  movementGymMapTilemap
+  movementGymMapTilemap,
+  renderingGymMapTilemap
 } from '#/content/tilemaps/registry.js';
 
 test('tilemap registry owns parsed tilemap level definitions', () => {
@@ -13,10 +14,12 @@ test('tilemap registry owns parsed tilemap level definitions', () => {
   expect(getTilemapById('act-01-level-1')).toBe(act01Level1Tilemap);
   expect(getTilemapById('act-01-level-2')).toBe(act01Level2Tilemap);
   expect(getTilemapById('movement-gym-map')).toBe(movementGymMapTilemap);
+  expect(getTilemapById('rendering-gym-map')).toBe(renderingGymMapTilemap);
   expect(getAllTilemaps().map(definition => definition.id)).toEqual([
     'act-01-level-1',
     'act-01-level-2',
     'movement-gym-map',
+    'rendering-gym-map',
     'finish-gate-gym-map',
     'enemy-zoo-map'
   ]);
