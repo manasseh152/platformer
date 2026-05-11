@@ -2,6 +2,7 @@ import { createCatalogRegistry } from '../../catalog/registry.js';
 import { act01Level1 } from './definitions/act-01-level-1.js';
 import { act01Level2 } from './definitions/act-01-level-2.js';
 import { act01Level3 } from './definitions/act-01-level-3.js';
+import { act01Level4 } from './definitions/act-01-level-4.js';
 import { movementGymMap } from './definitions/movement-gym-map.js';
 import { renderingGymMap } from './definitions/rendering-gym-map.js';
 import { finishGateGymMap } from './definitions/finish-gate-gym-map.js';
@@ -22,6 +23,7 @@ const registry = createCatalogRegistry({
 export const act01Level1Tilemap = registry.register(act01Level1);
 export const act01Level2Tilemap = registry.register(act01Level2);
 export const act01Level3Tilemap = registry.register(act01Level3);
+export const act01Level4Tilemap = registry.register(act01Level4);
 export const movementGymMapTilemap = registry.register(movementGymMap);
 export const renderingGymMapTilemap = registry.register(renderingGymMap);
 export const finishGateGymMapTilemap = registry.register(finishGateGymMap);
