@@ -34,18 +34,18 @@ const GAMEPAD_BUTTON_LABELS = {
 const GAMEPAD_ICON_ASSETS = {
   xbox: {
     button: {
-      0: '/assets/kenney-input-prompts/xbox/xbox_button_a.png',
-      1: '/assets/kenney-input-prompts/xbox/xbox_button_b.png',
-      2: '/assets/kenney-input-prompts/xbox/xbox_button_x.png',
-      3: '/assets/kenney-input-prompts/xbox/xbox_button_y.png',
-      4: '/assets/kenney-input-prompts/xbox/xbox_lb.png',
-      5: '/assets/kenney-input-prompts/xbox/xbox_rb.png',
-      8: '/assets/kenney-input-prompts/xbox/xbox_button_view.png',
-      9: '/assets/kenney-input-prompts/xbox/xbox_button_menu.png',
-      14: '/assets/kenney-input-prompts/xbox/xbox_dpad_left.png',
-      15: '/assets/kenney-input-prompts/xbox/xbox_dpad_right.png'
+      0: '/assets/kenney-input-prompts/xbox/xbox_button_a.svg',
+      1: '/assets/kenney-input-prompts/xbox/xbox_button_b.svg',
+      2: '/assets/kenney-input-prompts/xbox/xbox_button_x.svg',
+      3: '/assets/kenney-input-prompts/xbox/xbox_button_y.svg',
+      4: '/assets/kenney-input-prompts/xbox/xbox_lb.svg',
+      5: '/assets/kenney-input-prompts/xbox/xbox_rb.svg',
+      8: '/assets/kenney-input-prompts/xbox/xbox_button_view.svg',
+      9: '/assets/kenney-input-prompts/xbox/xbox_button_menu.svg',
+      14: '/assets/kenney-input-prompts/xbox/xbox_dpad_left.svg',
+      15: '/assets/kenney-input-prompts/xbox/xbox_dpad_right.svg'
     },
-    axis: { 0: '/assets/kenney-input-prompts/xbox/xbox_stick_l_horizontal.png', 1: '/assets/kenney-input-prompts/xbox/xbox_stick_l_vertical.png' }
+    axis: { 0: '/assets/kenney-input-prompts/xbox/xbox_stick_l_horizontal.svg', 1: '/assets/kenney-input-prompts/xbox/xbox_stick_l_vertical.svg' }
   }
 };
 

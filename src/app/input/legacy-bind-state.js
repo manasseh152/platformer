@@ -41,10 +41,16 @@ const controllerNames = {
   PadButton13: 'D-pad Down',
   PadButton14: 'D-pad Left',
   PadButton15: 'D-pad Right',
+  PadButton16: 'Guide / Xbox',
+  PadButton17: 'Share / Capture',
   'PadAxis0-': 'Left Stick ←',
   'PadAxis0+': 'Left Stick →',
   'PadAxis1-': 'Left Stick ↑',
-  'PadAxis1+': 'Left Stick ↓'
+  'PadAxis1+': 'Left Stick ↓',
+  'PadAxis2-': 'Right Stick ←',
+  'PadAxis2+': 'Right Stick →',
+  'PadAxis3-': 'Right Stick ↑',
+  'PadAxis3+': 'Right Stick ↓'
 };
 
 export function createInputState() {
@@ -66,6 +72,7 @@ export function createInputState() {
     bindDeadline: 0,
     bindRenderDirty: false,
     suppressMenuInputOnce: false,
+    controllerDebugLock: false,
     latestRawGamepadPressed: []
   };
 }

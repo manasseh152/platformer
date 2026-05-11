@@ -59,6 +59,53 @@ function controllerSelectionRow(game) {
   </div>`;
 }
 
+const xboxAsset = file => `/assets/kenney-input-prompts/xbox/${file}`;
+const debugButton = ({ code, label, file }) => `<span class="controller-debugger__button" data-controller-debug-code="${code}">
+  <img src="${xboxAsset(file)}" alt="" loading="lazy"><span>${label}</span>
+</span>`;
+const debugAxis = ({ axis, label, file }) => `<span class="controller-debugger__axis" data-controller-debug-axis="${axis}" style="--axis-value:0">
+  <img src="${xboxAsset(file)}" alt="" loading="lazy"><span>${label}</span><b data-controller-axis-value="${axis}">0.00</b>
+</span>`;
+
+function controllerDebugger(game) {
+  return section('Controller Debugger', `${valueRow({ id: 'controller-debug-lock', label: 'Debugger Input Lock', value: onOff(game.input.controllerDebugLock), description: 'When on, controller presses update this panel only; menu actions and bind capture are ignored. Use mouse or keyboard to turn it off.', kind: 'toggle' })}
+  <div class="controller-debugger${game.input.controllerDebugLock ? ' is-input-locked' : ''}" aria-label="Xbox-style controller live input debugger">
+    <div class="controller-debugger__hero" aria-hidden="true"><img src="${xboxAsset('controller_xboxseries.svg')}" alt=""></div>
+    <div class="controller-debugger__cluster controller-debugger__cluster--shoulders">
+      ${debugButton({ code: 'PadButton4', label: 'LB', file: 'xbox_lb.svg' })}
+      ${debugButton({ code: 'PadButton5', label: 'RB', file: 'xbox_rb.svg' })}
+      ${debugButton({ code: 'PadButton6', label: 'LT', file: 'xbox_lt.svg' })}
+      ${debugButton({ code: 'PadButton7', label: 'RT', file: 'xbox_rt.svg' })}
+    </div>
+    <div class="controller-debugger__cluster controller-debugger__cluster--system">
+      ${debugButton({ code: 'PadButton8', label: 'View', file: 'xbox_button_view.svg' })}
+      ${debugButton({ code: 'PadButton16', label: 'Guide', file: 'xbox_guide.svg' })}
+      ${debugButton({ code: 'PadButton9', label: 'Menu', file: 'xbox_button_menu.svg' })}
+      ${debugButton({ code: 'PadButton17', label: 'Share', file: 'xbox_button_share.svg' })}
+    </div>
+    <div class="controller-debugger__cluster controller-debugger__cluster--face">
+      ${debugButton({ code: 'PadButton0', label: 'A', file: 'xbox_button_a.svg' })}
+      ${debugButton({ code: 'PadButton1', label: 'B', file: 'xbox_button_b.svg' })}
+      ${debugButton({ code: 'PadButton2', label: 'X', file: 'xbox_button_x.svg' })}
+      ${debugButton({ code: 'PadButton3', label: 'Y', file: 'xbox_button_y.svg' })}
+    </div>
+    <div class="controller-debugger__cluster controller-debugger__cluster--dpad">
+      ${debugButton({ code: 'PadButton12', label: 'D-pad Up', file: 'xbox_dpad_up.svg' })}
+      ${debugButton({ code: 'PadButton13', label: 'D-pad Down', file: 'xbox_dpad_down.svg' })}
+      ${debugButton({ code: 'PadButton14', label: 'D-pad Left', file: 'xbox_dpad_left.svg' })}
+      ${debugButton({ code: 'PadButton15', label: 'D-pad Right', file: 'xbox_dpad_right.svg' })}
+    </div>
+    <div class="controller-debugger__cluster controller-debugger__cluster--sticks">
+      ${debugButton({ code: 'PadButton10', label: 'LS Click', file: 'xbox_stick_l_press.svg' })}
+      ${debugAxis({ axis: 0, label: 'Left X', file: 'xbox_stick_l_horizontal.svg' })}
+      ${debugAxis({ axis: 1, label: 'Left Y', file: 'xbox_stick_l_vertical.svg' })}
+      ${debugButton({ code: 'PadButton11', label: 'RS Click', file: 'xbox_stick_r_press.svg' })}
+      ${debugAxis({ axis: 2, label: 'Right X', file: 'xbox_stick_r_horizontal.svg' })}
+      ${debugAxis({ axis: 3, label: 'Right Y', file: 'xbox_stick_r_vertical.svg' })}
+    </div>
+  </div>`);
+}
+
 function bindRow(game, device, action) {
   const listening = device === 'controller' ? game.input.controllerBindAction === action : game.input.listeningFor === action;
   const text = device === 'controller' ? controllerBindText(game.input, action) : bindText(game.input, action);
@@ -92,6 +139,7 @@ function renderController(game) {
       ${controllerSelectionRow(game)}
       ${infoRow('Pressed Inputs', 'None', 'controllerInputs')}
     </div><div id="controllerStatus" class="status-line"></div>`)}
+    ${controllerDebugger(game)}
     ${pageNote('Select a bind row, then press a controller input. B / Circle cancels. Duplicate buttons are blocked.')}
     ${bindSections(game, 'controller')}
     <div class="settings-actions ds-action-row"><button type="button" class="secondary ds-button ds-button--secondary" data-settings-action="reset-controller">Reset Controller Defaults</button></div>`;

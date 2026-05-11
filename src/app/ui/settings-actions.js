@@ -138,6 +138,20 @@ function toggleController(game, runtime = browserRuntime) {
   setControllerStatus(ui, input.useController ? 'Controller enabled.' : 'Controller disabled.');
 }
 
+function toggleControllerDebugLock(game, runtime = browserRuntime) {
+  const { input, ui } = game;
+  input.controllerDebugLock = !input.controllerDebugLock;
+  input.controllerBindAction = null;
+  input.bindCapture = null;
+  input.bindDeadline = 0;
+  input.suppressMenuInputOnce = true;
+  runtime.emit('settings.controller-debug-lock', { enabled: input.controllerDebugLock });
+  renderSettingsCategory(game);
+  const message = input.controllerDebugLock ? 'Debugger input lock on. Controller presses only update the debugger.' : 'Debugger input lock off.';
+  setBindStatus(ui, message);
+  setControllerStatus(ui, message);
+}
+
 function selectController(game, runtimeId, runtime = browserRuntime) {
   const result = game.inputRuntime?.selectGamepad?.('player1', runtimeId);
   if (!result?.ok) {
@@ -199,6 +213,7 @@ export function handleSettingsActionsClick(game, e, runtime = browserRuntime, ca
   if (row) {
     if (row.dataset.settingRow === 'motion') { cycleMotion(game, runtime, callbacks); return true; }
     if (row.dataset.settingRow === 'controller-enabled') { toggleController(game, runtime); return true; }
+    if (row.dataset.settingRow === 'controller-debug-lock') { toggleControllerDebugLock(game, runtime); return true; }
     if (row.dataset.settingRow === 'speed-run-mode') { toggleSpeedRunMode(game, runtime); return true; }
     if (row.dataset.settingRow === 'gpu-extras') { cycleGpuExtras(game, runtime); return true; }
     if (row.dataset.settingRow === 'developer-mode') { toggleDeveloperMode(game, runtime, callbacks); return true; }

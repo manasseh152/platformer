@@ -144,6 +144,7 @@ export function handleMenuInput(game) {
   const { input } = game;
   const root = activeMenuRoot(game);
   if (!root) return false;
+  if (input.controllerDebugLock && game.menu.page === 'settings-category' && game.menu.settingsCategory === 'controller' && (input.gamepadPressed.size || input.gamepadDown.size)) return true;
   if (input.controllerBindAction) return false;
   if (input.suppressMenuInputOnce) { input.suppressMenuInputOnce = false; return true; }
   if (input.listeningFor) return false;

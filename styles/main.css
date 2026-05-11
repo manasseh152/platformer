@@ -1332,6 +1332,91 @@ body[data-menu-origin="start"] #pauseScreen[data-menu-page="settings-category"] 
 .controller-debug p { margin-bottom: 10px; color: var(--color-cream); font-weight: 900; }
 .controller-debug code { display: block; min-height: 24px; margin: 6px 0 10px; color: var(--color-muted); font: 12px var(--font-mono); word-break: break-word; }
 .controller-debug select { width: 100%; margin-top: 10px; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--color-line); background: rgba(0,0,0,.34); color: var(--color-cream); font: 13px var(--font-ui); }
+.controller-debugger {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(150px, .72fr) minmax(0, 1fr);
+  gap: 12px;
+  overflow: hidden;
+  padding: 14px;
+  border: 1px solid rgba(89,217,231,.24);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 16% 20%, rgba(89,217,231,.16), transparent 34%),
+    linear-gradient(135deg, rgba(3,7,13,.58), rgba(255,246,232,.045));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 16px 42px rgba(0,0,0,.22);
+}
+.controller-debugger::before {
+  content: "Live pad lab";
+  position: absolute;
+  right: 14px;
+  top: 12px;
+  color: rgba(255,246,232,.28);
+  font: 900 10px/1 var(--font-mono);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+.controller-debugger__hero {
+  grid-row: 1 / span 5;
+  display: grid;
+  place-items: center;
+  min-height: 210px;
+  border: 1px dashed rgba(255,246,232,.14);
+  border-radius: 20px;
+  background: rgba(0,0,0,.18);
+}
+.controller-debugger__hero img { width: min(100%, 270px); opacity: .42; filter: drop-shadow(0 20px 28px rgba(0,0,0,.42)); transition: opacity .18s ease, transform .18s ease; }
+.controller-debugger.is-connected .controller-debugger__hero img { opacity: .86; transform: translateY(-2px); }
+.controller-debugger.is-input-locked { border-color: rgba(124,255,139,.34); box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 0 0 1px rgba(124,255,139,.10), 0 16px 42px rgba(0,0,0,.22); }
+.controller-debugger.is-input-locked::before { content: "Input locked"; color: rgba(124,255,139,.72); }
+.controller-debugger__cluster {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 8px;
+  min-width: 0;
+}
+.controller-debugger__cluster--sticks { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.controller-debugger__button,
+.controller-debugger__axis {
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px minmax(0,1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 8px 9px;
+  border: 1px solid rgba(255,246,232,.12);
+  border-radius: 14px;
+  background: rgba(8,11,17,.46);
+  color: rgba(255,246,232,.72);
+  font: 900 11px/1.05 var(--font-ui);
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,.24);
+}
+.controller-debugger__button img,
+.controller-debugger__axis img { width: 30px; max-height: 30px; object-fit: contain; image-rendering: auto; filter: grayscale(.45) brightness(.86); transition: filter .12s ease, transform .12s ease; }
+.controller-debugger__button.is-active,
+.controller-debugger__axis.is-active {
+  border-color: rgba(244,181,29,.76);
+  background: linear-gradient(135deg, rgba(244,181,29,.22), rgba(89,217,231,.12));
+  color: var(--color-cream);
+  box-shadow: inset 0 0 0 1px rgba(244,181,29,.16), 0 0 18px rgba(244,181,29,.18);
+}
+.controller-debugger__button.is-active img,
+.controller-debugger__axis.is-active img { filter: none; transform: scale(1.08); }
+.controller-debugger__axis::after {
+  content: "";
+  position: absolute;
+  left: 47px;
+  right: 10px;
+  bottom: 7px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-teal), var(--color-accent));
+  transform: scaleX(calc((var(--axis-value) + 1) / 2));
+  transform-origin: left center;
+  opacity: .75;
+}
+.controller-debugger__axis b { justify-self: end; color: var(--color-teal); font: 900 10px/1 var(--font-mono); }
 .future-debug { margin-top: 14px; color: var(--color-muted); font: 12px var(--font-mono); }
 
 body.motion-reduce canvas,
@@ -1517,6 +1602,11 @@ button.devtool-row:focus-visible,
   .ds-setting-row__value { justify-content: flex-start; text-align: left; }
   .settings-actions { justify-content: stretch; }
   .settings-actions button { flex: 1 1 140px; }
+  .controller-debugger { grid-template-columns: 1fr; }
+  .controller-debugger__hero { grid-row: auto; min-height: 150px; }
+  .controller-debugger__hero img { max-width: 220px; }
+  .controller-debugger__cluster,
+  .controller-debugger__cluster--sticks { grid-template-columns: repeat(2, minmax(0,1fr)); }
   :root { --game-ui-scale: .74; }
   #hud { top: calc(10px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); width: min(300px, calc((100vw - 20px) / var(--game-ui-scale))); }
   #hintLayer { left: calc(10px + env(safe-area-inset-left)); right: calc(10px + env(safe-area-inset-right)); bottom: calc(10px + env(safe-area-inset-bottom)); }
