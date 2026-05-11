@@ -246,31 +246,76 @@ body[data-editor-input="gamepad"] .floating-view-controls output {
 .controller-viewport-hints {
   position: absolute;
   z-index: 11;
-  left: 16px;
-  bottom: 16px;
+  left: calc(28px + env(safe-area-inset-left));
+  right: calc(104px + env(safe-area-inset-right));
+  bottom: calc(20px + env(safe-area-inset-bottom));
   display: none;
-  grid-template-columns: repeat(2, minmax(0, auto));
-  gap: 8px;
-  max-width: min(520px, calc(100vw - 112px));
-  padding: 9px;
-  border: 1px solid var(--color-border);
-  border-radius: 18px;
-  color: var(--color-text-muted);
-  background: rgba(9, 12, 18, .68);
-  backdrop-filter: blur(18px) saturate(130%);
-  box-shadow: 0 14px 42px rgba(0,0,0,.34);
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 18px 28px;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: rgba(255, 246, 232, .58);
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
+  pointer-events: none;
+  font: 950 .88rem/1 var(--font-ui);
+  letter-spacing: .055em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 8px rgba(0,0,0,.72), 0 0 18px rgba(0,0,0,.55);
 }
-body[data-editor-input="gamepad"] .controller-viewport-hints { display: grid; }
+.controller-viewport-hints::before {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 88px;
+  z-index: -1;
+  background: linear-gradient(to top, rgba(2, 3, 8, .58), rgba(2, 3, 8, .24) 54%, transparent);
+  pointer-events: none;
+}
+body[data-editor-input="gamepad"] .controller-viewport-hints { display: flex; }
 .controller-viewport-hints span[data-input-hint] {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 30px;
+  gap: 9px;
+  min-height: 34px;
   white-space: nowrap;
 }
-.controller-viewport-hints .input-hint__icon { width: 24px; height: 24px; object-fit: contain; }
-.controller-viewport-hints .input-hint__joiner { opacity: .55; }
-.controller-viewport-hints .input-hint__label { font: 800 .75rem/1 var(--font-mono); letter-spacing: .035em; text-transform: uppercase; }
+.controller-viewport-hints .input-hint__icon {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  opacity: .62;
+  filter: grayscale(1) saturate(.08) brightness(1.65) contrast(.72);
+}
+.controller-viewport-hints .ds-keycap {
+  display: inline-grid;
+  place-items: center;
+  min-width: 38px;
+  min-height: 29px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 999px;
+  color: rgba(21, 21, 24, .82);
+  background: rgba(238, 234, 225, .62);
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,.16), 0 1px 8px rgba(0,0,0,.22);
+  font: 950 .82rem/1 var(--font-ui);
+  letter-spacing: .015em;
+  text-shadow: none;
+}
+.controller-viewport-hints .input-hint__joiner { display: none; }
+.controller-viewport-hints .input-hint__label {
+  color: rgba(255, 246, 232, .58);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: uppercase;
+}
 .status {
   position: absolute;
   z-index: 12;
