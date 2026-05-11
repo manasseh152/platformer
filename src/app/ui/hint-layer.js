@@ -38,7 +38,8 @@ const startHints = [
 const pauseMainHints = [
   { actionId: 'menu.accept', label: 'Select', clickable: true },
   { actionId: 'menu.back', label: 'Resume', clickable: true },
-  { actionId: 'menu.settings', clickable: true }
+  { actionId: 'menu.settings', clickable: true },
+  { actionId: 'menu.mainMenu', label: 'Main menu', clickable: true, fallbackLabel: 'Main menu' }
 ];
 
 const subpageHints = [

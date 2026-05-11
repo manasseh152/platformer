@@ -5,6 +5,7 @@ import {
   closeSettingsSubpage,
   focusAndReveal,
   goBack,
+  returnToMainMenu,
   moveHorizontalGroupFocus,
   moveMenuFocus,
   moveSettingsTab
@@ -27,6 +28,7 @@ function activateSemanticMenuAction(game, actionId) {
     return true;
   }
   if (actionId === 'system.restart') { game.resetGame?.(); return true; }
+  if (actionId === 'menu.mainMenu') { returnToMainMenu(game); return true; }
   if (actionId === 'menu.levelSelect') { ui.messageLevelSelectButton?.click?.(); return true; }
   if (actionId === 'menu.nextLevel') { ui.messageNextLevelButton?.click?.(); return true; }
   return false;

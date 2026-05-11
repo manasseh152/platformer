@@ -24,7 +24,7 @@ import { createHistory } from './editor-history.js';
 import { isKebabCaseId } from '../catalog/id.js';
 import { localDraftStorageKey, localDraftViewStorageKey, readLocalDraft, saveLocalDraft } from '../catalog/local-drafts/storage.js';
 import { createBrowserInputAdapter, createGameInputRuntime } from '../app/input/browser-input-adapter.js';
-import { renderTabInputHints } from '../app/input/input-presentation.js';
+import { renderInputHints, renderTabInputHints } from '../app/input/input-presentation.js';
 import { gameInputProfile } from '../app/input/game-input-profile.js';
 import { loadSettings } from '#/app/settings/settings.js';
 import { currentFocusElement, ensureMenuFocus, moveLinearFocus, visibleFocusables } from '../ui/navigation.js';
@@ -66,6 +66,7 @@ const dom = {
   zoomInButton: document.querySelector('#zoomInButton'),
   resetViewButton: document.querySelector('#resetViewButton'),
   zoomReadout: document.querySelector('#zoomReadout'),
+  controllerViewportHints: document.querySelector('#controllerViewportHints'),
   undoButton: document.querySelector('#undoButton'),
   redoButton: document.querySelector('#redoButton'),
   brushes: document.querySelector('#brushes'),
@@ -112,6 +113,7 @@ let editorPanelLastFocused = null;
 let controllerNavX = 0;
 let controllerNavY = 0;
 let controllerCanvasMode = 'draw';
+let editorInputMode = 'pointer';
 
 function storageKey(id) { return localDraftStorageKey(id); }
 function viewStorageKey(id) { return localDraftViewStorageKey(id); }
@@ -263,10 +265,26 @@ function updateHistoryControls() {
 function syncPreferencesUi() {
   if (dom.autoSaveToggle) dom.autoSaveToggle.checked = autoSaveEnabled;
   if (dom.floatingControlsToggle) dom.floatingControlsToggle.checked = floatingControlsEnabled;
-  if (dom.floatingViewControls) dom.floatingViewControls.hidden = !floatingControlsEnabled;
+  if (dom.floatingViewControls) dom.floatingViewControls.hidden = !floatingControlsEnabled && editorInputMode !== 'gamepad';
   document.body.classList.toggle('pan-mode', panMode);
+  document.body.dataset.editorInput = editorInputMode;
   if (dom.panToggleButton) dom.panToggleButton.setAttribute('aria-pressed', panMode ? 'true' : 'false');
   syncTabHints();
+  syncViewportHints();
+}
+
+function setEditorInputMode(mode) {
+  if (editorInputMode === mode) return;
+  editorInputMode = mode;
+  syncPreferencesUi();
+}
+
+function syncViewportHints() {
+  renderInputHints({ inputScheme: editorInputMode === 'gamepad' ? 'gamepad' : 'wasd' }, document, {
+    runtime: inputRuntime,
+    settings: inputRuntime.settings,
+    profile: gameInputProfile
+  });
 }
 
 function setActiveTab(tabId, { show = true, focus = false } = {}) {
@@ -706,6 +724,7 @@ function updatePan(event) {
 function editorInputRoute() { return inputRuntime.route(['editor', 'menu']); }
 
 function processEditorKeyboardEvent(event) {
+  setEditorInputMode('keyboard');
   const primaryModifier = event.ctrlKey || event.metaKey || event.altKey;
   if (event.type === 'keydown' && !primaryModifier && moveEditorPanelFocusForKey(event)) return;
   inputAdapter.queueKeyboardEvent(event);
@@ -729,11 +748,15 @@ function navDirection(value) {
 
 function processEditorControllerFrame() {
   inputAdapter.beginFrame({ controllerEnabled: true });
+  if (inputRuntime.lastActiveSource?.()?.deviceType === 'gamepad') setEditorInputMode('gamepad');
   syncTabHints({ inputScheme: 'gamepad' });
   const route = editorInputRoute();
 
   if (route.wasPressed('editor.togglePanel')) { route.consume('editor.togglePanel'); toggleEditorPanel(); }
   if (route.wasPressed('editor.toggleMode')) { route.consume('editor.toggleMode'); toggleControllerCanvasMode(); }
+  if (route.wasPressed('editor.zoomOut')) { route.consume('editor.zoomOut'); zoomBy(0.88); }
+  if (route.wasPressed('editor.zoomIn')) { route.consume('editor.zoomIn'); zoomBy(1.14); }
+  if (route.wasPressed('editor.resetView')) { route.consume('editor.resetView'); resetCurrentView(); }
 
   const xValue = route.value('menu.navigateX');
   const yValue = route.value('menu.navigateY');
@@ -903,6 +926,12 @@ function zoomBy(factor, screenPoint = { x: viewport.width / 2, y: viewport.heigh
   render();
 }
 
+function resetCurrentView() {
+  resetView(viewport, worldWidth(), worldHeight());
+  saveView();
+  render();
+}
+
 function setupTouchPinch() {
   if (activePointers.size !== 2) { pinch = null; return; }
   const points = [...activePointers.values()];
@@ -1015,15 +1044,17 @@ function setup() {
   dom.redoButton?.addEventListener('click', () => applyHistoryAction('redo'));
   dom.zoomOutButton?.addEventListener('click', () => zoomBy(0.8));
   dom.zoomInButton?.addEventListener('click', () => zoomBy(1.25));
-  dom.resetViewButton?.addEventListener('click', () => { resetView(viewport, worldWidth(), worldHeight()); saveView(); render(); });
+  dom.resetViewButton?.addEventListener('click', resetCurrentView);
   dom.overlay?.addEventListener('focusin', event => { editorPanelLastFocused = event.target; clearEditorControllerFocus(); });
   dom.canvas.addEventListener('contextmenu', event => event.preventDefault());
   dom.canvas.addEventListener('wheel', event => {
+    setEditorInputMode('pointer');
     event.preventDefault();
     const point = eventToScreenPoint(dom.canvas, event);
     zoomBy(event.deltaY > 0 ? 0.9 : 1.1, point);
   }, { passive: false });
   dom.canvas.addEventListener('pointerdown', event => {
+    setEditorInputMode(event.pointerType === 'touch' ? 'touch' : 'pointer');
     event.preventDefault();
     const screen = eventToScreenPoint(dom.canvas, event);
     activePointers.set(event.pointerId, screen);

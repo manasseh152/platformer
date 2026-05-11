@@ -217,6 +217,20 @@ h2 { margin-bottom: 10px; font-size: .9rem; color: rgba(255,246,232,.82); }
 }
 .floating-view-controls[hidden] { display: none; }
 .floating-view-controls button { min-width: 40px; }
+body[data-editor-input="gamepad"] .floating-view-controls {
+  right: 18px;
+  bottom: 18px;
+  padding: 8px;
+  border-radius: 16px;
+  pointer-events: none;
+}
+body[data-editor-input="gamepad"] .floating-view-controls__button { display: none; }
+body[data-editor-input="gamepad"] .floating-view-controls output {
+  min-width: 76px;
+  color: #101016;
+  background: rgba(255,246,232,.94);
+  border-color: transparent;
+}
 .floating-view-controls output {
   display: grid;
   place-items: center;
@@ -229,6 +243,34 @@ h2 { margin-bottom: 10px; font-size: .9rem; color: rgba(255,246,232,.82); }
   font-weight: 800;
 }
 #panToggleButton[aria-pressed="true"] { color: #101016; background: rgba(255,246,232,.92); border-color: transparent; }
+.controller-viewport-hints {
+  position: absolute;
+  z-index: 11;
+  left: 16px;
+  bottom: 16px;
+  display: none;
+  grid-template-columns: repeat(2, minmax(0, auto));
+  gap: 8px;
+  max-width: min(520px, calc(100vw - 112px));
+  padding: 9px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  color: var(--color-text-muted);
+  background: rgba(9, 12, 18, .68);
+  backdrop-filter: blur(18px) saturate(130%);
+  box-shadow: 0 14px 42px rgba(0,0,0,.34);
+}
+body[data-editor-input="gamepad"] .controller-viewport-hints { display: grid; }
+.controller-viewport-hints span[data-input-hint] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  white-space: nowrap;
+}
+.controller-viewport-hints .input-hint__icon { width: 24px; height: 24px; object-fit: contain; }
+.controller-viewport-hints .input-hint__joiner { opacity: .55; }
+.controller-viewport-hints .input-hint__label { font: 800 .75rem/1 var(--font-mono); letter-spacing: .035em; text-transform: uppercase; }
 .status {
   position: absolute;
   z-index: 12;
@@ -268,6 +310,8 @@ h2 { margin-bottom: 10px; font-size: .9rem; color: rgba(255,246,232,.82); }
   }
   .floating-view-controls { right: 8px; bottom: calc(min(62vh, calc(100vh - 72px)) + 18px); flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 16px); }
   .editor-overlay[hidden] ~ .floating-view-controls { bottom: 8px; }
+  body[data-editor-input="gamepad"] .floating-view-controls { right: 8px; bottom: 8px; }
+  .controller-viewport-hints { left: 8px; bottom: 8px; grid-template-columns: 1fr; max-width: calc(100vw - 104px); }
   .status { right: 8px; bottom: 72px; }
   .field-grid, .button-row, .brush-grid { grid-template-columns: 1fr; }
 }

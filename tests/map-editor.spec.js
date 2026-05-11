@@ -327,6 +327,26 @@ test('map editor shoulder buttons switch tabs and show controller hints', async 
   await expect(page.locator('#editPanel')).toBeVisible();
 });
 
+test('map editor controller viewport hints replace floating buttons and trigger zoom', async ({ page }) => {
+  await page.addInitScript(() => {
+    const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));
+    const pad = { index: 0, id: 'Mock Controller', mapping: 'standard', buttons, axes: [0, 0, 0, 0] };
+    window.__setMockGamepadButton = (index, pressed) => { buttons[index] = { pressed }; };
+    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] });
+  });
+  await page.goto('/editor.html');
+
+  const before = await page.locator('#editorCanvas').getAttribute('data-zoom');
+  await expect(page.locator('#controllerViewportHints')).toBeHidden();
+
+  await page.evaluate(() => window.__setMockGamepadButton(7, true));
+  await expect.poll(() => page.locator('#editorCanvas').getAttribute('data-zoom')).not.toBe(before);
+  await expect(page.locator('#controllerViewportHints')).toBeVisible();
+  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Zoom in' })).toBeVisible();
+  await expect(page.locator('#zoomReadout')).toContainText('%');
+  await expect(page.locator('#zoomInButton')).toBeHidden();
+});
+
 test('map editor controller navigates and activates controls in the selected tab', async ({ page }) => {
   await page.addInitScript(() => {
     const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));

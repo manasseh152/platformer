@@ -111,11 +111,19 @@
       </aside>
 
       <div id="floatingViewControls" class="floating-view-controls" aria-label="Floating viewport controls">
-        <button id="zoomOutButton" type="button" aria-label="Zoom out">−</button>
+        <button id="zoomOutButton" class="floating-view-controls__button" type="button" aria-label="Zoom out">−</button>
         <output id="zoomReadout" aria-label="Zoom level">100%</output>
-        <button id="zoomInButton" type="button" aria-label="Zoom in">+</button>
-        <button id="resetViewButton" type="button">Reset</button>
-        <button id="panToggleButton" type="button" aria-pressed="false">Pan</button>
+        <button id="zoomInButton" class="floating-view-controls__button" type="button" aria-label="Zoom in">+</button>
+        <button id="resetViewButton" class="floating-view-controls__button" type="button">Reset</button>
+        <button id="panToggleButton" class="floating-view-controls__button" type="button" aria-pressed="false">Pan</button>
+      </div>
+
+      <div id="controllerViewportHints" class="controller-viewport-hints" aria-label="Controller viewport controls">
+        <span data-input-hint data-input-action="menu.navigateX" data-input-label="Pan"></span>
+        <span data-input-hint data-input-action="editor.zoomOut" data-input-label="Zoom out"></span>
+        <span data-input-hint data-input-action="editor.zoomIn" data-input-label="Zoom in"></span>
+        <span data-input-hint data-input-action="editor.resetView" data-input-label="Reset view"></span>
+        <span data-input-hint data-input-action="editor.toggleMode" data-input-label="Draw / pan"></span>
       </div>
 
       <p id="status" class="status ds-status" role="status">Ready.</p>
