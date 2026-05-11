@@ -46,6 +46,7 @@ export function createGymMachineRunner({ id, name, machines = [], machinePolicy 
   const scriptedInput = createScriptedGameplayInput();
   let autoStarted = false;
   let activeInputActions = null;
+  let runningExclusiveId = null;
 
   function call(record, method, args = []) {
     const fn = record.definition?.[method];
@@ -63,6 +64,11 @@ export function createGymMachineRunner({ id, name, machines = [], machinePolicy 
   function start(id, runtime) {
     const record = records.find(item => item.id === id);
     if (!record || TERMINAL_STATUSES.has(record.status) || record.status === 'running') return record ?? null;
+    if (record.execution === 'exclusive') {
+      const runningExclusive = records.find(item => item.execution === 'exclusive' && item.status === 'running' && item.id !== record.id);
+      if (runningExclusive) return record;
+      runningExclusiveId = record.id;
+    }
     if (record.status === 'idle') setup(record, runtime);
     record.status = 'running';
     record.message = record.message || 'Running.';
@@ -74,6 +80,7 @@ export function createGymMachineRunner({ id, name, machines = [], machinePolicy 
     const record = records.find(item => item.id === id);
     if (!record || record.status !== 'running') return record ?? null;
     record.status = 'paused';
+    if (record.execution === 'exclusive' && runningExclusiveId === record.id) runningExclusiveId = null;
     record.message = 'Paused.';
     call(record, 'pause', [{ session: getSession(), runtime, record }]);
     return record;
@@ -88,12 +95,23 @@ export function createGymMachineRunner({ id, name, machines = [], machinePolicy 
     return record;
   }
 
+  function startNextExclusive(runtime) {
+    if (records.some(record => record.execution === 'exclusive' && record.status === 'running')) return null;
+    const next = records.find(record => record.execution === 'exclusive' && !TERMINAL_STATUSES.has(record.status));
+    if (!next) {
+      runningExclusiveId = null;
+      return null;
+    }
+    resetWorld?.();
+    return start(next.id, runtime);
+  }
+
   function startAll(runtime) {
-    const exclusive = records.find(record => record.execution === 'exclusive' && !TERMINAL_STATUSES.has(record.status));
     for (const record of records) {
-      if (record.execution === 'exclusive' && record !== exclusive) continue;
+      if (record.execution === 'exclusive') continue;
       start(record.id, runtime);
     }
+    startNextExclusive(runtime);
     return snapshot();
   }
 
@@ -104,6 +122,7 @@ export function createGymMachineRunner({ id, name, machines = [], machinePolicy 
 
   function resetAll(runtime, { autoStart = machinePolicy.autoStart } = {}) {
     resetWorld?.();
+    runningExclusiveId = null;
     records.forEach(record => {
       record.status = 'idle';
       setup(record, runtime);
@@ -138,12 +157,14 @@ export function createGymMachineRunner({ id, name, machines = [], machinePolicy 
       if (result?.observations) record.observations = { ...record.observations, ...result.observations };
       if (result?.status === 'passed' || result?.status === 'failed') {
         record.status = result.status;
+        if (record.execution === 'exclusive' && runningExclusiveId === record.id) runningExclusiveId = null;
         record.message = result.message || (result.status === 'passed' ? 'Passed.' : 'Failed.');
         if (result.observations) record.observations = { ...record.observations, ...result.observations };
       } else if (result?.message) {
         record.message = result.message;
       }
     }
+    if (machinePolicy.autoStart !== false) startNextExclusive(runtime);
     activeInputActions = null;
     scriptedInput.setActions({});
   }
