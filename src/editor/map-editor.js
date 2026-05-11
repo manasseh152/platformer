@@ -30,6 +30,8 @@ import { loadSettings } from '#/app/settings/settings.js';
 import { currentFocusElement, ensureMenuFocus, moveLinearFocus, visibleFocusables } from '../ui/navigation.js';
 const AUTO_SAVE_STORAGE_KEY = 'chibi.tilemap-editor.auto-save';
 const FLOATING_CONTROLS_STORAGE_KEY = 'chibi.tilemap-editor.floating-controls';
+const CONTROLLER_BRUSH_SETTINGS_STORAGE_KEY = 'chibi.tilemap-editor.controller-brush';
+const DEFAULT_CONTROLLER_BRUSH_SETTINGS = Object.freeze({ sensitivity: 5, momentumEnabled: false, momentumDelayMs: 450, momentumMaxSpeed: 2.5 });
 const BRUSHES = [
   { id: 'grass', label: 'Grass', layerId: 'terrain', symbol: TERRAIN_KIND.GRASS, cellSize: CELL_SIZE.BUILD, cursor: '#79f0c5' },
   { id: 'dirt', label: 'Dirt', layerId: 'terrain', symbol: TERRAIN_KIND.DIRT, cellSize: CELL_SIZE.BUILD, cursor: '#b86f3d' },
@@ -70,6 +72,11 @@ const dom = {
   undoButton: document.querySelector('#undoButton'),
   redoButton: document.querySelector('#redoButton'),
   brushes: document.querySelector('#brushes'),
+  controllerBrushSensitivityInput: document.querySelector('#controllerBrushSensitivityInput'),
+  controllerBrushSensitivityValue: document.querySelector('#controllerBrushSensitivityValue'),
+  controllerBrushMomentumToggle: document.querySelector('#controllerBrushMomentumToggle'),
+  controllerBrushMomentumDelayInput: document.querySelector('#controllerBrushMomentumDelayInput'),
+  controllerBrushMomentumSpeedInput: document.querySelector('#controllerBrushMomentumSpeedInput'),
   gridToggle: document.querySelector('#gridToggle'),
   collisionToggle: document.querySelector('#collisionToggle'),
   previewButton: document.querySelector('#previewButton'),
@@ -106,6 +113,7 @@ let activeTab = 'edit';
 let overlayHidden = false;
 let autoSaveEnabled = readBooleanPreference(localStorage, AUTO_SAVE_STORAGE_KEY, true);
 let floatingControlsEnabled = readBooleanPreference(localStorage, FLOATING_CONTROLS_STORAGE_KEY, true);
+let controllerBrushSettings = readControllerBrushSettings();
 let dirty = false;
 let saving = false;
 let panMode = false;
@@ -114,9 +122,45 @@ let controllerNavX = 0;
 let controllerNavY = 0;
 let controllerCanvasMode = 'draw';
 let editorInputMode = 'pointer';
+let controllerPaintActive = false;
+let controllerNextMoveAt = 0;
+let controllerMoveHeldSince = 0;
+let controllerMoveHoldKey = '';
 
 function storageKey(id) { return localDraftStorageKey(id); }
 function viewStorageKey(id) { return localDraftViewStorageKey(id); }
+function clampNumber(value, min, max, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.max(min, Math.min(max, number));
+}
+function readControllerBrushSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(CONTROLLER_BRUSH_SETTINGS_STORAGE_KEY) || 'null');
+    if (!saved || typeof saved !== 'object') return { ...DEFAULT_CONTROLLER_BRUSH_SETTINGS };
+    return {
+      sensitivity: Math.round(clampNumber(saved.sensitivity, 1, 10, DEFAULT_CONTROLLER_BRUSH_SETTINGS.sensitivity)),
+      momentumEnabled: Boolean(saved.momentumEnabled),
+      momentumDelayMs: Math.round(clampNumber(saved.momentumDelayMs, 100, 2000, DEFAULT_CONTROLLER_BRUSH_SETTINGS.momentumDelayMs)),
+      momentumMaxSpeed: clampNumber(saved.momentumMaxSpeed, 1, 5, DEFAULT_CONTROLLER_BRUSH_SETTINGS.momentumMaxSpeed)
+    };
+  } catch {
+    return { ...DEFAULT_CONTROLLER_BRUSH_SETTINGS };
+  }
+}
+function writeControllerBrushSettings() { localStorage.setItem(CONTROLLER_BRUSH_SETTINGS_STORAGE_KEY, JSON.stringify(controllerBrushSettings)); }
+function controllerBrushRepeatMs() {
+  const t = (controllerBrushSettings.sensitivity - 1) / 9;
+  return 170 - t * 125;
+}
+function controllerBrushMomentumMultiplier(now) {
+  if (!controllerBrushSettings.momentumEnabled || !controllerMoveHeldSince) return 1;
+  const delay = controllerBrushSettings.momentumDelayMs;
+  const elapsed = now - controllerMoveHeldSince;
+  if (elapsed <= delay) return 1;
+  const ramp = Math.min(1, (elapsed - delay) / delay);
+  return 1 + (controllerBrushSettings.momentumMaxSpeed - 1) * ramp;
+}
 function worldWidth() { return draft.cols * CELL_SIZE.GRID; }
 function worldHeight() { return draft.rows * CELL_SIZE.GRID; }
 function terrainLayer() { return draft.layers.find(layer => layer.id === 'terrain'); }
@@ -262,9 +306,18 @@ function updateHistoryControls() {
   if (dom.redoButton) dom.redoButton.disabled = !history.canRedo;
 }
 
+function syncControllerBrushSettingsUi() {
+  if (dom.controllerBrushSensitivityInput) dom.controllerBrushSensitivityInput.value = String(controllerBrushSettings.sensitivity);
+  if (dom.controllerBrushSensitivityValue) dom.controllerBrushSensitivityValue.textContent = String(controllerBrushSettings.sensitivity);
+  if (dom.controllerBrushMomentumToggle) dom.controllerBrushMomentumToggle.checked = controllerBrushSettings.momentumEnabled;
+  if (dom.controllerBrushMomentumDelayInput) dom.controllerBrushMomentumDelayInput.value = String(controllerBrushSettings.momentumDelayMs);
+  if (dom.controllerBrushMomentumSpeedInput) dom.controllerBrushMomentumSpeedInput.value = String(controllerBrushSettings.momentumMaxSpeed);
+}
+
 function syncPreferencesUi() {
   if (dom.autoSaveToggle) dom.autoSaveToggle.checked = autoSaveEnabled;
   if (dom.floatingControlsToggle) dom.floatingControlsToggle.checked = floatingControlsEnabled;
+  syncControllerBrushSettingsUi();
   if (dom.floatingViewControls) dom.floatingViewControls.hidden = !floatingControlsEnabled && editorInputMode !== 'gamepad';
   document.body.classList.toggle('pan-mode', panMode);
   document.body.dataset.editorInput = editorInputMode;
@@ -686,8 +739,35 @@ function applyBrushToCell(cell) {
   scheduleRender();
 }
 
+function cellsOnLine(from, to) {
+  const cells = [];
+  let x0 = from.col;
+  let y0 = from.row;
+  const x1 = to.col;
+  const y1 = to.row;
+  const dx = Math.abs(x1 - x0);
+  const sx = x0 < x1 ? 1 : -1;
+  const dy = -Math.abs(y1 - y0);
+  const sy = y0 < y1 ? 1 : -1;
+  let error = dx + dy;
+  while (true) {
+    cells.push({ col: x0, row: y0 });
+    if (x0 === x1 && y0 === y1) break;
+    const e2 = 2 * error;
+    if (e2 >= dy) { error += dy; x0 += sx; }
+    if (e2 <= dx) { error += dx; y0 += sy; }
+  }
+  return cells;
+}
+
+function applyBrushLine(from, to) {
+  for (const cell of cellsOnLine(from, to)) applyBrushToCell(cell);
+}
+
 function paint(event) {
-  applyBrushToCell(pointerCell(event));
+  const cell = pointerCell(event);
+  if (pointer) applyBrushLine(pointer, cell);
+  else applyBrushToCell(cell);
 }
 
 function applyHistoryCellChange(change) {
@@ -777,16 +857,46 @@ function processEditorControllerFrame() {
       }
     } else {
       ensureControllerPointer();
-      if (xDirection && xDirection !== controllerNavX) { moveControllerPointer(xDirection, 0); route.consume('menu.navigateX'); }
-      if (yDirection && yDirection !== controllerNavY) { moveControllerPointer(0, yDirection); route.consume('menu.navigateY'); }
-      if (route.wasPressed('editor.paint')) {
+      const paintPressed = route.wasPressed('editor.paint');
+      const paintReleased = route.wasReleased('editor.paint');
+      const paintDown = route.isDown('editor.paint');
+      if (paintPressed && !controllerPaintActive) {
         route.consume('editor.paint');
+        controllerPaintActive = true;
         lastPaintKey = null;
-        history.beginAction('controller paint');
+        history.beginAction('controller paint stroke');
         applyBrushToCell(ensureControllerPointer());
+      }
+      if (paintReleased && controllerPaintActive) {
+        route.consume('editor.paint');
+        controllerPaintActive = false;
+        lastPaintKey = null;
         history.commitAction();
         updateHistoryControls();
         flushPending();
+      }
+      const now = performance.now();
+      const holdKey = `${xDirection},${yDirection}`;
+      if (xDirection || yDirection) {
+        if (holdKey !== controllerMoveHoldKey) {
+          controllerMoveHoldKey = holdKey;
+          controllerMoveHeldSince = now;
+          controllerNextMoveAt = 0;
+        }
+      } else {
+        controllerMoveHoldKey = '';
+        controllerMoveHeldSince = 0;
+        controllerNextMoveAt = 0;
+      }
+      const shouldMove = (xDirection || yDirection) && (xDirection !== controllerNavX || yDirection !== controllerNavY || now >= controllerNextMoveAt);
+      if (shouldMove) {
+        const from = ensureControllerPointer();
+        moveControllerPointer(xDirection, yDirection);
+        const to = ensureControllerPointer();
+        if (paintDown) applyBrushLine(from, to);
+        controllerNextMoveAt = now + controllerBrushRepeatMs() / controllerBrushMomentumMultiplier(now);
+        route.consume('menu.navigateX');
+        route.consume('menu.navigateY');
       }
     }
   } else {
@@ -1014,6 +1124,28 @@ function setup() {
     floatingControlsEnabled = dom.floatingControlsToggle.checked;
     writeBooleanPreference(localStorage, FLOATING_CONTROLS_STORAGE_KEY, floatingControlsEnabled);
     syncPreferencesUi();
+  });
+  dom.controllerBrushSensitivityInput?.addEventListener('input', () => {
+    controllerBrushSettings.sensitivity = Math.round(clampNumber(dom.controllerBrushSensitivityInput.value, 1, 10, DEFAULT_CONTROLLER_BRUSH_SETTINGS.sensitivity));
+    writeControllerBrushSettings();
+    syncControllerBrushSettingsUi();
+    setStatus(`Controller brush sensitivity: ${controllerBrushSettings.sensitivity}.`, '');
+  });
+  dom.controllerBrushMomentumToggle?.addEventListener('change', () => {
+    controllerBrushSettings.momentumEnabled = dom.controllerBrushMomentumToggle.checked;
+    writeControllerBrushSettings();
+    syncControllerBrushSettingsUi();
+    setStatus(controllerBrushSettings.momentumEnabled ? 'Controller brush momentum enabled.' : 'Controller brush momentum disabled.', '');
+  });
+  dom.controllerBrushMomentumDelayInput?.addEventListener('input', () => {
+    controllerBrushSettings.momentumDelayMs = Math.round(clampNumber(dom.controllerBrushMomentumDelayInput.value, 100, 2000, DEFAULT_CONTROLLER_BRUSH_SETTINGS.momentumDelayMs));
+    writeControllerBrushSettings();
+    syncControllerBrushSettingsUi();
+  });
+  dom.controllerBrushMomentumSpeedInput?.addEventListener('input', () => {
+    controllerBrushSettings.momentumMaxSpeed = clampNumber(dom.controllerBrushMomentumSpeedInput.value, 1, 5, DEFAULT_CONTROLLER_BRUSH_SETTINGS.momentumMaxSpeed);
+    writeControllerBrushSettings();
+    syncControllerBrushSettingsUi();
   });
   dom.panToggleButton?.addEventListener('click', () => { panMode = !panMode; syncPreferencesUi(); });
   dom.tilemapSelect.addEventListener('change', () => loadSelected());

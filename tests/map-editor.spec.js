@@ -347,6 +347,51 @@ test('map editor controller viewport hints replace floating buttons and trigger 
   await expect(page.locator('#zoomInButton')).toBeHidden();
 });
 
+test('map editor persists controller brush sensitivity and momentum settings', async ({ page }) => {
+  await page.goto('/editor.html');
+
+  await page.locator('#controllerBrushSensitivityInput').fill('8');
+  await expect(page.locator('#controllerBrushSensitivityValue')).toHaveText('8');
+  await page.locator('#controllerBrushMomentumToggle').check();
+  await page.locator('#controllerBrushMomentumDelayInput').fill('300');
+  await page.locator('#controllerBrushMomentumSpeedInput').fill('3.25');
+
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('chibi.tilemap-editor.controller-brush')));
+  expect(saved).toEqual({ sensitivity: 8, momentumEnabled: true, momentumDelayMs: 300, momentumMaxSpeed: 3.25 });
+
+  await page.reload();
+  await expect(page.locator('#controllerBrushSensitivityInput')).toHaveValue('8');
+  await expect(page.locator('#controllerBrushMomentumToggle')).toBeChecked();
+  await expect(page.locator('#controllerBrushMomentumDelayInput')).toHaveValue('300');
+  await expect(page.locator('#controllerBrushMomentumSpeedInput')).toHaveValue('3.25');
+});
+
+test('map editor controller paints a continuous stroke while the paint button is held', async ({ page }) => {
+  await page.addInitScript(() => {
+    const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));
+    const pad = { index: 0, id: 'Mock Controller', mapping: 'standard', buttons, axes: [0, 0, 0, 0] };
+    window.__setMockGamepadButton = (index, pressed) => { buttons[index] = { pressed }; };
+    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] });
+  });
+  await page.goto('/editor.html');
+  await createBlankMap(page, '4', '3');
+
+  await page.evaluate(() => window.__setMockGamepadButton(3, true));
+  await expect(page.locator('#editorOverlay')).toBeHidden();
+  await page.evaluate(() => window.__setMockGamepadButton(3, false));
+
+  await page.evaluate(() => window.__setMockGamepadButton(0, true));
+  await page.evaluate(() => window.__setMockGamepadButton(15, true));
+  await page.waitForTimeout(260);
+  await page.evaluate(() => window.__setMockGamepadButton(15, false));
+  await page.evaluate(() => window.__setMockGamepadButton(0, false));
+
+  await expect(page.locator('#exportText')).toHaveValue(/\[null, null, null, null, K\.GRASS, K\.GRASS, K\.GRASS, K\.GRASS\]/);
+  await page.evaluate(() => window.__setMockGamepadButton(3, true));
+  await expect(page.locator('#editorOverlay')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Undo' })).toBeEnabled();
+});
+
 test('map editor controller navigates and activates controls in the selected tab', async ({ page }) => {
   await page.addInitScript(() => {
     const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));
