@@ -61,12 +61,13 @@ export function snapshotGame(game) {
       open: Boolean(game.devTools?.open),
       visible: Boolean(game.devTools?.visible),
       sections: game.devTools?.registry?.snapshot?.() ?? []
-    }
+    },
+    gym: game.gym?.snapshot?.() ?? null
   };
 }
 
 export function syncGymApi(game, runtime = null) {
-  if (!game.settings?.developerMode) {
+  if (!game.settings?.developerMode && !game.session?.developerModeOverride) {
     if (window.__gym) delete window.__gym;
     return;
   }

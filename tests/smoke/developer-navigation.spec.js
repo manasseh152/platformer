@@ -1,6 +1,5 @@
 import { expect, test } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
-import { getGymById } from '#/content/gyms/registry.js';
 
 async function writeSnapshot(testInfo, name, snapshot) {
   await writeFile(testInfo.outputPath(`${name}.json`), `${JSON.stringify(snapshot, null, 2)}\n`);
@@ -13,9 +12,7 @@ async function captureCheckpoint(page, testInfo, name) {
   return snapshot;
 }
 
-const gym = getGymById('ui-navigation-gym');
-
-test(`${gym.name}: developer mode exposes clean scenarios and loads Movement Gym`, async ({ page }, testInfo) => {
+test('Browser smoke: developer mode exposes clean scenarios and loads Movement Gym', async ({ page }, testInfo) => {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
   await page.reload();

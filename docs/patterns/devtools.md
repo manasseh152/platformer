@@ -122,9 +122,10 @@ Developer automation should build on the existing gated `window.__gym` API.
 Current rule:
 
 - `window.__gym.snapshot().devTools` may expose read-only toolbox state and registered metadata.
-- Do not add mutation APIs such as `open()`, `toggleItem()`, or `runButton()` without a separate design decision.
+- `window.__gym.snapshot().gym` may expose read-only gym machine state for in-engine validation scenarios.
+- Do not add mutation APIs such as `open()`, `toggleItem()`, `runButton()`, or machine control methods without a separate design decision.
 
-Playwright tests should prefer real UI interactions for UX behavior. Use the snapshot for assertions and future playbook context, not as the primary control surface.
+Playwright tests should prefer real UI interactions for UX behavior. Gym CI should prefer loading an auto-start gym and polling read-only machine state. Use the snapshot for assertions and future playbook context, not as the primary control surface.
 
 ## Testing requirements
 

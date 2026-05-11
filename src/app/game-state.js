@@ -17,6 +17,7 @@ import { createAppState, setPausedState } from './app-state.js';
 import { createGpuSystem } from '#/gpu/gpu-system.js';
 import { createDevToolsState, registerBuiltInDevTools } from '#/devtools/toolbox.js';
 import { registerDebugRenderDevTools } from '#/devtools/debug-render.js';
+import { registerGymDevTools } from '#/devtools/gym.js';
 import { createSpeedRunState, prepareSpeedRunAttempt } from './speedrun/speedrun.js';
 
 /**
@@ -66,6 +67,7 @@ export function createGame(ui, runtime = browserRuntime) {
     settings,
     speedRun: createSpeedRunState(runtime.storage),
     devTools: createDevToolsState(),
+    gym: null,
     session: { developerModeOverride: false },
     scenarios: null,
     sceneLibrary: null,
@@ -80,6 +82,7 @@ export function createGame(ui, runtime = browserRuntime) {
   game.scenarios = createScenarioService(game, runtime);
   game.scenarios.select(activeTilemap.id);
   registerBuiltInDevTools(game);
+  registerGymDevTools(game);
   registerDebugRenderDevTools(game);
   applySettingsToGame(game);
   if (game.settings.gpuExtras === 'auto') {

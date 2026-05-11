@@ -15,8 +15,8 @@ function syncActiveTilemapDataset(game) {
   document.body.dataset.tilemapId = id;
 }
 
-function canAccessTilemap(settings, tilemap) {
-  return Boolean(tilemap) && isVisibleToMode(tilemap, settings.developerMode);
+function canAccessTilemap(settings, tilemap, session = null) {
+  return Boolean(tilemap) && isVisibleToMode(tilemap, Boolean(settings.developerMode || session?.developerModeOverride));
 }
 
 export function resolveInitialTilemap() {
@@ -44,7 +44,7 @@ export function createTilemapManager(game, runtime = browserRuntime) {
       runtime.emit('tilemap.switch.failed', { tilemapId, reason: 'missing-tilemap', previousTilemapId: previousTilemap?.id || null });
       return { ok: false, reason: 'missing-tilemap', tilemap: null, previousTilemap };
     }
-    if (!canAccessTilemap(game.settings, nextTilemap)) {
+    if (!canAccessTilemap(game.settings, nextTilemap, game.session)) {
       runtime.emit('tilemap.switch.failed', { tilemapId, reason: 'developer-only', previousTilemapId: previousTilemap?.id || null });
       return { ok: false, reason: 'developer-only', tilemap: null, previousTilemap };
     }
@@ -63,7 +63,7 @@ export function createTilemapManager(game, runtime = browserRuntime) {
   }
 
   function getSelectableTilemaps() {
-    return getAllTilemaps().filter(tilemap => canAccessTilemap(game.settings, tilemap));
+    return getAllTilemaps().filter(tilemap => canAccessTilemap(game.settings, tilemap, game.session));
   }
 
   function getCurrentTilemap() {
@@ -93,6 +93,6 @@ export function createTilemapManager(game, runtime = browserRuntime) {
     getAllTilemaps,
     getCurrentTilemap,
     getNextTilemap,
-    canAccessTilemap: tilemap => canAccessTilemap(game.settings, tilemap)
+    canAccessTilemap: tilemap => canAccessTilemap(game.settings, tilemap, game.session)
   };
 }

@@ -1,13 +1,17 @@
+import { movementMachines } from './movement-machines.js';
+
 export const movementGymScenario = {
   id: 'movement-gym',
   name: 'Movement Gym',
   source: 'gyms',
   categories: ['movement'],
   visibility: 'developer',
-  description: 'Validates player movement traversal in an isolated tilemap fixture.',
-  docs: [],
-  tests: [],
-  covers: ['movement.jump', 'movement.platform-traversal'],
+  description: 'Validates focused movement systems through in-engine gym machines.',
+  docs: ['docs/patterns/gyms.md', 'docs/adr/0006-machine-based-gyms.md'],
+  tests: ['tests/gyms/movement.gym.spec.js'],
+  covers: ['movement.run-max-speed'],
+  machines: movementMachines,
+  machinePolicy: { autoStart: true },
   ci: true,
   composition: {
     type: 'tilemap-gameplay',
@@ -17,7 +21,7 @@ export const movementGymScenario = {
         scene: 'gameplay',
         props: {
           tilemapId: 'movement-gym-map',
-          goal: { type: 'finish-gate' }
+          goal: null
         }
       }
     ]

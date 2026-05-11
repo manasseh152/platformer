@@ -40,8 +40,8 @@ function makeGame() {
 }
 
 test('scenario URL params parse scenario, developer mode override, and autorun', () => {
-  expect(readScenarioLaunchParams('?mode=developer&scenario=finish-gate-gym&autorun=1')).toEqual({
-    scenarioId: 'finish-gate-gym',
+  expect(readScenarioLaunchParams('?mode=developer&scenario=movement-gym&autorun=1')).toEqual({
+    scenarioId: 'movement-gym',
     developerModeOverride: true,
     autorun: true
   });

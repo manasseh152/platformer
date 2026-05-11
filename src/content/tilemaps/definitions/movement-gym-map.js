@@ -1,7 +1,10 @@
 import { CELL_SIZE } from '../../../core/constants.js';
 import { defineTilemap, gridLayer } from '../../../core/tilemaps/tilemap.js';
 import { TERRAIN_KIND as K, terrainLayer } from '../../../core/tilemaps/terrain-layer.js';
-import { finishGateObject, playerSpawner, slimeSpawner } from '../objects.js';
+import { playerSpawner } from '../objects.js';
+
+const emptyTerrainRow = [K.GRASS, K.GRASS, ...Array(44).fill(null), K.GRASS, K.GRASS];
+const solidTerrainRow = Array(48).fill(K.GRASS);
 
 export const movementGymMapDefinition = {
   cols: 24,
@@ -11,49 +14,48 @@ export const movementGymMapDefinition = {
   theme: 'kenney-pixel-platformer:grass',
   layers: [
     terrainLayer({ cellSize: CELL_SIZE.BUILD, rows: [
-      [K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, K.GRASS, K.GRASS, K.GRASS, K.GRASS, null, null, null, null, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS],
-      [K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS, K.GRASS]
+      solidTerrainRow,
+      solidTerrainRow,
+      emptyTerrainRow,
+      emptyTerrainRow,
+      emptyTerrainRow,
+      emptyTerrainRow,
+      emptyTerrainRow,
+      emptyTerrainRow,
+      emptyTerrainRow,
+      emptyTerrainRow,
+      emptyTerrainRow,
+      emptyTerrainRow,
+      emptyTerrainRow,
+      emptyTerrainRow,
+      emptyTerrainRow,
+      emptyTerrainRow,
+      emptyTerrainRow,
+      emptyTerrainRow,
+      emptyTerrainRow,
+      emptyTerrainRow,
+      solidTerrainRow,
+      solidTerrainRow,
+      solidTerrainRow,
+      solidTerrainRow
     ] }),
     gridLayer({
       id: 'entities',
       cellSize: CELL_SIZE.GRID,
-      symbols: { P: playerSpawner, E: slimeSpawner, G: finishGateObject },
+      symbols: { P: playerSpawner },
       rows: [
-    '........................',
-    '........................',
-    '..................GGG...',
-    '........................',
-    '........................',
-    '........................',
-    '........................',
-    '...P....................',
-    '........................',
-    '........................',
-    '........................',
-    '........................'
-
+        '........................',
+        '........................',
+        '........................',
+        '........................',
+        '........................',
+        '........................',
+        '........................',
+        '........................',
+        '..P.....................',
+        '........................',
+        '........................',
+        '........................'
       ]
     })
   ]
@@ -64,6 +66,6 @@ export const movementGymMap = defineTilemap({
   name: 'Movement Gym Map',
   categories: ['movement'],
   visibility: 'developer',
-  description: 'Tilemap fixture for movement validation scenarios.',
+  description: 'Minimal flat runway fixture for movement machine validation.',
   ...movementGymMapDefinition
 });

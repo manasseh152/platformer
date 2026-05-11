@@ -8,6 +8,29 @@ function tilemapIdForScenario(entry) {
   return entry.composition?.stack?.find(layer => layer.props?.tilemapId)?.props?.tilemapId ?? null;
 }
 
+function runtimeCompositionForScenario(entry) {
+  const composition = entry.composition;
+  if (entry.source !== 'gyms') return composition;
+  return {
+    ...composition,
+    stack: composition.stack.map(layer => layer.scene === 'gameplay'
+      ? {
+          ...layer,
+          props: {
+            ...(layer.props ?? {}),
+            scenarioId: entry.id,
+            gym: {
+              id: entry.id,
+              name: entry.name,
+              machines: entry.machines ?? [],
+              machinePolicy: entry.machinePolicy ?? { autoStart: true }
+            }
+          }
+        }
+      : layer)
+  };
+}
+
 function assertScenarioEntry(entry) {
   if (typeof entry.source !== 'string' || !entry.source.trim()) throw new Error(`${entry.id} must have a source`);
   if (!entry.composition?.stack?.length) throw new Error(`${entry.id} must define a composition stack`);
@@ -61,7 +84,7 @@ export function launchScenarioEntry(game, entryOrId) {
   const entry = typeof entryOrId === 'string' ? getScenarioEntryById(entryOrId) : entryOrId;
   if (!entry) return { ok: false, reason: 'missing-scenario-entry', entry: null };
 
-  const composition = entry.composition;
+  const composition = runtimeCompositionForScenario(entry);
   if (!composition?.stack?.length) return { ok: false, reason: 'empty-composition', entry };
   if (!game.sceneLibrary || !game.runtime?.scenes?.replaceStack) return { ok: false, reason: 'missing-scene-composition-runtime', entry };
 

@@ -37,7 +37,7 @@ test('developer mode presents Scenario Browser with tabs for acts local gyms and
 
   await page.getByRole('tab', { name: 'Gyms' }).click();
   await expect(page.locator('#levelSelectList [data-scenario-source="gyms"] h3')).toHaveText('Gyms');
-  await expect(page.locator('button[data-scenario-id="ui-navigation-gym"]')).toContainText('CI');
+  await expect(page.locator('button[data-scenario-id="movement-gym"]')).toContainText('CI');
 
   await page.getByRole('tab', { name: 'Zoos' }).click();
   await expect(page.locator('#levelSelectList [data-scenario-source="zoos"] h3')).toHaveText('Zoos');

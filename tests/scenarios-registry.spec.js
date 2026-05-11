@@ -21,12 +21,8 @@ test('scenario registry composes tilemap definitions and executable gyms', () =>
     ci: false
   });
   expect(getScenarioEntryById('enemy-zoo')).toBeTruthy();
-  expect(getScenarioEntryById('ui-navigation-gym')).toMatchObject({
-    source: 'gyms',
-    composition: { type: 'executable-gym' },
-    ci: true
-  });
-  expect(Object.keys(scenarioEntries)).toEqual(expect.arrayContaining(['movement-gym', 'ui-navigation-gym']));
+  expect(getScenarioEntryById('ui-navigation-gym')).toBeNull();
+  expect(Object.keys(scenarioEntries)).toEqual(expect.arrayContaining(['movement-gym']));
 });
 
 test('scenario registry filters developer scenarios', () => {
@@ -35,8 +31,6 @@ test('scenario registry filters developer scenarios', () => {
     'act-01-level-1',
     'act-01-level-2',
     'movement-gym',
-    'finish-gate-gym',
-    'ui-navigation-gym',
     'enemy-zoo'
   ]);
 });
