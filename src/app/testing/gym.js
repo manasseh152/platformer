@@ -50,6 +50,9 @@ export function snapshotGame(game) {
     camera: game.camera ? {
       x: round(game.camera.x),
       y: round(game.camera.y),
+      targetX: round(game.camera.targetX),
+      targetY: round(game.camera.targetY),
+      mode: game.camera.mode || 'follow',
       shake: round(game.camera.shake)
     } : null,
     settings: {
@@ -60,6 +63,7 @@ export function snapshotGame(game) {
     devTools: {
       open: Boolean(game.devTools?.open),
       visible: Boolean(game.devTools?.visible),
+      flags: JSON.parse(JSON.stringify(game.devTools?.flags ?? {})),
       sections: game.devTools?.registry?.snapshot?.() ?? []
     },
     gym: game.gym?.snapshot?.() ?? null

@@ -27,6 +27,9 @@ function snapshotCamera(camera) {
   return {
     x: round(camera.x),
     y: round(camera.y),
+    targetX: round(camera.targetX),
+    targetY: round(camera.targetY),
+    mode: camera.mode || 'follow',
     shake: round(camera.shake)
   };
 }

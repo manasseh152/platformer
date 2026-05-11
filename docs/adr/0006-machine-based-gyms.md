@@ -48,7 +48,7 @@ Add focused machines/fixtures for jump gap, run+jump coupling, air correction, d
 
 ### Slice 3: Devtools inspection
 
-Add free camera and machine-focused viewing tools. These tools must not affect deterministic machine simulation.
+Implemented: gym devtools now include a free-camera toggle, camera nudges, follow-player reset, and machine-focused viewing. The inspection controls mutate only camera/devtools state and do not drive gameplay input or machine simulation.
 
 ### Slice 4: Showcase/observer gyms
 

@@ -60,4 +60,4 @@ The runner applies machine input before gameplay physics and records assertions 
 - Launch enriches gameplay scene props with gym metadata.
 - `window.__gym.snapshot().gym` exposes read-only gym/machine state for CI and diagnostics.
 - Devtools use the runner control surface (`startAll`, `pauseAll`, `resetAll`) but automation should prefer read-only snapshots unless a separate mutation API decision is made.
-- Free camera is a deferred devtools inspection feature. It should help developers view gym machines without affecting simulation.
+- Devtools expose free-camera and machine-focus inspection controls for gym worlds. These controls change only camera/viewing state (`follow`, `free`, or `gym-inspect`) and must not drive gameplay input or affect deterministic machine simulation.

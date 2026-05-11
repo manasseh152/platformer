@@ -1,4 +1,4 @@
-const RUN_DURATION_SECONDS = 1.2;
+const RUN_DURATION_SECONDS = 1.0;
 const MIN_EXPECTED_MAX_VX = 105;
 const MAX_EXPECTED_FINAL_VX = 114;
 const MIN_EXPECTED_DISTANCE = 95;
@@ -146,7 +146,7 @@ export const movementMachines = [
       const observations = baseObservations(player, { startX: round(startX), distance: round(distance), airborneMaxVx: round(airborneMaxVx), wasAirborne });
       const invalid = failIfInvalidSession(session, observations);
       if (invalid) return invalid;
-      if (record.elapsed < 1.0) return { observations };
+      if (record.elapsed < 0.95) return { observations };
       if (!wasAirborne) return { status: 'failed', message: 'Run+jump never left the ground.', observations };
       if (airborneMaxVx < 95) return { status: 'failed', message: 'Jump did not preserve enough running speed.', observations };
       if (distance < 100) return { status: 'failed', message: 'Run+jump did not cover expected distance.', observations };
@@ -176,7 +176,7 @@ export const movementMachines = [
       const observations = baseObservations(player, { positiveAirVx: round(positiveAirVx), negativeAirVx: round(negativeAirVx), wasAirborne });
       const invalid = failIfInvalidSession(session, observations);
       if (invalid) return invalid;
-      if (record.elapsed < 0.75) return { observations };
+      if (record.elapsed < 0.65) return { observations };
       if (!wasAirborne) return { status: 'failed', message: 'Air correction never became airborne.', observations };
       if (positiveAirVx < 25 || negativeAirVx > -25) return { status: 'failed', message: 'Expected horizontal velocity to correct in both air directions.', observations };
       return { status: 'passed', message: 'Airborne input corrected horizontal velocity.', observations };

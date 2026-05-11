@@ -38,3 +38,24 @@ test('Movement Gym auto-runs movement coverage machines to pass', async ({ page 
   expect(machineById(snapshot, 'movement.dash-burst').observations.maxVx).toBeGreaterThan(240);
   expect(machineById(snapshot, 'movement.npc-patrol')).toMatchObject({ authority: 'observer' });
 });
+
+test('Movement Gym devtools expose free camera and machine focus inspection', async ({ page }) => {
+  await page.goto('/index.html?mode=developer&scenario=movement-gym&autorun=1');
+  await expect(page.locator('#devtoolToggle')).toBeVisible();
+
+  await page.locator('#devtoolToggle').click();
+  await expect(page.locator('[data-devtool-section="gym"]')).toContainText('Free camera');
+  await expect(page.locator('[data-devtool-value="gym.focused-machine"]')).toContainText('Run max speed');
+
+  await page.locator('[data-devtool-toggle="gym.free-camera"]').check();
+  await expect.poll(() => page.evaluate(() => window.__gym.snapshot().camera.mode)).toBe('free');
+  await expect.poll(() => page.evaluate(() => window.__gym.snapshot().devTools.flags.gymInspection.freeCamera)).toBe(true);
+
+  await page.locator('[data-devtool-button="gym.focus-next-machine"]').click();
+  const focused = await page.evaluate(() => window.__gym.snapshot().devTools.flags.gymInspection.focusedMachineId);
+  expect(focused).toBe('movement.jump-gap');
+  await expect.poll(() => page.evaluate(() => window.__gym.snapshot().camera.mode)).toBe('gym-inspect');
+
+  await page.locator('[data-devtool-button="gym.follow-player"]').click();
+  await expect.poll(() => page.evaluate(() => window.__gym.snapshot().camera.mode)).toBe('follow');
+});

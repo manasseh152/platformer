@@ -11,7 +11,8 @@ function itemKey(section, item) {
 }
 
 export function isDevToolsEligible(game) {
-  return Boolean(game.settings?.developerMode && isStarted(game) && !isPaused(game) && !game.player?.dead && !isWon(game));
+  const developerEnabled = Boolean(game.settings?.developerMode || game.session?.developerModeOverride);
+  return Boolean(developerEnabled && isStarted(game) && !isPaused(game) && !game.player?.dead && !isWon(game));
 }
 
 function itemValue(game, item) {
