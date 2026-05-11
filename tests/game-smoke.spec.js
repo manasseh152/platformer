@@ -24,7 +24,7 @@ async function openCategory(page, id, title) {
 
 async function installMockGamepad(page) {
   await page.addInitScript(() => {
-    const buttons = Array.from({ length: 16 }, () => ({ pressed: false, value: 0 }));
+    const buttons = Array.from({ length: 18 }, () => ({ pressed: false, value: 0 }));
     const pad = { id: 'Mock Controller', index: 0, connected: true, mapping: 'standard', axes: [0, 0], buttons };
     Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] });
     window.__mockGamepadButton = (index, pressed) => {
@@ -259,6 +259,24 @@ test('controller diagonal menu directions navigate horizontal button groups', as
 
   await pressPadButtonFrom(page, 14, '[data-settings-action="replace-settings"]'); // D-pad left reverses.
   await expectFocusedSettingsAction(page, 'dump-settings');
+});
+
+test('controller diagnostics locks input and exits after holding B', async ({ page }) => {
+  await installMockGamepad(page);
+  await openStartSettings(page);
+  await openCategory(page, 'controller', 'Controller');
+  await page.locator('[data-controller-settings-page="diagnostics"]').click();
+
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-current-settings-subpage', 'diagnostics');
+  await expect(page.locator('.controller-debugger')).toHaveClass(/is-input-locked/);
+  await expect(page.locator('#controllerName')).toContainText('Mock Controller');
+
+  await page.evaluate(() => window.__mockGamepadButton(1, true));
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-current-settings-subpage', 'diagnostics');
+  await page.waitForTimeout(2200);
+  await page.evaluate(() => window.__mockGamepadButton(1, false));
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-current-settings-subpage', '');
+  await expect(page.locator('[data-bind-device="controller"]')).toHaveCount(7);
 });
 
 test('keyboard and controller settings rows, binds, diagnostics, and pause flow', async ({ page }) => {
