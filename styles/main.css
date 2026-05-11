@@ -70,6 +70,8 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
   background: var(--color-void);
   color: var(--color-cream);
   font-family: var(--font-ui);
@@ -673,8 +675,8 @@ body.playing #hud,
 body.playing #message:not([hidden]) { opacity: 1; }
 
 #hud {
-  top: 18px;
-  left: 18px;
+  top: calc(18px + env(safe-area-inset-top));
+  left: calc(18px + env(safe-area-inset-left));
   width: min(360px, calc((100vw - 36px) / var(--game-ui-scale)));
   transform: scale(var(--game-ui-scale));
   transform-origin: top left;
