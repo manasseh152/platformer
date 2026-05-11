@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Implemented through Slice 4; Slice 5 remains open.
+Accepted. Implemented through Slice 5.
 
 ## Context
 
@@ -64,9 +64,11 @@ Rendering Gym adds a minimal in-engine fixture using a `state-fixture` machine t
 
 ### Slice 5: Reintroduce removed validations as real gyms
 
-Status: Open.
+Status: Implemented.
 
-Finish-gate or UI-adjacent validations may return only if they are in-engine system fixtures with machines. Browser shell/navigation coverage should remain ordinary smoke tests, not gyms.
+Finish Gate Gym is restored as an in-engine system fixture with machines for finish trigger geometry and completion flow. It launches `finish-gate-gym-map` with a real `finish-gate` goal because the gym validates the goal/transition system itself.
+
+UI-adjacent browser shell/navigation coverage remains ordinary smoke tests, not gyms.
 
 ## Consequences
 
