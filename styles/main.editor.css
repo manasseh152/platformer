@@ -281,13 +281,13 @@ body[data-editor-input="gamepad"] .floating-view-controls output {
   font-weight: 800;
 }
 #panToggleButton[aria-pressed="true"] { color: #101016; background: rgba(255,246,232,.92); border-color: transparent; }
-.controller-viewport-hints {
+.viewport-input-hints {
   position: absolute;
   z-index: 11;
   left: calc(28px + env(safe-area-inset-left));
   right: calc(300px + env(safe-area-inset-right));
   bottom: calc(20px + env(safe-area-inset-bottom));
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: flex-start;
   flex-wrap: wrap;
@@ -306,7 +306,11 @@ body[data-editor-input="gamepad"] .floating-view-controls output {
   text-transform: uppercase;
   text-shadow: 0 2px 8px rgba(0,0,0,.72), 0 0 18px rgba(0,0,0,.55);
 }
-.controller-viewport-hints::before {
+body[data-editor-input="gamepad"] .desktop-viewport-hints,
+body[data-editor-input="touch"] .desktop-viewport-hints { display: none; }
+.controller-viewport-hints { display: none; }
+body[data-editor-input="gamepad"] .controller-viewport-hints { display: flex; }
+.viewport-input-hints::before {
   content: "";
   position: fixed;
   left: 0;
@@ -317,23 +321,22 @@ body[data-editor-input="gamepad"] .floating-view-controls output {
   background: linear-gradient(to top, rgba(2, 3, 8, .58), rgba(2, 3, 8, .24) 54%, transparent);
   pointer-events: none;
 }
-body[data-editor-input="gamepad"] .controller-viewport-hints { display: flex; }
-.controller-viewport-hints span[data-input-hint][hidden] { display: none; }
-.controller-viewport-hints span[data-input-hint] {
+.viewport-input-hints span[data-input-hint][hidden] { display: none; }
+.viewport-input-hints span[data-input-hint] {
   display: inline-flex;
   align-items: center;
   gap: 9px;
   min-height: 34px;
   white-space: nowrap;
 }
-.controller-viewport-hints .input-hint__icon {
+.viewport-input-hints .input-hint__icon {
   width: 30px;
   height: 30px;
   object-fit: contain;
   opacity: .62;
   filter: grayscale(1) saturate(.08) brightness(1.65) contrast(.72);
 }
-.controller-viewport-hints .ds-keycap {
+.viewport-input-hints .ds-keycap {
   display: inline-grid;
   place-items: center;
   min-width: 38px;
@@ -348,8 +351,8 @@ body[data-editor-input="gamepad"] .controller-viewport-hints { display: flex; }
   letter-spacing: .015em;
   text-shadow: none;
 }
-.controller-viewport-hints .input-hint__joiner { display: none; }
-.controller-viewport-hints .input-hint__label {
+.viewport-input-hints .input-hint__joiner { display: none; }
+.viewport-input-hints .input-hint__label {
   color: rgba(255, 246, 232, .58);
   font: inherit;
   letter-spacing: inherit;
@@ -416,6 +419,7 @@ body[data-editor-input="gamepad"] .status.error {
   .floating-view-controls { right: 8px; bottom: calc(min(62vh, calc(100vh - 72px)) + 18px); flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 16px); }
   .editor-overlay[hidden] ~ .floating-view-controls { bottom: 8px; }
   body[data-editor-input="gamepad"] .floating-view-controls { right: 8px; bottom: 8px; }
+  .desktop-viewport-hints { left: 8px; right: 8px; bottom: 126px; max-width: calc(100vw - 16px); }
   .controller-viewport-hints { left: 8px; right: 8px; bottom: 48px; grid-template-columns: 1fr; max-width: calc(100vw - 16px); }
   .status { right: 8px; bottom: 72px; }
   body[data-editor-input="gamepad"] .status { right: 92px; bottom: 8px; max-width: calc(100vw - 184px); }

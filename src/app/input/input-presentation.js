@@ -74,7 +74,8 @@ export function renderInputHints(input, root = document, gameOrOptions = {}) {
       runtime: game?.inputRuntime || options.runtime || null,
       inputScheme: input.inputScheme,
       iconPack: settings.input?.gamepad?.globalIconPack || 'xbox',
-      label: el.dataset.inputLabel || undefined
+      label: el.dataset.inputLabel || undefined,
+      deviceType: el.dataset.inputDeviceType || undefined
     });
     el.dataset.inputAction = actionId;
     el.dataset.inputPlatform = hint.deviceType === 'gamepad' ? 'gamepad' : platform;

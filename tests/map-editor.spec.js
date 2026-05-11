@@ -330,6 +330,28 @@ test('map editor shoulder buttons switch tabs and show controller hints', async 
   await expect(page.locator('#editPanel')).toBeVisible();
 });
 
+test('map editor shows desktop viewport shortcuts until a controller is active', async ({ page }) => {
+  await page.addInitScript(() => {
+    const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));
+    const pad = { index: 0, id: 'Mock Controller', mapping: 'standard', buttons, axes: [0, 0, 0, 0] };
+    window.__setMockGamepadButton = (index, pressed) => { buttons[index] = { pressed }; };
+    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] });
+  });
+  await page.goto('/editor.html');
+
+  const desktopHints = page.locator('#desktopViewportHints');
+  await expect(desktopHints).toBeVisible();
+  await expect(desktopHints).toContainText('Paint');
+  await expect(desktopHints).toContainText('Pan');
+  await expect(desktopHints).toContainText('Zoom');
+  await expect(desktopHints).toContainText('Undo');
+  await expect(desktopHints.locator('.input-hint__icon[alt="Ctrl/⌘ + S"]')).toBeVisible();
+
+  await page.evaluate(() => window.__setMockGamepadButton(7, true));
+  await expect(page.locator('#controllerViewportHints')).toBeVisible();
+  await expect(desktopHints).toBeHidden();
+});
+
 test('map editor controller viewport hints replace floating buttons and trigger zoom', async ({ page }) => {
   await page.addInitScript(() => {
     const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));

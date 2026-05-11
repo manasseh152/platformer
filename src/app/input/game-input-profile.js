@@ -5,7 +5,7 @@ export const gameInputProfile = {
     bindCapture: { priority: 1000, actions: [] },
     global: { priority: 100, actions: ['devtools.toggle', 'devtools.pause'] },
     menu: { priority: 50, actions: ['menu.navigateX', 'menu.navigateY', 'menu.accept', 'menu.back', 'menu.settings', 'menu.previousTab', 'menu.nextTab'] },
-    editor: { priority: 20, actions: ['editor.panModifier', 'editor.save', 'editor.preview', 'editor.undo', 'editor.redo', 'editor.previousTab', 'editor.nextTab', 'editor.togglePanel', 'editor.toggleMode', 'editor.paint', 'editor.previousBrush', 'editor.nextBrush', 'editor.zoomOut', 'editor.zoomIn', 'editor.resetView'] },
+    editor: { priority: 20, actions: ['editor.panModifier', 'editor.save', 'editor.preview', 'editor.undo', 'editor.redo', 'editor.previousTab', 'editor.nextTab', 'editor.togglePanel', 'editor.toggleMode', 'editor.paint', 'editor.previousBrush', 'editor.nextBrush', 'editor.zoom', 'editor.zoomOut', 'editor.zoomIn', 'editor.resetView'] },
     gameplay: { priority: 10, actions: ['player.moveX', 'player.jump', 'player.dash', 'player.attack', 'system.pause', 'system.restart'] }
   },
   actions: {
@@ -36,6 +36,7 @@ export const gameInputProfile = {
     'editor.paint': { kind: 'button', label: 'Paint Cell', preventDefault: true, userRemappable: false },
     'editor.previousBrush': { kind: 'button', label: 'Previous Brush', preventDefault: true, userRemappable: false },
     'editor.nextBrush': { kind: 'button', label: 'Next Brush', preventDefault: true, userRemappable: false },
+    'editor.zoom': { kind: 'button', label: 'Zoom', preventDefault: true, userRemappable: false },
     'editor.zoomOut': { kind: 'button', label: 'Zoom Out', preventDefault: true, userRemappable: false },
     'editor.zoomIn': { kind: 'button', label: 'Zoom In', preventDefault: true, userRemappable: false },
     'editor.resetView': { kind: 'button', label: 'Reset View', preventDefault: true, userRemappable: false }
@@ -124,9 +125,13 @@ export const gameInputProfile = {
     'editor.nextTab': [{ deviceType: 'gamepad', control: 'button', index: 5 }],
     'editor.togglePanel': [{ deviceType: 'gamepad', control: 'button', index: 3 }],
     'editor.toggleMode': [{ deviceType: 'gamepad', control: 'button', index: 2 }],
-    'editor.paint': [{ deviceType: 'gamepad', control: 'button', index: 0 }],
+    'editor.paint': [
+      { deviceType: 'pointer', control: 'button', button: 0 },
+      { deviceType: 'gamepad', control: 'button', index: 0 }
+    ],
     'editor.previousBrush': [{ deviceType: 'gamepad', control: 'button', index: 4 }],
     'editor.nextBrush': [{ deviceType: 'gamepad', control: 'button', index: 5 }],
+    'editor.zoom': [{ deviceType: 'pointer', control: 'wheel' }],
     'editor.zoomOut': [{ deviceType: 'gamepad', control: 'button', index: 6 }],
     'editor.zoomIn': [{ deviceType: 'gamepad', control: 'button', index: 7 }],
     'editor.resetView': [{ deviceType: 'gamepad', control: 'button', index: 11 }]

@@ -131,7 +131,17 @@
         <button id="panToggleButton" class="floating-view-controls__button" type="button" aria-pressed="false">Pan</button>
       </div>
 
-      <div id="controllerViewportHints" class="controller-viewport-hints" aria-label="Controller viewport controls">
+      <div id="desktopViewportHints" class="viewport-input-hints desktop-viewport-hints" aria-label="Desktop viewport controls">
+        <span data-input-hint data-input-action="editor.paint" data-input-device-type="pointer" data-input-label="Paint"></span>
+        <span data-input-hint data-input-action="editor.panModifier" data-input-label="Pan"></span>
+        <span data-input-hint data-input-action="editor.zoom" data-input-device-type="pointer" data-input-label="Zoom"></span>
+        <span data-input-hint data-input-action="editor.undo" data-input-label="Undo"></span>
+        <span data-input-hint data-input-action="editor.redo" data-input-label="Redo"></span>
+        <span data-input-hint data-input-action="editor.save" data-input-label="Save"></span>
+        <span data-input-hint data-input-action="editor.preview" data-input-label="Preview"></span>
+      </div>
+
+      <div id="controllerViewportHints" class="viewport-input-hints controller-viewport-hints" aria-label="Controller viewport controls">
         <span data-input-hint data-input-action="menu.navigateX" data-input-label="Pan"></span>
         <span data-input-hint data-input-action="editor.zoomOut" data-input-label="Zoom out"></span>
         <span data-input-hint data-input-action="editor.zoomIn" data-input-label="Zoom in"></span>

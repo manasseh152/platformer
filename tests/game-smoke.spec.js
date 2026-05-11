@@ -367,7 +367,7 @@ test('keyboard and controller settings rows, binds, diagnostics, and pause flow'
   await expect(pauseScreen).toBeHidden();
 });
 
-test('pause Main menu hint button returns to start screen and can start a fresh run', async ({ page }) => {
+test('pause Main Menu button returns to start screen and can start a fresh run', async ({ page }) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   const body = page.locator('body');
@@ -377,8 +377,7 @@ test('pause Main menu hint button returns to start screen and can start a fresh 
 
   await page.keyboard.press('Escape');
   await expect(body).toHaveClass(/\bpaused\b/);
-  await expect(page.locator('#pauseScreen #mainMenuButton')).toHaveCount(0);
-  await page.locator('#hintLayer button[data-input-action="menu.mainMenu"]').click();
+  await page.locator('#pauseScreen #mainMenuButton').click();
 
   await expect(body).not.toHaveClass(/\bpaused\b/);
   await expect(body).not.toHaveClass(/\bplaying\b/);

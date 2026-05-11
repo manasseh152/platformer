@@ -155,9 +155,27 @@ export function gamepadLabel(binding = {}) {
   return 'Gamepad';
 }
 
+function keyboardModifierLabels(modifiers = {}) {
+  const labels = [];
+  if (modifiers.primary) labels.push('Ctrl/⌘');
+  if (modifiers.ctrl) labels.push('Ctrl');
+  if (modifiers.meta) labels.push('⌘');
+  if (modifiers.alt) labels.push('Alt');
+  if (modifiers.shift) labels.push('Shift');
+  return labels;
+}
+
 export function bindingLabel(binding = {}) {
-  if (binding.deviceType === 'keyboard') return keyLabel(binding.code);
+  if (binding.deviceType === 'keyboard') {
+    const labels = keyboardModifierLabels(binding.modifiers);
+    labels.push(keyLabel(binding.code));
+    return labels.join(' + ');
+  }
   if (binding.deviceType === 'gamepad') return gamepadLabel(binding);
+  if (binding.deviceType === 'pointer') {
+    if (binding.control === 'wheel') return 'Wheel';
+    if (binding.control === 'button') return binding.button === 0 ? 'LMB' : binding.button === 1 ? 'MMB' : binding.button === 2 ? 'RMB' : `Mouse ${binding.button}`;
+  }
   return binding.label || 'Input';
 }
 
@@ -198,6 +216,7 @@ export function bindingsForHint(settings, actionId, { runtime = null, inputSchem
   const requested = { axisScale, deviceType };
   const candidates = bindings.filter(binding => matchesRequest(binding, requested));
   if (group === 'gamepad') return candidates.filter(binding => binding.deviceType === 'gamepad').slice(0, 2);
+  if (deviceType) return candidates.slice(0, 2);
   const grouped = candidates.filter(binding => binding.deviceType === 'keyboard' && (binding.displayGroup || null) === group);
   if (grouped.length) return grouped.slice(0, 2);
   return candidates.filter(binding => binding.deviceType === 'keyboard').slice(0, 2);
