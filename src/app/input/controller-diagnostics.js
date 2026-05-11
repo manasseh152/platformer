@@ -1,4 +1,7 @@
-import { bindGamepad, bindLabels, controllerName, findBindConflict } from './legacy-bind-state.js';
+import { commitBindRow, bindLabel } from './semantic-bind-rows.js';
+import { gamepadLabel } from './input-hints.js';
+import { saveSettings } from '../settings/settings.js';
+import { createBrowserInputAdapter, createGameInputRuntime } from './browser-input-adapter.js';
 import { setInputScheme } from './input-presentation.js';
 
 export function pollGamepads(runtime, game) {
@@ -77,7 +80,6 @@ export function updateControllerDebug(runtime, game, pad) {
       input.controllerBindAction = null;
       input.bindCapture = null;
       input.bindDeadline = 0;
-      input.bindRenderDirty = true;
       input.suppressMenuInputOnce = true;
       setBindStatus(ui, 'Listening cancelled.');
       return;
@@ -134,19 +136,37 @@ function legacyCodeFromGamepadBinding(binding) {
   return null;
 }
 
+function bindingFromLegacyGamepadCode(code) {
+  const button = /^PadButton(\d+)$/.exec(code);
+  if (button) return { deviceType: 'gamepad', control: 'button', index: Number(button[1]) };
+  const axis = /^PadAxis(\d)([+-])$/.exec(code);
+  if (axis) return { deviceType: 'gamepad', control: 'axisDirection', index: Number(axis[1]), direction: axis[2] === '+' ? 1 : -1, threshold: 0.35 };
+  return null;
+}
+
+function controllerName(code) {
+  return gamepadLabel(bindingFromLegacyGamepadCode(code) || {}) || code;
+}
+
 function finishControllerBinding(runtime, game, action, code) {
   const { input, ui } = game;
-  const conflict = findBindConflict(input, 'controller', action, code);
-  if (conflict) {
+  const binding = bindingFromLegacyGamepadCode(code);
+  const result = commitBindRow(game.settings, action, binding, { device: 'controller' });
+  if (!result.ok) {
     input.bindError = { device: 'controller', action, until: runtime.now() + 1800 };
-    input.bindRenderDirty = true;
-    const message = `${controllerName(code)} is already bound to ${bindLabels[conflict]}.`;
+    const message = `${controllerName(code)} is already bound to ${result.conflict.label}.`;
     setBindStatus(ui, message, true);
     setControllerStatus(ui, message, true);
     return;
   }
-  bindGamepad(input, action, code);
-  const message = `${bindLabels[action]} bound to ${controllerName(code)}.`;
+  game.settings = saveSettings(result.settings, runtime.storage);
+  game.inputRuntime = createGameInputRuntime(game.settings);
+  game.inputAdapter = createBrowserInputAdapter(game.inputRuntime, { now: game.runtime?.now || runtime.now });
+  input.controllerBindAction = null;
+  input.bindCapture = null;
+  input.bindDeadline = 0;
+  input.suppressMenuInputOnce = true;
+  const message = `${bindLabel(action)} bound to ${controllerName(code)}.`;
   setBindStatus(ui, message);
   setControllerStatus(ui, message);
 }

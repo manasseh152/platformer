@@ -1,4 +1,4 @@
-import { bindLabels, bindText, controllerBindText, controllerName, defaultBinds, defaultGamepadBinds } from '../../input/legacy-bind-state.js';
+import { bindGroups, bindLabel, rowText } from '../../input/semantic-bind-rows.js';
 import { motionStatusText } from '../transitions.js';
 import { browserRuntime } from '../../runtime/browser-runtime.js';
 import { formatRunTime, getBestTime } from '../../speedrun/speedrun.js';
@@ -23,12 +23,6 @@ export const settingsCategories = [
   { id: 'accessibility', title: 'Accessibility', description: categoryDescriptions.accessibility },
   { id: 'graphics', title: 'Graphics', description: categoryDescriptions.graphics },
   { id: 'advanced', title: 'Advanced', description: categoryDescriptions.advanced }
-];
-
-const bindGroups = [
-  { title: 'Movement', actions: ['left', 'right', 'jump', 'dash'] },
-  { title: 'Actions', actions: ['attack'] },
-  { title: 'System', actions: ['pause', 'restart'] }
 ];
 
 const keycaps = text => text.split(' / ').map(part => `<span class="ds-keycap">${part}</span>`).join(' ');
@@ -108,18 +102,18 @@ function controllerDebugger(game) {
 
 function bindRow(game, device, action) {
   const listening = device === 'controller' ? game.input.controllerBindAction === action : game.input.listeningFor === action;
-  const text = device === 'controller' ? controllerBindText(game.input, action) : bindText(game.input, action);
+  const text = rowText(game.settings, action, device);
   const prompt = device === 'controller' ? 'Press controller input…' : 'Press a key…';
   const value = listening ? prompt : keycaps(text);
   const error = game.input.bindError?.device === device && game.input.bindError?.action === action;
   return `<button type="button" class="ds-setting-row ds-setting-row--bind${listening ? ' is-listening' : ''}${error ? ' is-error' : ''}" data-bind-action="${action}" data-bind-device="${device}">
-    <span class="ds-setting-row__copy"><span class="ds-setting-row__label">${bindLabels[action]}</span></span>
+    <span class="ds-setting-row__copy"><span class="ds-setting-row__label">${bindLabel(action)}</span></span>
     <span class="ds-setting-row__value bind-keycaps">${value}</span>
   </button>`;
 }
 
 function bindSections(game, device) {
-  return bindGroups.map(group => section(group.title, `<div class="settings-row-list">${group.actions.map(action => bindRow(game, device, action)).join('')}</div>`)).join('');
+  return bindGroups.map(group => section(group.title, `<div class="settings-row-list">${group.rows.map(action => bindRow(game, device, action)).join('')}</div>`)).join('');
 }
 
 function pageNote(text) {
@@ -163,7 +157,7 @@ function renderController(game) {
   game.input.controllerDebugExitStartedAt = 0;
   return `${pageNote('Select a row, then press a controller input. B / Circle cancels. Duplicate buttons are blocked.')}
     ${section('Controller Setup', `<div class="settings-row-list">
-      ${valueRow({ id: 'controller-enabled', label: 'Controller Input', value: onOff(game.input.useController), description: 'Allow gamepad input during play and menus.', kind: 'toggle' })}
+      ${valueRow({ id: 'controller-enabled', label: 'Controller Input', value: onOff(game.settings.input.slots.player1.devices.gamepad.enabled), description: 'Allow gamepad input during play and menus.', kind: 'toggle' })}
     </div><div id="controllerStatus" class="status-line"></div>`)}
     ${section('Diagnostics', `<div class="settings-category-list settings-subpage-list">${controllerSubpages.map(controllerSubpageCard).join('')}</div>`)}
     ${bindSections(game, 'controller')}
@@ -279,6 +273,6 @@ export function renderSettings(game) {
   renderSettingsHub(game);
 }
 
-export function defaultActionsForDevice(device) {
-  return Object.keys(device === 'controller' ? defaultGamepadBinds : defaultBinds);
+export function defaultActionsForDevice() {
+  return Object.keys(bindGroups.flatMap(group => group.rows).reduce((acc, row) => ({ ...acc, [row]: true }), {}));
 }

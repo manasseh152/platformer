@@ -5,8 +5,7 @@ import { syncHintLayer } from '#/app/ui/hint-layer.js';
 import { handleMenuInput } from '#/app/ui/menu/menu-input.js';
 import { setupMenu } from '#/app/ui/menu/menu-setup.js';
 import { activeMenuRoot, setPaused, startGame } from '#/app/ui/menu/menu-shell.js';
-import { handleListeningKey, renderBinds } from '#/app/ui/settings/settings-actions.js';
-import { syncSettingsFromInput } from '#/app/settings/settings.js';
+import { handleListeningKey } from '#/app/ui/settings/settings-actions.js';
 import { setupPresentationResize } from '#/app/presentation/resize.js';
 import { resetGame } from '#/app/game-state.js';
 import { createGameApp } from '#/app/game-app.js';
@@ -41,7 +40,7 @@ syncGymApi(game, runtime);
 setupPresentationResize(game);
 
 addEventListener('keydown', e => {
-  const { input, player } = game;
+  const { input } = game;
 
   if (input.listeningFor) {
     e.preventDefault();
@@ -80,14 +79,7 @@ addEventListener('keydown', e => {
   if (e.code.startsWith('Arrow')) setInputScheme(game, 'arrows');
   else if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) setInputScheme(game, 'wasd');
 
-  const pauseHit = input.binds.pause.includes(e.code);
   if (!isStarted(game) && ['Enter','Space'].includes(e.code)) startGame(game, runtime);
-  else if (!game.inputRuntime && isStarted(game) && !player.dead && !isWon(game) && pauseHit) {
-    e.preventDefault();
-    if (!e.repeat) setPaused(game, !isPaused(game), runtime);
-    input.keys.add(e.code);
-    return;
-  }
   if (!isPaused(game) && !input.keys.has(e.code)) input.pressed.add(e.code);
   input.keys.add(e.code);
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
@@ -105,14 +97,8 @@ addEventListener('pointerup', () => {
 function frame(now = runtime.now()) {
   const dt = Math.min(.033, (now - game.clock.last) / 1000);
   game.clock.last = now;
-  game.inputAdapter?.beginFrame({ controllerEnabled: game.input.useController });
+  game.inputAdapter?.beginFrame({ controllerEnabled: game.settings.input.slots.player1.devices.gamepad.enabled });
   pollGamepads(runtime, game);
-  if (game.input.bindRenderDirty) {
-    game.input.bindRenderDirty = false;
-    syncSettingsFromInput(game, runtime.storage);
-    runtime.emit('settings.input-sync', { controllerEnabled: game.settings.input.slots.player1.devices.gamepad.enabled });
-    renderBinds(game);
-  }
   const menuUsedGamepad = handleMenuInput(game);
   const globalInput = game.inputRuntime?.route(['global']);
   const devToolsHandled = handleDevToolsInput(game, globalInput, { setPaused: (game, value) => setPaused(game, value, runtime) });

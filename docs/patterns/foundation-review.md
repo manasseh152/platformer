@@ -93,22 +93,17 @@ Direction:
 - Do not immediately migrate UI into scene-stack scenes.
 - After decomposition, evaluate migrating one overlay/page at a time if scene ownership simplifies lifecycle/input.
 
-### Partially completed — Input presentation is separated from legacy input state
+### Completed — Input presentation and remap UI use semantic input state
 
 Evidence:
 
 - Semantic core input exists under `src/core/input/**` and remains the source of truth for runtime actions.
-- Transitional bind state now lives in `src/app/input/legacy-bind-state.js`.
+- Semantic settings-row projection lives in `src/app/input/semantic-bind-rows.js`; the old `src/app/input/legacy-bind-state.js` module was deleted.
 - DOM hint/scheme rendering now lives in `src/app/input/input-presentation.js`.
 - Browser gamepad polling, controller diagnostics, and bind-status UI helpers now live in `src/app/input/controller-diagnostics.js`.
 - Gameplay HUD/input hint presentation is now isolated in `src/app/ui/gameplay-hud.js`.
 - `tests/core-boundary.spec.js` asserts the world renderer does not import HUD/input presentation modules or the legacy input facade.
-
-Follow-up:
-
-- The legacy `src/input.js` facade was removed after all repo-local imports moved to focused modules.
-- Menu/settings code still uses transitional bind concepts and should migrate gradually when the settings UI is decomposed.
-- Add characterization tests before changing actual bind/remap behavior.
+- Keyboard/controller settings rows render and commit directly through `settings.input.bindings`.
 
 ### Completed — Catalog local drafts no longer depend on editor draft logic
 
@@ -225,7 +220,7 @@ Direction:
 
 | Candidate | Status | Removal condition |
 | --- | --- | --- |
-| Legacy bind state/helpers from former `src/input.js` | Deleted/focused | Transitional bind helpers now live in `src/app/input/legacy-bind-state.js`; remove individual helpers as menu/settings migrate to semantic input. |
+| Legacy bind state/helpers from former `src/input.js` | Completed | `src/input.js` and `src/app/input/legacy-bind-state.js` are deleted; settings/remap rows use semantic `settings.input.bindings`. |
 | `src/editor/tilemap-draft.js` compatibility facade | Delete after migration | Editor imports `src/core/tilemaps/draft.js` and `src/content/tilemaps/draft-compiler.js` directly. |
 | `game.player`, `game.enemies`, `game.camera` mirrors | Delete after migration | Callers use `game.gameplaySession.*`. |
 | Tilemap compatibility facade in `src/core/tilemaps/tilemap.js` | Keep/migrate opportunistically | Consumers import focused modules directly when touching related code. |
@@ -238,7 +233,6 @@ Existing tests cover many broad flows: core boundaries, core input, settings, ga
 
 Before risky refactors, add characterization tests for:
 
-- physics/gameplay input behavior when migrating old physics tests from legacy bind state to core input runtime; 
 - menu back/focus behavior if changing focus/page routing;
 - settings bind/remap behavior if changing input presentation or settings action dispatch;
 - editor save/preview/import/export when changing command payloads or browser storage side effects;
@@ -274,7 +268,8 @@ Completed on 2026-05-08.
 
 Changed files:
 
-- `src/app/input/legacy-bind-state.js`
+- `src/app/input/semantic-bind-rows.js`
+- `src/app/input/input-ui-state.js`
 - `src/app/input/input-presentation.js`
 - `src/app/input/controller-diagnostics.js`
 - removed `src/input.js`

@@ -1,7 +1,9 @@
 import { setBindStatus, setControllerStatus } from '../../input/controller-diagnostics.js';
-import { bindKey, bindLabels, findBindConflict, resetControllerInput, resetDefaultGamepadBinds, resetDefaultKeyBinds } from '../../input/legacy-bind-state.js';
 import { createBindCapture } from '#/core/input/index.js';
-import { syncSettingsFromInput, replaceSettings, saveSettings, serializeSettings } from '../../settings/settings.js';
+import { createBrowserInputAdapter, createGameInputRuntime } from '../../input/browser-input-adapter.js';
+import { bindLabel, commitBindRow, resetBindRowsToDefaults } from '../../input/semantic-bind-rows.js';
+import { bindingLabel } from '../../input/input-hints.js';
+import { replaceSettings, saveSettings, serializeSettings } from '../../settings/settings.js';
 import { applyMotionPreference } from '../transitions.js';
 import { renderSettings, renderSettingsCategory } from './settings-view.js';
 import { syncGymApi } from '../../testing/gym.js';
@@ -18,7 +20,6 @@ export function cancelBindListening(game, message = '') {
   input.listeningFor = null;
   input.controllerBindAction = null;
   input.bindCapture = null;
-  input.bindMode = 'replace';
   input.bindDeadline = 0;
   if (game.bindListenTimer) clearTimeout(game.bindListenTimer);
   game.bindListenTimer = null;
@@ -32,7 +33,6 @@ export function startBindListening(game, action, type, runtime = browserRuntime)
   input.bindError = null;
   input.listeningFor = type === 'keyboard' ? action : null;
   input.controllerBindAction = type === 'controller' ? action : null;
-  input.bindMode = 'replace';
   input.bindDeadline = runtime.now() + 6000;
   input.bindCapture = createBindCapture({
     actionId: action,
@@ -42,7 +42,7 @@ export function startBindListening(game, action, type, runtime = browserRuntime)
       ? [{ deviceType: 'gamepad', control: 'button', index: 1 }]
       : [{ deviceType: 'keyboard', control: 'key', code: 'Escape' }]
   });
-  const label = bindLabels[action];
+  const label = bindLabel(action);
   setBindStatus(ui, type === 'keyboard' ? `Press a key for ${label}. Escape cancels.` : `Press a controller button for ${label}. B / Circle cancels.`);
   renderSettingsCategory(game);
   game.bindListenTimer = setTimeout(() => cancelBindListening(game, 'Listening cancelled.'), 6000);
@@ -127,15 +127,32 @@ function clearRecords(game, runtime = browserRuntime) {
   if (game.ui.settingsStatus) game.ui.settingsStatus.textContent = 'Speed run records cleared.';
 }
 
+function refreshInputRuntime(game, runtime = browserRuntime) {
+  game.inputRuntime = createGameInputRuntime(game.settings);
+  game.inputAdapter = createBrowserInputAdapter(game.inputRuntime, { now: game.runtime?.now || runtime.now });
+}
+
+function commitSettings(game, runtime = browserRuntime) {
+  game.settings = saveSettings(game.settings, runtime.storage);
+  refreshInputRuntime(game, runtime);
+  return game.settings;
+}
+
 function toggleController(game, runtime = browserRuntime) {
   const { input, ui } = game;
-  input.useController = !input.useController;
-  resetControllerInput(input);
-  syncSettingsFromInput(game, runtime.storage);
+  const device = game.settings.input.slots.player1.devices.gamepad;
+  device.enabled = !device.enabled;
+  input.gamepadDown.clear();
+  input.gamepadPressed.clear();
+  input.previousGamepadDown.clear();
+  input.controllerBindAction = null;
+  input.bindCapture = null;
+  input.bindDeadline = 0;
+  commitSettings(game, runtime);
   runtime.emit('settings.change', { key: 'controllerEnabled', value: game.settings.input.slots.player1.devices.gamepad.enabled });
   renderSettingsCategory(game);
-  setBindStatus(ui, input.useController ? 'Controller enabled.' : 'Controller disabled.');
-  setControllerStatus(ui, input.useController ? 'Controller enabled.' : 'Controller disabled.');
+  setBindStatus(ui, device.enabled ? 'Controller enabled.' : 'Controller disabled.');
+  setControllerStatus(ui, device.enabled ? 'Controller enabled.' : 'Controller disabled.');
 }
 
 function setControllerSubpage(game, pageId, callbacks = {}) {
@@ -201,15 +218,13 @@ function toggleDeveloperMode(game, runtime = browserRuntime, callbacks = {}) {
 }
 
 function resetBinds(game, device, runtime = browserRuntime) {
-  const { input, ui } = game;
-  if (device === 'controller') {
-    resetDefaultGamepadBinds(input);
-    setBindStatus(ui, 'Restored controller defaults.');
-  } else {
-    resetDefaultKeyBinds(input);
-    setBindStatus(ui, 'Restored keyboard defaults.');
-  }
-  syncSettingsFromInput(game, runtime.storage);
+  game.input.listeningFor = null;
+  game.input.controllerBindAction = null;
+  game.input.bindCapture = null;
+  game.input.bindDeadline = 0;
+  game.settings = resetBindRowsToDefaults(game.settings, device);
+  commitSettings(game, runtime);
+  setBindStatus(game.ui, device === 'controller' ? 'Restored controller defaults.' : 'Restored keyboard defaults.');
   runtime.emit('settings.binds-reset', { device });
   renderSettingsCategory(game);
 }
@@ -245,19 +260,26 @@ export function handleListeningKey(game, code, runtime = browserRuntime) {
   if (!action) return;
   const captured = game.input.bindCapture?.event?.({ code, timestamp: runtime.now() });
   if (captured?.status === 'cancelled' || code === 'Escape') return cancelBindListening(game, 'Listening cancelled.');
+  if (captured?.status !== 'captured') return;
   if (game.bindListenTimer) clearTimeout(game.bindListenTimer);
   game.bindListenTimer = null;
-  const conflict = findBindConflict(game.input, 'keyboard', action, code);
-  if (conflict) {
+  const result = commitBindRow(game.settings, action, captured.binding, { device: 'keyboard' });
+  if (!result.ok) {
+    game.input.listeningFor = null;
+    game.input.bindCapture = null;
+    game.input.bindDeadline = 0;
     game.input.bindError = { device: 'keyboard', action, until: runtime.now() + 1800 };
-    setBindStatus(game.ui, `${code.replace(/^Key/, '')} is already bound to ${bindLabels[conflict]}.`, true);
+    setBindStatus(game.ui, `${bindingLabel(captured.binding)} is already bound to ${result.conflict.label}.`, true);
     renderSettingsCategory(game);
     setTimeout(() => renderSettingsCategory(game), 1850);
     return;
   }
-  bindKey(game.input, action, code);
-  syncSettingsFromInput(game, runtime.storage);
+  game.settings = result.settings;
+  game.input.listeningFor = null;
+  game.input.bindCapture = null;
+  game.input.bindDeadline = 0;
+  commitSettings(game, runtime);
   runtime.emit('settings.bind-changed', { device: 'keyboard', action, code });
-  setBindStatus(game.ui, `${bindLabels[action]} updated.`);
+  setBindStatus(game.ui, `${bindLabel(action)} updated.`);
   renderSettingsCategory(game);
 }

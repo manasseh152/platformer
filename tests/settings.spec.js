@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { applySettingsToGame, defaultSettings, saveSettings, syncSettingsFromInput } from '#/app/settings/settings.js';
-import { createInputState } from '#/app/input/legacy-bind-state.js';
+import { createInputState } from '#/app/input/input-ui-state.js';
+import { commitBindRow, resetBindRowsToDefaults } from '#/app/input/semantic-bind-rows.js';
 
 function memoryStorage() {
   const values = new Map();
@@ -38,18 +39,35 @@ test('app settings persist structured input as source of truth', () => {
   expect(storage.getItem('chibi.settings')).not.toContain('keyboardBinds');
 });
 
-test('transitional bind UI sync keeps both move directions in semantic axis binding', () => {
-  const storage = memoryStorage();
+test('semantic bind rows update one move direction without legacy bind state', () => {
   const game = gameWithSettings();
   applySettingsToGame(game);
 
-  game.input.binds.left = ['KeyQ'];
-  game.input.binds.right = ['KeyE'];
-  syncSettingsFromInput(game, storage);
+  const result = commitBindRow(game.settings, 'left', { deviceType: 'keyboard', control: 'key', code: 'KeyQ' }, { device: 'keyboard' });
 
-  const moveX = game.settings.input.bindings['player.moveX'];
-  expect(moveX).toEqual(expect.arrayContaining([
+  expect(result.ok).toBe(true);
+  expect(result.settings.input.bindings['player.moveX']).toEqual(expect.arrayContaining([
     expect.objectContaining({ deviceType: 'keyboard', code: 'KeyQ', scale: -1 }),
-    expect.objectContaining({ deviceType: 'keyboard', code: 'KeyE', scale: 1 })
+    expect.objectContaining({ deviceType: 'keyboard', code: 'KeyD', scale: 1 })
+  ]));
+  expect(result.settings.input.bindings['player.moveX']).not.toEqual(expect.arrayContaining([
+    expect.objectContaining({ deviceType: 'keyboard', code: 'KeyA', scale: -1 })
+  ]));
+});
+
+test('semantic bind rows reject cross-action duplicate bindings and reset by device', () => {
+  const game = gameWithSettings();
+  applySettingsToGame(game);
+
+  const conflict = commitBindRow(game.settings, 'jump', { deviceType: 'keyboard', control: 'key', code: 'KeyJ' }, { device: 'keyboard' });
+  expect(conflict).toMatchObject({ ok: false, conflict: { rowId: 'attack', label: 'Attack' } });
+
+  const changed = commitBindRow(game.settings, 'jump', { deviceType: 'keyboard', control: 'key', code: 'KeyQ' }, { device: 'keyboard' }).settings;
+  const reset = resetBindRowsToDefaults(changed, 'keyboard');
+  expect(reset.input.bindings['player.jump']).toEqual(expect.arrayContaining([
+    expect.objectContaining({ deviceType: 'keyboard', code: 'Space' })
+  ]));
+  expect(reset.input.bindings['player.jump']).not.toEqual(expect.arrayContaining([
+    expect.objectContaining({ deviceType: 'keyboard', code: 'KeyQ' })
   ]));
 });

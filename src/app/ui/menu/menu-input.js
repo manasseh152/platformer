@@ -1,4 +1,3 @@
-import { menuButtons } from '../../input/legacy-bind-state.js';
 import { ensureMenuFocus } from '#/ui/navigation.js';
 import { isStarted } from '../../app-state.js';
 import {
@@ -86,27 +85,6 @@ function handleMenuRouteInput(game, route) {
   return false;
 }
 
-function handleLegacyGamepadMenuInput(game) {
-  const { input } = game;
-  if (input.gamepadPressed.has(menuButtons.previousTab) && moveSettingsTab(game, -1)) return true;
-  if (input.gamepadPressed.has(menuButtons.nextTab) && moveSettingsTab(game, 1)) return true;
-  if (input.gamepadPressed.has(menuButtons.left) && moveHorizontalGroupFocus(game, -1)) return true;
-  if (input.gamepadPressed.has(menuButtons.right) && moveHorizontalGroupFocus(game, 1)) return true;
-  if (input.gamepadPressed.has(menuButtons.up)) {
-    if (moveHorizontalGroupFocus(game, 1)) return true;
-    moveMenuFocus(game, -1);
-    return true;
-  }
-  if (input.gamepadPressed.has(menuButtons.down)) {
-    if (moveHorizontalGroupFocus(game, -1)) return true;
-    moveMenuFocus(game, 1);
-    return true;
-  }
-  if (input.gamepadPressed.has(menuButtons.accept)) return activateSemanticMenuAction(game, 'menu.accept');
-  if (input.gamepadPressed.has(menuButtons.back)) return activateSemanticMenuAction(game, 'menu.back');
-  return false;
-}
-
 function handleControllerDebuggerExitHold(game) {
   const { input, ui } = game;
   const inControllerDebugger = game.menu.page === 'settings-category' && game.menu.settingsCategory === 'controller' && game.menu.settingsSubpage === 'diagnostics';
@@ -138,7 +116,7 @@ export function handleMenuInput(game) {
   ensureMenuFocus(root, game.menu.lastFocused, el => focusAndReveal(game, el));
   const route = game.inputRuntime?.route(['menu']);
   if (route && handleMenuRouteInput(game, route)) return true;
-  return input.useController && handleLegacyGamepadMenuInput(game);
+  return false;
 }
 
 export const handleGamepadMenuInput = handleMenuInput;

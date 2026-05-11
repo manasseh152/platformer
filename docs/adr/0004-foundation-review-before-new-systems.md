@@ -105,10 +105,9 @@ Initial slice order:
 
 2. **Untangle input presentation from legacy input state** — completed
    - Invariant: semantic core input remains the source of truth, while hints/remap/controller presentation are separated from transitional legacy bind state.
-   - Implemented: legacy bind state, input hint presentation, and controller diagnostics now live in focused `src/app/input/` modules.
+   - Implemented: input hint presentation, semantic settings-row projection, input UI state, and controller diagnostics now live in focused `src/app/input/` modules.
    - Implemented: world rendering imports input presentation directly, protected by a core-boundary test.
-   - Implemented: removed the legacy `src/input.js` facade after repo-local consumers migrated.
-   - Remaining follow-up: add characterization tests before changing actual bind/remap behavior.
+   - Implemented: removed the legacy `src/input.js` facade and later deleted `src/app/input/legacy-bind-state.js`; settings/remap rows now commit directly to `settings.input.bindings`.
 
 3. **Decompose menu/settings/scenario browser ownership** — completed
    - Invariant: `src/app/ui/menu/**` stops being the single owner of unrelated UI flows while preserving current DOM behavior.
