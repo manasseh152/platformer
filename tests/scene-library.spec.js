@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createSceneLibrary, resolveSceneComposition } from '../src/scenes/library.js';
+import { createSceneLibrary, resolveSceneComposition } from '#/scenes/library.js';
 
 test('scene library registers and creates scene factories', () => {
   const library = createSceneLibrary();

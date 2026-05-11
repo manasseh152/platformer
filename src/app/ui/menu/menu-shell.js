@@ -1,15 +1,15 @@
-import { renderInputHints } from '../input/input-presentation.js';
-import { syncHintLayer } from './hint-layer.js';
-import { currentFocusElement, ensureMenuFocus, moveHorizontalGroupFocus as moveHorizontalFocus, moveLinearFocus } from '../../ui/navigation.js';
-import { setPausedFlag } from '../../state.js';
-import { applyMotionPreference, runDOMTransition, shouldReduceMotion } from '../../transitions.js';
-import { renderSettings, refreshDynamicRefs, selectedCategory, settingsCategories } from '../../settings-ui.js';
-import { browserRuntime } from '../../runtime.js';
-import { renderScenarioBrowser } from './scenario-browser.js';
-import { cancelBindListening } from './settings-actions.js';
-import { moveSettingsTab as moveSettingsTabSelection, setSettingsTab as setSettingsTabSelection } from './settings-navigation.js';
-import { isPaused, isStarted, isWon, setStarted } from '../app-state.js';
-import { markSpeedRunPaused, prepareSpeedRunAttempt } from '../../speedrun.js';
+import { renderInputHints } from '../../input/input-presentation.js';
+import { syncHintLayer } from '../hint-layer.js';
+import { currentFocusElement, ensureMenuFocus, moveHorizontalGroupFocus as moveHorizontalFocus, moveLinearFocus } from '#/ui/navigation.js';
+import { setPausedFlag } from '../../game-state.js';
+import { applyMotionPreference, runDOMTransition, shouldReduceMotion } from '../transitions.js';
+import { renderSettings, refreshDynamicRefs, selectedCategory, settingsCategories } from '../settings/settings-view.js';
+import { browserRuntime } from '../../runtime/browser-runtime.js';
+import { renderScenarioBrowser } from '../scenario-browser.js';
+import { cancelBindListening } from '../settings/settings-actions.js';
+import { moveSettingsTab as moveSettingsTabSelection, setSettingsTab as setSettingsTabSelection } from '../settings/settings-navigation.js';
+import { isPaused, isStarted, isWon, setStarted } from '../../app-state.js';
+import { markSpeedRunPaused, prepareSpeedRunAttempt } from '../../speedrun/speedrun.js';
 
 const pageElement = (ui, page) => ({ main: ui.pauseMainPage, 'level-select': ui.levelSelectPage, settings: ui.settingsHubPage, 'settings-category': ui.settingsCategoryPage })[page];
 
@@ -26,6 +26,7 @@ export function updateMenuChrome(game) {
   ui.pauseScreen.dataset.menuPage = menu.page;
   ui.pauseScreen.dataset.menuDirection = menu.direction;
   ui.pauseScreen.dataset.currentSettingsCategory = menu.settingsCategory || '';
+  ui.pauseScreen.dataset.currentSettingsSubpage = menu.settingsSubpage || '';
   document.body.dataset.menuOrigin = menu.origin;
   const category = selectedCategory(game);
   const scenarioBrowserTitle = game.settings.developerMode || game.session?.developerModeOverride ? 'Scenario Browser' : 'Level Select';
@@ -66,6 +67,9 @@ export function moveHorizontalGroupFocus(game, dx) {
 }
 
 export function setSettingsTab(game, categoryId) {
+  game.input.controllerDebugLock = false;
+  game.input.controllerDebugExitStartedAt = 0;
+  game.menu.settingsSubpage = null;
   return setSettingsTabSelection(game, categoryId, { updateMenuChrome, focusElement: el => focusAndReveal(game, el) });
 }
 
@@ -82,6 +86,7 @@ export function setMenuPage(game, page, direction = 'forward', category = null) 
     game.menu.page = page;
     game.menu.direction = direction;
     game.menu.settingsCategory = category;
+    game.menu.settingsSubpage = null;
     renderSettings(game);
     if (page === 'level-select') renderScenarioBrowser(game);
     updateMenuChrome(game);
@@ -93,6 +98,7 @@ export function openSettings(game, origin) {
     game.menu.origin = origin;
     game.menu.page = 'settings-category';
     game.menu.settingsCategory = settingsCategories[0]?.id || null;
+    game.menu.settingsSubpage = null;
     game.menu.direction = 'forward';
     renderSettings(game);
     updateMenuChrome(game);
@@ -104,6 +110,7 @@ export function openScenarioBrowser(game, origin) {
     game.menu.origin = origin;
     game.menu.page = 'level-select';
     game.menu.settingsCategory = null;
+    game.menu.settingsSubpage = null;
     game.menu.direction = 'forward';
     renderScenarioBrowser(game);
     updateMenuChrome(game);
@@ -115,18 +122,34 @@ export function closeScenarioBrowser(game) {
   commitMenuPageChange(game, () => {
     game.menu.page = 'main';
     game.menu.settingsCategory = null;
+    game.menu.settingsSubpage = null;
     game.menu.direction = 'back';
     game.menu.origin = origin === 'start' ? 'none' : 'pause';
     updateMenuChrome(game);
   }, () => focusAndReveal(game, origin === 'start' ? game.ui.startLevelSelectButton : game.ui.levelSelectButton), origin === 'start' ? 'menu-to-start' : 'menu-back');
 }
 
+export function closeSettingsSubpage(game) {
+  if (!game.menu.settingsSubpage) return false;
+  commitMenuPageChange(game, () => {
+    game.input.controllerDebugLock = false;
+    game.input.controllerDebugExitStartedAt = 0;
+    game.menu.settingsSubpage = null;
+    renderSettings(game);
+    updateMenuChrome(game);
+  }, () => focusFirstMenuItem(game), 'menu-back');
+  return true;
+}
+
 export function closeSettings(game) {
   const origin = game.menu.origin;
   commitMenuPageChange(game, () => {
     cancelBindListening(game);
+    game.input.controllerDebugLock = false;
+    game.input.controllerDebugExitStartedAt = 0;
     game.menu.page = 'main';
     game.menu.settingsCategory = null;
+    game.menu.settingsSubpage = null;
     game.menu.direction = 'back';
     game.menu.origin = origin === 'start' ? 'none' : 'pause';
     updateMenuChrome(game);
@@ -134,6 +157,7 @@ export function closeSettings(game) {
 }
 
 export function goBack(game) {
+  if (game.menu.page === 'settings-category' && closeSettingsSubpage(game)) return true;
   if (game.menu.page === 'settings-category') return closeSettings(game);
   if (game.menu.page === 'settings') return closeSettings(game);
   if (game.menu.page === 'level-select') return closeScenarioBrowser(game);
@@ -145,6 +169,7 @@ export function setPaused(game, value, runtime = browserRuntime) {
     game.menu.origin = 'pause';
     game.menu.page = 'main';
     game.menu.settingsCategory = null;
+    game.menu.settingsSubpage = null;
     document.body.dataset.menuOrigin = 'pause';
     setPausedFlag(game, value, runtime);
     updateMenuChrome(game);
@@ -158,6 +183,7 @@ export function startGame(game, runtime = browserRuntime) {
   runDOMTransition(game, () => {
     game.menu.page = 'main';
     game.menu.settingsCategory = null;
+    game.menu.settingsSubpage = null;
     document.body.dataset.menuOrigin = 'pause';
     setStarted(game, true);
     game.clock.last = runtime.now();
@@ -175,6 +201,7 @@ export function returnToMainMenu(game, runtime = browserRuntime) {
     setPausedFlag(game, false, runtime);
     game.menu.page = 'main';
     game.menu.settingsCategory = null;
+    game.menu.settingsSubpage = null;
     game.menu.origin = 'pause';
     document.body.classList.remove('playing', 'paused');
     document.body.dataset.menuOrigin = 'pause';

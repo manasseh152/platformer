@@ -1,4 +1,4 @@
-import { isPaused, isStarted, isWon } from './app/app-state.js';
+import { isPaused, isStarted, isWon } from '../app-state.js';
 
 function activeElementSnapshot() {
   const active = document.activeElement;

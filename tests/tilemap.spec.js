@@ -4,7 +4,7 @@ import { globSync } from 'node:fs';
 import {
   act01Level1Tilemap as level,
   getDefaultTilemap as getDefaultTilemap
-} from '../src/content/tilemaps/registry.js';
+} from '#/content/tilemaps/registry.js';
 import {
   createEnemies,
   createEnemySpawns,
@@ -22,11 +22,11 @@ import {
   tileRect,
   tileToWorld,
   worldToTile
-} from '../src/core/tilemaps/tilemap.js';
-import { CELL_SIZE } from '../src/core/constants.js';
-import { finishGateObject, playerSpawner, renderTerrain, slimeSpawner, solidTerrain } from '../src/content/tilemaps/objects.js';
-import { TERRAIN_KIND, terrainLayer } from '../src/core/tilemaps/terrain-layer.js';
-import { resolveInitialTilemap } from '../src/tilemap-manager.js';
+} from '#/core/tilemaps/tilemap.js';
+import { CELL_SIZE } from '#/core/constants.js';
+import { finishGateObject, playerSpawner, renderTerrain, slimeSpawner, solidTerrain } from '#/content/tilemaps/objects.js';
+import { TERRAIN_KIND, terrainLayer } from '#/core/tilemaps/terrain-layer.js';
+import { resolveInitialTilemap } from '#/app/tilemaps/tilemap-manager.js';
 import { defineContainedTestTilemap } from './helpers/contained-tilemap.js';
 
 function visibleTerrainSet(tilemap) {

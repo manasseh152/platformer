@@ -97,10 +97,21 @@ function updateControllerDebugger(ui, pad, gamepadDown, inputLocked = false) {
     el.classList.toggle('is-active', down);
     el.setAttribute('aria-pressed', down ? 'true' : 'false');
   }
+  const axisValue = axis => {
+    if (axis === 6 || axis === 7) return pad?.axes?.[axis] ?? pad?.buttons?.[axis]?.value ?? 0;
+    return pad?.axes?.[axis] ?? 0;
+  };
+  const snappedAxis = axis => {
+    const value = axisValue(axis);
+    return Math.abs(value) < .08 ? 0 : value;
+  };
+  root.style.setProperty('--stick-left-x', String(snappedAxis(0)));
+  root.style.setProperty('--stick-left-y', String(snappedAxis(1)));
+  root.style.setProperty('--stick-right-x', String(snappedAxis(2)));
+  root.style.setProperty('--stick-right-y', String(snappedAxis(3)));
   for (const el of root.querySelectorAll('[data-controller-debug-axis]')) {
     const axis = Number(el.dataset.controllerDebugAxis);
-    const value = pad?.axes?.[axis] ?? 0;
-    const snapped = Math.abs(value) < .08 ? 0 : value;
+    const snapped = snappedAxis(axis);
     el.style.setProperty('--axis-value', String(snapped));
     el.classList.toggle('is-active', Math.abs(snapped) > .35);
     const valueEl = root.querySelector(`[data-controller-axis-value="${axis}"]`);

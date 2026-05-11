@@ -1,13 +1,13 @@
 import { expect, test } from '@playwright/test';
-import { CELL_SIZE } from '../src/core/constants.js';
-import { TERRAIN_MASK, normalizeTerrainMask } from '../src/core/tilemaps/terrain-mask.js';
-import { defineTilemap } from '../src/core/tilemaps/tilemap.js';
-import { TERRAIN_KIND, terrainLayer } from '../src/core/tilemaps/terrain-layer.js';
+import { CELL_SIZE } from '#/core/constants.js';
+import { TERRAIN_MASK, normalizeTerrainMask } from '#/core/tilemaps/terrain-mask.js';
+import { defineTilemap } from '#/core/tilemaps/tilemap.js';
+import { TERRAIN_KIND, terrainLayer } from '#/core/tilemaps/terrain-layer.js';
 import {
   CONTAINED_TERRAIN_DRAW_ORDER,
   planContainedTerrainTileVisuals,
   selectTerrainVisualVariant
-} from '../src/render/contained-terrain.js';
+} from '#/render/contained-terrain.js';
 
 const M = TERRAIN_MASK;
 const baseTile = { layer: 'terrain', kind: TERRAIN_KIND.GRASS, x: 32, y: 48, w: CELL_SIZE.BUILD, h: CELL_SIZE.BUILD, col: 2, row: 3, mask: 0, rawMask: 0 };

@@ -1116,6 +1116,10 @@ body[data-menu-origin="start"] #pauseScreen[data-menu-page="settings-category"] 
   margin: 0;
   font-size: clamp(calc(44px * var(--menu-ui-scale)), calc(7.4vw * var(--menu-ui-scale)), calc(88px * var(--menu-ui-scale)));
 }
+#pauseScreen[data-menu-page="settings-category"][data-current-settings-category="controller"] #menuTitle {
+  max-width: 10ch;
+  font-size: clamp(calc(38px * var(--menu-ui-scale)), calc(5.4vw * var(--menu-ui-scale)), calc(58px * var(--menu-ui-scale)));
+}
 #pauseScreen[data-menu-page="settings"] .menu-pages,
 #pauseScreen[data-menu-page="settings-category"] .menu-pages {
   grid-column: 2;
@@ -1234,6 +1238,23 @@ body[data-menu-origin="start"] #pauseScreen[data-menu-page="settings-category"] 
 .local-draft-actions .ds-button { min-height: 34px; padding: 7px 10px; }
 .local-draft-row.is-invalid { border-color: rgba(255,94,80,.42); }
 .settings-category-list { margin-top: 6px; }
+.settings-subpage-list { grid-template-columns: 1fr; }
+.settings-subpage-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.settings-back-button {
+  min-height: 42px;
+  padding: 10px 18px;
+  border-radius: 999px;
+}
+.settings-subpage-header__crumb {
+  color: rgba(255,246,232,.88);
+  font: 900 14px/1.2 var(--font-ui);
+}
 .settings-page-note {
   margin: 2px 0 4px;
   padding: 0 2px;
@@ -1333,90 +1354,124 @@ body[data-menu-origin="start"] #pauseScreen[data-menu-page="settings-category"] 
 .controller-debug code { display: block; min-height: 24px; margin: 6px 0 10px; color: var(--color-muted); font: 12px var(--font-mono); word-break: break-word; }
 .controller-debug select { width: 100%; margin-top: 10px; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--color-line); background: rgba(0,0,0,.34); color: var(--color-cream); font: 13px var(--font-ui); }
 .controller-debugger {
+  --pad-line: rgba(246,250,255,.78);
+  --pad-muted: rgba(246,250,255,.38);
+  --pad-hot: var(--color-accent);
+  --stick-left-x: 0;
+  --stick-left-y: 0;
+  --stick-right-x: 0;
+  --stick-right-y: 0;
   position: relative;
   display: grid;
-  grid-template-columns: minmax(150px, .72fr) minmax(0, 1fr);
-  gap: 12px;
+  gap: 14px;
   overflow: hidden;
-  padding: 14px;
+  padding: 18px;
   border: 1px solid rgba(89,217,231,.24);
-  border-radius: 24px;
+  border-radius: 28px;
   background:
-    radial-gradient(circle at 16% 20%, rgba(89,217,231,.16), transparent 34%),
-    linear-gradient(135deg, rgba(3,7,13,.58), rgba(255,246,232,.045));
+    radial-gradient(circle at 50% 18%, rgba(89,217,231,.12), transparent 34%),
+    radial-gradient(circle at 50% 72%, rgba(244,181,29,.10), transparent 32%),
+    linear-gradient(145deg, rgba(3,7,13,.70), rgba(255,246,232,.045));
   box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 16px 42px rgba(0,0,0,.22);
 }
 .controller-debugger::before {
-  content: "Live pad lab";
-  position: absolute;
-  right: 14px;
-  top: 12px;
-  color: rgba(255,246,232,.28);
-  font: 900 10px/1 var(--font-mono);
-  letter-spacing: .16em;
-  text-transform: uppercase;
-}
-.controller-debugger__hero {
-  grid-row: 1 / span 5;
-  display: grid;
-  place-items: center;
-  min-height: 210px;
-  border: 1px dashed rgba(255,246,232,.14);
-  border-radius: 20px;
-  background: rgba(0,0,0,.18);
-}
-.controller-debugger__hero img { width: min(100%, 270px); opacity: .42; filter: drop-shadow(0 20px 28px rgba(0,0,0,.42)); transition: opacity .18s ease, transform .18s ease; }
-.controller-debugger.is-connected .controller-debugger__hero img { opacity: .86; transform: translateY(-2px); }
-.controller-debugger.is-input-locked { border-color: rgba(124,255,139,.34); box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 0 0 1px rgba(124,255,139,.10), 0 16px 42px rgba(0,0,0,.22); }
-.controller-debugger.is-input-locked::before { content: "Input locked"; color: rgba(124,255,139,.72); }
-.controller-debugger__cluster {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0,1fr));
-  gap: 8px;
-  min-width: 0;
-}
-.controller-debugger__cluster--sticks { grid-template-columns: repeat(3, minmax(0,1fr)); }
-.controller-debugger__button,
-.controller-debugger__axis {
-  position: relative;
-  display: grid;
-  grid-template-columns: 30px minmax(0,1fr);
-  align-items: center;
-  gap: 8px;
-  min-height: 48px;
-  padding: 8px 9px;
-  border: 1px solid rgba(255,246,232,.12);
-  border-radius: 14px;
-  background: rgba(8,11,17,.46);
-  color: rgba(255,246,232,.72);
-  font: 900 11px/1.05 var(--font-ui);
-  box-shadow: inset 0 -1px 0 rgba(0,0,0,.24);
-}
-.controller-debugger__button img,
-.controller-debugger__axis img { width: 30px; max-height: 30px; object-fit: contain; image-rendering: auto; filter: grayscale(.45) brightness(.86); transition: filter .12s ease, transform .12s ease; }
-.controller-debugger__button.is-active,
-.controller-debugger__axis.is-active {
-  border-color: rgba(244,181,29,.76);
-  background: linear-gradient(135deg, rgba(244,181,29,.22), rgba(89,217,231,.12));
-  color: var(--color-cream);
-  box-shadow: inset 0 0 0 1px rgba(244,181,29,.16), 0 0 18px rgba(244,181,29,.18);
-}
-.controller-debugger__button.is-active img,
-.controller-debugger__axis.is-active img { filter: none; transform: scale(1.08); }
-.controller-debugger__axis::after {
   content: "";
   position: absolute;
-  left: 47px;
-  right: 10px;
-  bottom: 7px;
-  height: 3px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--color-teal), var(--color-accent));
-  transform: scaleX(calc((var(--axis-value) + 1) / 2));
-  transform-origin: left center;
-  opacity: .75;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(circle at 50% 42%, black, transparent 78%);
 }
-.controller-debugger__axis b { justify-self: end; color: var(--color-teal); font: 900 10px/1 var(--font-mono); }
+.controller-debugger.is-input-locked { border-color: rgba(124,255,139,.34); box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 0 0 1px rgba(124,255,139,.10), 0 16px 42px rgba(0,0,0,.22); }
+.controller-debugger__title {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(255,246,232,.92);
+  font: 900 13px/1 var(--font-ui);
+  letter-spacing: .02em;
+}
+.controller-debugger__title b { color: rgba(255,246,232,.34); font: 900 10px/1 var(--font-mono); letter-spacing: .16em; text-transform: uppercase; }
+.controller-debugger.is-input-locked .controller-debugger__title b { color: rgba(124,255,139,.72); }
+.controller-debugger.is-input-locked .controller-debugger__title b::before { content: "Input locked · "; }
+.controller-debugger__pad {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 560px);
+  aspect-ratio: 1;
+  justify-self: center;
+  filter: drop-shadow(0 18px 34px rgba(0,0,0,.34));
+}
+.controller-debugger__body { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: .78; filter: drop-shadow(0 0 1px rgba(255,255,255,.8)); }
+.controller-debugger:not(.is-connected) .controller-debugger__body { opacity: .52; }
+.controller-debugger__pad-button,
+.controller-debugger__stick {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--pad-muted);
+  color: rgba(255,246,232,.92);
+  background: rgba(4,8,14,.50);
+  font: 900 clamp(10px, 2.6vw, 22px)/1 var(--font-ui);
+  transition: border-color .12s ease, box-shadow .12s ease, color .12s ease, transform .12s ease, background .12s ease;
+}
+.controller-debugger__pad-button.is-active,
+.controller-debugger__stick.is-active { border-color: var(--pad-hot); color: var(--color-cream); background: rgba(244,181,29,.18); box-shadow: 0 0 0 3px rgba(244,181,29,.14), 0 0 22px rgba(244,181,29,.28); }
+.controller-debugger__pad-button.is-shoulder { top: 18.6%; width: 14.8%; height: 4.8%; border-radius: 999px; font-size: clamp(9px, 1.5vw, 13px); }
+.controller-debugger__pad-button.is-trigger { top: 14.6%; width: 12.2%; height: 4.4%; border-radius: 999px; font-size: clamp(8px, 1.3vw, 11px); opacity: .86; }
+.controller-debugger__pad-button.is-shoulder.is-left { left: 27.9%; }
+.controller-debugger__pad-button.is-shoulder.is-right { right: 27.9%; }
+.controller-debugger__pad-button.is-trigger.is-left { left: 30.4%; }
+.controller-debugger__pad-button.is-trigger.is-right { right: 30.4%; }
+.controller-debugger__stick { width: 11.8%; aspect-ratio: 1; border-radius: 50%; }
+.controller-debugger__stick::before,
+.controller-debugger__stick::after { content: ""; position: absolute; inset: 15%; border: 3px solid rgba(246,250,255,.62); border-radius: 50%; }
+.controller-debugger__stick::after { inset: 31%; background: rgba(4,8,14,.88); transform: translate(calc(var(--stick-x, 0) * 18%), calc(var(--stick-y, 0) * 18%)); transition: transform .08s linear; }
+.controller-debugger__stick i { position: absolute; inset: -12%; border: 3px solid rgba(246,250,255,.16); border-radius: 50%; }
+.controller-debugger__stick b { position: absolute; left: 50%; top: 50%; z-index: 1; transform: translate(-50%, -50%); font-size: clamp(9px, 1.7vw, 12px); color: rgba(255,246,232,.45); }
+.controller-debugger__stick.is-left { left: 26.2%; top: 31.5%; --stick-x: var(--stick-left-x); --stick-y: var(--stick-left-y); }
+.controller-debugger__stick.is-right { left: 50.2%; top: 45%; --stick-x: var(--stick-right-x); --stick-y: var(--stick-right-y); }
+.controller-debugger__dpad { position: absolute; left: 34.1%; top: 46.7%; width: 11.4%; aspect-ratio: 1; }
+.controller-debugger__pad-button.is-dpad { width: 33%; height: 33%; border-radius: 7px; font-size: clamp(8px, 1.6vw, 13px); }
+.controller-debugger__pad-button.is-dpad.is-up { left: 33%; top: 0; }
+.controller-debugger__pad-button.is-dpad.is-down { left: 33%; bottom: 0; }
+.controller-debugger__pad-button.is-dpad.is-left { left: 0; top: 33%; }
+.controller-debugger__pad-button.is-dpad.is-right { right: 0; top: 33%; }
+.controller-debugger__pad-button.is-face { width: 6.2%; aspect-ratio: 1; border-radius: 50%; }
+.controller-debugger__pad-button.is-y { left: 64.1%; top: 31.2%; }
+.controller-debugger__pad-button.is-x { left: 57.8%; top: 37.4%; }
+.controller-debugger__pad-button.is-b { left: 70.3%; top: 37.4%; }
+.controller-debugger__pad-button.is-a { left: 64.1%; top: 43.6%; }
+.controller-debugger__pad-button.is-system { width: 5.8%; height: 3.8%; border-width: 2px; border-radius: 999px; font-size: clamp(6px, 1.1vw, 9px); }
+.controller-debugger__pad-button.is-view { left: 46.6%; top: 37.3%; transform: translateX(-50%); }
+.controller-debugger__pad-button.is-guide { left: 50%; top: 29.8%; transform: translateX(-50%); width: 5.8%; aspect-ratio: 1; height: auto; border-radius: 50%; font-size: clamp(6px, 1vw, 8px); }
+.controller-debugger__pad-button.is-menu { left: 53.4%; top: 37.3%; transform: translateX(-50%); }
+.controller-debugger__pad-button.is-share { left: 50%; top: 43%; transform: translateX(-50%); height: 3.4%; }
+.controller-debugger__meters {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 18px;
+}
+.controller-debugger__axis-readout {
+  --meter-fill: calc((var(--axis-value) + 1) / 2 * 100%);
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 28px;
+  color: rgba(255,246,232,.74);
+  font: 800 12px/1 var(--font-ui);
+}
+.controller-debugger__axis-readout::after { content: ""; grid-column: 1 / -1; height: 3px; border-radius: 999px; background: linear-gradient(90deg, rgba(89,217,231,.28), rgba(89,217,231,.28)) 0 / 100% 100%, linear-gradient(90deg, var(--color-teal), var(--color-accent)) 0 / var(--meter-fill) 100% no-repeat; opacity: .86; }
+.controller-debugger__axis-readout.is-active { color: var(--color-cream); }
+.controller-debugger__axis-readout b { color: var(--color-teal); font: 900 10px/1 var(--font-mono); }
 .future-debug { margin-top: 14px; color: var(--color-muted); font: 12px var(--font-mono); }
 
 body.motion-reduce canvas,

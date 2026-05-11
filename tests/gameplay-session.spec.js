@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { createGameplaySession, resetGameplaySession, syncGameplaySessionToGame } from '../src/core/gameplay-session.js';
-import { getTilemapById } from '../src/content/tilemaps/registry.js';
+import { createGameplaySession, resetGameplaySession, syncGameplaySessionToGame } from '#/core/gameplay-session.js';
+import { getTilemapById } from '#/content/tilemaps/registry.js';
 
 test('gameplay session owns tilemap runtime state', () => {
   const tilemap = getTilemapById('act-01-level-1');

@@ -1,7 +1,7 @@
-import { CELL_SIZE } from '../../src/core/constants.js';
-import { defineObject, finishGateObject, playerSpawner, slimeSpawner, hazard } from '../../src/content/tilemaps/objects.js';
-import { defineTilemap, gridLayer } from '../../src/core/tilemaps/tilemap.js';
-import { TERRAIN_KIND, terrainLayer } from '../../src/core/tilemaps/terrain-layer.js';
+import { CELL_SIZE } from '#/core/constants.js';
+import { defineObject, finishGateObject, playerSpawner, slimeSpawner, hazard } from '#/content/tilemaps/objects.js';
+import { defineTilemap, gridLayer } from '#/core/tilemaps/tilemap.js';
+import { TERRAIN_KIND, terrainLayer } from '#/core/tilemaps/terrain-layer.js';
 
 const EMPTY = '.';
 const solidSymbols = new Set(['#', '=', 'B']);

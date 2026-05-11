@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { defaultSettings, normalizeSettings } from '../src/core/settings.js';
-import { createMemoryStorage, createRuntime } from '../src/runtime.js';
-import { clearSpeedRunRecords, createSpeedRunState, formatRunTime, getBestTime, prepareSpeedRunAttempt, recordAnyPercentTime, SPEEDRUN_RECORDS_KEY, updateSpeedRun } from '../src/speedrun.js';
+import { defaultSettings, normalizeSettings } from '#/core/settings.js';
+import { createMemoryStorage, createRuntime } from '#/app/runtime/browser-runtime.js';
+import { clearSpeedRunRecords, createSpeedRunState, formatRunTime, getBestTime, prepareSpeedRunAttempt, recordAnyPercentTime, SPEEDRUN_RECORDS_KEY, updateSpeedRun } from '#/app/speedrun/speedrun.js';
 
 test('settings include speed run mode and normalize legacy settings', () => {
   expect(defaultSettings().speedRunMode).toBe(false);

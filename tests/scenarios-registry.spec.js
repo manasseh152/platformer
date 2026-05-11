@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { getScenarioEntryById, getVisibleScenarioEntries, scenarioEntries } from '../src/catalog/scenarios/registry.js';
+import { getScenarioEntryById, getVisibleScenarioEntries, scenarioEntries } from '#/catalog/scenarios/registry.js';
 
 test('scenario registry composes tilemap definitions and executable gyms', () => {
   expect(getScenarioEntryById('act-01-level-1')).toMatchObject({

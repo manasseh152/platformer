@@ -73,6 +73,7 @@ export function createInputState() {
     bindRenderDirty: false,
     suppressMenuInputOnce: false,
     controllerDebugLock: false,
+    controllerDebugExitStartedAt: 0,
     latestRawGamepadPressed: []
   };
 }

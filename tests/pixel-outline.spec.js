@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { drawCollisionDebugOverlay, drawPhysicsBodyDebugOverlay } from '../src/devtools/debug-render.js';
-import { drawPixelRect, normalizePixelRect } from '../src/rendering/pixel-outline.js';
+import { drawCollisionDebugOverlay, drawPhysicsBodyDebugOverlay } from '#/devtools/debug-render.js';
+import { drawPixelRect, normalizePixelRect } from '#/rendering/pixel-outline.js';
 
 function fakeCanvasContext() {
   const calls = [];

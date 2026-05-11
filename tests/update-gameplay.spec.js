@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { updateGameplay } from '../src/core/physics.js';
-import { createGameplaySession } from '../src/core/gameplay-session.js';
-import { getTilemapById } from '../src/content/tilemaps/registry.js';
-import { getGoalTriggerRect } from '../src/core/tilemaps/tilemap.js';
-import { createInputRuntime } from '../src/core/input/index.js';
-import { gameInputProfile } from '../src/app/input/game-input-profile.js';
-import { createBrowserInputAdapter, createGameInputRuntime } from '../src/app/input/browser-input-adapter.js';
+import { updateGameplay } from '#/core/physics.js';
+import { createGameplaySession } from '#/core/gameplay-session.js';
+import { getTilemapById } from '#/content/tilemaps/registry.js';
+import { getGoalTriggerRect } from '#/core/tilemaps/tilemap.js';
+import { createInputRuntime } from '#/core/input/index.js';
+import { gameInputProfile } from '#/app/input/game-input-profile.js';
+import { createBrowserInputAdapter, createGameInputRuntime } from '#/app/input/browser-input-adapter.js';
 
 test('updateGameplay completes session outcome through finish gate goal', () => {
   const level = getTilemapById('finish-gate-gym-map');

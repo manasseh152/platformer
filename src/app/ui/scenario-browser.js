@@ -1,7 +1,7 @@
 import { getCategoryById, primaryGroupCategoryFor } from '../../catalog/categories/registry.js';
 import { countLocalDraftRecords, listLocalDraftRecords } from '../../catalog/local-drafts/storage.js';
 import { getVisibleScenarioEntries } from '../../catalog/scenarios/registry.js';
-import { runDOMTransition } from '../../transitions.js';
+import { runDOMTransition } from './transitions.js';
 
 const LEVEL_SELECT_TAB_KEY = 'chibi.level-select.active-tab';
 const LEVEL_SELECT_TABS = [

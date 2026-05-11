@@ -1,5 +1,5 @@
 import { isWon } from '../app-state.js';
-import { formatRunTime, getBestTime } from '../../speedrun.js';
+import { formatRunTime, getBestTime } from '../speedrun/speedrun.js';
 import { syncHintLayer } from './hint-layer.js';
 
 export function syncGameplayHud(game) {

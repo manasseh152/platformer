@@ -2,7 +2,7 @@
  * Application-layer browser runtime adapter over `src/engine/runtime.js`.
  * Core runtime construction stays browser-global free; this module supplies browser defaults.
  */
-import { createEventLogger, createMemoryStorage, createRuntime as createCoreRuntime, createSeededRandom } from './engine/runtime.js';
+import { createEventLogger, createMemoryStorage, createRuntime as createCoreRuntime, createSeededRandom } from '#/engine/runtime.js';
 
 export { createEventLogger, createMemoryStorage, createSeededRandom };
 

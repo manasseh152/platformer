@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createEventLogger, createMemoryStorage, createRuntime, createSeededRandom } from '../src/runtime.js';
+import { createEventLogger, createMemoryStorage, createRuntime, createSeededRandom } from '#/app/runtime/browser-runtime.js';
 
 test('seeded random is deterministic for matching seeds', () => {
   const a = createSeededRandom('gym-seed');

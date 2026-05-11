@@ -3,12 +3,12 @@
  * Intentionally outside `src/core`: mutates the app game object, emits app events,
  * and mirrors active tilemap identity to browser DOM state.
  */
-import { resetGameplaySession, syncGameplaySessionToGame } from './core/gameplay-session.js';
-import { getAllTilemaps as getRegisteredTilemaps, getDefaultTilemap, getTilemapById } from './content/tilemaps/registry.js';
-import { isVisibleToMode } from './catalog/categories/registry.js';
-import { browserRuntime } from './runtime.js';
-import { isStarted } from './app/app-state.js';
-import { prepareSpeedRunAttempt } from './speedrun.js';
+import { resetGameplaySession, syncGameplaySessionToGame } from '#/core/gameplay-session.js';
+import { getAllTilemaps as getRegisteredTilemaps, getDefaultTilemap, getTilemapById } from '#/content/tilemaps/registry.js';
+import { isVisibleToMode } from '#/catalog/categories/registry.js';
+import { browserRuntime } from '../runtime/browser-runtime.js';
+import { isStarted } from '../app-state.js';
+import { prepareSpeedRunAttempt } from '../speedrun/speedrun.js';
 
 function syncActiveTilemapDataset(game) {
   const id = game.tilemap?.id || getDefaultTilemap().id;

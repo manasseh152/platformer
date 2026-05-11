@@ -3,21 +3,21 @@
  * Intentionally outside `src/core`: wires UI canvas, presentation, browser runtime, DOM mirrors,
  * app adapters, and core gameplay state together.
  */
-import { CAMERA_HEIGHT, CAMERA_WIDTH, CAMERA_WORLD_HEIGHT, CAMERA_WORLD_WIDTH } from './core/constants.js';
-import { createGameplaySession, resetGameplaySession, syncGameplaySessionToGame } from './core/gameplay-session.js';
-import { createTilemapManager, resolveInitialTilemap } from './tilemap-manager.js';
-import { createInputState } from './app/input/legacy-bind-state.js';
-import { createBrowserInputAdapter, createGameInputRuntime } from './app/input/browser-input-adapter.js';
-import { createPresentation } from './app/presentation/presentation.js';
-import { applySettingsToGame, loadSettings } from './settings.js';
-import { browserRuntime } from './runtime.js';
-import { createScenarioService } from './catalog/scenarios/service.js';
-import { createDefaultSceneLibrary } from './scenes/default-library.js';
-import { createAppState, setPausedState } from './app/app-state.js';
-import { createGpuSystem } from './gpu/gpu-system.js';
-import { createDevToolsState, registerBuiltInDevTools } from './devtools/toolbox.js';
-import { registerDebugRenderDevTools } from './devtools/debug-render.js';
-import { createSpeedRunState, prepareSpeedRunAttempt } from './speedrun.js';
+import { CAMERA_HEIGHT, CAMERA_WIDTH, CAMERA_WORLD_HEIGHT, CAMERA_WORLD_WIDTH } from '#/core/constants.js';
+import { createGameplaySession, resetGameplaySession, syncGameplaySessionToGame } from '#/core/gameplay-session.js';
+import { createTilemapManager, resolveInitialTilemap } from './tilemaps/tilemap-manager.js';
+import { createInputState } from './input/legacy-bind-state.js';
+import { createBrowserInputAdapter, createGameInputRuntime } from './input/browser-input-adapter.js';
+import { createPresentation } from './presentation/presentation.js';
+import { applySettingsToGame, loadSettings } from './settings/settings.js';
+import { browserRuntime } from './runtime/browser-runtime.js';
+import { createScenarioService } from '#/catalog/scenarios/service.js';
+import { createDefaultSceneLibrary } from '#/scenes/default-library.js';
+import { createAppState, setPausedState } from './app-state.js';
+import { createGpuSystem } from '#/gpu/gpu-system.js';
+import { createDevToolsState, registerBuiltInDevTools } from '#/devtools/toolbox.js';
+import { registerDebugRenderDevTools } from '#/devtools/debug-render.js';
+import { createSpeedRunState, prepareSpeedRunAttempt } from './speedrun/speedrun.js';
 
 /**
  * Creates the mutable game context shared by systems.
@@ -69,7 +69,7 @@ export function createGame(ui, runtime = browserRuntime) {
     session: { developerModeOverride: false },
     scenarios: null,
     sceneLibrary: null,
-    menu: { page: 'main', origin: 'pause', direction: 'forward' },
+    menu: { page: 'main', origin: 'pause', direction: 'forward', settingsSubpage: null },
     clock: { last: runtime.now() }
   };
   resetGameplaySession(gameplaySession, activeTilemap, { view: game.view, scenarioId: activeTilemap.id });

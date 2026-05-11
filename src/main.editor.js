@@ -1,1 +1,1 @@
-import './editor/map-editor.js';
+import '#/editor/map-editor.js';

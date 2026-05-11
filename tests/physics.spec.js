@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { createGameplaySession } from '../src/core/gameplay-session.js';
-import { createInputRuntime } from '../src/core/input/index.js';
-import { updateEnemy, updateGameplay } from '../src/core/physics.js';
-import { gameInputProfile } from '../src/app/input/game-input-profile.js';
+import { createGameplaySession } from '#/core/gameplay-session.js';
+import { createInputRuntime } from '#/core/input/index.js';
+import { updateEnemy, updateGameplay } from '#/core/physics.js';
+import { gameInputProfile } from '#/app/input/game-input-profile.js';
 import { defineContainedTestTilemap } from './helpers/contained-tilemap.js';
 
 function makeTilemap(terrainRows) {

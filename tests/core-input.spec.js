@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { gameInputProfile } from '../src/app/input/game-input-profile.js';
-import { applyCapturedBinding, createBindCapture, createInputRuntime, findBindingConflict, normalizeInputSettings } from '../src/core/input/index.js';
-import { hintPartsForAction, textHintForAction } from '../src/app/input/input-hints.js';
-import { renderTabInputHints } from '../src/app/input/input-presentation.js';
+import { gameInputProfile } from '#/app/input/game-input-profile.js';
+import { applyCapturedBinding, createBindCapture, createInputRuntime, findBindingConflict, normalizeInputSettings } from '#/core/input/index.js';
+import { hintPartsForAction, textHintForAction } from '#/app/input/input-hints.js';
+import { renderTabInputHints } from '#/app/input/input-presentation.js';
 
 function key(runtime, type, code, modifiers = {}) {
   runtime.handleEvent({ type, device: { type: 'keyboard', id: 'keyboard' }, control: { type: 'key', code }, timestamp: runtime.state.frame, modifiers });
@@ -219,7 +219,7 @@ test('input hints derive controls from semantic bindings and explicit input sche
   input.beginFrame();
   gamepad(input, [{ type: 'button', index: 3, value: 1 }]);
   expect(input.wasPressed('menu.settings')).toBe(true);
-  expect(hintPartsForAction(gameInputProfile, settings, 'menu.settings', { runtime: input, inputScheme: 'gamepad', iconPack: 'xbox' }).parts[0]).toMatchObject({ label: 'Y', icon: '/assets/kenney-input-prompts/xbox/xbox_button_y.png' });
+  expect(hintPartsForAction(gameInputProfile, settings, 'menu.settings', { runtime: input, inputScheme: 'gamepad', iconPack: 'xbox' }).parts[0]).toMatchObject({ label: 'Y', icon: '/assets/kenney-input-prompts/xbox/xbox_button_y.svg' });
   expect(hintPartsForAction(gameInputProfile, settings, 'menu.settings', { runtime: input, inputScheme: 'wasd', iconPack: 'xbox' }).parts[0]).toMatchObject({ label: 'Tab', icon: null });
 });
 

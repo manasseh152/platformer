@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { approachExp, clampCameraToWorld, createCamera, updateFollowCamera } from '../src/core/camera.js';
+import { approachExp, clampCameraToWorld, createCamera, updateFollowCamera } from '#/core/camera.js';
 test('camera clamps to world bounds when viewport is smaller than world', () => {
   const camera = createCamera({ x: 900, y: 500, targetX: 900, targetY: 500 });
 

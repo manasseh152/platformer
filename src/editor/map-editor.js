@@ -26,7 +26,7 @@ import { localDraftStorageKey, localDraftViewStorageKey, readLocalDraft, saveLoc
 import { createBrowserInputAdapter, createGameInputRuntime } from '../app/input/browser-input-adapter.js';
 import { renderTabInputHints } from '../app/input/input-presentation.js';
 import { gameInputProfile } from '../app/input/game-input-profile.js';
-import { loadSettings } from '../settings.js';
+import { loadSettings } from '#/app/settings/settings.js';
 import { currentFocusElement, ensureMenuFocus, moveLinearFocus, visibleFocusables } from '../ui/navigation.js';
 const AUTO_SAVE_STORAGE_KEY = 'chibi.tilemap-editor.auto-save';
 const FLOATING_CONTROLS_STORAGE_KEY = 'chibi.tilemap-editor.floating-controls';

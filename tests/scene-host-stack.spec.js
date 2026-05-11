@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createSceneHost } from '../src/scene-host.js';
+import { createSceneHost } from '#/app/scenes/scene-host.js';
 
 function makeRuntime() {
   const emitted = [];

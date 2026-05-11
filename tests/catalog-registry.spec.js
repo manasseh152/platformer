@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createCatalogRegistry } from '../src/catalog/registry.js';
+import { createCatalogRegistry } from '#/catalog/registry.js';
 
 test('catalog registry registers validated entries by id', () => {
   const registry = createCatalogRegistry({ name: 'test' });

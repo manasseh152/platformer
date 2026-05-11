@@ -1,8 +1,8 @@
-import { assets } from './assets.js';
-import { getDefaultTilemap } from './content/tilemaps/registry.js';
-import { createCanvas2DNativeFrameBackend } from './render/backends/canvas2d-native-frame-backend.js';
-import { defaultAssetRegistry } from './render/browser-asset-registry.js';
-import { extractTilemapSnapshotRenderFrame } from './render/extractors/tilemap-snapshot-extractor.js';
+import { assets } from '../assets/browser-assets.js';
+import { getDefaultTilemap } from '#/content/tilemaps/registry.js';
+import { createCanvas2DNativeFrameBackend } from '../backends/canvas2d-native-frame-backend.js';
+import { defaultAssetRegistry } from '../browser-asset-registry.js';
+import { extractTilemapSnapshotRenderFrame } from '../extractors/tilemap-snapshot-extractor.js';
 
 function waitForAsset(asset) {
   if (!asset || typeof asset.addEventListener !== 'function' || asset.complete) return Promise.resolve();

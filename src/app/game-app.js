@@ -1,4 +1,4 @@
-import { createGame } from '../state.js';
+import { createGame } from './game-state.js';
 
 /**
  * Application composition root.

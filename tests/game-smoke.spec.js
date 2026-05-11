@@ -291,10 +291,15 @@ test('keyboard and controller settings rows, binds, diagnostics, and pause flow'
 
   await openCategory(page, 'controller', 'Controller');
   await expect(page.locator('[data-setting-row="controller-enabled"]')).toContainText('On');
-  await expect(page.locator('#controllerName')).toContainText('None detected');
-  await expect(page.locator('#controllerInputs')).toContainText('None');
+  await expect(page.locator('[data-bind-device="controller"]')).toHaveCount(7);
+  await expect(page.locator('[data-controller-settings-page="diagnostics"]')).toContainText('Verify & Debug');
   await page.locator('[data-setting-row="controller-enabled"]').click();
   await expect(page.locator('[data-setting-row="controller-enabled"]')).toContainText('Off');
+  await page.getByRole('button', { name: /Verify & Debug/ }).click();
+  await expect(page.locator('#controllerName')).toContainText('None detected');
+  await expect(page.locator('#controllerInputs')).toContainText('None');
+  await expect(page.locator('.controller-debugger')).toHaveClass(/is-input-locked/);
+  await page.locator('[data-controller-settings-back]').click();
   await page.getByRole('button', { name: 'Reset Controller Defaults' }).click();
   await expect(page.locator('#settingsStatus')).toContainText('Restored controller defaults');
 

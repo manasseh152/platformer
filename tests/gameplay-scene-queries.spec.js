@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { ACTOR_SIZE, CELL_SIZE } from '../src/core/constants.js';
-import { createEnemiesFromScene } from '../src/core/gameplay-scene-queries.js';
-import { defineTilemap, gridLayer } from '../src/core/tilemaps/tilemap.js';
-import { TERRAIN_KIND, terrainLayer } from '../src/core/tilemaps/terrain-layer.js';
-import { finishGateObject, playerSpawner, slimeSpawner } from '../src/content/tilemaps/objects.js';
-import { enemyZooMap } from '../src/content/tilemaps/definitions/enemy-zoo-map.js';
+import { ACTOR_SIZE, CELL_SIZE } from '#/core/constants.js';
+import { createEnemiesFromScene } from '#/core/gameplay-scene-queries.js';
+import { defineTilemap, gridLayer } from '#/core/tilemaps/tilemap.js';
+import { TERRAIN_KIND, terrainLayer } from '#/core/tilemaps/terrain-layer.js';
+import { finishGateObject, playerSpawner, slimeSpawner } from '#/content/tilemaps/objects.js';
+import { enemyZooMap } from '#/content/tilemaps/definitions/enemy-zoo-map.js';
 import { defineContainedTestTilemap } from './helpers/contained-tilemap.js';
 
 function containedEnemyMap() {

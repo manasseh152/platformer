@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createDevToolsRegistry } from '../src/devtools/toolbox.js';
+import { createDevToolsRegistry } from '#/devtools/toolbox.js';
 
 test('devtools registry sorts sections and items by order with registration fallback', () => {
   const registry = createDevToolsRegistry();

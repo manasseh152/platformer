@@ -3,12 +3,12 @@
  * Owns persistence, app schema normalization, and mutation of the compatibility game object.
  * Pure input schema rules live in `src/core/input/settings.js`.
  */
-import { clone } from './core/input/utils.js';
-import { browserRuntime } from './runtime.js';
-import { createBrowserInputAdapter, createGameInputRuntime } from './app/input/browser-input-adapter.js';
-import { defaultBinds, defaultGamepadBinds } from './app/input/legacy-bind-state.js';
-import { gameInputProfile } from './app/input/game-input-profile.js';
-import { bindingFromLegacyGamepad, bindingFromLegacyKeyboard, normalizeInputSettings } from './core/input/settings.js';
+import { clone } from '#/core/input/utils.js';
+import { browserRuntime } from '../runtime/browser-runtime.js';
+import { createBrowserInputAdapter, createGameInputRuntime } from '../input/browser-input-adapter.js';
+import { defaultBinds, defaultGamepadBinds } from '../input/legacy-bind-state.js';
+import { gameInputProfile } from '../input/game-input-profile.js';
+import { bindingFromLegacyGamepad, bindingFromLegacyKeyboard, normalizeInputSettings } from '#/core/input/settings.js';
 
 const MOTIONS = new Set(['system', 'on', 'off']);
 const GPU_EXTRAS = new Set(['auto', 'off']);

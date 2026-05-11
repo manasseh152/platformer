@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { defineObject, sceneObject } from '../src/engine/scene/objects.js';
-import { defineScene } from '../src/engine/scene/scene.js';
-import { getComponent, getComponents, findObjectsWithComponent, findOneObjectWithComponent } from '../src/engine/scene/queries.js';
-import { renderLayer, renderParallax, renderProcedural, renderTexture, solid } from '../src/engine/scene/components.js';
-import { defineTilemap } from '../src/core/tilemaps/tilemap.js';
-import { TERRAIN_KIND, terrainLayer } from '../src/core/tilemaps/terrain-layer.js';
+import { defineObject, sceneObject } from '#/engine/scene/objects.js';
+import { defineScene } from '#/engine/scene/scene.js';
+import { getComponent, getComponents, findObjectsWithComponent, findOneObjectWithComponent } from '#/engine/scene/queries.js';
+import { renderLayer, renderParallax, renderProcedural, renderTexture, solid } from '#/engine/scene/components.js';
+import { defineTilemap } from '#/core/tilemaps/tilemap.js';
+import { TERRAIN_KIND, terrainLayer } from '#/core/tilemaps/terrain-layer.js';
 
 test('defineScene normalizes objects, clones components, and builds component index', () => {
   const sourceComponent = { type: 'tag:test', value: 1 };

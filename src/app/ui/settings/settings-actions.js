@@ -1,15 +1,15 @@
-import { setBindStatus, setControllerStatus } from '../input/controller-diagnostics.js';
-import { bindKey, bindLabels, findBindConflict, resetControllerInput, resetDefaultGamepadBinds, resetDefaultKeyBinds } from '../input/legacy-bind-state.js';
-import { createBindCapture } from '../../core/input/index.js';
-import { syncSettingsFromInput, replaceSettings, saveSettings, serializeSettings } from '../../settings.js';
-import { applyMotionPreference } from '../../transitions.js';
-import { renderSettings, renderSettingsCategory } from '../../settings-ui.js';
-import { syncGymApi } from '../../gym.js';
-import { browserRuntime } from '../../runtime.js';
-import { getDefaultTilemap } from '../../content/tilemaps/registry.js';
-import { renderSelectedTilemapSummary } from './scenario-browser.js';
-import { isStarted, isWon } from '../app-state.js';
-import { clearSpeedRunRecords, prepareSpeedRunAttempt } from '../../speedrun.js';
+import { setBindStatus, setControllerStatus } from '../../input/controller-diagnostics.js';
+import { bindKey, bindLabels, findBindConflict, resetControllerInput, resetDefaultGamepadBinds, resetDefaultKeyBinds } from '../../input/legacy-bind-state.js';
+import { createBindCapture } from '#/core/input/index.js';
+import { syncSettingsFromInput, replaceSettings, saveSettings, serializeSettings } from '../../settings/settings.js';
+import { applyMotionPreference } from '../transitions.js';
+import { renderSettings, renderSettingsCategory } from './settings-view.js';
+import { syncGymApi } from '../../testing/gym.js';
+import { browserRuntime } from '../../runtime/browser-runtime.js';
+import { getDefaultTilemap } from '#/content/tilemaps/registry.js';
+import { renderSelectedTilemapSummary } from '../scenario-browser.js';
+import { isStarted, isWon } from '../../app-state.js';
+import { clearSpeedRunRecords, prepareSpeedRunAttempt } from '../../speedrun/speedrun.js';
 
 const motionOrder = ['system', 'on', 'off'];
 
@@ -138,18 +138,28 @@ function toggleController(game, runtime = browserRuntime) {
   setControllerStatus(ui, input.useController ? 'Controller enabled.' : 'Controller disabled.');
 }
 
-function toggleControllerDebugLock(game, runtime = browserRuntime) {
-  const { input, ui } = game;
-  input.controllerDebugLock = !input.controllerDebugLock;
-  input.controllerBindAction = null;
-  input.bindCapture = null;
-  input.bindDeadline = 0;
-  input.suppressMenuInputOnce = true;
-  runtime.emit('settings.controller-debug-lock', { enabled: input.controllerDebugLock });
+function setControllerSubpage(game, pageId, callbacks = {}) {
+  game.menu.settingsSubpage = pageId;
+  if (pageId === 'diagnostics') {
+    game.input.controllerDebugLock = true;
+    game.input.controllerDebugExitStartedAt = 0;
+    game.input.controllerBindAction = null;
+    game.input.bindCapture = null;
+    game.input.bindDeadline = 0;
+    game.input.suppressMenuInputOnce = true;
+  }
   renderSettingsCategory(game);
-  const message = input.controllerDebugLock ? 'Debugger input lock on. Controller presses only update the debugger.' : 'Debugger input lock off.';
-  setBindStatus(ui, message);
-  setControllerStatus(ui, message);
+  callbacks.updateMenuChrome?.(game);
+  callbacks.focusFirstMenuItem?.(game);
+}
+
+function closeControllerSubpage(game, callbacks = {}) {
+  game.input.controllerDebugLock = false;
+  game.input.controllerDebugExitStartedAt = 0;
+  game.menu.settingsSubpage = null;
+  renderSettingsCategory(game);
+  callbacks.updateMenuChrome?.(game);
+  callbacks.focusFirstMenuItem?.(game);
 }
 
 function selectController(game, runtimeId, runtime = browserRuntime) {
@@ -205,6 +215,10 @@ function resetBinds(game, device, runtime = browserRuntime) {
 }
 
 export function handleSettingsActionsClick(game, e, runtime = browserRuntime, callbacks = {}) {
+  const controllerPage = e.target.closest('button[data-controller-settings-page]');
+  if (controllerPage) { setControllerSubpage(game, controllerPage.dataset.controllerSettingsPage, callbacks); return true; }
+  const controllerBack = e.target.closest('[data-controller-settings-back]');
+  if (controllerBack) { closeControllerSubpage(game, callbacks); return true; }
   const bindButton = e.target.closest('button[data-bind-action]');
   if (bindButton) { startBindListening(game, bindButton.dataset.bindAction, bindButton.dataset.bindDevice, runtime); return true; }
   const controllerSelect = e.target.closest('button[data-controller-select]');
@@ -213,7 +227,6 @@ export function handleSettingsActionsClick(game, e, runtime = browserRuntime, ca
   if (row) {
     if (row.dataset.settingRow === 'motion') { cycleMotion(game, runtime, callbacks); return true; }
     if (row.dataset.settingRow === 'controller-enabled') { toggleController(game, runtime); return true; }
-    if (row.dataset.settingRow === 'controller-debug-lock') { toggleControllerDebugLock(game, runtime); return true; }
     if (row.dataset.settingRow === 'speed-run-mode') { toggleSpeedRunMode(game, runtime); return true; }
     if (row.dataset.settingRow === 'gpu-extras') { cycleGpuExtras(game, runtime); return true; }
     if (row.dataset.settingRow === 'developer-mode') { toggleDeveloperMode(game, runtime, callbacks); return true; }

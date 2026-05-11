@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { createSceneHost } from '../src/scene-host.js';
-import { createEventLogger, createMemoryStorage, createRuntime } from '../src/runtime.js';
+import { createSceneHost } from '#/app/scenes/scene-host.js';
+import { createEventLogger, createMemoryStorage, createRuntime } from '#/app/runtime/browser-runtime.js';
 
 function makeRuntime() {
   let now = 0;

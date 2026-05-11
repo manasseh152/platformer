@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { createRenderFrameBuilder, resetRenderPacketSequenceForTests } from '../src/engine/render/frame-builder.js';
-import { computePresentationViewport, prepareRenderView, worldToNativeRect } from '../src/engine/render/viewport.js';
-import { createAssetRegistry, ASSET_IDS, createAtlasSpriteMetadata } from '../src/render/asset-registry.js';
-import { createGameplayRenderReadModel } from '../src/render/extractors/gameplay-renderables.js';
+import { createRenderFrameBuilder, resetRenderPacketSequenceForTests } from '#/engine/render/frame-builder.js';
+import { computePresentationViewport, prepareRenderView, worldToNativeRect } from '#/engine/render/viewport.js';
+import { createAssetRegistry, ASSET_IDS, createAtlasSpriteMetadata } from '#/render/asset-registry.js';
+import { createGameplayRenderReadModel } from '#/render/extractors/gameplay-renderables.js';
 
 test('presentation viewport integer-scales and centers native frame', () => {
   expect(computePresentationViewport(800, 600, 320, 180)).toEqual({ scale: 2, width: 640, height: 360, offsetX: 80, offsetY: 120 });

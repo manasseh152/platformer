@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { clampCamera, createViewport, resetView } from '../src/editor/editor-viewport.js';
+import { clampCamera, createViewport, resetView } from '#/editor/editor-viewport.js';
 
 function viewport({ width = 800, height = 600, zoom = 1, x = 0, y = 0 } = {}) {
   const canvas = { clientWidth: width, clientHeight: height, width, height };

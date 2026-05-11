@@ -41,7 +41,7 @@ try {
   await page.goto(baseUrl, { waitUntil: 'networkidle' });
 
   const result = await page.evaluate(async selectedTilemapId => {
-    const { renderMapToDataUrl } = await import('/src/map-snapshot.js');
+    const { renderMapToDataUrl } = await import('/src/render/snapshot/map-snapshot.js');
     const { getDefaultTilemap, getTilemapById } = await import('/src/content/tilemaps/registry.js');
     const tilemap = selectedTilemapId ? getTilemapById(selectedTilemapId) : getDefaultTilemap();
     if (!tilemap) throw new Error(`Unknown tilemap '${selectedTilemapId}'`);

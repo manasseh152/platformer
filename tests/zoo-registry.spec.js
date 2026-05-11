@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { getAllZooScenarios, getZooScenarioById } from '../src/content/zoos/registry.js';
+import { getAllZooScenarios, getZooScenarioById } from '#/content/zoos/registry.js';
 
 test('zoo scenarios document composed examples and default out of CI', () => {
   expect(getZooScenarioById('enemy-zoo')).toMatchObject({

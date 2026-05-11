@@ -2,14 +2,14 @@ import { expect, test } from '@playwright/test';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ACTOR_SIZE, ATTACK_HITBOX } from '../src/core/constants.js';
-import { getSlashHitbox } from '../src/core/combat.js';
-import { createEnemiesFromScene } from '../src/core/gameplay-scene-queries.js';
-import { createPlayer, defineTilemap, getSpawnPoint, gridLayer } from '../src/core/tilemaps/tilemap.js';
-import { TERRAIN_KIND, terrainLayer } from '../src/core/tilemaps/terrain-layer.js';
-import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '../src/content/tilemaps/objects.js';
-import { CELL_SIZE } from '../src/core/constants.js';
-import { getComponent } from '../src/engine/scene/queries.js';
+import { ACTOR_SIZE, ATTACK_HITBOX } from '#/core/constants.js';
+import { getSlashHitbox } from '#/core/combat.js';
+import { createEnemiesFromScene } from '#/core/gameplay-scene-queries.js';
+import { createPlayer, defineTilemap, getSpawnPoint, gridLayer } from '#/core/tilemaps/tilemap.js';
+import { TERRAIN_KIND, terrainLayer } from '#/core/tilemaps/terrain-layer.js';
+import { finishGateObject, playerSpawner, slimeSpawner, solidTerrain } from '#/content/tilemaps/objects.js';
+import { CELL_SIZE } from '#/core/constants.js';
+import { getComponent } from '#/engine/scene/queries.js';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 

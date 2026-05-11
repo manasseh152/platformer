@@ -1,4 +1,4 @@
-import { ensureMenuDom } from './scenes/menu-dom.js';
+import { ensureMenuDom } from '#/scenes/menu-dom.js';
 
 export function getUI() {
   ensureMenuDom();
