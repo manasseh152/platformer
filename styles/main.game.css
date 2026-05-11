@@ -1630,3 +1630,329 @@ button.devtool-row:focus-visible,
 @media (max-height: 430px) and (orientation: landscape) {
   :root { --game-ui-scale: .58; --menu-ui-scale: .74; }
 }
+
+/* === Editor UI system pass ===============================================
+   Keep the game-specific markup, but make menus, HUD, hints, and tooling use
+   the same low-chrome glass panels introduced in the tilemap editor. */
+body {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(89, 217, 231, .12), transparent 30rem),
+    radial-gradient(circle at 84% 5%, color-mix(in srgb, var(--color-accent) 12%, transparent), transparent 28rem),
+    linear-gradient(140deg, #0a0d13, #111720 48%, #07090e);
+}
+
+body::before { opacity: .10; background-size: 56px 56px; }
+body::after { opacity: .34; background: radial-gradient(circle at 50% 48%, transparent 0 58%, rgba(0,0,0,.58) 100%); }
+
+.ds-button,
+button {
+  min-height: 38px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: .55rem .75rem;
+  color: var(--color-text);
+  background: rgba(255,255,255,.055);
+  font: inherit;
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: none;
+  box-shadow: none;
+  transition:
+    transform var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard),
+    opacity var(--duration-fast) var(--ease-standard);
+}
+
+.ds-button:hover:not(:disabled),
+button:hover:not(:disabled),
+button.active {
+  transform: translateY(-1px);
+  border-color: var(--color-border-strong);
+  background: rgba(255,255,255,.095);
+  box-shadow: none;
+}
+
+.ds-button--primary,
+.menu-actions button:first-child,
+#startButton,
+#resumeButton,
+#settingsBackButton,
+#settingsCategoryBackButton,
+#messageNextLevelButton {
+  color: #101016;
+  border-color: transparent;
+  background: rgba(255,246,232,.92);
+  font-weight: 900;
+  box-shadow: 0 14px 42px rgba(0,0,0,.34);
+}
+
+.ds-button--primary:hover:not(:disabled),
+.menu-actions button:first-child:hover:not(:disabled),
+#startButton:hover:not(:disabled),
+#resumeButton:hover:not(:disabled),
+#settingsBackButton:hover:not(:disabled),
+#settingsCategoryBackButton:hover:not(:disabled),
+#messageNextLevelButton:hover:not(:disabled) {
+  color: #101016;
+  border-color: transparent;
+  background: rgba(255,246,232,.98);
+}
+
+button.secondary,
+.ds-button--secondary,
+.ds-button--ghost { color: var(--color-text-muted); background: rgba(255,255,255,.045); }
+
+#startScreen,
+#pauseScreen,
+#startScreen.ds-screen--hero,
+#pauseScreen.ds-screen--overlay {
+  padding: clamp(22px, 4vw, 56px) clamp(18px, 5vw, 72px) calc(clamp(22px, 4vw, 56px) + 58px);
+  background:
+    radial-gradient(circle at 18% 12%, rgba(89, 217, 231, .12), transparent 30rem),
+    radial-gradient(circle at 84% 5%, color-mix(in srgb, var(--color-accent) 12%, transparent), transparent 28rem),
+    linear-gradient(140deg, #0a0d13, #111720 48%, #07090e);
+}
+
+#pauseScreen.ds-screen--overlay { backdrop-filter: blur(3px) brightness(.76) saturate(.96); }
+#startScreen::before { opacity: .30; }
+
+.menu-card,
+.ds-panel,
+#hud,
+#message,
+.hero-scene,
+.pause-main,
+.settings-section,
+.controller-debug,
+#levelSelectStatus,
+#pauseScreen[data-menu-page="level-select"] .level-select-group,
+.settings-tab-preview,
+.settings-category-card,
+.ds-setting-row,
+.level-select-row,
+.local-draft-row,
+.devtool-panel {
+  border-color: var(--color-border);
+  background: var(--color-surface-glass);
+  backdrop-filter: blur(22px) saturate(135%);
+  box-shadow: var(--shadow-panel);
+}
+
+.menu-card::before,
+.ds-panel::before,
+#message::before { background: linear-gradient(90deg, var(--color-accent), transparent 34%) top left / 100% 4px no-repeat; opacity: .9; }
+
+#startScreen .start-stage.menu-card,
+#startScreen .start-stage.ds-panel,
+#pauseScreen[data-menu-page="main"] .menu-card,
+#pauseScreen[data-menu-page="level-select"] .menu-card,
+#pauseScreen[data-menu-page="settings"] .menu-card,
+#pauseScreen[data-menu-page="settings-category"] .menu-card {
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.start-stage { grid-template-columns: minmax(300px, .78fr) minmax(340px, .9fr); gap: clamp(24px, 6vw, 90px); }
+.start-stage::after { opacity: .58; }
+
+.hero-scene {
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.022)),
+    linear-gradient(135deg, color-mix(in srgb, var(--color-bg-elevated) 94%, transparent), color-mix(in srgb, var(--color-bg) 92%, transparent));
+}
+
+.hero-scene::before { opacity: .20; background-size: 42px 42px; }
+.hero-scene__badge,
+.hero-loadout div,
+#startScreen .selected-level-summary,
+.settings-tabs,
+#pauseScreen[data-menu-page="level-select"] .level-select-tabs {
+  border: 1px solid var(--color-border);
+  background: rgba(9, 12, 18, .68);
+  backdrop-filter: blur(18px) saturate(130%);
+  box-shadow: 0 12px 40px rgba(0,0,0,.32);
+}
+
+.ds-title,
+.menu-card h1,
+.menu-card h2 {
+  margin: 0 0 14px;
+  font-weight: 900;
+  letter-spacing: -.055em;
+  text-transform: uppercase;
+  text-shadow: none;
+}
+
+.menu-card p,
+.hero-lede { color: var(--color-text-muted); line-height: 1.55; }
+
+.menu-meta li,
+.ds-chip {
+  border-color: var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.menu-actions,
+#startScreen .menu-actions { gap: 10px; }
+#startScreen .menu-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(430px, 100%); }
+#startScreen #startButton { grid-column: 1 / -1; }
+
+#pauseScreen[data-menu-page="main"] .pause-main,
+#levelSelectStatus,
+#pauseScreen[data-menu-page="level-select"] .level-select-group,
+.settings-section,
+.controller-debug,
+.settings-tab-preview {
+  border-radius: 18px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.32);
+}
+
+.settings-tabs button,
+#pauseScreen[data-menu-page="level-select"] .level-select-tab,
+.segmented button {
+  min-height: 34px;
+  border-radius: 999px;
+  border-color: transparent;
+  color: var(--color-text-muted);
+  background: transparent;
+  font-weight: 760;
+}
+
+.settings-tabs button[aria-selected="true"],
+#pauseScreen[data-menu-page="level-select"] .level-select-tab[aria-selected="true"],
+.segmented button.active {
+  color: var(--color-text);
+  background: rgba(255,255,255,.105);
+  border-color: rgba(255,255,255,.08);
+  box-shadow: none;
+}
+
+.settings-category-card,
+.ds-setting-row,
+.level-select-row,
+.local-draft-row,
+.bind-row,
+.bind-editor {
+  border-color: rgba(255,255,255,.075);
+  border-radius: 16px;
+  background: rgba(3, 6, 11, .22);
+  box-shadow: none;
+}
+
+.settings-category-card:hover,
+.ds-setting-row:hover,
+.level-select-row:hover,
+.local-draft-row:hover {
+  border-color: var(--color-border-strong);
+  background: rgba(255,255,255,.065);
+  box-shadow: none;
+}
+
+#hud {
+  width: min(332px, calc((100vw - 36px) / var(--game-ui-scale)));
+  padding: 14px;
+  border-radius: 22px;
+  text-shadow: none;
+}
+
+#hud::before { display: none; }
+.hud-topline { padding: 0 0 11px; }
+.hud-zone { font-size: 1.12rem; line-height: 1.05; letter-spacing: -.01em; }
+.hud-act { border-color: var(--color-border); background: var(--color-surface-muted); }
+.hud-health-row,
+.hud-objective-card,
+.hud-dash-card,
+.hud-speedrun-card {
+  border-color: rgba(255,255,255,.075);
+  background: rgba(3, 6, 11, .22);
+}
+.hud-objective-card { border-radius: 16px 16px 10px 10px; }
+.hud-speedrun-card { border-radius: 10px 10px 16px 16px; }
+.heart { border-radius: 4px; }
+
+#message {
+  border-radius: 22px;
+  background: var(--color-surface-glass);
+  text-shadow: none;
+}
+#message::before { inset: 0; border: 0; border-radius: inherit; }
+#message .big { font-size: clamp(36px, 7vw, 64px); }
+
+#hintLayer {
+  left: calc(28px + env(safe-area-inset-left));
+  right: calc(28px + env(safe-area-inset-right));
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  gap: 18px 28px;
+  color: rgba(255, 246, 232, .58);
+  font: 950 .88rem/1 var(--font-ui);
+  letter-spacing: .055em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 8px rgba(0,0,0,.72), 0 0 18px rgba(0,0,0,.55);
+}
+
+#hintLayer::before {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 88px;
+  z-index: -1;
+  background: linear-gradient(to top, rgba(2, 3, 8, .58), rgba(2, 3, 8, .24) 54%, transparent);
+  pointer-events: none;
+}
+
+.input-hint,
+button.input-hint,
+span.input-hint {
+  gap: 9px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
+  text-shadow: inherit;
+}
+
+.input-hint__icon { opacity: .62; filter: grayscale(1) saturate(.08) brightness(1.65) contrast(.72); }
+.input-hint__label { color: inherit; }
+.input-hint__joiner { display: none; }
+.ds-keycap,
+kbd.ds-keycap,
+.input-hint[data-input-platform="gamepad"] .ds-keycap {
+  min-width: 38px;
+  min-height: 29px;
+  width: auto;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 999px;
+  color: rgba(21, 21, 24, .82);
+  background: rgba(238, 234, 225, .62);
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,.16), 0 1px 8px rgba(0,0,0,.22);
+  font: 950 .82rem/1 var(--font-ui);
+  letter-spacing: .015em;
+  text-shadow: none;
+}
+
+.devtool-toggle { border-radius: 12px; background: rgba(255,246,232,.92); box-shadow: 0 14px 42px rgba(0,0,0,.34); }
+.devtool-panel__header { background: rgba(9, 12, 18, .82); backdrop-filter: blur(18px) saturate(130%); }
+
+@media (max-width: 620px), (max-height: 680px) {
+  #startScreen,
+  #pauseScreen,
+  #startScreen.ds-screen--hero,
+  #pauseScreen.ds-screen--overlay { padding: max(10px, calc(12px * var(--menu-ui-scale))) max(10px, calc(12px * var(--menu-ui-scale))) calc(max(10px, calc(12px * var(--menu-ui-scale))) + 64px); }
+  .start-stage { grid-template-columns: 1fr; gap: 18px; width: 100%; }
+  #startScreen .menu-actions { grid-template-columns: 1fr; width: 100%; }
+  #startScreen #startButton { grid-column: auto; }
+  #hintLayer { left: calc(10px + env(safe-area-inset-left)); right: calc(10px + env(safe-area-inset-right)); bottom: calc(10px + env(safe-area-inset-bottom)); gap: 10px 14px; }
+}
