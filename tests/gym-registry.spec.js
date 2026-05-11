@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { getAllGyms, getGymById } from '#/content/gyms/registry.js';
 
 test('registered gyms are in-engine machine-based tilemap scenarios', () => {
-  expect(getAllGyms().map(gym => gym.id)).toEqual(['movement-gym', 'rendering-gym']);
+  expect(getAllGyms().map(gym => gym.id)).toEqual(['movement-gym', 'rendering-gym', 'finish-gate-gym']);
   expect(getGymById('movement-gym')).toMatchObject({
     id: 'movement-gym',
     source: 'gyms',
@@ -36,6 +36,26 @@ test('registered gyms are in-engine machine-based tilemap scenarios', () => {
       id: 'rendering.read-model-actors',
       authority: 'observer',
       validates: expect.arrayContaining(['rendering.read-model'])
+    })
+  ]));
+  expect(getGymById('finish-gate-gym')).toMatchObject({
+    id: 'finish-gate-gym',
+    source: 'gyms',
+    visibility: 'developer',
+    composition: { type: 'tilemap-gameplay' },
+    machinePolicy: { autoStart: true },
+    ci: true
+  });
+  expect(getGymById('finish-gate-gym').machines).toEqual(expect.arrayContaining([
+    expect.objectContaining({
+      id: 'finish-gate.trigger-geometry',
+      authority: 'observer',
+      validates: expect.arrayContaining(['finish-gate.geometry', 'scene.transition'])
+    }),
+    expect.objectContaining({
+      id: 'finish-gate.complete-session',
+      authority: 'input',
+      validates: expect.arrayContaining(['finish-gate.transition', 'gameplay.outcome'])
     })
   ]));
   expect(getGymById('ui-navigation-gym')).toBeNull();
