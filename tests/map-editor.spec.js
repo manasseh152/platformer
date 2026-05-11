@@ -349,6 +349,75 @@ test('map editor controller navigates and activates controls in the selected tab
   await expect(page.locator('#gridToggle')).not.toBeChecked();
 });
 
+test('map editor keyboard and controller use two-axis navigation inside two-column groups', async ({ page }) => {
+  await page.addInitScript(() => {
+    const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));
+    const pad = { index: 0, id: 'Mock Controller', mapping: 'standard', buttons, axes: [0, 0, 0, 0] };
+    window.__setMockGamepadButton = (index, pressed) => { buttons[index] = { pressed }; };
+    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] });
+  });
+  await page.goto('/editor.html');
+
+  await page.getByRole('button', { name: 'Grass' }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('button', { name: 'Dirt' })).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('button', { name: 'Invisible' })).toBeFocused();
+  await page.keyboard.press('KeyW');
+  await expect(page.getByRole('button', { name: 'Dirt' })).toBeFocused();
+
+  await page.getByRole('tab', { name: 'Map' }).click();
+  await page.locator('#colsInput').focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.locator('#rowsInput')).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator('#resetButton')).toBeFocused();
+
+  await page.getByRole('tab', { name: 'Edit' }).click();
+  await page.getByRole('button', { name: 'Grass' }).focus();
+  await page.evaluate(() => window.__setMockGamepadButton(15, true));
+  await expect(page.getByRole('button', { name: 'Dirt' })).toBeFocused();
+  await page.evaluate(() => window.__setMockGamepadButton(15, false));
+  await page.evaluate(() => window.__setMockGamepadButton(13, true));
+  await expect(page.getByRole('button', { name: 'Invisible' })).toBeFocused();
+});
+
+test('map editor controller treats text inputs as focus-only controls', async ({ page }) => {
+  await page.addInitScript(() => {
+    const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));
+    const pad = { index: 0, id: 'Mock Controller', mapping: 'standard', buttons, axes: [0, 0, 0, 0] };
+    window.__setMockGamepadButton = (index, pressed) => { buttons[index] = { pressed }; };
+    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] });
+  });
+  await page.goto('/editor.html');
+
+  await page.locator('#mapTab').click();
+  await expect(page.locator('#mapPanel')).toBeVisible();
+  await page.locator('#nameInput').focus();
+  await page.locator('#nameInput').fill('Controller Focus Test');
+
+  await page.evaluate(() => window.__setMockGamepadButton(0, true));
+  await page.waitForTimeout(120);
+  await expect(page.locator('#nameInput')).toBeFocused();
+  await expect(page.locator('#nameInput')).toHaveValue('Controller Focus Test');
+  await page.evaluate(() => window.__setMockGamepadButton(0, false));
+
+  await page.evaluate(() => window.__setMockGamepadButton(13, true));
+  await expect(page.locator('#idInput')).toBeFocused();
+  await page.evaluate(() => window.__setMockGamepadButton(13, false));
+  await page.waitForTimeout(80);
+
+  await page.keyboard.type('-keyboard-ok');
+  await expect(page.locator('#idInput')).toHaveValue(/-keyboard-ok$/);
+
+  await page.evaluate(() => window.__setMockGamepadButton(13, true));
+  await expect(page.locator('#colsInput')).toBeFocused();
+  await page.evaluate(() => window.__setMockGamepadButton(13, false));
+  await page.waitForTimeout(80);
+  await page.evaluate(() => window.__setMockGamepadButton(12, true));
+  await expect(page.locator('#idInput')).toBeFocused();
+});
+
 test('map editor can disable auto-save and commit with ctrl+s', async ({ page }) => {
   await page.goto('/editor.html');
   await openMapPanel(page);

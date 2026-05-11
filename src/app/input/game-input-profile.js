@@ -5,7 +5,7 @@ export const gameInputProfile = {
     bindCapture: { priority: 1000, actions: [] },
     global: { priority: 100, actions: ['devtools.toggle', 'devtools.pause'] },
     menu: { priority: 50, actions: ['menu.navigateX', 'menu.navigateY', 'menu.accept', 'menu.back', 'menu.settings', 'menu.previousTab', 'menu.nextTab'] },
-    editor: { priority: 20, actions: ['editor.panModifier', 'editor.save', 'editor.preview', 'editor.undo', 'editor.redo', 'editor.previousTab', 'editor.nextTab'] },
+    editor: { priority: 20, actions: ['editor.panModifier', 'editor.save', 'editor.preview', 'editor.undo', 'editor.redo', 'editor.previousTab', 'editor.nextTab', 'editor.togglePanel', 'editor.toggleMode', 'editor.paint', 'editor.previousBrush', 'editor.nextBrush'] },
     gameplay: { priority: 10, actions: ['player.moveX', 'player.jump', 'player.dash', 'player.attack', 'system.pause', 'system.restart'] }
   },
   actions: {
@@ -30,7 +30,12 @@ export const gameInputProfile = {
     'editor.undo': { kind: 'button', label: 'Undo', preventDefault: true, userRemappable: false, allowModifierKeys: true },
     'editor.redo': { kind: 'button', label: 'Redo', preventDefault: true, userRemappable: false, allowModifierKeys: true },
     'editor.previousTab': { kind: 'button', label: 'Previous Tab', preventDefault: true, userRemappable: false },
-    'editor.nextTab': { kind: 'button', label: 'Next Tab', preventDefault: true, userRemappable: false }
+    'editor.nextTab': { kind: 'button', label: 'Next Tab', preventDefault: true, userRemappable: false },
+    'editor.togglePanel': { kind: 'button', label: 'Toggle Editor Panel', preventDefault: true, userRemappable: false },
+    'editor.toggleMode': { kind: 'button', label: 'Toggle Draw/Navigate Mode', preventDefault: true, userRemappable: false },
+    'editor.paint': { kind: 'button', label: 'Paint Cell', preventDefault: true, userRemappable: false },
+    'editor.previousBrush': { kind: 'button', label: 'Previous Brush', preventDefault: true, userRemappable: false },
+    'editor.nextBrush': { kind: 'button', label: 'Next Brush', preventDefault: true, userRemappable: false }
   },
   defaultBindings: {
     'player.moveX': [
@@ -113,7 +118,12 @@ export const gameInputProfile = {
       { deviceType: 'keyboard', control: 'key', code: 'KeyZ', modifiers: { primary: true, shift: true } }
     ],
     'editor.previousTab': [{ deviceType: 'gamepad', control: 'button', index: 4 }],
-    'editor.nextTab': [{ deviceType: 'gamepad', control: 'button', index: 5 }]
+    'editor.nextTab': [{ deviceType: 'gamepad', control: 'button', index: 5 }],
+    'editor.togglePanel': [{ deviceType: 'gamepad', control: 'button', index: 3 }],
+    'editor.toggleMode': [{ deviceType: 'gamepad', control: 'button', index: 2 }],
+    'editor.paint': [{ deviceType: 'gamepad', control: 'button', index: 0 }],
+    'editor.previousBrush': [{ deviceType: 'gamepad', control: 'button', index: 4 }],
+    'editor.nextBrush': [{ deviceType: 'gamepad', control: 'button', index: 5 }]
   },
   uiGroups: {
     gameplayControls: [

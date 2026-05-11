@@ -1,0 +1,67 @@
+@import url("/styles/fonts.css");
+
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-bg: oklch(10.5% 0.018 255);
+  --color-bg-muted: oklch(14.5% 0.021 255);
+  --color-bg-elevated: oklch(18% 0.024 255);
+
+  --color-surface: color-mix(in srgb, white 6%, transparent);
+  --color-surface-muted: color-mix(in srgb, white 4%, transparent);
+  --color-surface-strong: color-mix(in srgb, white 11%, transparent);
+  --color-surface-raised: oklch(19% 0.024 255);
+  --color-surface-glass: color-mix(in srgb, oklch(17% 0.024 255) 78%, transparent);
+
+  --color-text: oklch(96% 0.018 82);
+  --color-text-muted: color-mix(in srgb, var(--color-text) 66%, transparent);
+  --color-text-subtle: color-mix(in srgb, var(--color-text) 42%, transparent);
+
+  --color-border: color-mix(in srgb, var(--color-text) 14%, transparent);
+  --color-border-strong: color-mix(in srgb, var(--color-text) 28%, transparent);
+
+  --color-accent: oklch(78% 0.15 78);
+  --color-accent-soft: color-mix(in srgb, var(--color-accent) 16%, transparent);
+  --color-accent-muted: oklch(89% 0.075 78);
+  --color-accent-text: oklch(13% 0.018 78);
+
+  --color-info: oklch(76% 0.12 210);
+  --color-success: oklch(78% 0.14 145);
+  --color-danger: oklch(68% 0.18 28);
+
+  --radius-xs: 10px;
+  --radius-sm: 14px;
+  --radius-md: 20px;
+  --radius-lg: 30px;
+  --radius-xl: 42px;
+  --radius-pill: 999px;
+
+  --space-1: 6px;
+  --space-2: 10px;
+  --space-3: 14px;
+  --space-4: 18px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 44px;
+  --space-8: 60px;
+
+  --font-sans: "Geist Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono-family: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+  --font-pixel: "Geist Pixel", "Geist Mono", ui-monospace, monospace;
+  --font-ui: var(--font-sans);
+  --font-display: var(--font-sans);
+  --font-mono: var(--font-mono-family);
+
+  --shadow-panel: 0 22px 70px rgb(0 0 0 / .46), 0 0 0 1px rgb(255 255 255 / .04) inset;
+  --shadow-popover: 0 18px 52px rgb(0 0 0 / .42);
+  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-accent) 28%, transparent), 0 0 0 6px color-mix(in srgb, var(--color-text) 9%, transparent);
+  --shadow-glow: 0 14px 36px color-mix(in srgb, var(--color-accent) 18%, transparent);
+
+  --ease-standard: cubic-bezier(.2, .8, .2, 1);
+  --duration-fast: 140ms;
+  --duration-base: 190ms;
+
+  --game-ui-scale: 1;
+  --menu-ui-scale: 1;
+}

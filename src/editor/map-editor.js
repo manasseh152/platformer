@@ -109,6 +109,9 @@ let dirty = false;
 let saving = false;
 let panMode = false;
 let editorPanelLastFocused = null;
+let controllerNavX = 0;
+let controllerNavY = 0;
+let controllerCanvasMode = 'draw';
 
 function storageKey(id) { return localDraftStorageKey(id); }
 function viewStorageKey(id) { return localDraftViewStorageKey(id); }
@@ -320,24 +323,73 @@ function ensureEditorPanelFocus() {
   return ensureMenuFocus(panel, editorPanelLastFocused, focusEditorControl);
 }
 
-function moveHorizontalEditorGroupFocus(direction) {
+function focusCenter(element) {
+  const rect = element.getBoundingClientRect();
+  return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, rect };
+}
+
+function spatialDistance(from, to, axis) {
+  const primary = axis === 'x' ? Math.abs(to.x - from.x) : Math.abs(to.y - from.y);
+  const secondary = axis === 'x' ? Math.abs(to.y - from.y) : Math.abs(to.x - from.x);
+  return secondary * 4 + primary;
+}
+
+function moveSpatialEditorFocus(axis, direction) {
   const panel = activeEditorPanel();
   if (!panel) return false;
+  if (ensureEditorPanelFocus()) return true;
+  const items = visibleFocusables(panel);
   const current = currentFocusElement(panel, editorPanelLastFocused);
-  const group = current?.closest?.('.button-row, .brush-grid, .switch-stack');
-  if (!group) return false;
-  const items = visibleFocusables(group);
-  const index = items.indexOf(current);
-  if (items.length < 2 || index < 0) return false;
-  focusEditorControl(items[(index + direction + items.length) % items.length]);
+  if (!items.length || !current || !items.includes(current)) return false;
+  const from = focusCenter(current);
+  const candidates = items
+    .filter(item => item !== current)
+    .map(item => ({ item, center: focusCenter(item) }))
+    .filter(({ center }) => axis === 'x'
+      ? direction < 0 ? center.x < from.x - 2 : center.x > from.x + 2
+      : direction < 0 ? center.y < from.y - 2 : center.y > from.y + 2)
+    .sort((a, b) => spatialDistance(from, a.center, axis) - spatialDistance(from, b.center, axis));
+  if (!candidates.length) return false;
+  focusEditorControl(candidates[0].item);
   return true;
+}
+
+function moveHorizontalEditorGroupFocus(direction) {
+  return moveSpatialEditorFocus('x', direction);
 }
 
 function moveEditorPanelFocus(direction) {
   const panel = activeEditorPanel();
   if (!panel) return false;
-  if (ensureEditorPanelFocus()) return true;
+  if (moveSpatialEditorFocus('y', direction)) return true;
   return moveLinearFocus(panel, editorPanelLastFocused, direction, focusEditorControl);
+}
+
+function moveEditorPanelFocusForKey(event) {
+  const keyDirections = {
+    ArrowLeft: ['x', -1],
+    KeyA: ['x', -1],
+    ArrowRight: ['x', 1],
+    KeyD: ['x', 1],
+    ArrowUp: ['y', -1],
+    KeyW: ['y', -1],
+    ArrowDown: ['y', 1],
+    KeyS: ['y', 1]
+  };
+  const direction = keyDirections[event.code] || keyDirections[event.key];
+  if (!direction) return false;
+  const editableText = ['TEXTAREA'].includes(event.target?.tagName) || (event.target?.tagName === 'INPUT' && !['button', 'checkbox', 'radio', 'number'].includes(event.target.type));
+  if (editableText && !event.key.startsWith('Arrow')) return false;
+  const moved = direction[0] === 'x' ? moveSpatialEditorFocus('x', direction[1]) : moveEditorPanelFocus(direction[1]);
+  if (moved) event.preventDefault();
+  return moved;
+}
+
+function isControllerPassiveInput(element) {
+  if (!element) return false;
+  if (element.tagName === 'TEXTAREA' || element.tagName === 'SELECT') return true;
+  if (element.tagName !== 'INPUT') return false;
+  return !['button', 'checkbox', 'radio', 'submit', 'reset'].includes(element.type);
 }
 
 function activateFocusedEditorControl() {
@@ -346,6 +398,7 @@ function activateFocusedEditorControl() {
   if (ensureEditorPanelFocus()) return true;
   const current = currentFocusElement(panel, editorPanelLastFocused);
   if (!current || !panel.contains(current)) return false;
+  if (isControllerPassiveInput(current)) return true;
   current.click?.();
   return true;
 }
@@ -596,8 +649,7 @@ function pointerCell(event) {
   return { col: Math.floor(point.x / brush.cellSize), row: Math.floor(point.y / brush.cellSize) };
 }
 
-function paint(event) {
-  const cell = pointerCell(event);
+function applyBrushToCell(cell) {
   pointer = cell;
   const key = `${brush.layerId}:${cell.col},${cell.row}:${brush.symbol ?? 'null'}`;
   if (key === lastPaintKey) return;
@@ -614,6 +666,10 @@ function paint(event) {
     setStatus('Editing…', '');
   }
   scheduleRender();
+}
+
+function paint(event) {
+  applyBrushToCell(pointerCell(event));
 }
 
 function applyHistoryCellChange(change) {
@@ -650,42 +706,152 @@ function updatePan(event) {
 function editorInputRoute() { return inputRuntime.route(['editor', 'menu']); }
 
 function processEditorKeyboardEvent(event) {
+  const primaryModifier = event.ctrlKey || event.metaKey || event.altKey;
+  if (event.type === 'keydown' && !primaryModifier && moveEditorPanelFocusForKey(event)) return;
   inputAdapter.queueKeyboardEvent(event);
   inputAdapter.beginFrame({ controllerEnabled: false });
   const route = editorInputRoute();
   syncTabHints({ consoleActive: false });
   if (route.wasPressed('editor.save')) { event.preventDefault(); route.consume('editor.save'); saveLocalExplicit(); inputRuntime.endFrame(); return; }
   if (route.wasPressed('editor.preview')) { event.preventDefault(); route.consume('editor.preview'); previewDraft(); inputRuntime.endFrame(); return; }
-  if (['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target?.tagName)) { inputRuntime.endFrame(); return; }
   if (route.wasPressed('editor.redo')) { event.preventDefault(); route.consume('editor.redo'); applyHistoryAction('redo'); inputRuntime.endFrame(); return; }
   if (route.wasPressed('editor.undo')) { event.preventDefault(); route.consume('editor.undo'); applyHistoryAction('undo'); inputRuntime.endFrame(); return; }
+  if (event.type === 'keydown' && moveEditorPanelFocusForKey(event)) { inputRuntime.endFrame(); return; }
+  if (['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target?.tagName)) { inputRuntime.endFrame(); return; }
   inputRuntime.endFrame();
+}
+
+function navDirection(value) {
+  if (value < -0.35) return -1;
+  if (value > 0.35) return 1;
+  return 0;
 }
 
 function processEditorControllerFrame() {
   inputAdapter.beginFrame({ controllerEnabled: true });
   syncTabHints({ inputScheme: 'gamepad' });
   const route = editorInputRoute();
-  if (route.wasPressed('editor.previousTab')) { route.consume('editor.previousTab'); moveActiveTab(-1); }
-  if (route.wasPressed('editor.nextTab')) { route.consume('editor.nextTab'); moveActiveTab(1); }
-  if (route.wasPressed('menu.navigateX')) {
-    const x = route.value('menu.navigateX');
-    if (x < 0 && moveHorizontalEditorGroupFocus(-1)) route.consume('menu.navigateX');
-    else if (x > 0 && moveHorizontalEditorGroupFocus(1)) route.consume('menu.navigateX');
+
+  if (route.wasPressed('editor.togglePanel')) { route.consume('editor.togglePanel'); toggleEditorPanel(); }
+  if (route.wasPressed('editor.toggleMode')) { route.consume('editor.toggleMode'); toggleControllerCanvasMode(); }
+
+  const xValue = route.value('menu.navigateX');
+  const yValue = route.value('menu.navigateY');
+  const xDirection = navDirection(xValue);
+  const yDirection = navDirection(yValue);
+
+  if (overlayHidden) {
+    if (route.wasPressed('editor.previousBrush')) { route.consume('editor.previousBrush'); cycleBrush(-1); }
+    if (route.wasPressed('editor.nextBrush')) { route.consume('editor.nextBrush'); cycleBrush(1); }
+
+    if (controllerCanvasMode === 'navigate') {
+      if (xValue || yValue) {
+        panByScreenDelta(viewport, -xValue * 12, -yValue * 12, worldWidth(), worldHeight());
+        saveView();
+        scheduleRender();
+        route.consume('menu.navigateX');
+        route.consume('menu.navigateY');
+      }
+    } else {
+      ensureControllerPointer();
+      if (xDirection && xDirection !== controllerNavX) { moveControllerPointer(xDirection, 0); route.consume('menu.navigateX'); }
+      if (yDirection && yDirection !== controllerNavY) { moveControllerPointer(0, yDirection); route.consume('menu.navigateY'); }
+      if (route.wasPressed('editor.paint')) {
+        route.consume('editor.paint');
+        lastPaintKey = null;
+        history.beginAction('controller paint');
+        applyBrushToCell(ensureControllerPointer());
+        history.commitAction();
+        updateHistoryControls();
+        flushPending();
+      }
+    }
+  } else {
+    if (route.wasPressed('editor.previousTab')) { route.consume('editor.previousTab'); moveActiveTab(-1); }
+    if (route.wasPressed('editor.nextTab')) { route.consume('editor.nextTab'); moveActiveTab(1); }
+
+    if (xDirection && xDirection !== controllerNavX) {
+      if (xDirection < 0 && moveHorizontalEditorGroupFocus(-1)) route.consume('menu.navigateX');
+      else if (xDirection > 0 && moveHorizontalEditorGroupFocus(1)) route.consume('menu.navigateX');
+    }
+
+    if (yDirection && yDirection !== controllerNavY) {
+      if (yDirection < 0) { route.consume('menu.navigateY'); moveEditorPanelFocus(-1); }
+      if (yDirection > 0) { route.consume('menu.navigateY'); moveEditorPanelFocus(1); }
+    }
+
+    if (route.wasPressed('menu.accept')) { route.consume('menu.accept'); activateFocusedEditorControl(); }
+    if (route.wasPressed('menu.back')) { route.consume('menu.back'); setActiveTab(activeTab, { show: false }); }
   }
-  if (route.wasPressed('menu.navigateY')) {
-    const y = route.value('menu.navigateY');
-    if (y < 0) { route.consume('menu.navigateY'); moveEditorPanelFocus(-1); }
-    if (y > 0) { route.consume('menu.navigateY'); moveEditorPanelFocus(1); }
-  }
-  if (route.wasPressed('menu.accept')) { route.consume('menu.accept'); activateFocusedEditorControl(); }
-  if (route.wasPressed('menu.back')) { route.consume('menu.back'); setActiveTab(activeTab, { show: false }); }
+
+  controllerNavX = xDirection;
+  controllerNavY = yDirection;
   syncTabHints({ inputScheme: 'gamepad' });
   inputRuntime.endFrame();
   requestAnimationFrame(processEditorControllerFrame);
 }
 
 function isPanGesture(event) { return panMode || event.button === 1 || editorInputRoute().isDown('editor.panModifier'); }
+
+function layerBoundsForBrush() {
+  const layer = draft.layers.find(layer => layer.id === brush.layerId);
+  return { cols: layer?.rows?.[0]?.length ?? 1, rows: layer?.rows?.length ?? 1 };
+}
+
+function clampBrushCell(cell) {
+  const bounds = layerBoundsForBrush();
+  return {
+    col: Math.max(0, Math.min(bounds.cols - 1, cell.col)),
+    row: Math.max(0, Math.min(bounds.rows - 1, cell.row))
+  };
+}
+
+function ensureControllerPointer() {
+  if (pointer) {
+    pointer = clampBrushCell(pointer);
+    return pointer;
+  }
+  const rect = visibleWorldRect(viewport);
+  pointer = clampBrushCell({
+    col: Math.floor((rect.x + rect.w / 2) / brush.cellSize),
+    row: Math.floor((rect.y + rect.h / 2) / brush.cellSize)
+  });
+  return pointer;
+}
+
+function moveControllerPointer(dx, dy) {
+  const current = ensureControllerPointer();
+  pointer = clampBrushCell({ col: current.col + dx, row: current.row + dy });
+  scheduleRender();
+}
+
+function setBrush(candidate) {
+  const previous = brush;
+  const worldPoint = pointer ? { x: (pointer.col + 0.5) * previous.cellSize, y: (pointer.row + 0.5) * previous.cellSize } : null;
+  brush = candidate;
+  if (worldPoint) pointer = clampBrushCell({ col: Math.floor(worldPoint.x / brush.cellSize), row: Math.floor(worldPoint.y / brush.cellSize) });
+  buildBrushButtons();
+  render();
+}
+
+function cycleBrush(direction) {
+  const index = BRUSHES.findIndex(candidate => candidate.id === brush.id);
+  const nextIndex = ((index < 0 ? 0 : index) + direction + BRUSHES.length) % BRUSHES.length;
+  setBrush(BRUSHES[nextIndex]);
+  setStatus(`Brush: ${brush.label}.`, '');
+}
+
+function toggleControllerCanvasMode() {
+  controllerCanvasMode = controllerCanvasMode === 'draw' ? 'navigate' : 'draw';
+  document.body.dataset.editorControllerMode = controllerCanvasMode;
+  setStatus(controllerCanvasMode === 'draw' ? 'Controller draw mode: left stick moves cursor, A paints, LB/RB changes brush.' : 'Controller navigate mode: left stick pans. Press X for draw mode.', '');
+}
+
+function toggleEditorPanel() {
+  setActiveTab(activeTab, { show: overlayHidden });
+  if (overlayHidden) setStatus('Brush panel hidden. Press Y to show it.', '');
+  else setStatus('Brush panel shown. Press B or Y to return to canvas.', '');
+}
 
 function buildBrushButtons() {
   dom.brushes.innerHTML = '';
@@ -694,7 +860,8 @@ function buildBrushButtons() {
     button.type = 'button';
     button.textContent = candidate.label;
     button.className = candidate.id === brush.id ? 'active' : '';
-    button.addEventListener('click', () => { brush = candidate; buildBrushButtons(); render(); });
+    button.setAttribute('aria-pressed', candidate.id === brush.id ? 'true' : 'false');
+    button.addEventListener('click', () => { setBrush(candidate); });
     dom.brushes.append(button);
   }
 }
@@ -787,6 +954,7 @@ function setup() {
   loadViewOrReset();
   syncInputs();
   syncPreferencesUi();
+  document.body.dataset.editorControllerMode = controllerCanvasMode;
   setActiveTab('edit', { show: true });
 
   new ResizeObserver(() => { resizeViewport(viewport); clampCamera(viewport, worldWidth(), worldHeight()); render(); }).observe(dom.canvas.parentElement);

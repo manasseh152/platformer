@@ -1,7 +1,12 @@
 export function visibleFocusables(root) {
   return [...root.querySelectorAll('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled)')]
     .filter(el => el.getAttribute('role') !== 'tab')
-    .filter(el => el.offsetParent !== null && getComputedStyle(el).visibility !== 'hidden');
+    .filter(el => !el.closest('details:not([open])'))
+    .filter(el => {
+      const style = getComputedStyle(el);
+      const rect = el.getBoundingClientRect();
+      return el.offsetParent !== null && style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0;
+    });
 }
 
 export function currentFocusElement(root, fallback = null) {

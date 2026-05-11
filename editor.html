@@ -4,14 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Chibi Hollow Tilemap Editor</title>
-  <link rel="stylesheet" href="/styles/map-editor.css" />
+  <link rel="stylesheet" href="/styles/main.editor.css" />
 </head>
 <body>
   <main class="editor-shell">
     <header class="editor-topbar" aria-label="Editor controls">
-      <button id="mainMenuButton" type="button" class="top-button">Main menu</button>
+      <button id="mainMenuButton" type="button" class="top-button ds-button ds-button--secondary">Main menu</button>
 
-      <div class="editor-tabs" role="tablist" aria-label="Editor action groups">
+      <div class="editor-tabs ds-tabs" role="tablist" aria-label="Editor action groups">
         <span class="editor-tabs__hint" data-editor-tab-hint="previous" data-input-tab-hint data-input-action="editor.previousTab" aria-hidden="true" hidden>LB</span>
         <button id="mapTab" type="button" role="tab" aria-label="Map" aria-selected="false" aria-controls="mapPanel" data-editor-tab="map"><span>Map</span></button>
         <button id="editTab" type="button" role="tab" aria-label="Edit" aria-selected="true" aria-controls="editPanel" data-editor-tab="edit"><span>Edit</span></button>
@@ -19,16 +19,16 @@
         <span class="editor-tabs__hint" data-editor-tab-hint="next" data-input-tab-hint data-input-action="editor.nextTab" aria-hidden="true" hidden>RB</span>
       </div>
 
-      <button id="saveLocalButton" type="button" class="save-state-button" data-save-state="clean" disabled>Saved</button>
+      <button id="saveLocalButton" type="button" class="save-state-button ds-button ds-button--secondary" data-save-state="clean" disabled>Saved</button>
     </header>
 
     <section class="workspace" aria-label="Tilemap workspace">
       <canvas id="editorCanvas" width="1152" height="512" aria-label="Tilemap canvas"></canvas>
 
-      <aside id="editorOverlay" class="editor-overlay" aria-label="Editor action panel">
+      <aside id="editorOverlay" class="editor-overlay ds-panel" aria-label="Editor action panel">
         <div class="overlay-head">
           <h1>Tilemap Editor</h1>
-          <button id="hideOverlayButton" type="button" class="ghost-button">Hide</button>
+          <button id="hideOverlayButton" type="button" class="ghost-button ds-button ds-button--ghost">Hide</button>
         </div>
 
         <section id="mapPanel" class="tab-panel" role="tabpanel" aria-labelledby="mapTab" hidden>
@@ -86,6 +86,7 @@
           <div class="panel-section">
             <h2>Brushes</h2>
             <div id="brushes" class="brush-grid" role="toolbar" aria-label="Paint brushes"></div>
+            <p class="hint">Controller: <kbd>Y</kbd> toggles this panel, <kbd>X</kbd> switches draw/navigate, <kbd>A</kbd> paints, <kbd>LB</kbd>/<kbd>RB</kbd> changes brush when the panel is hidden.</p>
           </div>
           <div class="panel-section">
             <h2>History</h2>
@@ -117,7 +118,7 @@
         <button id="panToggleButton" type="button" aria-pressed="false">Pan</button>
       </div>
 
-      <p id="status" class="status" role="status">Ready.</p>
+      <p id="status" class="status ds-status" role="status">Ready.</p>
     </section>
   </main>
 

@@ -68,8 +68,8 @@ Confidence:
 | Content | `src/content/**` | Authored campaigns, gyms, zoos, tilemaps, reusable authored objects, Chibi tilemap draft compilation | Should not depend on app/editor/UI. |
 | Catalog | `src/catalog/**` | Scenario/category registries, scenario service, local-draft catalog integration | Does not import editor modules; protected by boundary test. |
 | App/browser shell | top-level app modules, `src/app/**` | DOM, settings persistence, browser adapters, composition root | May compose all layers, but should pass smaller contexts over time. |
-| Game UI | `src/app/ui/menu/**`, `src/app/ui/**`, `src/app/ui/settings/settings-view.js`, `src/scenes/menu-dom.js`, `styles/main.css` | Start/pause/settings/scenario browser/HUD/devtools shell | `src/app/ui/menu/**` remains the shell/focus/event hotspot while scenario browser, settings navigation, and settings actions are focused modules. |
-| Editor UI/tool | `src/editor/**`, `styles/map-editor.css` | Browser map editor shell, command/status/payload helpers, viewport, persistence UI | `src/editor/map-editor.js` owns DOM/canvas wiring; `src/editor/map-editor-commands.js` owns reusable draft commands/status/payload helpers. |
+| Game UI | `src/app/ui/menu/**`, `src/app/ui/**`, `src/app/ui/settings/settings-view.js`, `src/scenes/menu-dom.js`, `styles/main.game.css` | Start/pause/settings/scenario browser/HUD/devtools shell | Imports shared UI tokens/primitives from `styles/ui-*.css`; `src/app/ui/menu/**` remains the shell/focus/event hotspot while scenario browser, settings navigation, and settings actions are focused modules. |
+| Editor UI/tool | `src/editor/**`, `styles/main.editor.css` | Browser map editor shell, command/status/payload helpers, viewport, persistence UI | Imports shared UI tokens/primitives from `styles/ui-*.css`; `src/editor/map-editor.js` owns DOM/canvas wiring; `src/editor/map-editor-commands.js` owns reusable draft commands/status/payload helpers. |
 | Rendering | `src/render/**`, `src/rendering/**`, `src/gpu/**` | Packet extraction, native-frame backends, presentation backends, render helpers | Gameplay and map snapshots render through packet extractors/backends; the old `src/render.js` facade and direct world renderer have been deleted. |
 | Devtools | `src/devtools/**` | Developer-only toolbox/overlays | Keep gated and out of core gameplay logic. |
 
@@ -181,8 +181,9 @@ Follow-up:
 
 Evidence:
 
-- `styles/main.css` defines tokens and `.ds-*` primitives.
-- `styles/map-editor.css` duplicates many token/button/focus primitives.
+- `styles/ui-tokens.css` defines shared semantic dark-theme tokens.
+- `styles/ui-primitives.css` defines shared `.ds-*` primitives and base focus/button behavior.
+- `styles/main.game.css` and `styles/main.editor.css` own product-specific composition.
 
 Direction:
 
