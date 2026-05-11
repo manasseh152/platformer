@@ -1,6 +1,6 @@
-export const DEFAULT_VIEWPORT = Object.freeze({ minZoom: 0.25, maxZoom: 4, fitPadding: 0.95 });
+export const DEFAULT_VIEWPORT = Object.freeze({ minZoom: 0.25, maxZoom: 4, fitPadding: 0.95, cameraPadding: 220 });
 
-export function createViewport(canvas, { minZoom = DEFAULT_VIEWPORT.minZoom, maxZoom = DEFAULT_VIEWPORT.maxZoom } = {}) {
+export function createViewport(canvas, { minZoom = DEFAULT_VIEWPORT.minZoom, maxZoom = DEFAULT_VIEWPORT.maxZoom, cameraPadding = DEFAULT_VIEWPORT.cameraPadding } = {}) {
   return {
     canvas,
     width: canvas.clientWidth || canvas.width || 1,
@@ -8,7 +8,8 @@ export function createViewport(canvas, { minZoom = DEFAULT_VIEWPORT.minZoom, max
     dpr: 1,
     camera: { x: 0, y: 0, zoom: 1 },
     minZoom,
-    maxZoom
+    maxZoom,
+    cameraPadding
   };
 }
 
@@ -47,8 +48,9 @@ export function clampZoom(viewport, zoom) {
 export function clampCamera(viewport, worldWidth, worldHeight) {
   const visibleWidth = viewport.width / viewport.camera.zoom;
   const visibleHeight = viewport.height / viewport.camera.zoom;
-  const xRange = cameraAxisRange(worldWidth, visibleWidth);
-  const yRange = cameraAxisRange(worldHeight, visibleHeight);
+  const padding = Math.max(0, viewport.cameraPadding ?? DEFAULT_VIEWPORT.cameraPadding) / viewport.camera.zoom;
+  const xRange = cameraAxisRange(worldWidth, visibleWidth, padding);
+  const yRange = cameraAxisRange(worldHeight, visibleHeight, padding);
   viewport.camera.x = clamp(viewport.camera.x, xRange.min, xRange.max);
   viewport.camera.y = clamp(viewport.camera.y, yRange.min, yRange.max);
 }
@@ -104,12 +106,12 @@ export function clearViewport(ctx, viewport, color = '#090d15') {
   ctx.fillRect(0, 0, viewport.width, viewport.height);
 }
 
-function cameraAxisRange(worldSize, visibleSize) {
+function cameraAxisRange(worldSize, visibleSize, padding = 0) {
   if (worldSize <= visibleSize) {
     const centered = (worldSize - visibleSize) / 2;
-    return { min: centered, max: centered };
+    return { min: centered - padding, max: centered + padding };
   }
-  return { min: 0, max: worldSize - visibleSize };
+  return { min: -padding, max: worldSize - visibleSize + padding };
 }
 
 function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }

@@ -50,6 +50,9 @@ const dom = {
   saveLocalButton: document.querySelector('#saveLocalButton'),
   overlay: document.querySelector('#editorOverlay'),
   hideOverlayButton: document.querySelector('#hideOverlayButton'),
+  overlayToggleLabel: document.querySelector('[data-overlay-toggle-label]'),
+  overlayToggleHint: document.querySelector('.overlay-toggle-hint'),
+  controllerPanelHint: document.querySelector('#controllerPanelHint'),
   tabs: Array.from(document.querySelectorAll('[data-editor-tab]')),
   tabHints: Array.from(document.querySelectorAll('[data-editor-tab-hint]')),
   panels: Array.from(document.querySelectorAll('[role="tabpanel"]')),
@@ -343,14 +346,24 @@ function syncViewportHints() {
 function setActiveTab(tabId, { show = true, focus = false } = {}) {
   activeTab = tabId;
   overlayHidden = !show;
-  if (dom.overlay) dom.overlay.hidden = overlayHidden;
+  if (dom.overlay) {
+    dom.overlay.hidden = overlayHidden;
+    dom.overlay.dataset.collapsed = overlayHidden ? 'true' : 'false';
+  }
+  if (dom.hideOverlayButton) {
+    if (dom.overlayToggleLabel) dom.overlayToggleLabel.textContent = 'Hide';
+    dom.hideOverlayButton.setAttribute('aria-expanded', overlayHidden ? 'false' : 'true');
+    dom.hideOverlayButton.setAttribute('aria-label', overlayHidden ? 'Show editor panel' : 'Hide editor panel');
+    if (dom.overlayToggleHint) dom.overlayToggleHint.hidden = overlayHidden;
+  }
+  if (dom.controllerPanelHint) dom.controllerPanelHint.hidden = !overlayHidden;
   for (const tab of dom.tabs) {
     const selected = tab.dataset.editorTab === activeTab;
     tab.setAttribute('aria-selected', selected ? 'true' : 'false');
     tab.tabIndex = selected ? 0 : -1;
     if (selected && focus) focusEditorControl(tab);
   }
-  for (const panel of dom.panels) panel.hidden = panel.id !== `${activeTab}Panel`;
+  for (const panel of dom.panels) panel.hidden = overlayHidden || panel.id !== `${activeTab}Panel`;
   if (!show) clearEditorControllerFocus();
 }
 
@@ -1099,7 +1112,7 @@ function setup() {
   new ResizeObserver(() => { resizeViewport(viewport); clampCamera(viewport, worldWidth(), worldHeight()); render(); }).observe(dom.canvas.parentElement);
   document.addEventListener('pointerup', () => setTimeout(() => syncTabHints({ consoleActive: false }), 0));
   dom.mainMenuButton?.addEventListener('click', navigateMainMenu);
-  dom.hideOverlayButton?.addEventListener('click', () => setActiveTab(activeTab, { show: false }));
+  dom.hideOverlayButton?.addEventListener('click', () => toggleEditorPanel());
   for (const tab of dom.tabs) {
     tab.addEventListener('click', () => toggleTab(tab.dataset.editorTab));
     tab.addEventListener('focus', () => { editorPanelLastFocused = tab; });

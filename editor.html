@@ -28,7 +28,7 @@
       <aside id="editorOverlay" class="editor-overlay ds-panel" aria-label="Editor action panel">
         <div class="overlay-head">
           <h1>Tilemap Editor</h1>
-          <button id="hideOverlayButton" type="button" class="ghost-button ds-button ds-button--ghost">Hide</button>
+          <button id="hideOverlayButton" type="button" class="ghost-button ds-button ds-button--ghost" aria-controls="editorOverlay" aria-expanded="true"><span data-overlay-toggle-label>Hide</span><span class="overlay-toggle-hint" data-input-hint data-input-action="editor.togglePanel" data-input-label="Hide sidebar" aria-hidden="true"></span></button>
         </div>
 
         <section id="mapPanel" class="tab-panel" role="tabpanel" aria-labelledby="mapTab" hidden>
@@ -86,7 +86,7 @@
           <div class="panel-section">
             <h2>Brushes</h2>
             <div id="brushes" class="brush-grid" role="toolbar" aria-label="Paint brushes"></div>
-            <p class="hint">Controller: <kbd>Y</kbd> toggles this panel, <kbd>X</kbd> switches draw/navigate, <kbd>A</kbd> paints, <kbd>LB</kbd>/<kbd>RB</kbd> changes brush when the panel is hidden.</p>
+            <p class="hint">Controller: <kbd>Y</kbd> uses the Hide/Edit button, <kbd>X</kbd> switches draw/navigate, <kbd>A</kbd> paints, <kbd>LB</kbd>/<kbd>RB</kbd> changes brush when the panel is hidden.</p>
           </div>
           <div class="panel-section">
             <h2>Controller brush</h2>
@@ -136,6 +136,7 @@
         <span data-input-hint data-input-action="editor.zoomOut" data-input-label="Zoom out"></span>
         <span data-input-hint data-input-action="editor.zoomIn" data-input-label="Zoom in"></span>
         <span data-input-hint data-input-action="editor.resetView" data-input-label="Reset view"></span>
+        <span id="controllerPanelHint" data-input-hint data-input-action="editor.togglePanel" data-input-label="Open menu" hidden></span>
         <span data-input-hint data-input-action="editor.toggleMode" data-input-label="Draw / pan"></span>
       </div>
 

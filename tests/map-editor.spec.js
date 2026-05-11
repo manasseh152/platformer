@@ -296,10 +296,13 @@ test('map editor tab clicks toggle the floating overlay', async ({ page }) => {
   await page.goto('/editor.html');
 
   await expect(page.locator('#editorOverlay')).toBeVisible();
+  await expect(page.locator('#editorOverlay')).toHaveAttribute('data-collapsed', 'false');
   await page.getByRole('tab', { name: 'Edit' }).click();
   await expect(page.locator('#editorOverlay')).toBeHidden();
+  await expect(page.locator('#editorOverlay')).toHaveAttribute('data-collapsed', 'true');
   await page.getByRole('tab', { name: 'Edit' }).click();
-  await expect(page.locator('#editorOverlay')).toBeVisible();
+  await expect(page.locator('#editorOverlay')).toHaveAttribute('data-collapsed', 'false');
+  await expect(page.locator('[data-overlay-toggle-label]')).toHaveText('Hide');
   await openMapPanel(page);
   await expect(page.locator('#mapPanel')).toBeVisible();
 });
@@ -343,6 +346,8 @@ test('map editor controller viewport hints replace floating buttons and trigger 
   await expect.poll(() => page.locator('#editorCanvas').getAttribute('data-zoom')).not.toBe(before);
   await expect(page.locator('#controllerViewportHints')).toBeVisible();
   await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Zoom in' })).toBeVisible();
+  await expect(page.locator('#controllerPanelHint')).toBeHidden();
+  await expect(page.locator('#hideOverlayButton .input-hint__label').filter({ hasText: 'Hide sidebar' })).toBeAttached();
   await expect(page.locator('#zoomReadout')).toContainText('%');
   await expect(page.locator('#zoomInButton')).toBeHidden();
 });
@@ -378,6 +383,8 @@ test('map editor controller paints a continuous stroke while the paint button is
 
   await page.evaluate(() => window.__setMockGamepadButton(3, true));
   await expect(page.locator('#editorOverlay')).toBeHidden();
+  await expect(page.locator('#editorOverlay')).toHaveAttribute('data-collapsed', 'true');
+  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Open menu' })).toBeVisible();
   await page.evaluate(() => window.__setMockGamepadButton(3, false));
 
   await page.evaluate(() => window.__setMockGamepadButton(0, true));
@@ -388,7 +395,7 @@ test('map editor controller paints a continuous stroke while the paint button is
 
   await expect(page.locator('#exportText')).toHaveValue(/\[null, null, null, null, K\.GRASS, K\.GRASS, K\.GRASS, K\.GRASS\]/);
   await page.evaluate(() => window.__setMockGamepadButton(3, true));
-  await expect(page.locator('#editorOverlay')).toBeVisible();
+  await expect(page.locator('#editorOverlay')).toHaveAttribute('data-collapsed', 'false');
   await expect(page.getByRole('button', { name: 'Undo' })).toBeEnabled();
 });
 

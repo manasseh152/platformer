@@ -148,11 +148,40 @@ body[data-editor-controller-mode="navigate"] #editorCanvas:active { cursor: grab
   scrollbar-color: rgba(255,246,232,.22) transparent;
 }
 .editor-overlay[hidden] { display: none; }
+.editor-overlay[data-collapsed="true"] {
+  top: auto;
+  left: 16px;
+  bottom: 16px;
+  width: auto;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+.editor-overlay[data-collapsed="true"] h1 { display: none; }
+.editor-overlay[data-collapsed="true"] #hideOverlayButton {
+  min-height: 44px;
+  color: #101016;
+  background: rgba(255,246,232,.92);
+  border-color: transparent;
+  font-weight: 900;
+  box-shadow: 0 14px 42px rgba(0,0,0,.34);
+}
 .overlay-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.editor-overlay[data-collapsed="true"] .overlay-head { margin: 0; }
 h1, h2 { margin: 0; font-family: var(--font-display); line-height: 1.1; font-weight: 750; letter-spacing: -.01em; }
 h1 { font-size: 1.12rem; color: rgba(255,246,232,.9); }
 h2 { margin-bottom: 10px; font-size: .9rem; color: rgba(255,246,232,.82); }
 .ghost-button { min-height: 32px; padding: .35rem .62rem; color: var(--color-text-muted); background: rgba(255,255,255,.045); }
+#hideOverlayButton { display: inline-flex; align-items: center; gap: 8px; }
+.overlay-toggle-hint { display: none; align-items: center; gap: 6px; }
+body[data-editor-input="gamepad"] .overlay-toggle-hint { display: inline-flex; }
+.overlay-toggle-hint .input-hint__icon { width: 22px; height: 22px; object-fit: contain; }
+.overlay-toggle-hint .input-hint__joiner,
+.overlay-toggle-hint .input-hint__label { display: none; }
 .tab-panel[hidden] { display: none; }
 .panel-section {
   padding: 12px;
@@ -289,6 +318,7 @@ body[data-editor-input="gamepad"] .floating-view-controls output {
   pointer-events: none;
 }
 body[data-editor-input="gamepad"] .controller-viewport-hints { display: flex; }
+.controller-viewport-hints span[data-input-hint][hidden] { display: none; }
 .controller-viewport-hints span[data-input-hint] {
   display: inline-flex;
   align-items: center;
