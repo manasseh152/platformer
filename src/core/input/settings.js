@@ -84,7 +84,9 @@ function normalizeBindings(profile, value, warnings) {
   const result = {};
   const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
   for (const actionId of Object.keys(defaults)) {
+    const action = profile.actions?.[actionId] || {};
     const bindings = source[actionId];
+    if (action.userRemappable === false) { result[actionId] = clone(defaults[actionId]); continue; }
     if (bindings === undefined) { result[actionId] = clone(defaults[actionId]); continue; }
     if (!Array.isArray(bindings) || !bindings.length || bindings.some(binding => !validBinding(binding))) {
       warnings.push({ path: `input.bindings.${actionId}`, code: 'invalid-bindings-reset' });

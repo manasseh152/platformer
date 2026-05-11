@@ -44,6 +44,19 @@ test('press edges survive down and up events queued in the same frame', () => {
   expect(input.wasReleased('system.pause')).toBe(true);
 });
 
+test('non-remappable menu bindings normalize to defaults so browser Tab stays native', () => {
+  const { settings } = normalizeInputSettings(gameInputProfile, {
+    input: {
+      bindings: {
+        ...gameInputProfile.defaultBindings,
+        'menu.settings': [{ deviceType: 'keyboard', control: 'key', code: 'Tab' }]
+      }
+    }
+  });
+
+  expect(settings.input.bindings['menu.settings']).toEqual(gameInputProfile.defaultBindings['menu.settings']);
+});
+
 test('gamepad buttons and selected runtime id drive assigned player slot', () => {
   const { settings } = normalizeInputSettings(gameInputProfile, {});
   settings.input.slots.player1.devices.gamepad.selectedRuntimeId = 'gamepad:1';
@@ -214,7 +227,7 @@ test('input hints derive controls from semantic bindings and explicit input sche
   const { settings } = normalizeInputSettings(gameInputProfile, {});
   const input = createInputRuntime(gameInputProfile, settings);
 
-  expect(textHintForAction(gameInputProfile, settings, 'menu.settings', { inputScheme: 'wasd' })).toBe('Tab Settings');
+  expect(textHintForAction(gameInputProfile, settings, 'menu.settings', { inputScheme: 'wasd' })).toBe('Esc Settings');
   expect(hintPartsForAction(gameInputProfile, settings, 'player.moveX', { inputScheme: 'arrows', axisScale: -1 }).parts.map(part => part.label)).toEqual(['←']);
 
   input.beginFrame();
@@ -237,7 +250,7 @@ test('input hints derive controls from semantic bindings and explicit input sche
     '/assets/kenney-input-prompts/xbox/xbox_stick_l_right.svg',
     '/assets/kenney-input-prompts/xbox/xbox_dpad_right.svg'
   ]);
-  expect(hintPartsForAction(gameInputProfile, settings, 'menu.settings', { runtime: input, inputScheme: 'wasd', iconPack: 'xbox' }).parts[0]).toMatchObject({ label: 'Tab', icon: '/assets/kenney-input-prompts/keyboard/keyboard_tab.svg' });
+  expect(hintPartsForAction(gameInputProfile, settings, 'menu.settings', { runtime: input, inputScheme: 'wasd', iconPack: 'xbox' }).parts[0]).toMatchObject({ label: 'Esc', icon: '/assets/kenney-input-prompts/keyboard/keyboard_escape.svg' });
   expect(rowHintParts(settings, 'jump', 'keyboard', { iconPack: 'xbox' }).map(part => part.icon)).toEqual([
     '/assets/kenney-input-prompts/keyboard/keyboard_w.svg',
     '/assets/kenney-input-prompts/keyboard/keyboard_space.svg',
@@ -263,7 +276,7 @@ test('tab input hints only display when controller input is active', () => {
   expect(hintEl.hidden).toBe(true);
 
   expect(input.wasPressed('menu.previousTab')).toBe(true);
-  renderTabInputHints({ inputScheme: 'wasd' }, root, { profile: gameInputProfile, settings, runtime: input });
+  renderTabInputHints({ inputScheme: 'gamepad' }, root, { profile: gameInputProfile, settings, runtime: input });
   expect(hintEl.hidden).toBe(false);
   expect(hintEl.innerHTML).toContain('LB');
 

@@ -72,6 +72,11 @@ function handleMenuRouteInput(game, route) {
     return activateSemanticMenuAction(game, 'menu.accept');
   }
 
+  if (!isStarted(game) && !backablePages.includes(game.menu.page) && route.wasPressed('menu.settings')) {
+    route.consume('menu.settings');
+    return activateSemanticMenuAction(game, 'menu.settings');
+  }
+
   if (route.wasPressed('menu.back')) {
     route.consume('menu.back');
     return activateSemanticMenuAction(game, 'menu.back');

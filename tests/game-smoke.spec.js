@@ -84,6 +84,23 @@ test('canvas presentation exposes integer scale and letterbox offsets', async ({
   expect(viewport.offsetY).toBe(Math.floor((viewport.height - 180 * viewport.scale) / 2));
 });
 
+test('browser Tab focus remains native while Escape opens start settings', async ({ page }) => {
+  await expect(page.locator('#startScreen')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe('startButton');
+
+  await page.keyboard.press('Tab');
+  await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe('startLevelSelectButton');
+  await expect(page.locator('#pauseScreen')).not.toBeVisible();
+
+  await page.keyboard.press('Shift+Tab');
+  await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe('startButton');
+  await expect(page.locator('#pauseScreen')).not.toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'settings-category');
+  await expect(page.locator('#menuTitle')).toHaveText('Keyboard');
+});
+
 test('single hint layer owns global controls across start, gameplay, and pause', async ({ page }) => {
   const hintLayer = page.locator('#hintLayer');
   await expect(hintLayer).toHaveCount(1);

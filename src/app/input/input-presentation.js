@@ -33,9 +33,10 @@ export function renderTabInputHints(input, root = document, gameOrOptions = {}) 
   const settings = options.settings || game?.inputRuntime?.settings || game?.settings || null;
   const runtime = game?.inputRuntime || options.runtime || null;
   const inputScheme = input?.inputScheme || options.inputScheme || 'wasd';
+  const lastActiveSource = runtime?.lastActiveSource?.();
   const controllerActive = options.consoleActive === false
     ? false
-    : inputScheme === 'gamepad';
+    : inputScheme === 'gamepad' && lastActiveSource?.deviceType === 'gamepad';
   root.querySelectorAll('[data-input-tab-hint]').forEach(el => {
     const actionId = el.dataset.inputAction;
     if (!controllerActive || !actionId || !settings?.input?.bindings?.[actionId]) { el.hidden = true; return; }

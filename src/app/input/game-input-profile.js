@@ -97,7 +97,7 @@ export const gameInputProfile = {
       { deviceType: 'gamepad', control: 'button', index: 1 }
     ],
     'menu.settings': [
-      { deviceType: 'keyboard', control: 'key', code: 'Tab' },
+      { deviceType: 'keyboard', control: 'key', code: 'Escape' },
       { deviceType: 'gamepad', control: 'button', index: 3 }
     ],
     'menu.previousTab': [{ deviceType: 'gamepad', control: 'button', index: 4 }],

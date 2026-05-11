@@ -350,8 +350,8 @@ function activateFocusedEditorControl() {
   return true;
 }
 
-function syncTabHints({ consoleActive } = {}) {
-  renderTabInputHints({ inputScheme: 'wasd' }, document, { profile: gameInputProfile, settings: inputRuntime.settings, runtime: inputRuntime, consoleActive });
+function syncTabHints({ consoleActive, inputScheme = 'wasd' } = {}) {
+  renderTabInputHints({ inputScheme }, document, { profile: gameInputProfile, settings: inputRuntime.settings, runtime: inputRuntime, consoleActive });
 }
 
 function navigateMainMenu() {
@@ -664,7 +664,7 @@ function processEditorKeyboardEvent(event) {
 
 function processEditorControllerFrame() {
   inputAdapter.beginFrame({ controllerEnabled: true });
-  syncTabHints();
+  syncTabHints({ inputScheme: 'gamepad' });
   const route = editorInputRoute();
   if (route.wasPressed('editor.previousTab')) { route.consume('editor.previousTab'); moveActiveTab(-1); }
   if (route.wasPressed('editor.nextTab')) { route.consume('editor.nextTab'); moveActiveTab(1); }
@@ -680,7 +680,7 @@ function processEditorControllerFrame() {
   }
   if (route.wasPressed('menu.accept')) { route.consume('menu.accept'); activateFocusedEditorControl(); }
   if (route.wasPressed('menu.back')) { route.consume('menu.back'); setActiveTab(activeTab, { show: false }); }
-  syncTabHints();
+  syncTabHints({ inputScheme: 'gamepad' });
   inputRuntime.endFrame();
   requestAnimationFrame(processEditorControllerFrame);
 }
