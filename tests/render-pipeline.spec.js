@@ -350,6 +350,34 @@ test('webgl native backend draws atlas sprite packets through the same asset IDs
   expect(result.source).toMatchObject({ kind: 'canvas2d', width: 2, height: 2 });
 });
 
+test('webgl2 deferred backend lights opaque rect terrain with point falloff', async ({ page }) => {
+  await page.goto('/');
+  const result = await page.evaluate(async () => {
+    const [{ createRenderFrameBuilder }, { createWebGl2DeferredNativeFrameBackend }] = await Promise.all([
+      import('/src/engine/render/frame-builder.js'),
+      import('/src/render/backends/webgl2-deferred-native-frame-backend.js')
+    ]);
+    const backend = createWebGl2DeferredNativeFrameBackend({ width: 8, height: 4 });
+    if (!backend) return { supported: false };
+    const frame = createRenderFrameBuilder({ width: 8, height: 4 })
+      .add({ kind: 'clear', fill: '#000000', lighting: 'unlit' })
+      .add({ kind: 'rect', lighting: 'lit', x: 0, y: 0, w: 8, h: 4, fill: '#808080' })
+      .add({ kind: 'light2d', lighting: 'light', lightKind: 'ambient', sourceId: 'ambient', color: [255, 255, 255, 255], intensity: 0.1 })
+      .add({ kind: 'light2d', lighting: 'light', lightKind: 'point', sourceId: 'point', color: [255, 255, 255, 255], intensity: 1, x: 2, y: 2, radius: 2, volumetricIntensity: 0, castsShadows: false })
+      .finalize();
+    backend.draw(frame);
+    const pixels = backend.ctx.getImageData(0, 0, 8, 4).data;
+    const at = (x, y) => Array.from(pixels.slice((y * 8 + x) * 4, (y * 8 + x) * 4 + 4));
+    return { supported: true, center: at(2, 2), outside: at(7, 2), source: backend.getSource() };
+  });
+
+  test.skip(!result.supported, 'WebGL2 unavailable in this browser');
+  expect(result.center[0]).toBeGreaterThan(result.outside[0]);
+  expect(result.center[1]).toBeGreaterThan(result.outside[1]);
+  expect(result.center[2]).toBeGreaterThan(result.outside[2]);
+  expect(result.source).toMatchObject({ kind: 'canvas2d', width: 8, height: 4 });
+});
+
 test('gameplay native backend can be toggled without changing extraction', async ({ page }) => {
   await page.goto('/');
   const result = await page.evaluate(async () => {
@@ -386,7 +414,7 @@ test('deferred lighting selection ignores default ambient and requests deferred 
   expect(selectNativeFrameBackendKindForFrame(defaultFrame, { devToolsFlags: { forceDeferredLighting: true } })).toBe('webgl2-deferred');
 });
 
-test('authored gameplay lights fall back to canvas while deferred backend is unavailable', async ({ page }) => {
+test('authored gameplay lights select the webgl2 deferred backend when available', async ({ page }) => {
   await page.goto('/');
   const result = await page.evaluate(async () => {
     const [{ createGameplaySession, syncGameplaySessionToGame }, { getTilemapById }, { renderGameplayFrame }, { createAssetRegistry }] = await Promise.all([
@@ -429,9 +457,10 @@ test('authored gameplay lights fall back to canvas while deferred backend is una
     };
   });
 
-  expect(result.backendKind).toBe('canvas2d');
-  expect(result.backend).toBe('canvas2d-native-frame-backend');
-  expect(result.deferredFallbackReasons).toContain('webgl2 deferred native-frame backend unavailable');
+  test.skip(result.backendKind === 'canvas2d' && result.deferredFallbackReasons.includes('webgl2 deferred native-frame backend unavailable'), 'WebGL2 unavailable in this browser');
+  expect(result.backendKind).toBe('webgl2-deferred');
+  expect(result.backend).toBe('webgl2-deferred-native-frame-backend');
+  expect(result.deferredFallbackReasons).toEqual([]);
   expect(result.presentedWidth).toBe(320);
 });
 

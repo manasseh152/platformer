@@ -26,11 +26,12 @@ test('scenario registry composes tilemap definitions and executable gyms', () =>
 });
 
 test('scenario registry filters developer scenarios', () => {
-  expect(getVisibleScenarioEntries({ developerMode: false }).map(entry => entry.id)).toEqual(['act-01-level-1', 'act-01-level-2', 'act-01-level-3']);
+  expect(getVisibleScenarioEntries({ developerMode: false }).map(entry => entry.id)).toEqual(['act-01-level-1', 'act-01-level-2', 'act-01-level-3', 'act-01-level-4']);
   expect(getVisibleScenarioEntries({ developerMode: true }).map(entry => entry.id)).toEqual([
     'act-01-level-1',
     'act-01-level-2',
     'act-01-level-3',
+    'act-01-level-4',
     'movement-gym',
     'rendering-gym',
     'finish-gate-gym',

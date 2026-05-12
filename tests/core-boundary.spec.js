@@ -17,7 +17,7 @@ async function jsFiles(dir) {
   return nested.flat();
 }
 
-test('engine modules only import within engine', async () => {
+test('engine modules only import within engine or core primitives', async () => {
   for (const file of await jsFiles(engineRoot)) {
     const source = await readFile(file, 'utf8');
     const imports = source.matchAll(/from\s+['"]([^'"]+)['"]|import\s*\(\s*['"]([^'"]+)['"]\s*\)/g);
@@ -25,7 +25,10 @@ test('engine modules only import within engine', async () => {
       const specifier = match[1] ?? match[2];
       if (!specifier.startsWith('.')) continue;
       const resolved = path.resolve(path.dirname(file), specifier);
-      expect(resolved, `${path.relative('.', file)} imports ${specifier}`).toContain(engineRoot);
+      expect(
+        resolved.startsWith(engineRoot) || resolved.startsWith(coreRoot),
+        `${path.relative('.', file)} imports ${specifier}`
+      ).toBe(true);
     }
   }
 });

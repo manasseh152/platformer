@@ -380,14 +380,22 @@ bunx playwright test tests/render-pipeline.spec.js --project=chromium
 bun run build
 ```
 
-### Slice 6: WebGL2 deferred MVP-A, rect surfaces
+### Slice 6: WebGL2 deferred MVP-A, rect surfaces — Complete
 
-- Add `webgl2-deferred-native-frame-backend` behind the existing backend contract.
-- Allocate native-resolution G-buffer/light/compose resources.
-- Support opaque lit solid-color rect packets.
-- Support ambient and point light accumulation.
-- Draw unsupported lit packets forward/unlit with diagnostics.
-- Add browser tests proving center-of-light pixels are brighter than outside-radius pixels for rect terrain.
+Implemented in:
+
+- `src/render/backends/webgl2-deferred-native-frame-backend.js` with the deferred backend contract, WebGL2 availability gate, native-resolution albedo/light compose buffers, opaque lit rect support, ambient/point accumulation, forward drawing for unlit/unsupported packets, and diagnostics for unsupported lit packets.
+- `tests/render-pipeline.spec.js` proving point-lit rect terrain is brighter at the light center than outside the light radius, and authored gameplay lights select the deferred backend when WebGL2 is available.
+
+Validated with:
+
+```sh
+bunx playwright test tests/render-pipeline.spec.js --project=chromium
+bun run build
+bun run validate:map-render
+```
+
+Note: `bun run validate:foundation` was also attempted after this slice; the new render-pipeline coverage passed, but existing unrelated foundation expectations currently fail in `tests/core-boundary.spec.js`, `tests/scenarios-registry.spec.js`, and `tests/scenes-registry.spec.js`.
 
 ### Slice 7: WebGL2 deferred MVP-B, image/sprite surfaces
 
