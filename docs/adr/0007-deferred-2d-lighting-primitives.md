@@ -416,14 +416,22 @@ bun run build
 bun run validate:map-render
 ```
 
-### Slice 8: WebGL2 GPU deferred implementation — Pending
+### Slice 8: WebGL2 GPU deferred implementation — Complete
 
-Still required before calling the deferred backend fully correct:
+Implemented in:
 
-- Replace CPU albedo/light arrays with WebGL2-owned textures/FBOs for the G-buffer and light accumulation targets.
-- Move ambient/point accumulation and compose into shaders.
-- Keep Canvas2D or the existing forward backend as fallback for unavailable WebGL2 and unsupported packets.
-- Add browser-level tests/diagnostics that prove the path uses actual WebGL2 resources and still matches the reference visual behavior.
+- `src/render/backends/webgl2-deferred-native-frame-backend.js` with WebGL2-owned albedo/light/volumetric textures and FBOs, shader-based opaque albedo writes, ambient/point accumulation, volumetric accumulation, and compose.
+- The backend still presents through the existing Canvas2D native-frame source and keeps Canvas2D forward drawing for unlit backgrounds/overlays and unsupported lit-packet fallback diagnostics.
+- `tests/render-pipeline.spec.js` now asserts the deferred path creates/uses GPU render targets while preserving rect, image, texturedQuad, sprite, point-falloff, and alpha-mask behavior.
+
+Validated with:
+
+```sh
+bunx playwright test tests/render-pipeline.spec.js --project=chromium --grep "webgl2 deferred backend"
+bunx playwright test tests/render-pipeline.spec.js --project=chromium
+bun run build
+bun run validate:map-render
+```
 
 ## Consequences
 

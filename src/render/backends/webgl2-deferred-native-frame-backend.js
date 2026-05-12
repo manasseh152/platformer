@@ -1,6 +1,6 @@
 export const WEBGL2_DEFERRED_BACKEND_UNAVAILABLE_REASON = 'webgl2 deferred native-frame backend unavailable';
 
-const ALPHA_MASK_CUTOFF = 1;
+const ALPHA_MASK_CUTOFF = 1 / 255;
 
 let colorParserCanvas = null;
 
@@ -22,6 +22,11 @@ function resolveColor(fill) {
   if (typeof fill === 'string') return parseCssColor(fill);
   if (fill?.kind === 'color') return parseCssColor(fill.value);
   return null;
+}
+
+function resolveColorFloat(fill) {
+  const color = resolveColor(fill);
+  return color ? [color[0] / 255, color[1] / 255, color[2] / 255, (color[3] ?? 255) / 255] : null;
 }
 
 function resolveFill(ctx, fill) {
@@ -131,90 +136,129 @@ function addDiagnostic(issues, packet, reason) {
   issues.push({ packetId: packet.id, kind: packet.kind, reason });
 }
 
-function writeLitRect(albedo, width, height, packet) {
-  const color = resolveColor(packet.fill);
-  if (!color) return;
-  const x0 = Math.max(0, Math.floor(packet.x));
-  const y0 = Math.max(0, Math.floor(packet.y));
-  const x1 = Math.min(width, Math.ceil(packet.x + packet.w));
-  const y1 = Math.min(height, Math.ceil(packet.y + packet.h));
-  for (let y = y0; y < y1; y++) {
-    for (let x = x0; x < x1; x++) {
-      const i = (y * width + x) * 4;
-      albedo[i] = color[0];
-      albedo[i + 1] = color[1];
-      albedo[i + 2] = color[2];
-      albedo[i + 3] = 255;
-    }
+const VERTEX_SHADER = `#version 300 es
+in vec2 a_position;
+in vec2 a_texcoord;
+uniform vec2 u_resolution;
+out vec2 v_texcoord;
+void main() {
+  vec2 zeroToOne = a_position / u_resolution;
+  vec2 clip = zeroToOne * 2.0 - 1.0;
+  gl_Position = vec4(clip * vec2(1.0, -1.0), 0.0, 1.0);
+  v_texcoord = a_texcoord;
+}`;
+
+const ALBEDO_FRAGMENT_SHADER = `#version 300 es
+precision highp float;
+uniform bool u_useTexture;
+uniform sampler2D u_texture;
+uniform vec4 u_color;
+uniform float u_alphaCutoff;
+in vec2 v_texcoord;
+out vec4 outColor;
+void main() {
+  vec4 color = u_useTexture ? texture(u_texture, v_texcoord) : u_color;
+  if (color.a < u_alphaCutoff) discard;
+  outColor = vec4(color.rgb, 1.0);
+}`;
+
+const LIGHT_FRAGMENT_SHADER = `#version 300 es
+precision highp float;
+uniform int u_lightKind;
+uniform vec2 u_resolution;
+uniform vec2 u_lightPosition;
+uniform float u_radius;
+uniform vec3 u_color;
+uniform float u_intensity;
+uniform float u_volumetricIntensity;
+in vec2 v_texcoord;
+out vec4 outColor;
+void main() {
+  if (u_lightKind == 0) {
+    outColor = vec4(u_color * u_intensity, 1.0);
+    return;
   }
+  vec2 pixel = vec2(gl_FragCoord.x, u_resolution.y - gl_FragCoord.y) + vec2(0.0, 0.0);
+  float distToLight = distance(pixel, u_lightPosition);
+  if (distToLight > u_radius) discard;
+  float falloff = max(0.0, 1.0 - distToLight / max(u_radius, 0.0001));
+  float shaped = falloff * falloff;
+  outColor = vec4(u_color * u_intensity * shaped, 1.0);
+}`;
+
+const VOLUME_FRAGMENT_SHADER = `#version 300 es
+precision highp float;
+uniform vec2 u_resolution;
+uniform vec2 u_lightPosition;
+uniform float u_radius;
+uniform vec3 u_color;
+uniform float u_intensity;
+uniform float u_volumetricIntensity;
+in vec2 v_texcoord;
+out vec4 outColor;
+void main() {
+  vec2 pixel = vec2(gl_FragCoord.x, u_resolution.y - gl_FragCoord.y);
+  float distToLight = distance(pixel, u_lightPosition);
+  if (distToLight > u_radius) discard;
+  float falloff = max(0.0, 1.0 - distToLight / max(u_radius, 0.0001));
+  float shaped = falloff * falloff;
+  outColor = vec4(u_color * u_intensity * u_volumetricIntensity * shaped, 1.0);
+}`;
+
+const COMPOSE_FRAGMENT_SHADER = `#version 300 es
+precision highp float;
+uniform sampler2D u_albedo;
+uniform sampler2D u_light;
+uniform sampler2D u_volume;
+in vec2 v_texcoord;
+out vec4 outColor;
+void main() {
+  vec4 albedo = texture(u_albedo, v_texcoord);
+  if (albedo.a <= 0.0) discard;
+  vec3 light = texture(u_light, v_texcoord).rgb;
+  vec3 volume = texture(u_volume, v_texcoord).rgb;
+  outColor = vec4(clamp(albedo.rgb * light + volume, 0.0, 1.0), 1.0);
+}`;
+
+function compileShader(gl, type, source) {
+  const shader = gl.createShader(type);
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    const message = gl.getShaderInfoLog(shader) || 'Unknown WebGL2 deferred shader compile error';
+    gl.deleteShader(shader);
+    throw new Error(message);
+  }
+  return shader;
 }
 
-function writeLitImageLike(albedo, width, height, packet, assetRegistry, scratchCtx) {
-  scratchCtx.setTransform(1, 0, 0, 1, 0, 0);
-  scratchCtx.clearRect(0, 0, width, height);
-  scratchCtx.imageSmoothingEnabled = false;
-  if (!drawImageLikePacket(scratchCtx, packet, assetRegistry)) return;
-  const pixels = scratchCtx.getImageData(0, 0, width, height).data;
-  const x0 = Math.max(0, Math.floor(packet.x));
-  const y0 = Math.max(0, Math.floor(packet.y));
-  const x1 = Math.min(width, Math.ceil(packet.x + packet.w));
-  const y1 = Math.min(height, Math.ceil(packet.y + packet.h));
-  for (let y = y0; y < y1; y++) {
-    for (let x = x0; x < x1; x++) {
-      const i = (y * width + x) * 4;
-      if (pixels[i + 3] < ALPHA_MASK_CUTOFF) continue;
-      albedo[i] = pixels[i];
-      albedo[i + 1] = pixels[i + 1];
-      albedo[i + 2] = pixels[i + 2];
-      albedo[i + 3] = 255;
-    }
+function createProgram(gl, fragmentSource) {
+  const program = gl.createProgram();
+  gl.attachShader(program, compileShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER));
+  gl.attachShader(program, compileShader(gl, gl.FRAGMENT_SHADER, fragmentSource));
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    const message = gl.getProgramInfoLog(program) || 'Unknown WebGL2 deferred program link error';
+    gl.deleteProgram(program);
+    throw new Error(message);
   }
+  return program;
 }
 
-function lightPixel(albedo, output, width, height, lights) {
-  const ambient = [0, 0, 0];
-  const points = [];
-  for (const light of lights) {
-    const color = light.color ?? [255, 255, 255, 255];
-    const alpha = (color[3] ?? 255) / 255;
-    const intensity = (light.intensity ?? 1) * alpha;
-    if (light.lightKind === 'ambient') {
-      ambient[0] += color[0] / 255 * intensity;
-      ambient[1] += color[1] / 255 * intensity;
-      ambient[2] += color[2] / 255 * intensity;
-    } else if (light.lightKind === 'point') {
-      points.push({ ...light, cr: color[0] / 255, cg: color[1] / 255, cb: color[2] / 255, intensity });
-    }
-  }
-
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const i = (y * width + x) * 4;
-      if (!albedo[i + 3]) continue;
-      let lr = ambient[0], lg = ambient[1], lb = ambient[2];
-      let vr = 0, vg = 0, vb = 0;
-      for (const p of points) {
-        const dx = x + 0.5 - p.x;
-        const dy = y + 0.5 - p.y;
-        const radius = Math.max(0.0001, p.radius ?? 0);
-        const d = Math.sqrt(dx * dx + dy * dy);
-        if (d > radius) continue;
-        const falloff = Math.max(0, 1 - d / radius);
-        const shaped = falloff * falloff;
-        lr += p.cr * p.intensity * shaped;
-        lg += p.cg * p.intensity * shaped;
-        lb += p.cb * p.intensity * shaped;
-        const v = (p.volumetricIntensity ?? 0) * p.intensity * shaped;
-        vr += p.cr * v * 255;
-        vg += p.cg * v * 255;
-        vb += p.cb * v * 255;
-      }
-      output[i] = Math.min(255, Math.round(albedo[i] * lr + vr));
-      output[i + 1] = Math.min(255, Math.round(albedo[i + 1] * lg + vg));
-      output[i + 2] = Math.min(255, Math.round(albedo[i + 2] * lb + vb));
-      output[i + 3] = 255;
-    }
-  }
+function createRenderTarget(gl, width, height, { float = false } = {}) {
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  if (float) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, width, height, 0, gl.RGBA, gl.HALF_FLOAT, null);
+  else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  const framebuffer = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+  if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) throw new Error('Incomplete WebGL2 deferred framebuffer');
+  return { texture, framebuffer, width, height };
 }
 
 export function createWebGl2DeferredNativeFrameBackend({ width, height, canvas = document.createElement('canvas'), assetRegistry } = {}) {
@@ -223,18 +267,204 @@ export function createWebGl2DeferredNativeFrameBackend({ width, height, canvas =
   const glCanvas = document.createElement('canvas');
   glCanvas.width = width;
   glCanvas.height = height;
-  const gl = glCanvas.getContext('webgl2', { alpha: false, antialias: false, depth: false, preserveDrawingBuffer: true, premultipliedAlpha: false, stencil: false });
+  const gl = glCanvas.getContext('webgl2', { alpha: true, antialias: false, depth: false, preserveDrawingBuffer: true, premultipliedAlpha: false, stencil: false });
   if (!gl) return null;
+  const loseContext = gl.getExtension('WEBGL_lose_context');
+  const supportsFloatTargets = Boolean(gl.getExtension('EXT_color_buffer_float'));
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  const litCanvas = document.createElement('canvas');
-  litCanvas.width = width;
-  litCanvas.height = height;
-  const litCtx = litCanvas.getContext('2d');
-  const scratchCanvas = document.createElement('canvas');
-  scratchCanvas.width = width;
-  scratchCanvas.height = height;
-  const scratchCtx = scratchCanvas.getContext('2d', { willReadFrequently: true });
   let diagnostics = [];
+  let lost = false;
+  let albedoProgram, lightProgram, volumeProgram, composeProgram, quadBuffer;
+  let albedoTarget, lightTarget, volumeTarget;
+  const textureCache = new Map();
+  let gpuFrameCount = 0;
+
+  function initResources() {
+    albedoProgram = createProgram(gl, ALBEDO_FRAGMENT_SHADER);
+    lightProgram = createProgram(gl, LIGHT_FRAGMENT_SHADER);
+    volumeProgram = createProgram(gl, VOLUME_FRAGMENT_SHADER);
+    composeProgram = createProgram(gl, COMPOSE_FRAGMENT_SHADER);
+    quadBuffer = gl.createBuffer();
+    albedoTarget = createRenderTarget(gl, glCanvas.width, glCanvas.height);
+    lightTarget = createRenderTarget(gl, glCanvas.width, glCanvas.height, { float: supportsFloatTargets });
+    volumeTarget = createRenderTarget(gl, glCanvas.width, glCanvas.height, { float: supportsFloatTargets });
+    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.CULL_FACE);
+  }
+
+  function deleteTarget(target) {
+    if (!target) return;
+    gl.deleteTexture(target.texture);
+    gl.deleteFramebuffer(target.framebuffer);
+  }
+
+  function clearResources() {
+    for (const entry of textureCache.values()) gl.deleteTexture(entry.texture);
+    textureCache.clear();
+    deleteTarget(albedoTarget); deleteTarget(lightTarget); deleteTarget(volumeTarget);
+    if (quadBuffer) gl.deleteBuffer(quadBuffer);
+    if (albedoProgram) gl.deleteProgram(albedoProgram);
+    if (lightProgram) gl.deleteProgram(lightProgram);
+    if (volumeProgram) gl.deleteProgram(volumeProgram);
+    if (composeProgram) gl.deleteProgram(composeProgram);
+    albedoTarget = lightTarget = volumeTarget = null;
+    quadBuffer = albedoProgram = lightProgram = volumeProgram = composeProgram = null;
+  }
+
+  function ensureTargets() {
+    if (albedoTarget?.width === glCanvas.width && albedoTarget?.height === glCanvas.height) return;
+    deleteTarget(albedoTarget); deleteTarget(lightTarget); deleteTarget(volumeTarget);
+    albedoTarget = createRenderTarget(gl, glCanvas.width, glCanvas.height);
+    lightTarget = createRenderTarget(gl, glCanvas.width, glCanvas.height, { float: supportsFloatTargets });
+    volumeTarget = createRenderTarget(gl, glCanvas.width, glCanvas.height, { float: supportsFloatTargets });
+  }
+
+  function locations(program) {
+    return {
+      position: gl.getAttribLocation(program, 'a_position'),
+      texcoord: gl.getAttribLocation(program, 'a_texcoord'),
+      resolution: gl.getUniformLocation(program, 'u_resolution')
+    };
+  }
+
+  function drawQuad(program, vertices, setup = () => {}) {
+    const loc = locations(program);
+    gl.useProgram(program);
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STREAM_DRAW);
+    gl.enableVertexAttribArray(loc.position);
+    gl.vertexAttribPointer(loc.position, 2, gl.FLOAT, false, 16, 0);
+    gl.enableVertexAttribArray(loc.texcoord);
+    gl.vertexAttribPointer(loc.texcoord, 2, gl.FLOAT, false, 16, 8);
+    if (loc.resolution) gl.uniform2f(loc.resolution, glCanvas.width, glCanvas.height);
+    setup(program);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
+
+  function rectVertices(x, y, w, h, u0 = 0, v0 = 0, u1 = 1, v1 = 1, rotation = 0) {
+    if (!rotation) return [x, y, u0, v0, x + w, y, u1, v0, x, y + h, u0, v1, x + w, y + h, u1, v1];
+    const cx = x + w / 2, cy = y + h / 2, c = Math.cos(rotation), s = Math.sin(rotation);
+    const rot = (px, py) => [cx + px * c - py * s, cy + px * s + py * c];
+    const [x0, y0] = rot(-w / 2, -h / 2);
+    const [x1, y1] = rot(w / 2, -h / 2);
+    const [x2, y2] = rot(-w / 2, h / 2);
+    const [x3, y3] = rot(w / 2, h / 2);
+    return [x0, y0, u0, v0, x1, y1, u1, v0, x2, y2, u0, v1, x3, y3, u1, v1];
+  }
+
+  function ensureTexture(assetId, image) {
+    const existing = textureCache.get(assetId);
+    const imageWidth = image.naturalWidth ?? image.width;
+    const imageHeight = image.naturalHeight ?? image.height;
+    if (existing?.image === image && existing.width === imageWidth && existing.height === imageHeight) return existing.texture;
+    if (existing) gl.deleteTexture(existing.texture);
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    textureCache.set(assetId, { image, width: imageWidth, height: imageHeight, texture });
+    return texture;
+  }
+
+  function writeLitRect(packet) {
+    const color = resolveColorFloat(packet.fill);
+    if (!color) return;
+    drawQuad(albedoProgram, rectVertices(packet.x, packet.y, packet.w, packet.h), program => {
+      gl.uniform1i(gl.getUniformLocation(program, 'u_useTexture'), 0);
+      gl.uniform4f(gl.getUniformLocation(program, 'u_color'), color[0], color[1], color[2], color[3]);
+      gl.uniform1f(gl.getUniformLocation(program, 'u_alphaCutoff'), 0);
+    });
+  }
+
+  function writeLitImageLike(packet) {
+    const resolved = resolveImageDrawable(packet, assetRegistry);
+    if (!resolved) return;
+    const { drawable, source } = resolved;
+    const image = drawable.image;
+    const imageW = image.naturalWidth ?? image.width;
+    const imageH = image.naturalHeight ?? image.height;
+    let u0 = source.x / imageW, v0 = (source.y + source.h) / imageH, u1 = (source.x + source.w) / imageW, v1 = source.y / imageH;
+    if (packet.flipX) [u0, u1] = [u1, u0];
+    if (packet.flipY) [v0, v1] = [v1, v0];
+    drawQuad(albedoProgram, rectVertices(packet.x, packet.y, packet.w, packet.h, u0, v0, u1, v1, packet.rotation ?? 0), program => {
+      gl.uniform1i(gl.getUniformLocation(program, 'u_useTexture'), 1);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, ensureTexture(packet.assetId, image));
+      gl.uniform1i(gl.getUniformLocation(program, 'u_texture'), 0);
+      gl.uniform4f(gl.getUniformLocation(program, 'u_color'), 1, 1, 1, 1);
+      gl.uniform1f(gl.getUniformLocation(program, 'u_alphaCutoff'), ALPHA_MASK_CUTOFF);
+    });
+  }
+
+  function accumulateLights(lights) {
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE);
+    for (const target of [lightTarget, volumeTarget]) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer);
+      gl.viewport(0, 0, glCanvas.width, glCanvas.height);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+    for (const light of lights) {
+      const color = light.color ?? [255, 255, 255, 255];
+      const alpha = (color[3] ?? 255) / 255;
+      const intensity = (light.intensity ?? 1) * alpha;
+      const cr = color[0] / 255, cg = color[1] / 255, cb = color[2] / 255;
+      if (light.lightKind === 'ambient') {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, lightTarget.framebuffer);
+        drawQuad(lightProgram, rectVertices(0, 0, glCanvas.width, glCanvas.height), program => {
+          gl.uniform1i(gl.getUniformLocation(program, 'u_lightKind'), 0);
+          gl.uniform3f(gl.getUniformLocation(program, 'u_color'), cr, cg, cb);
+          gl.uniform1f(gl.getUniformLocation(program, 'u_intensity'), intensity);
+          gl.uniform2f(gl.getUniformLocation(program, 'u_lightPosition'), 0, 0);
+          gl.uniform1f(gl.getUniformLocation(program, 'u_radius'), 1);
+          gl.uniform1f(gl.getUniformLocation(program, 'u_volumetricIntensity'), 0);
+        });
+      } else if (light.lightKind === 'point') {
+        const x = light.x, y = light.y, r = Math.max(0.0001, light.radius ?? 0);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, lightTarget.framebuffer);
+        drawQuad(lightProgram, rectVertices(x - r, y - r, r * 2, r * 2), program => {
+          gl.uniform1i(gl.getUniformLocation(program, 'u_lightKind'), 1);
+          gl.uniform3f(gl.getUniformLocation(program, 'u_color'), cr, cg, cb);
+          gl.uniform1f(gl.getUniformLocation(program, 'u_intensity'), intensity);
+          gl.uniform2f(gl.getUniformLocation(program, 'u_lightPosition'), x, y);
+          gl.uniform1f(gl.getUniformLocation(program, 'u_radius'), r);
+          gl.uniform1f(gl.getUniformLocation(program, 'u_volumetricIntensity'), light.volumetricIntensity ?? 0);
+        });
+        if ((light.volumetricIntensity ?? 0) > 0) {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, volumeTarget.framebuffer);
+          drawQuad(volumeProgram, rectVertices(x - r, y - r, r * 2, r * 2), program => {
+            gl.uniform3f(gl.getUniformLocation(program, 'u_color'), cr, cg, cb);
+            gl.uniform1f(gl.getUniformLocation(program, 'u_intensity'), intensity);
+            gl.uniform2f(gl.getUniformLocation(program, 'u_lightPosition'), x, y);
+            gl.uniform1f(gl.getUniformLocation(program, 'u_radius'), r);
+            gl.uniform1f(gl.getUniformLocation(program, 'u_volumetricIntensity'), light.volumetricIntensity ?? 0);
+          });
+        }
+      }
+    }
+    gl.disable(gl.BLEND);
+  }
+
+  function compose() {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, glCanvas.width, glCanvas.height);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    drawQuad(composeProgram, rectVertices(0, 0, glCanvas.width, glCanvas.height), program => {
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, albedoTarget.texture); gl.uniform1i(gl.getUniformLocation(program, 'u_albedo'), 0);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, lightTarget.texture); gl.uniform1i(gl.getUniformLocation(program, 'u_light'), 1);
+      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, volumeTarget.texture); gl.uniform1i(gl.getUniformLocation(program, 'u_volume'), 2);
+    });
+  }
+
+  initResources();
+  glCanvas.addEventListener?.('webglcontextlost', event => { event.preventDefault(); lost = true; clearResources(); });
+  glCanvas.addEventListener?.('webglcontextrestored', () => { lost = false; initResources(); });
 
   return {
     kind: 'webgl2-deferred-native-frame-backend',
@@ -242,42 +472,45 @@ export function createWebGl2DeferredNativeFrameBackend({ width, height, canvas =
     glCanvas,
     gl,
     ctx,
+    get lost() { return lost || gl.isContextLost?.() === true; },
     get diagnostics() { return diagnostics; },
+    get gpuDiagnostics() { return { frameCount: gpuFrameCount, floatLightTargets: supportsFloatTargets, albedoTexture: Boolean(albedoTarget?.texture), lightTexture: Boolean(lightTarget?.texture), volumeTexture: Boolean(volumeTarget?.texture), framebuffer: Boolean(albedoTarget?.framebuffer) }; },
     resize(nextWidth, nextHeight) {
       if (canvas.width !== nextWidth) canvas.width = nextWidth;
       if (canvas.height !== nextHeight) canvas.height = nextHeight;
       if (glCanvas.width !== nextWidth) glCanvas.width = nextWidth;
       if (glCanvas.height !== nextHeight) glCanvas.height = nextHeight;
-      if (litCanvas.width !== nextWidth) litCanvas.width = nextWidth;
-      if (litCanvas.height !== nextHeight) litCanvas.height = nextHeight;
-      if (scratchCanvas.width !== nextWidth) scratchCanvas.width = nextWidth;
-      if (scratchCanvas.height !== nextHeight) scratchCanvas.height = nextHeight;
       gl.viewport(0, 0, glCanvas.width, glCanvas.height);
+      ensureTargets();
     },
-    supportsFrame() { return { supported: true, issues: diagnostics }; },
+    supportsFrame() { return this.lost ? { supported: false, issues: [{ reason: 'webgl2 deferred native-frame context lost' }] } : { supported: true, issues: diagnostics }; },
     draw(frame) {
+      if (this.lost) return;
       this.resize(frame.width ?? width, frame.height ?? height);
       diagnostics = [];
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, albedoTarget.framebuffer);
+      gl.viewport(0, 0, glCanvas.width, glCanvas.height);
+      gl.disable(gl.BLEND);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
 
-      const albedo = new Uint8ClampedArray(canvas.width * canvas.height * 4);
-      const lightOutput = new Uint8ClampedArray(canvas.width * canvas.height * 4);
       const lights = frame.packets.filter(packet => packet.kind === 'light2d');
-      const litPackets = [];
       const overlayPackets = [];
       let seenLit = false;
+      let litPacketCount = 0;
 
       for (const packet of frame.packets) {
         if (packet.kind === 'light2d') continue;
         if (isOpaqueLitRect(packet)) {
           seenLit = true;
-          litPackets.push(packet);
-          writeLitRect(albedo, canvas.width, canvas.height, packet);
+          litPacketCount++;
+          writeLitRect(packet);
         } else if (isOpaqueLitImageLike(packet, assetRegistry)) {
           seenLit = true;
-          litPackets.push(packet);
-          writeLitImageLike(albedo, canvas.width, canvas.height, packet, assetRegistry, scratchCtx);
+          litPacketCount++;
+          writeLitImageLike(packet);
         } else if (packet.lighting === 'lit') {
           const reason = packet.kind === 'rect'
             ? 'semi-transparent or unsupported lit rect rendered forward/unlit'
@@ -293,17 +526,16 @@ export function createWebGl2DeferredNativeFrameBackend({ width, height, canvas =
         }
       }
 
-      if (litPackets.length) {
-        lightPixel(albedo, lightOutput, canvas.width, canvas.height, lights);
-        litCtx.clearRect(0, 0, litCanvas.width, litCanvas.height);
-        litCtx.putImageData(new ImageData(lightOutput, canvas.width, canvas.height), 0, 0);
-        ctx.drawImage(litCanvas, 0, 0);
+      if (litPacketCount) {
+        accumulateLights(lights);
+        compose();
+        gl.flush();
+        ctx.drawImage(glCanvas, 0, 0);
+        gpuFrameCount++;
       }
       for (const packet of overlayPackets) drawForwardPacket(ctx, packet, assetRegistry);
-      gl.clearColor(0, 0, 0, 0);
-      gl.flush();
     },
     getSource() { return { kind: 'canvas2d', width: canvas.width, height: canvas.height, canvas }; },
-    destroy() {}
+    destroy() { clearResources(); loseContext?.loseContext?.(); lost = true; }
   };
 }

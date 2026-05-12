@@ -53,36 +53,67 @@ export function createWebGlPresentationBackend(canvas) {
     stencil: false
   });
   if (!gl) return null;
+  const loseContext = gl.getExtension('WEBGL_lose_context');
 
-  const program = createProgram(gl);
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-    -1, -1, 0, 0,
-     1, -1, 1, 0,
-    -1,  1, 0, 1,
-     1,  1, 1, 1
-  ]), gl.STATIC_DRAW);
+  let lost = false;
+  let program = null;
+  let buffer = null;
+  let texture = null;
+  let positionLocation = -1;
+  let texcoordLocation = -1;
+  let offsetLocation = null;
+  let paddingLocation = null;
 
-  const texture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  function initResources() {
+    program = createProgram(gl);
+    buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+      -1, -1, 0, 0,
+       1, -1, 1, 0,
+      -1,  1, 0, 1,
+       1,  1, 1, 1
+    ]), gl.STATIC_DRAW);
 
-  const positionLocation = gl.getAttribLocation(program, 'a_position');
-  const texcoordLocation = gl.getAttribLocation(program, 'a_texcoord');
-  const offsetLocation = gl.getUniformLocation(program, 'u_offset');
-  const paddingLocation = gl.getUniformLocation(program, 'u_padding');
+    texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+    positionLocation = gl.getAttribLocation(program, 'a_position');
+    texcoordLocation = gl.getAttribLocation(program, 'a_texcoord');
+    offsetLocation = gl.getUniformLocation(program, 'u_offset');
+    paddingLocation = gl.getUniformLocation(program, 'u_padding');
+  }
+
+  function clearResources() {
+    if (texture) gl.deleteTexture(texture);
+    if (buffer) gl.deleteBuffer(buffer);
+    if (program) gl.deleteProgram(program);
+    program = null;
+    buffer = null;
+    texture = null;
+    positionLocation = -1;
+    texcoordLocation = -1;
+    offsetLocation = null;
+    paddingLocation = null;
+  }
+
+  initResources();
+  canvas.addEventListener?.('webglcontextlost', event => { event.preventDefault(); lost = true; clearResources(); });
+  canvas.addEventListener?.('webglcontextrestored', () => { lost = false; initResources(); });
 
   return {
     kind: 'webgl-presentation-backend',
     mode: 'webgl',
     canvas,
+    get lost() { return lost || gl.isContextLost?.() === true; },
     present(source, viewport, { subpixelOffsetX = 0, subpixelOffsetY = 0 } = {}) {
       if (source.kind !== 'canvas2d') throw new Error(`Unsupported native frame source: ${source.kind}`);
+      if (this.lost || !program) return;
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.clearColor(0.03, 0.045, 0.07, 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
@@ -102,9 +133,9 @@ export function createWebGlPresentationBackend(canvas) {
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     },
     destroy() {
-      gl.deleteTexture(texture);
-      gl.deleteBuffer(buffer);
-      gl.deleteProgram(program);
+      clearResources();
+      loseContext?.loseContext?.();
+      lost = true;
     }
   };
 }

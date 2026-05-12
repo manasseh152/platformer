@@ -368,7 +368,7 @@ test('webgl2 deferred backend lights opaque rect terrain with point falloff', as
     backend.draw(frame);
     const pixels = backend.ctx.getImageData(0, 0, 8, 4).data;
     const at = (x, y) => Array.from(pixels.slice((y * 8 + x) * 4, (y * 8 + x) * 4 + 4));
-    return { supported: true, center: at(2, 2), outside: at(7, 2), source: backend.getSource() };
+    return { supported: true, center: at(2, 2), outside: at(7, 2), source: backend.getSource(), gpuDiagnostics: backend.gpuDiagnostics };
   });
 
   test.skip(!result.supported, 'WebGL2 unavailable in this browser');
@@ -376,6 +376,7 @@ test('webgl2 deferred backend lights opaque rect terrain with point falloff', as
   expect(result.center[1]).toBeGreaterThan(result.outside[1]);
   expect(result.center[2]).toBeGreaterThan(result.outside[2]);
   expect(result.source).toMatchObject({ kind: 'canvas2d', width: 8, height: 4 });
+  expect(result.gpuDiagnostics).toMatchObject({ frameCount: 1, albedoTexture: true, lightTexture: true, volumeTexture: true, framebuffer: true });
 });
 
 test('webgl2 deferred backend lights image, texturedQuad, and atlas sprite packets with alpha masking', async ({ page }) => {

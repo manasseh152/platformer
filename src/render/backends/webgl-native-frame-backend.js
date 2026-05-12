@@ -93,6 +93,7 @@ export function createWebGlNativeFrameBackend({ width, height, canvas = document
     stencil: false
   });
   if (!gl) return null;
+  const loseContext = gl.getExtension('WEBGL_lose_context');
 
   let lost = false;
   let program = null;
@@ -227,6 +228,7 @@ export function createWebGlNativeFrameBackend({ width, height, canvas = document
       gl.viewport(0, 0, canvas.width, canvas.height);
     },
     supportsFrame(frame) {
+      if (this.lost) return { supported: false, issues: [{ reason: 'webgl native-frame context lost' }] };
       return analyzeWebGlNativeFrameSupport(frame);
     },
     draw(frame) {
@@ -239,6 +241,6 @@ export function createWebGlNativeFrameBackend({ width, height, canvas = document
     getSource() {
       return { kind: 'canvas2d', width: canvas.width, height: canvas.height, canvas };
     },
-    destroy() { clearResources(); }
+    destroy() { clearResources(); loseContext?.loseContext?.(); lost = true; }
   };
 }
