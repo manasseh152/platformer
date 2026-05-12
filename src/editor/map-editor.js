@@ -363,6 +363,7 @@ function setActiveTab(tabId, { show = true, focus = false } = {}) {
     if (selected && focus) focusEditorControl(tab);
   }
   for (const panel of dom.panels) panel.hidden = overlayHidden || panel.id !== `${activeTab}Panel`;
+  syncTabHints({ inputScheme: editorInputMode === 'gamepad' ? 'gamepad' : 'wasd' });
   if (!show) clearEditorControllerFocus();
 }
 
@@ -487,7 +488,12 @@ function activateFocusedEditorControl() {
 }
 
 function syncTabHints({ consoleActive, inputScheme = 'wasd' } = {}) {
-  renderTabInputHints({ inputScheme }, document, { profile: gameInputProfile, settings: inputRuntime.settings, runtime: inputRuntime, consoleActive });
+  renderTabInputHints({ inputScheme }, document, {
+    profile: gameInputProfile,
+    settings: inputRuntime.settings,
+    runtime: inputRuntime,
+    consoleActive: overlayHidden ? false : consoleActive
+  });
 }
 
 function navigateMainMenu() {

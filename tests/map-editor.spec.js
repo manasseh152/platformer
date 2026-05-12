@@ -325,6 +325,13 @@ test('map editor shoulder buttons switch tabs and show controller hints', async 
   await expect(page.locator('[data-editor-tab-hint="previous"] .input-hint__icon')).toHaveAttribute('alt', 'LB');
   await expect(page.locator('[data-editor-tab-hint="next"]')).toBeVisible();
   await expect(page.locator('[data-editor-tab-hint="next"] .input-hint__icon')).toHaveAttribute('alt', 'RB');
+  await page.getByRole('tab', { name: 'View' }).click();
+  await expect(page.locator('#editorOverlay')).toHaveAttribute('data-collapsed', 'true');
+  await expect(page.locator('[data-editor-tab-hint="previous"]')).toBeHidden();
+  await expect(page.locator('[data-editor-tab-hint="next"]')).toBeHidden();
+  await page.getByRole('tab', { name: 'View' }).click();
+  await expect(page.locator('[data-editor-tab-hint="previous"]')).toBeVisible();
+  await expect(page.locator('[data-editor-tab-hint="next"]')).toBeVisible();
   await page.evaluate(() => window.__setMockGamepadButton(5, false));
   await page.evaluate(() => window.__setMockGamepadButton(4, true));
   await expect(page.locator('#editPanel')).toBeVisible();
@@ -367,6 +374,7 @@ test('map editor controller hints follow panel vs canvas focus and zoom only on 
   await page.evaluate(() => window.__setMockGamepadButton(7, true));
   await expect(page.locator('#controllerViewportHints')).toBeVisible();
   await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Select' })).toBeVisible();
+  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Prev palette' })).toBeHidden();
   await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Zoom in' })).toBeHidden();
   await expect.poll(() => page.locator('#editorCanvas').getAttribute('data-zoom')).toBe(before);
 
@@ -377,6 +385,10 @@ test('map editor controller hints follow panel vs canvas focus and zoom only on 
   await page.evaluate(() => window.__setMockGamepadButton(7, true));
   await expect.poll(() => page.locator('#editorCanvas').getAttribute('data-zoom')).not.toBe(before);
   await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Zoom in' })).toBeVisible();
+  await expect(page.locator('#controllerViewportHints [data-input-action="editor.previousBrush"] .input-hint__icon')).toHaveAttribute('alt', 'LB');
+  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Prev palette' })).toBeVisible();
+  await expect(page.locator('#controllerViewportHints [data-input-action="editor.nextBrush"] .input-hint__icon')).toHaveAttribute('alt', 'RB');
+  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Next palette' })).toBeVisible();
   await expect(page.locator('#controllerPanelHint')).toBeVisible();
   await expect(page.locator('#hideOverlayButton .input-hint__label').filter({ hasText: 'Hide sidebar' })).toBeAttached();
   await expect(page.locator('#zoomReadout')).toContainText('%');
