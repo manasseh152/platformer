@@ -48,6 +48,7 @@ const dom = {
   canvas: document.querySelector('#editorCanvas'),
   mainMenuButton: document.querySelector('#mainMenuButton'),
   saveLocalButton: document.querySelector('#saveLocalButton'),
+  quickPreviewButton: document.querySelector('#quickPreviewButton'),
   overlay: document.querySelector('#editorOverlay'),
   hideOverlayButton: document.querySelector('#hideOverlayButton'),
   overlayToggleLabel: document.querySelector('[data-overlay-toggle-label]'),
@@ -1180,6 +1181,7 @@ function setup() {
   dom.nameInput?.addEventListener('input', () => { syncDraftMetadataFromInputs(); scheduleAfterEdit(); });
   dom.idInput?.addEventListener('input', () => { syncDraftMetadataFromInputs(); compiledFresh = false; markDirty(); syncInputs(); if (!isKebabCaseId(draft.id)) setStatus('Draft id must be kebab-case. Fix ID to save locally or copy JS.', 'error'); else scheduleAfterEdit(); });
   dom.saveLocalButton?.addEventListener('click', saveLocalExplicit);
+  dom.quickPreviewButton?.addEventListener('click', previewDraft);
   dom.previewButton.addEventListener('click', previewDraft);
   dom.copyButton.addEventListener('click', async () => { syncDraftMetadataFromInputs(); if (!isKebabCaseId(draft.id)) { setStatus('Fix draft ID before copying JS.', 'error'); return; } flushPending(); await navigator.clipboard.writeText(dom.exportText.value); setStatus('Copied generated tilemap module.', 'ok'); });
   dom.exportMapButton.addEventListener('click', exportMap);

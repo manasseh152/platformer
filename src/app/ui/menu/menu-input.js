@@ -18,7 +18,7 @@ function activateSemanticMenuAction(game, actionId) {
   if (actionId === 'menu.accept') { document.activeElement?.click?.(); return true; }
   if (actionId === 'menu.back') {
     if (backablePages.includes(game.menu.page)) goBack(game);
-    else if (isStarted(game)) ui.resumeButton.click();
+    else if (isStarted(game)) ui.resumeButton?.click?.();
     return true;
   }
   if (actionId === 'menu.settings') {

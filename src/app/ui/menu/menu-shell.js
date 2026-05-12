@@ -9,6 +9,7 @@ import { renderScenarioBrowser } from '../scenario-browser.js';
 import { cancelBindListening } from '../settings/settings-actions.js';
 import { moveSettingsTab as moveSettingsTabSelection, setSettingsTab as setSettingsTabSelection } from '../settings/settings-navigation.js';
 import { isPaused, isStarted, isWon, setStarted } from '../../app-state.js';
+import { isTilemapPreviewActive } from '../../tilemaps/tilemap-preview.js';
 import { markSpeedRunPaused, prepareSpeedRunAttempt } from '../../speedrun/speedrun.js';
 
 const pageElement = (ui, page) => ({ main: ui.pauseMainPage, 'level-select': ui.levelSelectPage, settings: ui.settingsHubPage, 'settings-category': ui.settingsCategoryPage })[page];
@@ -19,6 +20,18 @@ export function activeMenuRoot(game) {
   if (game.player.dead || isWon(game)) return game.ui.messageEl;
   if (!isStarted(game)) return game.ui.startScreen;
   return null;
+}
+
+function syncPreviewPauseActions(game) {
+  const preview = isTilemapPreviewActive(game);
+  const { ui } = game;
+  ui.pauseMainPage?.querySelector('p')?.replaceChildren(document.createTextNode(preview ? 'Preview paused. Restart the run, adjust settings, or close back to the editor.' : 'Take a break, restart the run, or change settings.'));
+  if (ui.resumeButton) ui.resumeButton.hidden = preview;
+  if (ui.levelSelectButton) ui.levelSelectButton.hidden = preview;
+  if (ui.mainMenuButton) ui.mainMenuButton.hidden = preview;
+  if (ui.closeGameButton) ui.closeGameButton.hidden = !preview;
+  if (ui.restartButton) ui.restartButton.classList.toggle('ds-button--primary', preview);
+  if (ui.restartButton) ui.restartButton.classList.toggle('ds-button--secondary', !preview);
 }
 
 export function updateMenuChrome(game) {
@@ -33,6 +46,7 @@ export function updateMenuChrome(game) {
   ui.menuTitle.textContent = menu.page === 'settings-category' && category ? category.title : (menu.page === 'level-select' ? scenarioBrowserTitle : (menu.page === 'settings' ? 'Settings' : 'Paused'));
   ui.menuEyebrow.textContent = menu.page === 'main' ? 'Paused' : (menu.page === 'level-select' ? 'Choose your route' : (menu.page === 'settings-category' ? 'Settings' : (menu.origin === 'start' ? 'Before you begin' : 'Settings')));
   refreshDynamicRefs(game);
+  syncPreviewPauseActions(game);
   renderInputHints(game.input, document, game);
   syncHintLayer(game);
   if (ui.developerTools) ui.developerTools.hidden = !game.settings.developerMode;
@@ -174,7 +188,7 @@ export function setPaused(game, value, runtime = browserRuntime) {
     setPausedFlag(game, value, runtime);
     updateMenuChrome(game);
   };
-  const after = () => isPaused(game) ? focusAndReveal(game, game.ui.resumeButton) : document.activeElement?.blur?.();
+  const after = () => isPaused(game) ? focusAndReveal(game, isTilemapPreviewActive(game) ? game.ui.restartButton : game.ui.resumeButton) : document.activeElement?.blur?.();
   runDOMTransition(game, () => { change(); runtime.emit('game.pause', { paused: isPaused(game) }); }, after, value ? 'pause-open' : 'pause-close');
 }
 
@@ -192,6 +206,14 @@ export function startGame(game, runtime = browserRuntime) {
     runtime.emit('game.start', { tilemapId: game.tilemap?.id || null });
     updateMenuChrome(game);
   }, () => game.canvas.focus?.({ preventScroll: true }), 'game-start');
+}
+
+export function closeGameWindow() {
+  if (typeof window === 'undefined') return;
+  window.close();
+  window.setTimeout(() => {
+    if (!window.closed) window.location.assign('/editor.html');
+  }, 80);
 }
 
 export function returnToMainMenu(game, runtime = browserRuntime) {

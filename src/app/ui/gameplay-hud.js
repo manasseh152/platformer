@@ -1,6 +1,7 @@
 import { isWon } from '../app-state.js';
 import { formatRunTime, getBestTime } from '../speedrun/speedrun.js';
 import { syncHintLayer } from './hint-layer.js';
+import { isTilemapPreviewActive } from '../tilemaps/tilemap-preview.js';
 
 export function syncGameplayHud(game) {
   const { ui, player } = game;
@@ -25,11 +26,18 @@ export function syncGameplayHud(game) {
     ui.messageSpeedRun.hidden = !result;
     ui.messageSpeedRun.textContent = result ? `Speed Run: ${formatRunTime(result.bestMs)} — ${result.isNewBest ? 'New Best!' : `Best ${formatRunTime(result.previousBestMs)}`}` : '';
   }
+  const preview = isTilemapPreviewActive(game);
   if (ui.messageNextLevelButton) {
     const campaignEligible = !game.scenarios?.current || game.scenarios.current.source === 'campaigns';
-    const nextLevel = won && campaignEligible ? game.tilemaps.getNextTilemap() : null;
+    const nextLevel = !preview && won && campaignEligible ? game.tilemaps.getNextTilemap() : null;
     ui.messageNextLevelButton.hidden = !nextLevel;
     ui.messageNextLevelButton.textContent = nextLevel ? `Play ${nextLevel.name}` : 'Play Next';
+  }
+  if (ui.messageLevelSelectButton) ui.messageLevelSelectButton.hidden = preview;
+  if (ui.messageCloseButton) ui.messageCloseButton.hidden = !preview;
+  if (ui.messageRestartButton) {
+    ui.messageRestartButton.classList.toggle('ds-button--primary', preview);
+    ui.messageRestartButton.classList.toggle('ds-button--secondary', !preview);
   }
   if (showingEndMessage && !game.endMessageWasVisible) {
     game.endMessageWasVisible = true;

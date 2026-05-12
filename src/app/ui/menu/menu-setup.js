@@ -8,6 +8,7 @@ import { renderSelectedTilemapSummary, selectScenario, setLevelSelectTab } from 
 import { handleSettingsActionsClick } from '../settings/settings-actions.js';
 import { setStarted } from '../../app-state.js';
 import {
+  closeGameWindow,
   closeScenarioBrowser,
   createMenuShellCallbacks,
   focusAndReveal,
@@ -67,13 +68,15 @@ export function setupMenu(game, runtime = browserRuntime) {
   ui.startLevelSelectButton.addEventListener('click', () => openScenarioBrowser(game, 'start'));
   ui.startEditorButton.addEventListener('click', () => window.location.assign('/editor'));
   ui.startSettingsButton.addEventListener('click', () => openSettings(game, 'start'));
-  ui.resumeButton.addEventListener('click', () => setPaused(game, false, runtime));
+  ui.resumeButton?.addEventListener('click', () => setPaused(game, false, runtime));
   ui.restartButton.addEventListener('click', () => game.resetGame());
+  ui.closeGameButton?.addEventListener('click', () => closeGameWindow());
   ui.mainMenuButton?.addEventListener('click', () => returnToMainMenu(game, runtime));
-  ui.levelSelectButton.addEventListener('click', () => openScenarioBrowser(game, 'pause'));
+  ui.levelSelectButton?.addEventListener('click', () => openScenarioBrowser(game, 'pause'));
   ui.settingsButton.addEventListener('click', () => openSettings(game, 'pause'));
   ui.messageRestartButton.addEventListener('click', () => game.resetGame());
-  ui.messageNextLevelButton.addEventListener('click', () => {
+  ui.messageCloseButton?.addEventListener('click', () => closeGameWindow());
+  ui.messageNextLevelButton?.addEventListener('click', () => {
     const result = game.tilemaps.switchToNextTilemap();
     if (!result.ok) return;
     setPausedFlag(game, false, runtime);
@@ -83,7 +86,7 @@ export function setupMenu(game, runtime = browserRuntime) {
     document.body.classList.remove('game-won', 'game-over');
     game.canvas.focus?.({ preventScroll: true });
   });
-  ui.messageLevelSelectButton.addEventListener('click', () => {
+  ui.messageLevelSelectButton?.addEventListener('click', () => {
     setPausedFlag(game, true, runtime);
     openScenarioBrowser(game, 'pause');
   });

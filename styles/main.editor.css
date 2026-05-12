@@ -63,7 +63,7 @@ kbd {
   min-height: 52px;
   pointer-events: none;
 }
-.top-button, .save-state-button, .editor-tabs {
+.top-button, .save-state-button, .quick-preview-button, .editor-tabs {
   pointer-events: auto;
   border: 1px solid var(--color-border);
   background: rgba(9, 12, 18, .68);
@@ -71,6 +71,9 @@ kbd {
   box-shadow: 0 12px 40px rgba(0,0,0,.32);
 }
 .top-button, .save-state-button { justify-self: start; min-width: 104px; background: rgba(9, 12, 18, .68); }
+.top-actions { justify-self: end; display: flex; align-items: center; gap: 8px; pointer-events: auto; }
+.quick-preview-button { min-width: 116px; color: #101016; border-color: transparent; background: linear-gradient(135deg, #ffe7a8, #80f5cf 58%, #78a8ff); font-weight: 950; letter-spacing: .01em; text-shadow: 0 1px 0 rgba(255,255,255,.35); }
+.quick-preview-button:hover:not(:disabled) { background: linear-gradient(135deg, #fff2c6, #9cffdf 58%, #98bdff); }
 .save-state-button { justify-self: end; }
 .save-state-button[data-save-state="dirty"],
 .save-state-button[data-save-state="saving"] { color: #101016; background: rgba(255,246,232,.92); border-color: transparent; font-weight: 800; }

@@ -13,6 +13,10 @@ function storageKey(id) {
   return `${PREVIEW_STORAGE_PREFIX}${id}`;
 }
 
+export function isTilemapPreviewActive(game) {
+  return Boolean(game?.session?.previewMode || (typeof document !== 'undefined' && document.body?.dataset?.previewTilemapStatus === 'loaded'));
+}
+
 function fail(reason, message, runtime, detail = {}) {
   runtime?.emit?.('tilemap.preview.failed', { reason, message, ...detail });
   console.warn(message);
@@ -39,6 +43,7 @@ export function applyTilemapPreviewFromUrl(game, runtime = game.runtime, search 
   try {
     const tilemap = compileDraft(payload.draft);
     game.session.developerModeOverride = true;
+    game.session.previewMode = true;
     game.tilemap = tilemap;
     resetGameplaySession(game.gameplaySession, tilemap, {
       view: game.view,

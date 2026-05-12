@@ -1,6 +1,7 @@
 import { isPaused, isStarted, isWon } from '../app-state.js';
 import { gameInputProfile } from '../input/game-input-profile.js';
 import { hintPartsForAction } from '../input/input-hints.js';
+import { isTilemapPreviewActive } from '../tilemaps/tilemap-preview.js';
 
 const platformForScheme = scheme => scheme === 'gamepad' ? 'gamepad' : 'keyboard';
 
@@ -42,6 +43,12 @@ const pauseMainHints = [
   { actionId: 'menu.mainMenu', label: 'Main menu', clickable: true, fallbackLabel: 'Main menu' }
 ];
 
+const previewPauseMainHints = [
+  { actionId: 'menu.accept', label: 'Select', clickable: true },
+  { actionId: 'menu.back', label: 'Resume', clickable: true },
+  { actionId: 'menu.settings', clickable: true }
+];
+
 const subpageHints = [
   { actionId: 'menu.accept', label: 'Select', clickable: true },
   { actionId: 'menu.back', clickable: true }
@@ -58,11 +65,15 @@ function endHints(game) {
   return hints;
 }
 
+function previewEndHints() {
+  return [{ actionId: 'system.restart', clickable: true }];
+}
+
 export function hintLayerEntries(game) {
   if (!game) return [];
-  if (game.player?.dead || isWon(game)) return endHints(game);
+  if (game.player?.dead || isWon(game)) return isTilemapPreviewActive(game) ? previewEndHints() : endHints(game);
   if (document.body.dataset.menuOrigin === 'start' && ['level-select', 'settings', 'settings-category'].includes(game.menu?.page)) return subpageHints;
-  if (isPaused(game)) return game.menu?.page === 'main' ? pauseMainHints : subpageHints;
+  if (isPaused(game)) return game.menu?.page === 'main' ? (isTilemapPreviewActive(game) ? previewPauseMainHints : pauseMainHints) : subpageHints;
   if (!isStarted(game)) return startHints;
   return gameplayHints;
 }

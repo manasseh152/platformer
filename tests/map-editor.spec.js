@@ -546,6 +546,23 @@ test('map editor persists the floating zoom controls preference', async ({ page 
   await expect(page.locator('#floatingViewControls')).toBeHidden();
 });
 
+test('map editor topbar preview opens without visiting the Map tab', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__openedPreviews = [];
+    window.open = (url, target) => {
+      window.__openedPreviews.push({ url, target });
+      return { focus() {} };
+    };
+  });
+  await page.goto('/editor.html');
+
+  await expect(page.locator('#editPanel')).toBeVisible();
+  await page.getByRole('button', { name: '▶ Preview' }).click();
+
+  await expect(page.locator('#status')).toContainText('Opened playable preview');
+  await expect.poll(() => page.evaluate(() => window.__openedPreviews.length)).toBe(1);
+});
+
 test('map editor ctrl+enter opens playable preview', async ({ page }) => {
   await page.addInitScript(() => {
     window.__openedPreviews = [];
@@ -591,4 +608,50 @@ test('game page consumes a preview tilemap payload and starts play', async ({ pa
   await expect.poll(() => page.locator('body').getAttribute('data-preview-tilemap-status')).toBe('loaded');
   await expect(page.locator('body')).toHaveClass(/playing/);
   await expect.poll(() => page.evaluate(previewKey => localStorage.getItem(`chibi.tilemap-preview.${previewKey}`), key)).toBeNull();
+});
+
+
+test('preview mode pause overlay is editor-return only and Escape resumes', async ({ page }) => {
+  const key = 'playwright-preview-pause';
+  await page.addInitScript(previewKey => {
+    localStorage.setItem(`chibi.tilemap-preview.${previewKey}`, JSON.stringify({
+      createdAt: Date.now(),
+      draft: {
+        id: 'playwright-preview-pause-map',
+        name: 'Playwright Preview Pause Map',
+        cols: 4,
+        rows: 3,
+        artTileSize: 16,
+        terrainRenderMode: 'contained-autotile',
+        theme: 'kenney-pixel-platformer:grass',
+        visibility: 'developer',
+        categories: ['drafts'],
+        description: 'Preview pause payload from Playwright.',
+        layers: [
+          { id: 'terrain', type: 'terrain', cellSize: 16, rows: [[null, null, null, null, null, null, null, null], [null, null, null, null, null, null, null, null], [null, null, null, null, null, null, null, null], [null, null, null, null, null, null, null, null], [null, null, null, null, null, null, null, null], ['grass', 'grass', 'grass', 'grass', 'grass', 'grass', 'grass', 'grass']] },
+          { id: 'entities', cellSize: 32, rows: ['P...', '....', '...G'] }
+        ]
+      }
+    }));
+  }, key);
+
+  await page.goto(`/index.html?previewTilemapKey=${key}&autorun=1&mode=developer`);
+  await expect.poll(() => page.locator('body').getAttribute('data-preview-tilemap-status')).toBe('loaded');
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator('body')).toHaveClass(/\bpaused\b/);
+  await expect(page.locator('#pauseScreen #resumeButton')).toBeHidden();
+  await expect(page.locator('#pauseScreen #levelSelectButton')).toBeHidden();
+  await expect(page.locator('#pauseScreen #mainMenuButton')).toBeHidden();
+  await expect(page.locator('#pauseScreen #settingsButton')).toBeVisible();
+  await expect(page.locator('#pauseScreen #restartButton')).toBeVisible();
+  await expect(page.locator('#pauseScreen #closeGameButton')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator('body')).not.toHaveClass(/\bpaused\b/);
+  await expect(page).toHaveURL(/previewTilemapKey=/);
+
+  await page.keyboard.press('Escape');
+  await page.locator('#pauseScreen #closeGameButton').click();
+  await expect(page).toHaveURL(/\/editor\.html$/);
 });
