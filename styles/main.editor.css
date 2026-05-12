@@ -506,7 +506,11 @@ body[data-editor-input="gamepad"]:not([data-editor-panel="open"]) .controller-vi
   letter-spacing: .015em;
   text-shadow: none;
 }
-.viewport-input-hints .input-hint__joiner { display: none; }
+.viewport-input-hints .input-hint__joiner {
+  display: inline-block;
+  margin: 0 -5px;
+  color: rgba(255, 246, 232, .38);
+}
 .viewport-input-hints .input-hint__label {
   color: rgba(255, 246, 232, .58);
   font: inherit;

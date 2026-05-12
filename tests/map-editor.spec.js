@@ -374,8 +374,8 @@ test('map editor controller hints follow panel vs canvas focus and zoom only on 
   await page.evaluate(() => window.__setMockGamepadButton(7, true));
   await expect(page.locator('#controllerViewportHints')).toBeVisible();
   await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Select' })).toBeVisible();
-  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Prev palette' })).toBeHidden();
-  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Zoom in' })).toBeHidden();
+  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Palette' })).toBeHidden();
+  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Zoom' })).toBeHidden();
   await expect.poll(() => page.locator('#editorCanvas').getAttribute('data-zoom')).toBe(before);
 
   await page.evaluate(() => window.__setMockGamepadButton(7, false));
@@ -384,11 +384,14 @@ test('map editor controller hints follow panel vs canvas focus and zoom only on 
   await page.evaluate(() => window.__setMockGamepadButton(3, false));
   await page.evaluate(() => window.__setMockGamepadButton(7, true));
   await expect.poll(() => page.locator('#editorCanvas').getAttribute('data-zoom')).not.toBe(before);
-  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Zoom in' })).toBeVisible();
-  await expect(page.locator('#controllerViewportHints [data-input-action="editor.previousBrush"] .input-hint__icon')).toHaveAttribute('alt', 'LB');
-  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Prev palette' })).toBeVisible();
-  await expect(page.locator('#controllerViewportHints [data-input-action="editor.nextBrush"] .input-hint__icon')).toHaveAttribute('alt', 'RB');
-  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Next palette' })).toBeVisible();
+  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Zoom' })).toBeVisible();
+  const paletteHint = page.locator('#controllerViewportHints [data-input-actions="editor.previousBrush editor.nextBrush"]');
+  await expect(paletteHint.locator('.input-hint__icon').nth(0)).toHaveAttribute('alt', 'LB');
+  await expect(paletteHint.locator('.input-hint__icon').nth(1)).toHaveAttribute('alt', 'RB');
+  await expect(paletteHint.locator('.input-hint__label')).toHaveText('Palette');
+  const zoomHint = page.locator('#controllerViewportHints [data-input-actions="editor.zoomOut editor.zoomIn"]');
+  await expect(zoomHint.locator('.input-hint__icon').nth(0)).toHaveAttribute('alt', 'LT');
+  await expect(zoomHint.locator('.input-hint__icon').nth(1)).toHaveAttribute('alt', 'RT');
   await expect(page.locator('#controllerPanelHint')).toBeVisible();
   await expect(page.locator('#hideOverlayButton .input-hint__label').filter({ hasText: 'Hide sidebar' })).toBeAttached();
   await expect(page.locator('#zoomReadout')).toContainText('%');

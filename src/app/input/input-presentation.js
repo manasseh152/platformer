@@ -26,6 +26,21 @@ function hintHtml(hint) {
   return `${controlHintHtml(controls)}<span class="input-hint__label">${escapeHtml(hint.label)}</span>`;
 }
 
+function splitActionIds(value = '') {
+  return String(value).split(/[\s,]+/).map(action => action.trim()).filter(Boolean);
+}
+
+function hintPartsForActions(profile, settings, actionIds, options = {}) {
+  if (actionIds.length <= 1) return hintPartsForAction(profile, settings, actionIds[0], options);
+  const hints = actionIds.map(actionId => hintPartsForAction(profile, settings, actionId, options));
+  return {
+    actionId: actionIds.join(' '),
+    label: options.label || hints.map(hint => hint.label).join(' / '),
+    deviceType: hints.find(hint => hint.parts.length)?.deviceType || hints[0]?.deviceType || 'keyboard',
+    parts: hints.flatMap(hint => hint.parts)
+  };
+}
+
 export function renderTabInputHints(input, root = document, gameOrOptions = {}) {
   const options = gameOrOptions.input ? { game: gameOrOptions } : gameOrOptions;
   const game = options.game || null;
@@ -68,18 +83,20 @@ export function renderInputHints(input, root = document, gameOrOptions = {}) {
   const platform = platformForScheme(input.inputScheme);
   renderTabInputHints(input, root, { ...options, game, profile, settings });
   root.querySelectorAll('[data-input-hint]').forEach(el => {
+    const explicitActions = splitActionIds(el.dataset.inputActions);
     const actionId = el.dataset.inputAction || hintActionAliases[el.dataset.inputHint] || el.dataset.inputHint;
-    if (!actionId || !settings?.input?.bindings?.[actionId]) return;
-    const hint = hintPartsForAction(profile, settings, actionId, {
+    const actionIds = explicitActions.length ? explicitActions : splitActionIds(actionId);
+    if (!actionIds.length || actionIds.some(action => !settings?.input?.bindings?.[action])) return;
+    const hint = hintPartsForActions(profile, settings, actionIds, {
       runtime: game?.inputRuntime || options.runtime || null,
       inputScheme: input.inputScheme,
       iconPack: settings.input?.gamepad?.globalIconPack || 'xbox',
       label: el.dataset.inputLabel || undefined,
       deviceType: el.dataset.inputDeviceType || undefined
     });
-    el.dataset.inputAction = actionId;
+    el.dataset.inputAction = hint.actionId;
     el.dataset.inputPlatform = hint.deviceType === 'gamepad' ? 'gamepad' : platform;
-    if (['menu.back', 'menu.settings'].includes(actionId)) {
+    if (actionIds.some(action => ['menu.back', 'menu.settings'].includes(action))) {
       el.dataset.inputClickable = 'true';
       el.setAttribute('role', 'button');
       el.tabIndex = 0;
