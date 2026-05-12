@@ -301,11 +301,20 @@ Final output is SDR/clamped. HDR/tone mapping/bloom are future post-lighting sys
 
 Implement as independently testable vertical slices.
 
-### Slice 1: Core data primitives
+### Slice 1: Core data primitives — Complete
 
-- Add `src/core/color.js` with `Color.rgb/rgba`, `isRgba`, `assertRgba`.
-- Add `src/core/vector.js` with `Vec.xy/xyz/xyzw`, `isVec2`, `assertVec2` and related assertions.
-- Add tests for validation, freezing, and invalid input failures.
+Implemented in:
+
+- `src/core/color.js` with `Color.rgb/rgba`, `isRgba`, `assertRgba`.
+- `src/core/vector.js` with `Vec.xy/xyz/xyzw`, `isVec2/3/4`, `assertVec2/3/4`.
+- `tests/core-primitives.spec.js` covering validation, freezing, and invalid input failures.
+
+Validated with:
+
+```sh
+bunx playwright test tests/core-primitives.spec.js --project=chromium
+bun run build
+```
 
 ### Slice 2: Light component and prefabs
 

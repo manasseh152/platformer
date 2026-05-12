@@ -9,7 +9,7 @@ Use these docs when adding or changing code:
 - `adr/0003-contained-terrain-scale.md` — 32/16/8 cell-size model, contained terrain rendering, and collision layer decisions.
 - `adr/0004-foundation-review-before-new-systems.md` — accepted rule for keeping the foundation review current before major new systems.
 - `adr/0005-render-pipeline-packets-and-backends.md` — packetized render extraction, native-frame backends, presentation, and GPU backend migration history.
-- `adr/0007-deferred-2d-lighting-primitives.md` — planned deferred 2D lighting primitives, packet semantics, fallback policy, and implementation slices.
+- `adr/0007-deferred-2d-lighting-primitives.md` — deferred 2D lighting primitives, packet semantics, fallback policy, and implementation slice status.
 - `patterns/scenes-and-scenarios.md` — runtime scenes, launchable scenarios, gyms, zoos, and app/session boundaries.
 - `patterns/tilemaps.md` — composable tilemap authoring with objects, layers, and components.
 - `patterns/terrain.md` — contained terrain authoring, render, and collision derivation pipeline.
