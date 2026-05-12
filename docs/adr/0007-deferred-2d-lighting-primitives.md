@@ -128,14 +128,14 @@ warmTorchLight:
   volumetricIntensity: 0.02
 ```
 
-The rendering gym should instantiate:
+The rendering gym should instantiate, as explicit authored scene objects rather than editor/draft grid symbols:
 
 - one dark ambient light
 - two warm torch point lights
 
 Lights are invisible scene objects in v1. Visual torch fixtures/decor are a later concern.
 
-Map-editor authoring is deferred until the planned editor/layer refactor. Future editor palettes should reference prefab object IDs through static metadata rather than copying runtime component definitions.
+Map-editor authoring is deferred until the planned editor/layer refactor. Do not add light grid layers, draft symbols, or editor palettes in v1. Future editor palettes should reference prefab object IDs through static metadata rather than copying runtime component definitions.
 
 ## Read model and packet extraction
 
@@ -354,8 +354,8 @@ bunx playwright test tests/scene.spec.js tests/render-pipeline.spec.js --project
 
 Implemented in:
 
-- `src/content/tilemaps/definitions/rendering-gym-map.js` with a dedicated invisible `lights` grid layer containing one dark ambient light and two warm torch point lights.
-- `tests/render-pipeline.spec.js` asserting the rendering gym frame emits one authored ambient packet and two point packets.
+- `src/content/tilemaps/definitions/rendering-gym-map.js` with explicit invisible authored scene objects for one dark ambient light and two warm torch point lights. The rendering gym does not use a `lights` grid layer or draft/editor light symbols.
+- `tests/render-pipeline.spec.js` asserting the rendering gym frame emits one authored ambient packet and two point packets from those explicit objects.
 
 Validated with:
 
@@ -380,12 +380,14 @@ bunx playwright test tests/render-pipeline.spec.js --project=chromium
 bun run build
 ```
 
-### Slice 6: WebGL2 deferred MVP-A, rect surfaces — Complete
+### Slice 6: Deferred CPU reference path, rect surfaces — Complete
 
 Implemented in:
 
-- `src/render/backends/webgl2-deferred-native-frame-backend.js` with the deferred backend contract, WebGL2 availability gate, native-resolution albedo/light compose buffers, opaque lit rect support, ambient/point accumulation, forward drawing for unlit/unsupported packets, and diagnostics for unsupported lit packets.
-- `tests/render-pipeline.spec.js` proving point-lit rect terrain is brighter at the light center than outside the light radius, and authored gameplay lights select the deferred backend when WebGL2 is available.
+- `src/render/backends/webgl2-deferred-native-frame-backend.js` with the deferred backend contract, WebGL2 availability gate, CPU/Canvas2D native-resolution albedo/light compose buffers, opaque lit rect support, ambient/point accumulation, forward drawing for unlit/unsupported packets, and diagnostics for unsupported lit packets.
+- `tests/render-pipeline.spec.js` proving point-lit rect terrain is brighter at the light center than outside the light radius, and authored gameplay lights select the deferred backend contract when WebGL2 is available.
+
+Caveat: this slice is a behavioral/reference implementation behind the WebGL2 availability gate, not the final GPU deferred renderer. It does not yet allocate WebGL2 G-buffer FBOs or run shader-based light accumulation/compose passes.
 
 Validated with:
 
@@ -397,12 +399,14 @@ bun run validate:map-render
 
 Note: `bun run validate:foundation` was also attempted after this slice; the new render-pipeline coverage passed, but existing unrelated foundation expectations currently fail in `tests/core-boundary.spec.js`, `tests/scenarios-registry.spec.js`, and `tests/scenes-registry.spec.js`.
 
-### Slice 7: WebGL2 deferred MVP-B, image/sprite surfaces — Complete
+### Slice 7: Deferred CPU reference path, image/sprite surfaces — Complete
 
 Implemented in:
 
-- `src/render/backends/webgl2-deferred-native-frame-backend.js` with G-buffer support for lit `image`, `sprite`, and `texturedQuad` packets, shared asset-registry drawable/source-rect resolution, transform/flip-aware image drawing, and alpha-mask discard that writes surviving pixels as opaque albedo.
+- `src/render/backends/webgl2-deferred-native-frame-backend.js` with CPU/Canvas2D G-buffer-like support for lit `image`, `sprite`, and `texturedQuad` packets, shared asset-registry drawable/source-rect resolution, transform/flip-aware image drawing, and alpha-mask discard that writes surviving pixels as opaque albedo.
 - `tests/render-pipeline.spec.js` covering deferred-lit standalone image packets, texturedQuad packets, atlas sprite metadata/source-rect resolution, point lighting over image albedo, and transparent sprite pixel discard.
+
+Caveat: image/sprite lighting is validated behaviorally but still runs through CPU arrays and Canvas2D scratch buffers, not WebGL2 FBO/shader passes.
 
 Validated with:
 
@@ -411,6 +415,15 @@ bunx playwright test tests/render-pipeline.spec.js --project=chromium
 bun run build
 bun run validate:map-render
 ```
+
+### Slice 8: WebGL2 GPU deferred implementation — Pending
+
+Still required before calling the deferred backend fully correct:
+
+- Replace CPU albedo/light arrays with WebGL2-owned textures/FBOs for the G-buffer and light accumulation targets.
+- Move ambient/point accumulation and compose into shaders.
+- Keep Canvas2D or the existing forward backend as fallback for unavailable WebGL2 and unsupported packets.
+- Add browser-level tests/diagnostics that prove the path uses actual WebGL2 resources and still matches the reference visual behavior.
 
 ## Consequences
 

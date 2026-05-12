@@ -565,11 +565,11 @@ test('rendering gym emits one authored ambient and two point light packets', () 
   const pointPackets = lightPackets.filter(packet => packet.lightKind === 'point');
 
   expect(ambientPackets).toEqual([
-    expect.objectContaining({ sourceId: 'lights:0,0:light2d:0', color: [12, 16, 28, 255], intensity: 0.55 })
+    expect.objectContaining({ sourceId: 'rendering-gym-ambient-light:light2d:0', color: [12, 16, 28, 255], intensity: 0.55 })
   ]);
   expect(ambientPackets[0].defaultLight).toBeUndefined();
   expect(pointPackets).toHaveLength(2);
-  expect(pointPackets.map(packet => packet.sourceId)).toEqual(['lights:4,3:light2d:0', 'lights:12,3:light2d:0']);
+  expect(pointPackets.map(packet => packet.sourceId)).toEqual(['rendering-gym-left-torch-light:light2d:0', 'rendering-gym-right-torch-light:light2d:0']);
   expect(pointPackets).toEqual(expect.arrayContaining([
     expect.objectContaining({ color: [255, 176, 92, 255], intensity: 1, radius: 64, volumetricIntensity: 0.02, castsShadows: false })
   ]));
