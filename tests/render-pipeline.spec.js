@@ -378,6 +378,67 @@ test('webgl2 deferred backend lights opaque rect terrain with point falloff', as
   expect(result.source).toMatchObject({ kind: 'canvas2d', width: 8, height: 4 });
 });
 
+test('webgl2 deferred backend lights image, texturedQuad, and atlas sprite packets with alpha masking', async ({ page }) => {
+  await page.goto('/');
+  const result = await page.evaluate(async () => {
+    const [{ createRenderFrameBuilder }, { createAssetRegistry, ASSET_IDS, createAtlasSpriteMetadata }, { createWebGl2DeferredNativeFrameBackend }] = await Promise.all([
+      import('/src/engine/render/frame-builder.js'),
+      import('/src/render/asset-registry.js'),
+      import('/src/render/backends/webgl2-deferred-native-frame-backend.js')
+    ]);
+
+    const source = document.createElement('canvas');
+    source.width = 6;
+    source.height = 2;
+    const sourceCtx = source.getContext('2d');
+    sourceCtx.fillStyle = 'rgb(20,20,20)';
+    sourceCtx.fillRect(0, 0, 2, 2);
+    sourceCtx.fillStyle = 'rgb(80,80,80)';
+    sourceCtx.fillRect(2, 0, 2, 2);
+    sourceCtx.fillStyle = 'rgb(120,120,120)';
+    sourceCtx.fillRect(4, 0, 2, 2);
+    sourceCtx.clearRect(4, 0, 1, 1);
+    const atlas = new Image();
+    await new Promise(resolve => {
+      atlas.onload = resolve;
+      atlas.src = source.toDataURL();
+    });
+
+    const registry = createAssetRegistry(
+      { atlas },
+      {
+        metadata: {
+          'standalone.a': { kind: 'standalone-image', imageKey: 'atlas' },
+          'standalone.b': { kind: 'standalone-image', imageKey: 'atlas' },
+          [ASSET_IDS.HAZARD_SPIKES]: createAtlasSpriteMetadata({ atlasId: 'atlas.test', imageKey: 'atlas', x: 4, y: 0, w: 2, h: 2 })
+        }
+      }
+    );
+    const backend = createWebGl2DeferredNativeFrameBackend({ width: 6, height: 2, assetRegistry: registry });
+    if (!backend) return { supported: false };
+    const frame = createRenderFrameBuilder({ width: 6, height: 2 })
+      .add({ kind: 'clear', fill: '#000000', lighting: 'unlit' })
+      .add({ kind: 'image', assetId: 'standalone.a', sourceRect: { x: 0, y: 0, w: 2, h: 2 }, lighting: 'lit', x: 0, y: 0, w: 2, h: 2 })
+      .add({ kind: 'texturedQuad', assetId: 'standalone.b', sourceRect: { x: 2, y: 0, w: 2, h: 2 }, lighting: 'lit', x: 2, y: 0, w: 2, h: 2 })
+      .add({ kind: 'sprite', assetId: ASSET_IDS.HAZARD_SPIKES, lighting: 'lit', x: 4, y: 0, w: 2, h: 2 })
+      .add({ kind: 'light2d', lighting: 'light', lightKind: 'ambient', sourceId: 'ambient', color: [255, 255, 255, 255], intensity: 1 })
+      .add({ kind: 'light2d', lighting: 'light', lightKind: 'point', sourceId: 'point', color: [255, 255, 255, 255], intensity: 1, x: 1, y: 1, radius: 2, volumetricIntensity: 0, castsShadows: false })
+      .finalize();
+    backend.draw(frame);
+    const pixels = backend.ctx.getImageData(0, 0, 6, 2).data;
+    const at = (x, y) => Array.from(pixels.slice((y * 6 + x) * 4, (y * 6 + x) * 4 + 4));
+    return { supported: true, imageCenter: at(1, 1), texturedQuad: at(2, 1), spriteTransparent: at(4, 0), spriteOpaque: at(5, 0), diagnostics: backend.diagnostics };
+  });
+
+  test.skip(!result.supported, 'WebGL2 unavailable in this browser');
+  expect(result.imageCenter[0]).toBeGreaterThan(20);
+  expect(result.texturedQuad[0]).toBeGreaterThanOrEqual(80);
+  expect(result.texturedQuad[0]).toBeLessThan(90);
+  expect(result.spriteTransparent).toEqual([0, 0, 0, 255]);
+  expect(result.spriteOpaque).toEqual([120, 120, 120, 255]);
+  expect(result.diagnostics).toEqual([]);
+});
+
 test('gameplay native backend can be toggled without changing extraction', async ({ page }) => {
   await page.goto('/');
   const result = await page.evaluate(async () => {

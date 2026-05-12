@@ -1,5 +1,7 @@
 export const WEBGL2_DEFERRED_BACKEND_UNAVAILABLE_REASON = 'webgl2 deferred native-frame backend unavailable';
 
+const ALPHA_MASK_CUTOFF = 1;
+
 let colorParserCanvas = null;
 
 function parseCssColor(value) {
@@ -56,6 +58,32 @@ function withAlpha(ctx, alpha, draw) {
   finally { ctx.globalAlpha = previous; }
 }
 
+function resolveImageDrawable(packet, assetRegistry) {
+  const drawable = assetRegistry?.resolveDrawable?.(packet.assetId) ?? { image: assetRegistry?.getImage?.(packet.assetId) };
+  if (!drawable?.image || !assetRegistry?.isLoaded(packet.assetId)) return null;
+  const source = packet.sourceRect ?? drawable.rect ?? { x: 0, y: 0, w: drawable.image.naturalWidth ?? drawable.image.width, h: drawable.image.naturalHeight ?? drawable.image.height };
+  if (!source.w || !source.h || !packet.w || !packet.h) return null;
+  return { drawable, source };
+}
+
+function drawImageLikePacket(ctx, packet, assetRegistry) {
+  const resolved = resolveImageDrawable(packet, assetRegistry);
+  if (!resolved) return false;
+  const { drawable, source } = resolved;
+  const { x, y, w, h } = packet;
+  ctx.save();
+  if (packet.flipX || packet.flipY || packet.rotation) {
+    ctx.translate(x + w / 2, y + h / 2);
+    if (packet.rotation) ctx.rotate(packet.rotation);
+    ctx.scale(packet.flipX ? -1 : 1, packet.flipY ? -1 : 1);
+    ctx.drawImage(drawable.image, source.x, source.y, source.w, source.h, -w / 2, -h / 2, w, h);
+  } else {
+    ctx.drawImage(drawable.image, source.x, source.y, source.w, source.h, x, y, w, h);
+  }
+  ctx.restore();
+  return true;
+}
+
 function drawForwardPacket(ctx, packet, assetRegistry) {
   withAlpha(ctx, packet.alpha, () => {
     if (packet.kind === 'clear') {
@@ -82,16 +110,21 @@ function drawForwardPacket(ctx, packet, assetRegistry) {
       if (fill) { ctx.fillStyle = fill; ctx.fill(); }
       if (packet.stroke) { ctx.strokeStyle = packet.stroke; ctx.lineWidth = packet.lineWidth ?? 1; ctx.stroke(); }
     } else if (packet.kind === 'image' || packet.kind === 'sprite' || packet.kind === 'texturedQuad') {
-      const drawable = assetRegistry?.resolveDrawable?.(packet.assetId) ?? { image: assetRegistry?.getImage?.(packet.assetId) };
-      if (!drawable?.image || !assetRegistry?.isLoaded(packet.assetId)) return;
-      const source = packet.sourceRect ?? drawable.rect ?? { x: 0, y: 0, w: drawable.image.naturalWidth ?? drawable.image.width, h: drawable.image.naturalHeight ?? drawable.image.height };
-      ctx.drawImage(drawable.image, source.x, source.y, source.w, source.h, packet.x, packet.y, packet.w, packet.h);
+      drawImageLikePacket(ctx, packet, assetRegistry);
     }
   });
 }
 
 function isOpaqueLitRect(packet) {
   return packet?.kind === 'rect' && packet.lighting === 'lit' && (packet.alpha == null || packet.alpha === 1) && Boolean(resolveColor(packet.fill));
+}
+
+function isImageLikePacket(packet) {
+  return packet?.kind === 'image' || packet?.kind === 'sprite' || packet?.kind === 'texturedQuad';
+}
+
+function isOpaqueLitImageLike(packet, assetRegistry) {
+  return isImageLikePacket(packet) && packet.lighting === 'lit' && (packet.alpha == null || packet.alpha === 1) && Boolean(resolveImageDrawable(packet, assetRegistry));
 }
 
 function addDiagnostic(issues, packet, reason) {
@@ -111,6 +144,28 @@ function writeLitRect(albedo, width, height, packet) {
       albedo[i] = color[0];
       albedo[i + 1] = color[1];
       albedo[i + 2] = color[2];
+      albedo[i + 3] = 255;
+    }
+  }
+}
+
+function writeLitImageLike(albedo, width, height, packet, assetRegistry, scratchCtx) {
+  scratchCtx.setTransform(1, 0, 0, 1, 0, 0);
+  scratchCtx.clearRect(0, 0, width, height);
+  scratchCtx.imageSmoothingEnabled = false;
+  if (!drawImageLikePacket(scratchCtx, packet, assetRegistry)) return;
+  const pixels = scratchCtx.getImageData(0, 0, width, height).data;
+  const x0 = Math.max(0, Math.floor(packet.x));
+  const y0 = Math.max(0, Math.floor(packet.y));
+  const x1 = Math.min(width, Math.ceil(packet.x + packet.w));
+  const y1 = Math.min(height, Math.ceil(packet.y + packet.h));
+  for (let y = y0; y < y1; y++) {
+    for (let x = x0; x < x1; x++) {
+      const i = (y * width + x) * 4;
+      if (pixels[i + 3] < ALPHA_MASK_CUTOFF) continue;
+      albedo[i] = pixels[i];
+      albedo[i + 1] = pixels[i + 1];
+      albedo[i + 2] = pixels[i + 2];
       albedo[i + 3] = 255;
     }
   }
@@ -175,6 +230,10 @@ export function createWebGl2DeferredNativeFrameBackend({ width, height, canvas =
   litCanvas.width = width;
   litCanvas.height = height;
   const litCtx = litCanvas.getContext('2d');
+  const scratchCanvas = document.createElement('canvas');
+  scratchCanvas.width = width;
+  scratchCanvas.height = height;
+  const scratchCtx = scratchCanvas.getContext('2d', { willReadFrequently: true });
   let diagnostics = [];
 
   return {
@@ -191,6 +250,8 @@ export function createWebGl2DeferredNativeFrameBackend({ width, height, canvas =
       if (glCanvas.height !== nextHeight) glCanvas.height = nextHeight;
       if (litCanvas.width !== nextWidth) litCanvas.width = nextWidth;
       if (litCanvas.height !== nextHeight) litCanvas.height = nextHeight;
+      if (scratchCanvas.width !== nextWidth) scratchCanvas.width = nextWidth;
+      if (scratchCanvas.height !== nextHeight) scratchCanvas.height = nextHeight;
       gl.viewport(0, 0, glCanvas.width, glCanvas.height);
     },
     supportsFrame() { return { supported: true, issues: diagnostics }; },
@@ -213,8 +274,17 @@ export function createWebGl2DeferredNativeFrameBackend({ width, height, canvas =
           seenLit = true;
           litPackets.push(packet);
           writeLitRect(albedo, canvas.width, canvas.height, packet);
+        } else if (isOpaqueLitImageLike(packet, assetRegistry)) {
+          seenLit = true;
+          litPackets.push(packet);
+          writeLitImageLike(albedo, canvas.width, canvas.height, packet, assetRegistry, scratchCtx);
         } else if (packet.lighting === 'lit') {
-          addDiagnostic(diagnostics, packet, packet.kind === 'rect' ? 'semi-transparent or unsupported lit rect rendered forward/unlit' : `unsupported lit packet kind rendered forward/unlit: ${packet.kind}`);
+          const reason = packet.kind === 'rect'
+            ? 'semi-transparent or unsupported lit rect rendered forward/unlit'
+            : isImageLikePacket(packet)
+              ? 'semi-transparent, unloaded, or unsupported lit image rendered forward/unlit'
+              : `unsupported lit packet kind rendered forward/unlit: ${packet.kind}`;
+          addDiagnostic(diagnostics, packet, reason);
           overlayPackets.push(packet);
         } else if (seenLit) {
           overlayPackets.push(packet);

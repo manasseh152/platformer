@@ -397,12 +397,20 @@ bun run validate:map-render
 
 Note: `bun run validate:foundation` was also attempted after this slice; the new render-pipeline coverage passed, but existing unrelated foundation expectations currently fail in `tests/core-boundary.spec.js`, `tests/scenarios-registry.spec.js`, and `tests/scenes-registry.spec.js`.
 
-### Slice 7: WebGL2 deferred MVP-B, image/sprite surfaces
+### Slice 7: WebGL2 deferred MVP-B, image/sprite surfaces — Complete
 
-- Add G-buffer support for `image`, `sprite`, and `texturedQuad` packets.
-- Reuse asset registry and atlas/source-rect resolution.
-- Apply alpha-mask discard for image pixels.
-- Add focused atlas/image lighting tests.
+Implemented in:
+
+- `src/render/backends/webgl2-deferred-native-frame-backend.js` with G-buffer support for lit `image`, `sprite`, and `texturedQuad` packets, shared asset-registry drawable/source-rect resolution, transform/flip-aware image drawing, and alpha-mask discard that writes surviving pixels as opaque albedo.
+- `tests/render-pipeline.spec.js` covering deferred-lit standalone image packets, texturedQuad packets, atlas sprite metadata/source-rect resolution, point lighting over image albedo, and transparent sprite pixel discard.
+
+Validated with:
+
+```sh
+bunx playwright test tests/render-pipeline.spec.js --project=chromium
+bun run build
+bun run validate:map-render
+```
 
 ## Consequences
 
