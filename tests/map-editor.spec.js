@@ -421,6 +421,24 @@ test('map editor persists controller brush sensitivity and momentum settings', a
   await expect(page.locator('#controllerBrushMomentumSpeedInput')).toHaveValue('3.25');
 });
 
+test('map editor shows a focused canvas cell as soon as controller drawing starts', async ({ page }) => {
+  await page.addInitScript(() => {
+    const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));
+    const pad = { index: 0, id: 'Mock Controller', mapping: 'standard', buttons, axes: [0, 0, 0, 0] };
+    window.__setMockGamepadButton = (index, pressed) => { buttons[index] = { pressed }; };
+    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] });
+  });
+  await page.goto('/editor.html');
+  await createBlankMap(page, '4', '3');
+  await page.evaluate(() => { window.__mapEditorDebug.cursorRenderCount = 0; window.__mapEditorDebug.cursor = null; });
+
+  await page.evaluate(() => window.__setMockGamepadButton(3, true));
+
+  await expect(page.locator('#editorOverlay')).toBeHidden();
+  await expect.poll(() => page.evaluate(() => window.__mapEditorDebug.cursorRenderCount)).toBeGreaterThan(0);
+  await expect.poll(() => page.evaluate(() => window.__mapEditorDebug.cursor)).toEqual({ col: 4, row: 3, layerId: 'terrain', brushId: 'grass' });
+});
+
 test('map editor controller paints a continuous stroke while the paint button is held', async ({ page }) => {
   await page.addInitScript(() => {
     const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));

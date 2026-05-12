@@ -3,7 +3,7 @@ import { drawCollisionDebugOverlay } from '../devtools/debug-render.js';
 import { getAllTilemaps, getDefaultTilemap } from '../content/tilemaps/registry.js';
 import { planContainedTerrainTileVisuals } from '../render/contained-terrain.js';
 import { terrainKindConfig } from '../core/tilemaps/terrain-layer.js';
-import { compileDraft as compileTilemapDraft, createBlankDraft, createDraftFromTilemap as draftFromTilemap, hasEntitySymbol, normalizeDraft, replaceChar } from './tilemap-draft.js';
+import { compileDraft as compileTilemapDraft, createBlankDraft, createDraftFromTilemap as draftFromTilemap, EMPTY, hasEntitySymbol, normalizeDraft, replaceChar } from './tilemap-draft.js';
 import { BRUSHES, brushesForPalette, defaultPaletteForLayer, layerById, palettesForLayer } from './edit-domain.js';
 import { createPreviewPayload, createSharePayload, draftFromSharePayload, generatedTilemapModule, readBooleanPreference, savedLocalStatus, writeBooleanPreference } from './map-editor-commands.js';
 import {
@@ -94,7 +94,7 @@ const history = createHistory({ limit: 100 });
 const inputRuntime = createGameInputRuntime(loadSettings());
 const inputAdapter = createBrowserInputAdapter(inputRuntime);
 const registeredTilemaps = getAllTilemaps();
-const debug = window.__mapEditorDebug = window.__mapEditorDebug ?? { compileCount: 0, exportCount: 0, persistCount: 0, renderCount: 0 };
+const debug = window.__mapEditorDebug = window.__mapEditorDebug ?? { compileCount: 0, exportCount: 0, persistCount: 0, renderCount: 0, cursorRenderCount: 0 };
 
 let brush = BRUSHES[0];
 let draft = createDraftFromTilemap(getDefaultTilemap());
@@ -698,10 +698,38 @@ function drawEntities(ctx, rect) {
 function drawCursor(ctx, cursor) {
   const layer = draft.layers.find(layer => layer.id === brush.layerId);
   if (!layer || cursor.row < 0 || cursor.row >= layer.rows.length || cursor.col < 0 || cursor.col >= layer.rows[0].length) return;
+  debug.cursorRenderCount = (debug.cursorRenderCount ?? 0) + 1;
+  debug.cursor = { col: cursor.col, row: cursor.row, layerId: brush.layerId, brushId: brush.id };
+  const x = cursor.col * brush.cellSize;
+  const y = cursor.row * brush.cellSize;
+  const inset = 1 / viewport.camera.zoom;
+  const haloWidth = 6 / viewport.camera.zoom;
+  const lineWidth = 3 / viewport.camera.zoom;
+  const corner = Math.max(4, brush.cellSize * 0.32);
   ctx.save();
+  ctx.fillStyle = 'rgba(8, 12, 22, .22)';
+  ctx.fillRect(x + inset, y + inset, brush.cellSize - inset * 2, brush.cellSize - inset * 2);
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(0, 0, 0, .82)';
+  ctx.lineWidth = haloWidth;
+  ctx.strokeRect(x + inset, y + inset, brush.cellSize - inset * 2, brush.cellSize - inset * 2);
   ctx.strokeStyle = brush.cursor;
-  ctx.lineWidth = 2 / viewport.camera.zoom;
-  ctx.strokeRect(cursor.col * brush.cellSize + 1, cursor.row * brush.cellSize + 1, brush.cellSize - 2, brush.cellSize - 2);
+  ctx.lineWidth = lineWidth;
+  ctx.strokeRect(x + inset, y + inset, brush.cellSize - inset * 2, brush.cellSize - inset * 2);
+  ctx.strokeStyle = 'rgba(255, 255, 255, .95)';
+  ctx.lineWidth = 1.5 / viewport.camera.zoom;
+  const right = x + brush.cellSize - inset;
+  const bottom = y + brush.cellSize - inset;
+  const left = x + inset;
+  const top = y + inset;
+  line(ctx, left, top, left + corner, top);
+  line(ctx, left, top, left, top + corner);
+  line(ctx, right, top, right - corner, top);
+  line(ctx, right, top, right, top + corner);
+  line(ctx, left, bottom, left + corner, bottom);
+  line(ctx, left, bottom, left, bottom - corner);
+  line(ctx, right, bottom, right - corner, bottom);
+  line(ctx, right, bottom, right, bottom - corner);
   ctx.restore();
 }
 
@@ -873,7 +901,7 @@ function processEditorControllerFrame() {
         route.consume('menu.navigateY');
       }
     } else {
-      ensureControllerPointer();
+      ensureControllerPointer({ renderIfChanged: true });
       const paintPressed = route.wasPressed('editor.paint');
       const paintReleased = route.wasReleased('editor.paint');
       const paintDown = route.isDown('editor.paint');
@@ -956,16 +984,20 @@ function clampBrushCell(cell) {
   };
 }
 
-function ensureControllerPointer() {
+function sameCell(a, b) { return Boolean(a && b && a.col === b.col && a.row === b.row); }
+
+function ensureControllerPointer({ renderIfChanged = false } = {}) {
+  const previous = pointer ? { ...pointer } : null;
   if (pointer) {
     pointer = clampBrushCell(pointer);
-    return pointer;
+  } else {
+    const rect = visibleWorldRect(viewport);
+    pointer = clampBrushCell({
+      col: Math.floor((rect.x + rect.w / 2) / brush.cellSize),
+      row: Math.floor((rect.y + rect.h / 2) / brush.cellSize)
+    });
   }
-  const rect = visibleWorldRect(viewport);
-  pointer = clampBrushCell({
-    col: Math.floor((rect.x + rect.w / 2) / brush.cellSize),
-    row: Math.floor((rect.y + rect.h / 2) / brush.cellSize)
-  });
+  if (renderIfChanged && !sameCell(previous, pointer)) scheduleRender();
   return pointer;
 }
 
@@ -1022,8 +1054,10 @@ function toggleControllerCanvasMode() {
 
 function toggleEditorPanel() {
   setActiveTab(activeTab, { show: overlayHidden });
-  if (overlayHidden) setStatus('Palette panel hidden. Press Y to show it.', '');
-  else setStatus('Palette panel shown. Press B or Y to return to canvas.', '');
+  if (overlayHidden) {
+    if (controllerCanvasMode === 'draw') ensureControllerPointer({ renderIfChanged: true });
+    setStatus('Palette panel hidden. Press Y to show it.', '');
+  } else setStatus('Palette panel shown. Press B or Y to return to canvas.', '');
 }
 
 function buildLayerButtons() {
