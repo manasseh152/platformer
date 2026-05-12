@@ -364,12 +364,21 @@ bunx playwright test tests/render-pipeline.spec.js --project=chromium
 bun run build
 ```
 
-### Slice 5: Backend selection scaffolding
+### Slice 5: Backend selection scaffolding — Complete
 
-- Add helpers to detect authored/non-default light packets.
-- Ensure default-only ambient does not activate deferred.
-- Ensure authored lights request deferred unless disabled.
-- If no deferred backend exists yet or WebGL2 is unavailable, fall back to unlit Canvas2D and record a reason.
+Implemented in:
+
+- `src/render/deferred-lighting-selection.js` with helpers to detect authored/non-default light packets, default-only ambient, dev force/disable flags, and selected backend kind.
+- `src/render/gameplay-render-pipeline.js` selecting deferred for authored lights by default, preserving explicit forward WebGL/Canvas requests, and falling back to Canvas2D with a recorded deferred fallback reason while the deferred backend is unavailable.
+- `src/render/backends/webgl2-deferred-native-frame-backend.js` as the deferred backend contract placeholder for the next slice.
+- `tests/render-pipeline.spec.js` covering default ambient not activating deferred, authored lights requesting deferred, disable/force flags, and unavailable deferred fallback to Canvas2D.
+
+Validated with:
+
+```sh
+bunx playwright test tests/render-pipeline.spec.js --project=chromium
+bun run build
+```
 
 ### Slice 6: WebGL2 deferred MVP-A, rect surfaces
 

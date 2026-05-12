@@ -3,6 +3,7 @@ import { createRenderFrameBuilder, resetRenderPacketSequenceForTests } from '#/e
 import { computePresentationViewport, prepareRenderView, worldToNativeRect } from '#/engine/render/viewport.js';
 import { createAssetRegistry, ASSET_IDS, createAtlasSpriteMetadata } from '#/render/asset-registry.js';
 import { analyzeWebGlNativeFrameSupport } from '#/render/backends/webgl-native-frame-capabilities.js';
+import { hasAuthoredLightPackets, hasOnlyDefaultAmbientLight, selectNativeFrameBackendKindForFrame } from '#/render/deferred-lighting-selection.js';
 import { extractGameplayRenderFrame } from '#/render/extractors/gameplay-render-extractor.js';
 import { createGameplayRenderReadModel } from '#/render/extractors/gameplay-renderables.js';
 import { createGameplaySession, syncGameplaySessionToGame } from '#/core/gameplay-session.js';
@@ -365,6 +366,73 @@ test('gameplay native backend can be toggled without changing extraction', async
 
   expect(['webgl-native-frame-backend', 'canvas2d-native-frame-backend']).toContain(result.gpuKind);
   expect(result.fallbackKind).toBe('canvas2d-native-frame-backend');
+});
+
+test('deferred lighting selection ignores default ambient and requests deferred for authored lights', () => {
+  const defaultBuilder = createRenderFrameBuilder({ width: 8, height: 8 });
+  addLightPackets(defaultBuilder, [], { cameraX: 0, cameraY: 0, worldWidth: 8, worldHeight: 8, worldToNativeX: 1, worldToNativeY: 1 });
+  const defaultFrame = defaultBuilder.finalize();
+  expect(hasOnlyDefaultAmbientLight(defaultFrame)).toBe(true);
+  expect(hasAuthoredLightPackets(defaultFrame)).toBe(false);
+  expect(selectNativeFrameBackendKindForFrame(defaultFrame)).toBe('canvas2d');
+
+  const authoredFrame = createRenderFrameBuilder({ width: 8, height: 8 })
+    .add({ kind: 'light2d', lightKind: 'ambient', lighting: 'light', sourceId: 'ambient', color: [12, 16, 28, 255], intensity: 0.5 })
+    .finalize();
+  expect(hasOnlyDefaultAmbientLight(authoredFrame)).toBe(false);
+  expect(hasAuthoredLightPackets(authoredFrame)).toBe(true);
+  expect(selectNativeFrameBackendKindForFrame(authoredFrame)).toBe('webgl2-deferred');
+  expect(selectNativeFrameBackendKindForFrame(authoredFrame, { devToolsFlags: { disableDeferredLighting: true } })).toBe('canvas2d');
+  expect(selectNativeFrameBackendKindForFrame(defaultFrame, { devToolsFlags: { forceDeferredLighting: true } })).toBe('webgl2-deferred');
+});
+
+test('authored gameplay lights fall back to canvas while deferred backend is unavailable', async ({ page }) => {
+  await page.goto('/');
+  const result = await page.evaluate(async () => {
+    const [{ createGameplaySession, syncGameplaySessionToGame }, { getTilemapById }, { renderGameplayFrame }, { createAssetRegistry }] = await Promise.all([
+      import('/src/core/gameplay-session.js'),
+      import('/src/content/tilemaps/registry.js'),
+      import('/src/render/gameplay-render-pipeline.js'),
+      import('/src/render/asset-registry.js')
+    ]);
+    const view = { width: 640, height: 360, bufferWidth: 320, bufferHeight: 180 };
+    const session = createGameplaySession(getTilemapById('rendering-gym-map'), { view, scenarioId: 'rendering-gym' });
+    const heartsEl = document.createElement('div');
+    for (let i = 0; i < 5; i++) heartsEl.append(document.createElement('span'));
+    const game = {
+      view,
+      renderCanvas: document.createElement('canvas'),
+      renderPipeline: {},
+      presentation: { present(source) { this.lastSource = source; } },
+      devTools: { flags: {} },
+      settings: {},
+      appState: { started: true, paused: false },
+      input: { inputScheme: 'wasd' },
+      ui: {
+        hudLevelName: document.createElement('div'),
+        heartsEl,
+        dashStatusEl: document.createElement('div'),
+        messageEl: document.createElement('div'),
+        messageTitleEl: document.createElement('div'),
+        messageNextLevelButton: document.createElement('button'),
+        hintLayerEl: null
+      }
+    };
+    syncGameplaySessionToGame(game, session);
+    game.tilemaps = { getNextTilemap: () => null };
+    renderGameplayFrame({ now: () => 0, random: () => 0.5 }, game, { assetRegistry: createAssetRegistry({}) });
+    return {
+      backendKind: game.renderPipeline.nativeBackendKind,
+      backend: game.renderPipeline.nativeBackend.kind,
+      deferredFallbackReasons: game.renderPipeline.deferredFallbackReason?.map(issue => issue.reason) ?? [],
+      presentedWidth: game.presentation.lastSource?.width
+    };
+  });
+
+  expect(result.backendKind).toBe('canvas2d');
+  expect(result.backend).toBe('canvas2d-native-frame-backend');
+  expect(result.deferredFallbackReasons).toContain('webgl2 deferred native-frame backend unavailable');
+  expect(result.presentedWidth).toBe(320);
 });
 
 test('light packet extraction emits default ambient and culled/native point packets', () => {
