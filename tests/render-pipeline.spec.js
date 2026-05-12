@@ -6,7 +6,12 @@ import { analyzeWebGlNativeFrameSupport } from '#/render/backends/webgl-native-f
 import { extractGameplayRenderFrame } from '#/render/extractors/gameplay-render-extractor.js';
 import { createGameplayRenderReadModel } from '#/render/extractors/gameplay-renderables.js';
 import { createGameplaySession, syncGameplaySessionToGame } from '#/core/gameplay-session.js';
+import { Color } from '#/core/color.js';
+import { Vec } from '#/core/vector.js';
+import { renderLight2d } from '#/engine/scene/components.js';
+import { defineScene } from '#/engine/scene/scene.js';
 import { getTilemapById } from '#/content/tilemaps/registry.js';
+import { addLightPackets, lightWorldPosition, pointLightIntersectsView } from '#/render/extractors/light-packets.js';
 
 test('presentation viewport integer-scales and centers native frame', () => {
   expect(computePresentationViewport(800, 600, 320, 180)).toEqual({ scale: 2, width: 640, height: 360, offsetX: 80, offsetY: 120 });
@@ -360,6 +365,63 @@ test('gameplay native backend can be toggled without changing extraction', async
 
   expect(['webgl-native-frame-backend', 'canvas2d-native-frame-backend']).toContain(result.gpuKind);
   expect(result.fallbackKind).toBe('canvas2d-native-frame-backend');
+});
+
+test('light packet extraction emits default ambient and culled/native point packets', () => {
+  const view = { cameraX: 10, cameraY: 20, worldWidth: 100, worldHeight: 80, worldToNativeX: 2, worldToNativeY: 2 };
+  const builder = createRenderFrameBuilder({ width: 200, height: 160 });
+  addLightPackets(builder, [], view);
+  expect(builder.finalize().packets).toEqual([
+    expect.objectContaining({ kind: 'light2d', lightKind: 'ambient', sourceId: 'default-ambient-light', defaultLight: true, lighting: 'light', color: [255, 255, 255, 255], intensity: 1 })
+  ]);
+
+  const point = {
+    id: 'torch:light2d:0',
+    transform: { x: 20, y: 40, w: 16, h: 16 },
+    render: renderLight2d({ kind: 'point', radius: 32, color: Color.rgb(255, 176, 92), intensity: 1.5, offset: Vec.xy(2, -4), volumetricIntensity: 0.02, castsShadows: true })
+  };
+  const outside = {
+    id: 'far:light2d:0',
+    transform: { x: 1000, y: 1000, w: 16, h: 16 },
+    render: renderLight2d({ kind: 'point', radius: 32 })
+  };
+  const litBuilder = createRenderFrameBuilder({ width: 200, height: 160 });
+  addLightPackets(litBuilder, [point, outside], view);
+  const packets = litBuilder.finalize().packets;
+  expect(lightWorldPosition(point)).toEqual({ x: 30, y: 44 });
+  expect(pointLightIntersectsView(point, view)).toBe(true);
+  expect(pointLightIntersectsView(outside, view)).toBe(false);
+  expect(packets).toHaveLength(2);
+  expect(packets[1]).toMatchObject({ kind: 'light2d', lightKind: 'point', sourceId: 'torch:light2d:0', lighting: 'light', x: 40, y: 48, radius: 64, color: [255, 176, 92, 255], intensity: 1.5, volumetricIntensity: 0.02, castsShadows: true });
+});
+
+test('gameplay render read model collects multiple light components and authored ambient replaces default', () => {
+  const tilemap = defineScene({
+    id: 'lights-scene',
+    kind: 'tilemap',
+    objects: [{
+      id: 'light-object',
+      transform: { x: 16, y: 24, w: 32, h: 32 },
+      components: [
+        renderLight2d({ kind: 'ambient', color: Color.rgb(12, 16, 28), intensity: 0.55 }),
+        renderLight2d({ kind: 'point', radius: 40, offset: Vec.xy(0, -8) })
+      ]
+    }]
+  });
+  const model = createGameplayRenderReadModel({ tilemap });
+  expect(model.authoredScene.lights).toHaveLength(2);
+  expect(model.authoredScene.lights.map(light => light.id)).toEqual(['light-object:light2d:0', 'light-object:light2d:1']);
+  expect(model.authoredScene.lights[0].transform).toEqual({ x: 16, y: 24, w: 32, h: 32 });
+
+  const builder = createRenderFrameBuilder({ width: 100, height: 100 });
+  addLightPackets(builder, model.authoredScene.lights, { cameraX: 0, cameraY: 0, worldWidth: 100, worldHeight: 100, worldToNativeX: 1, worldToNativeY: 1 });
+  const packets = builder.finalize().packets;
+  const ambientPackets = packets.filter(packet => packet.lightKind === 'ambient');
+  expect(ambientPackets).toEqual([
+    expect.objectContaining({ sourceId: 'light-object:light2d:0', color: [12, 16, 28, 255], intensity: 0.55 })
+  ]);
+  expect(ambientPackets[0].defaultLight).toBeUndefined();
+  expect(packets.filter(packet => packet.lightKind === 'point')).toHaveLength(1);
 });
 
 test('gameplay render read model separates authored scene, runtime actors, and transient effects', () => {

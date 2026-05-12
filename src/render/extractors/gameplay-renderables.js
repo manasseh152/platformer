@@ -1,3 +1,5 @@
+import { findObjectsWithComponent, getComponents } from '../../engine/scene/queries.js';
+
 function isFiniteRect(rect) {
   return rect && Number.isFinite(rect.x) && Number.isFinite(rect.y) && Number.isFinite(rect.w) && Number.isFinite(rect.h) && rect.w > 0 && rect.h > 0;
 }
@@ -53,13 +55,34 @@ export function particleEffectRenderable(particle) {
   };
 }
 
+function lightRenderable(object, component, index) {
+  return {
+    id: `${object.id}:light2d:${index}`,
+    kind: 'light2d',
+    transform: { ...object.transform },
+    render: { ...component },
+    source: object
+  };
+}
+
+function lightRenderables(scene) {
+  const lights = [];
+  for (const object of findObjectsWithComponent(scene, 'render:light2d')) {
+    getComponents(object, 'render:light2d').forEach((component, index) => {
+      lights.push(lightRenderable(object, component, index));
+    });
+  }
+  return lights;
+}
+
 export function createGameplayRenderReadModel(game = {}) {
   const player = playerActorRenderable(game.player);
   const enemies = (game.enemies ?? []).map(enemyActorRenderable).filter(Boolean);
   return {
     authoredScene: {
       tilemap: game.tilemap,
-      devToolsFlags: game.devTools?.flags
+      devToolsFlags: game.devTools?.flags,
+      lights: lightRenderables(game.tilemap)
     },
     runtimeActors: [player, ...enemies].filter(Boolean),
     transientEffects: [

@@ -16,7 +16,7 @@ function tileNoise(col, row, salt = 0) {
 }
 
 function addBackdropGlyph(builder, view, ch, x, y, col, row, layer) {
-  const add = (rect, packet) => addWorldRect(builder, view, rect, { layer, ...packet });
+  const add = (rect, packet) => addWorldRect(builder, view, rect, { layer, lighting: 'unlit', ...packet });
   if (ch === 'd') {
     add({ x: x + 6, y: y + 8, w: TILE_SIZE - 12, h: TILE_SIZE - 16 }, { kind: 'rect', fill: 'rgba(3, 8, 11, .28)' });
     add({ x: x + 16, y: y + 18, w: 12, h: 10 }, { kind: 'rect', fill: 'rgba(255,255,255,.035)' });
@@ -24,14 +24,14 @@ function addBackdropGlyph(builder, view, ch, x, y, col, row, layer) {
     add({ x: x + 8, y: y + 18, w: TILE_SIZE - 16, h: TILE_SIZE + 26 }, { kind: 'roundRect', radius: 28, fill: 'rgba(0, 0, 0, .24)' });
   } else if (ch === 'c') {
     for (let i = 0; i < 4; i++) {
-      builder.add({ kind: 'ellipse', layer, x: (x + TILE_SIZE / 2 - view.cameraX) * view.worldToNativeX, y: (y + i * 17 + 3 - view.cameraY) * view.worldToNativeY, radiusX: 7 * view.worldToNativeX, radiusY: 10 * view.worldToNativeY, rotation: i % 2 ? Math.PI / 2 : 0, stroke: 'rgba(121, 105, 77, .42)', lineWidth: 4 * view.worldToNativeX });
+      builder.add({ kind: 'ellipse', layer, lighting: 'unlit', x: (x + TILE_SIZE / 2 - view.cameraX) * view.worldToNativeX, y: (y + i * 17 + 3 - view.cameraY) * view.worldToNativeY, radiusX: 7 * view.worldToNativeX, radiusY: 10 * view.worldToNativeY, rotation: i % 2 ? Math.PI / 2 : 0, stroke: 'rgba(121, 105, 77, .42)', lineWidth: 4 * view.worldToNativeX });
     }
   }
   if (tileNoise(col, row, 7) > .5) add({ x: x + 48, y: y + 14, w: 8, h: 8 }, { kind: 'rect', fill: 'rgba(185, 213, 207, .045)' });
 }
 
 export function addDungeonBackdropPackets(builder, view, layer = L.Backdrop) {
-  builder.add({ kind: 'rect', layer, x: 0, y: 0, w: view.bufferWidth, h: view.bufferHeight, fill: { kind: 'linearGradient', x0: 0, y0: 0, x1: 0, y1: view.bufferHeight, stops: [{ offset: 0, color: '#080c13' }, { offset: .48, color: '#101a22' }, { offset: 1, color: '#18272a' }] } });
+  builder.add({ kind: 'rect', layer, lighting: 'unlit', x: 0, y: 0, w: view.bufferWidth, h: view.bufferHeight, fill: { kind: 'linearGradient', x0: 0, y0: 0, x1: 0, y1: view.bufferHeight, stops: [{ offset: 0, color: '#080c13' }, { offset: .48, color: '#101a22' }, { offset: 1, color: '#18272a' }] } });
   const tile = 56;
   const parallaxX = Math.round(view.cameraX * .22) % tile;
   const parallaxY = Math.round(view.cameraY * .14) % tile;
@@ -39,14 +39,14 @@ export function addDungeonBackdropPackets(builder, view, layer = L.Backdrop) {
     for (let x = -parallaxX - tile; x < view.worldWidth + tile * 2; x += tile) {
       const stagger = ((Math.round((y + parallaxY + tile) / tile)) & 1) * tile / 2;
       const bx = x + stagger;
-      addWorldRect(builder, view, { x: bx, y, w: tile - 2, h: tile - 2 }, { kind: 'rect', layer, fill: (((x / tile + y / tile) & 1) ? 'rgba(126, 159, 158, .105)' : 'rgba(187, 211, 205, .075)') });
-      addWorldRect(builder, view, { x: bx + 10, y: y + 12, w: 8, h: 8 }, { kind: 'rect', layer, fill: 'rgba(255,255,255,.035)' });
-      addWorldRect(builder, view, { x: bx + 26, y: y + 30, w: 14, h: 12 }, { kind: 'rect', layer, fill: 'rgba(0,0,0,.13)' });
+      addWorldRect(builder, view, { x: bx, y, w: tile - 2, h: tile - 2 }, { kind: 'rect', layer, lighting: 'unlit', fill: (((x / tile + y / tile) & 1) ? 'rgba(126, 159, 158, .105)' : 'rgba(187, 211, 205, .075)') });
+      addWorldRect(builder, view, { x: bx + 10, y: y + 12, w: 8, h: 8 }, { kind: 'rect', layer, lighting: 'unlit', fill: 'rgba(255,255,255,.035)' });
+      addWorldRect(builder, view, { x: bx + 26, y: y + 30, w: 14, h: 12 }, { kind: 'rect', layer, lighting: 'unlit', fill: 'rgba(0,0,0,.13)' });
     }
   }
-  for (let i = -1; i < 6; i++) addWorldRect(builder, view, { x: i * 170 - (view.cameraX * .08 % 170) + 20, y: 86, w: 80, h: view.worldHeight, }, { kind: 'roundRect', layer, radius: 40 * view.worldToNativeX, fill: 'rgba(4, 8, 12, .34)' });
-  for (let i = 0; i < 7; i++) builder.add({ kind: 'ellipse', layer, x: (80 + i * 210 - (view.cameraX * .16 % 210) - view.cameraX) * view.worldToNativeX, y: (view.worldHeight - 64 + Math.sin(i) * 12 - view.cameraY) * view.worldToNativeY, radiusX: 150 * view.worldToNativeX, radiusY: 62 * view.worldToNativeY, fill: 'rgba(124,169,166,.18)' });
-  builder.add({ kind: 'rect', layer, x: 0, y: 0, w: view.bufferWidth, h: view.bufferHeight, fill: { kind: 'radialGradient', x0: view.bufferWidth * .54, y0: view.bufferHeight * .45, r0: 20, x1: view.bufferWidth * .54, y1: view.bufferHeight * .45, r1: view.bufferWidth * .78, stops: [{ offset: 0, color: 'rgba(255, 245, 205, .10)' }, { offset: .55, color: 'rgba(255, 245, 205, .025)' }, { offset: 1, color: 'rgba(0, 0, 0, .38)' }] } });
+  for (let i = -1; i < 6; i++) addWorldRect(builder, view, { x: i * 170 - (view.cameraX * .08 % 170) + 20, y: 86, w: 80, h: view.worldHeight, }, { kind: 'roundRect', layer, lighting: 'unlit', radius: 40 * view.worldToNativeX, fill: 'rgba(4, 8, 12, .34)' });
+  for (let i = 0; i < 7; i++) builder.add({ kind: 'ellipse', layer, lighting: 'unlit', x: (80 + i * 210 - (view.cameraX * .16 % 210) - view.cameraX) * view.worldToNativeX, y: (view.worldHeight - 64 + Math.sin(i) * 12 - view.cameraY) * view.worldToNativeY, radiusX: 150 * view.worldToNativeX, radiusY: 62 * view.worldToNativeY, fill: 'rgba(124,169,166,.18)' });
+  builder.add({ kind: 'rect', layer, lighting: 'unlit', x: 0, y: 0, w: view.bufferWidth, h: view.bufferHeight, fill: { kind: 'radialGradient', x0: view.bufferWidth * .54, y0: view.bufferHeight * .45, r0: 20, x1: view.bufferWidth * .54, y1: view.bufferHeight * .45, r1: view.bufferWidth * .78, stops: [{ offset: 0, color: 'rgba(255, 245, 205, .10)' }, { offset: .55, color: 'rgba(255, 245, 205, .025)' }, { offset: 1, color: 'rgba(0, 0, 0, .38)' }] } });
 }
 
 export function addTilemapVisualPackets(builder, tilemap, view, { assetRegistry = emptyAssetRegistry, includeBackdrop = true, layers = L, devToolsFlags = tilemap?.devToolsFlags } = {}) {
@@ -59,12 +59,12 @@ export function addTilemapVisualPackets(builder, tilemap, view, { assetRegistry 
   forEachLayerTile(tilemap, 'decor', (ch, col, row) => {
     const type = getDecorType(ch);
     const assetId = assetRegistry.decorAssetId(type);
-    if (assetId && assetRegistry.isLoaded(assetId)) addWorldImage(builder, view, tileRect(col, row, TILE_SIZE), assetId, { layer: layers.Decor });
+    if (assetId && assetRegistry.isLoaded(assetId)) addWorldImage(builder, view, tileRect(col, row, TILE_SIZE), assetId, { layer: layers.Decor, lighting: 'unlit' });
   });
 
   for (const tile of tilemap.renderLayers?.containedTerrainTiles ?? []) {
-    for (const primitive of planContainedTerrainTileVisuals(tile)) addWorldRect(builder, view, primitive, { kind: 'rect', layer: layers.Terrain, fill: primitive.color });
-    if (devToolsFlags?.showBuildTerrainCells) addWorldRect(builder, view, tile, { kind: 'rect', layer: layers.DebugCollision, stroke: 'rgba(0,0,0,.26)', lineWidth: 1 });
+    for (const primitive of planContainedTerrainTileVisuals(tile)) addWorldRect(builder, view, primitive, { kind: 'rect', layer: layers.Terrain, lighting: 'lit', fill: primitive.color });
+    if (devToolsFlags?.showBuildTerrainCells) addWorldRect(builder, view, tile, { kind: 'rect', layer: layers.DebugCollision, lighting: 'unlit', stroke: 'rgba(0,0,0,.26)', lineWidth: 1 });
   }
 
   addGoalPackets(builder, tilemap, view, { assetRegistry, layer: layers.Goal });
@@ -96,14 +96,14 @@ export function addGoalPackets(builder, tilemap, view, { assetRegistry = emptyAs
   for (const goal of getRenderGoalRects(tilemap)) {
     const tileSize = goal.tileSize ?? TILE_SIZE;
     if (goal.cols >= 3 && assetRegistry.isLoaded(ASSET_IDS.GOAL_GATE_LEFT) && assetRegistry.isLoaded(ASSET_IDS.GOAL_GATE_CENTER) && assetRegistry.isLoaded(ASSET_IDS.GOAL_GATE_RIGHT)) {
-      addWorldImage(builder, view, { x: goal.x, y: goal.y, w: tileSize, h: tileSize }, ASSET_IDS.GOAL_GATE_LEFT, { layer });
-      addWorldImage(builder, view, { x: goal.x + tileSize, y: goal.y, w: tileSize, h: tileSize }, ASSET_IDS.GOAL_GATE_CENTER, { layer });
-      addWorldImage(builder, view, { x: goal.x + tileSize * 2, y: goal.y, w: tileSize, h: tileSize }, ASSET_IDS.GOAL_GATE_RIGHT, { layer });
+      addWorldImage(builder, view, { x: goal.x, y: goal.y, w: tileSize, h: tileSize }, ASSET_IDS.GOAL_GATE_LEFT, { layer, lighting: 'unlit' });
+      addWorldImage(builder, view, { x: goal.x + tileSize, y: goal.y, w: tileSize, h: tileSize }, ASSET_IDS.GOAL_GATE_CENTER, { layer, lighting: 'unlit' });
+      addWorldImage(builder, view, { x: goal.x + tileSize * 2, y: goal.y, w: tileSize, h: tileSize }, ASSET_IDS.GOAL_GATE_RIGHT, { layer, lighting: 'unlit' });
     } else if (assetRegistry.isLoaded(ASSET_IDS.GOAL_GATE_SINGLE)) {
-      addWorldImage(builder, view, goal, ASSET_IDS.GOAL_GATE_SINGLE, { layer });
+      addWorldImage(builder, view, goal, ASSET_IDS.GOAL_GATE_SINGLE, { layer, lighting: 'unlit' });
     } else {
-      addWorldRect(builder, view, goal, { kind: 'roundRect', layer, radius: 18 * view.worldToNativeX, fill: '#2d3838' });
-      addWorldRect(builder, view, { x: goal.x + 12, y: goal.y + 14, w: goal.w - 24, h: goal.h - 28 }, { kind: 'rect', layer, stroke: '#d7b15a', lineWidth: 3 * view.worldToNativeX });
+      addWorldRect(builder, view, goal, { kind: 'roundRect', layer, lighting: 'unlit', radius: 18 * view.worldToNativeX, fill: '#2d3838' });
+      addWorldRect(builder, view, { x: goal.x + 12, y: goal.y + 14, w: goal.w - 24, h: goal.h - 28 }, { kind: 'rect', layer, lighting: 'unlit', stroke: '#d7b15a', lineWidth: 3 * view.worldToNativeX });
     }
   }
 }
@@ -113,7 +113,7 @@ export function addSpikePackets(builder, tilemap, view, { assetRegistry = emptyA
     const hazard = getComponent(object, 'collision:hazard');
     if (hazard?.kind !== 'spike') continue;
     const { x, y, w = tilemap.tileSize, h = tilemap.tileSize } = object.transform;
-    if (assetRegistry.isLoaded(ASSET_IDS.HAZARD_SPIKES)) addWorldImage(builder, view, { x, y, w, h }, ASSET_IDS.HAZARD_SPIKES, { layer, flipY: true });
+    if (assetRegistry.isLoaded(ASSET_IDS.HAZARD_SPIKES)) addWorldImage(builder, view, { x, y, w, h }, ASSET_IDS.HAZARD_SPIKES, { layer, lighting: 'unlit', flipY: true });
     else addSpikeFallback(builder, view, { x, y, w, h }, layer);
   }
 }

@@ -332,15 +332,23 @@ bunx playwright test tests/scene.spec.js tests/light-components.spec.js --projec
 bun run build
 ```
 
-### Slice 3: Read model and light packet extraction
+### Slice 3: Read model and light packet extraction — Complete
 
-- Extend `createGameplayRenderReadModel()` with light renderables.
-- Add `src/render/extractors/light-packets.js`.
-- Add `GameplayRenderLayer.LightPrimitive = 9500`.
-- Emit default/authored ambient and point `light2d` packets.
-- Add `sourceId`, `defaultLight`, and `lighting: 'light'` metadata.
-- Add explicit `lighting` flags at relevant extraction sites.
-- Add tests for default ambient, authored ambient replacement, point anchoring, culling, multiple light components, and packet shapes.
+Implemented in:
+
+- `src/render/extractors/gameplay-renderables.js` collecting `render:light2d` renderables.
+- `src/render/extractors/light-packets.js` with light positioning, point culling, default/authored ambient replacement, and `light2d` packet emission.
+- `src/render/extractors/gameplay-render-layers.js` with `GameplayRenderLayer.LightPrimitive = 9500`.
+- Gameplay/tilemap/primitive extraction sites with explicit `lighting` metadata (`lit`, `unlit`, `light`).
+- `tests/render-pipeline.spec.js` covering default ambient, authored ambient replacement, point anchoring/native scaling, culling, multiple light components, and packet shapes.
+
+Validated with:
+
+```sh
+bunx playwright test tests/render-pipeline.spec.js --project=chromium
+bun run build
+bunx playwright test tests/scene.spec.js tests/render-pipeline.spec.js --project=chromium
+```
 
 ### Slice 4: Rendering gym content
 

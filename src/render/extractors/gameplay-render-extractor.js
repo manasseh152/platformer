@@ -5,6 +5,7 @@ import { emptyAssetRegistry } from '../asset-registry.js';
 import { addDungeonBackdropPackets, addTilemapVisualPackets } from './tilemap-render-extractor.js';
 import { GameplayRenderLayer as L } from './gameplay-render-layers.js';
 import { createGameplayRenderReadModel } from './gameplay-renderables.js';
+import { addLightPackets } from './light-packets.js';
 import { addEnemyPackets, addPlayerPackets, addWorldEllipse, addWorldRect } from './primitive-builders.js';
 
 const DEBUG_STYLES = Object.freeze({
@@ -15,8 +16,8 @@ const DEBUG_STYLES = Object.freeze({
 });
 
 function addDebugRect(builder, view, rect, style, layer) {
-  addWorldRect(builder, view, rect, { kind: 'rect', layer, fill: style.fill });
-  addWorldRect(builder, view, rect, { kind: 'rect', layer, stroke: style.stroke, lineWidth: 1 });
+  addWorldRect(builder, view, rect, { kind: 'rect', layer, lighting: 'unlit', fill: style.fill });
+  addWorldRect(builder, view, rect, { kind: 'rect', layer, lighting: 'unlit', stroke: style.stroke, lineWidth: 1 });
 }
 
 function addCollisionDebugPackets(builder, tilemap, view, flags = {}) {
@@ -35,6 +36,7 @@ function addAuthoredSceneRenderablePackets(builder, readModel, renderView, asset
   const { tilemap, devToolsFlags } = readModel.authoredScene;
   addDungeonBackdropPackets(builder, renderView, L.Backdrop);
   addTilemapVisualPackets(builder, tilemap, renderView, { assetRegistry, includeBackdrop: true, layers: L, devToolsFlags });
+  addLightPackets(builder, readModel.authoredScene.lights, renderView, L.LightPrimitive);
 }
 
 function addRuntimeActorRenderablePackets(builder, readModel, renderView, runtimeNow) {
@@ -46,8 +48,8 @@ function addRuntimeActorRenderablePackets(builder, readModel, renderView, runtim
 
 function addTransientEffectRenderablePackets(builder, readModel, renderView) {
   for (const effect of readModel.transientEffects) {
-    if (effect.render.shape === 'ellipse') addWorldEllipse(builder, renderView, effect.transform, { layer: L.Dust, fill: effect.render.fill, alpha: effect.render.alpha });
-    else if (effect.render.shape === 'rect') addWorldRect(builder, renderView, effect.transform, { kind: 'rect', layer: L.Particle, fill: effect.render.fill, alpha: effect.render.alpha });
+    if (effect.render.shape === 'ellipse') addWorldEllipse(builder, renderView, effect.transform, { layer: L.Dust, lighting: 'unlit', fill: effect.render.fill, alpha: effect.render.alpha });
+    else if (effect.render.shape === 'rect') addWorldRect(builder, renderView, effect.transform, { kind: 'rect', layer: L.Particle, lighting: 'unlit', fill: effect.render.fill, alpha: effect.render.alpha });
   }
 }
 
@@ -74,8 +76,8 @@ export function extractGameplayRenderFrame({ game, runtime = { now: () => perfor
   addPhysicsDebugPackets(builder, readModel, renderView);
 
   if (DEBUG_CAMERA) {
-    addWorldRect(builder, renderView, { x: renderView.cameraX + game.camera.deadzone.left, y: renderView.cameraY + game.camera.deadzone.top, w: game.camera.deadzone.right - game.camera.deadzone.left, h: game.camera.deadzone.bottom - game.camera.deadzone.top }, { kind: 'rect', layer: L.DebugCamera, stroke: 'rgba(255,255,0,.8)', lineWidth: 1 });
-    addWorldRect(builder, renderView, { x: renderView.cameraX, y: renderView.cameraY, w: viewConfig.width, h: viewConfig.height }, { kind: 'rect', layer: L.DebugCamera, stroke: 'rgba(255,80,80,.9)', lineWidth: 1 });
+    addWorldRect(builder, renderView, { x: renderView.cameraX + game.camera.deadzone.left, y: renderView.cameraY + game.camera.deadzone.top, w: game.camera.deadzone.right - game.camera.deadzone.left, h: game.camera.deadzone.bottom - game.camera.deadzone.top }, { kind: 'rect', layer: L.DebugCamera, lighting: 'unlit', stroke: 'rgba(255,255,0,.8)', lineWidth: 1 });
+    addWorldRect(builder, renderView, { x: renderView.cameraX, y: renderView.cameraY, w: viewConfig.width, h: viewConfig.height }, { kind: 'rect', layer: L.DebugCamera, lighting: 'unlit', stroke: 'rgba(255,80,80,.9)', lineWidth: 1 });
   }
 
   return { frame: builder.finalize(), renderView };

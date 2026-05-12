@@ -9,6 +9,7 @@ export const GameplayRenderLayer = Object.freeze({
   Enemy: 700,
   Player: 800,
   Particle: 900,
+  LightPrimitive: 9500,
   DebugCollision: 10000,
   DebugPhysics: 10100,
   DebugCamera: 10200

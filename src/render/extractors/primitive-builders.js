@@ -22,11 +22,11 @@ export function addWorldEllipse(builder, view, ellipse, packet) {
 }
 
 function roundRect(builder, layer, x, y, w, h, radius, fill, order = 0) {
-  builder.add({ kind: 'roundRect', layer, order, x, y, w, h, radius, fill });
+  builder.add({ kind: 'roundRect', layer, order, lighting: 'unlit', x, y, w, h, radius, fill });
 }
 
 function rect(builder, layer, x, y, w, h, fill, order = 0) {
-  builder.add({ kind: 'rect', layer, order, x, y, w, h, fill });
+  builder.add({ kind: 'rect', layer, order, lighting: 'unlit', x, y, w, h, fill });
 }
 
 function actorRect(actor, localX, localY, localW, localH) {
@@ -64,6 +64,7 @@ function addActorPath(builder, view, actor, layer, commands, packet) {
   builder.add({
     kind: 'path',
     layer,
+    lighting: 'unlit',
     ...packet,
     commands: commands.map(command => {
       if (command.op === 'moveTo' || command.op === 'lineTo') return { ...command, ...actorToNative(view, actor, command.x, command.y) };
@@ -103,7 +104,7 @@ export function addPlayerPackets(builder, view, playerRenderable, layer, runtime
   addActorRect(builder, view, actor, layer, 22, 46, 7, 5, '#0d0d19');
   if ((render.attack ?? playerRenderable?.attack ?? 0) > 0) {
     const center = actorToNative(view, actor, 49, 23);
-    builder.add({ kind: 'ellipse', layer, x: center.x, y: center.y, radiusX: 34 * draw.w / 34 * view.worldToNativeX, radiusY: 12 * draw.h / 50 * view.worldToNativeY, rotation: -0.25, fill: '#cfffff', alpha: 0.86 });
+    builder.add({ kind: 'ellipse', layer, lighting: 'unlit', x: center.x, y: center.y, radiusX: 34 * draw.w / 34 * view.worldToNativeX, radiusY: 12 * draw.h / 50 * view.worldToNativeY, rotation: -0.25, fill: '#cfffff', alpha: 0.86 });
     addActorPath(builder, view, actor, layer, [{ op: 'moveTo', x: 20, y: 25 }, { op: 'lineTo', x: 73, y: 13 }], { stroke: '#ffffff', lineWidth: 2 * view.worldToNativeX });
   }
 }
@@ -126,7 +127,7 @@ export function addSpikeFallback(builder, view, rect, layer) {
   const a = worldToNativePoint(view, rect.x, rect.y + rect.h);
   const b = worldToNativePoint(view, rect.x + rect.w / 2, rect.y + rect.h / 3);
   const c = worldToNativePoint(view, rect.x + rect.w, rect.y + rect.h);
-  builder.add({ kind: 'path', layer, fill: '#6c7472', commands: [{ op: 'moveTo', ...a }, { op: 'lineTo', ...b }, { op: 'lineTo', ...c }, { op: 'closePath' }] });
+  builder.add({ kind: 'path', layer, lighting: 'unlit', fill: '#6c7472', commands: [{ op: 'moveTo', ...a }, { op: 'lineTo', ...b }, { op: 'lineTo', ...c }, { op: 'closePath' }] });
 }
 
 export function tileRect(col, row, tileSize = TILE_SIZE) {
