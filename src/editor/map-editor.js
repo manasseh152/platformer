@@ -2,8 +2,9 @@ import { CELL_SIZE } from '../core/constants.js';
 import { drawCollisionDebugOverlay } from '../devtools/debug-render.js';
 import { getAllTilemaps, getDefaultTilemap } from '../content/tilemaps/registry.js';
 import { planContainedTerrainTileVisuals } from '../render/contained-terrain.js';
-import { TERRAIN_KIND, terrainKindConfig } from '../core/tilemaps/terrain-layer.js';
-import { EMPTY, compileDraft as compileTilemapDraft, createBlankDraft, createDraftFromTilemap as draftFromTilemap, hasEntitySymbol, normalizeDraft, replaceChar } from './tilemap-draft.js';
+import { terrainKindConfig } from '../core/tilemaps/terrain-layer.js';
+import { compileDraft as compileTilemapDraft, createBlankDraft, createDraftFromTilemap as draftFromTilemap, hasEntitySymbol, normalizeDraft, replaceChar } from './tilemap-draft.js';
+import { BRUSHES, brushesForPalette, defaultPaletteForLayer, layerById, palettesForLayer } from './edit-domain.js';
 import { createPreviewPayload, createSharePayload, draftFromSharePayload, generatedTilemapModule, readBooleanPreference, savedLocalStatus, writeBooleanPreference } from './map-editor-commands.js';
 import {
   applyWorldTransform,
@@ -32,17 +33,6 @@ const AUTO_SAVE_STORAGE_KEY = 'chibi.tilemap-editor.auto-save';
 const FLOATING_CONTROLS_STORAGE_KEY = 'chibi.tilemap-editor.floating-controls';
 const CONTROLLER_BRUSH_SETTINGS_STORAGE_KEY = 'chibi.tilemap-editor.controller-brush';
 const DEFAULT_CONTROLLER_BRUSH_SETTINGS = Object.freeze({ sensitivity: 5, momentumEnabled: false, momentumDelayMs: 450, momentumMaxSpeed: 2.5 });
-const BRUSHES = [
-  { id: 'grass', label: 'Grass', layerId: 'terrain', symbol: TERRAIN_KIND.GRASS, cellSize: CELL_SIZE.BUILD, cursor: '#79f0c5' },
-  { id: 'dirt', label: 'Dirt', layerId: 'terrain', symbol: TERRAIN_KIND.DIRT, cellSize: CELL_SIZE.BUILD, cursor: '#b86f3d' },
-  { id: 'stone', label: 'Stone', layerId: 'terrain', symbol: TERRAIN_KIND.STONE, cellSize: CELL_SIZE.BUILD, cursor: '#9aa7b2' },
-  { id: 'invisibleTerrain', label: 'Invisible', layerId: 'terrain', symbol: TERRAIN_KIND.INVISIBLE, cellSize: CELL_SIZE.BUILD, cursor: '#a78bfa' },
-  { id: 'eraseTerrain', label: 'Erase terrain', layerId: 'terrain', symbol: null, cellSize: CELL_SIZE.BUILD, cursor: '#ff8f8f' },
-  { id: 'player', label: 'Player P', layerId: 'entities', symbol: 'P', cellSize: CELL_SIZE.GRID, cursor: '#78a8ff' },
-  { id: 'slime', label: 'Slime E', layerId: 'entities', symbol: 'E', cellSize: CELL_SIZE.GRID, cursor: '#ff7bd5' },
-  { id: 'gate', label: 'Gate G', layerId: 'entities', symbol: 'G', cellSize: CELL_SIZE.GRID, cursor: '#ffd36a' },
-  { id: 'eraseEntity', label: 'Erase entity', layerId: 'entities', symbol: EMPTY, cellSize: CELL_SIZE.GRID, cursor: '#ff8f8f' }
-];
 
 const dom = {
   canvas: document.querySelector('#editorCanvas'),
@@ -75,6 +65,11 @@ const dom = {
   controllerViewportHints: document.querySelector('#controllerViewportHints'),
   undoButton: document.querySelector('#undoButton'),
   redoButton: document.querySelector('#redoButton'),
+  editLayerButtons: Array.from(document.querySelectorAll('[data-edit-layer]')),
+  paletteSectionTitle: document.querySelector('#paletteSectionTitle'),
+  paletteSummary: document.querySelector('#paletteSummary'),
+  brushSectionTitle: document.querySelector('#brushSectionTitle'),
+  brushLayerHint: document.querySelector('#brushLayerHint'),
   brushes: document.querySelector('#brushes'),
   controllerBrushSensitivityInput: document.querySelector('#controllerBrushSensitivityInput'),
   controllerBrushSensitivityValue: document.querySelector('#controllerBrushSensitivityValue'),
@@ -114,6 +109,8 @@ let pinch = null;
 let editorSource = 'registered';
 let loadedLocalDraftId = null;
 let activeTab = 'edit';
+let activeEditLayerId = brush.layerId;
+let activePaletteId = defaultPaletteForLayer(activeEditLayerId)?.id ?? null;
 let overlayHidden = false;
 let autoSaveEnabled = readBooleanPreference(localStorage, AUTO_SAVE_STORAGE_KEY, true);
 let floatingControlsEnabled = readBooleanPreference(localStorage, FLOATING_CONTROLS_STORAGE_KEY, true);
@@ -357,6 +354,7 @@ function setActiveTab(tabId, { show = true, focus = false } = {}) {
     dom.hideOverlayButton.setAttribute('aria-label', overlayHidden ? 'Show editor panel' : 'Hide editor panel');
     if (dom.overlayToggleHint) dom.overlayToggleHint.hidden = overlayHidden;
   }
+  document.body.dataset.editorPanel = overlayHidden ? 'closed' : 'open';
   if (dom.controllerPanelHint) dom.controllerPanelHint.hidden = !overlayHidden;
   for (const tab of dom.tabs) {
     const selected = tab.dataset.editorTab === activeTab;
@@ -840,17 +838,18 @@ function navDirection(value) {
   return 0;
 }
 
+function hasActiveGamepadInput() {
+  for (const key of inputRuntime.state.controls.keys()) if (key.startsWith('gamepad:')) return true;
+  return false;
+}
+
 function processEditorControllerFrame() {
   inputAdapter.beginFrame({ controllerEnabled: true });
-  if (inputRuntime.lastActiveSource?.()?.deviceType === 'gamepad') setEditorInputMode('gamepad');
+  if (inputRuntime.lastActiveSource?.()?.deviceType === 'gamepad' || hasActiveGamepadInput()) setEditorInputMode('gamepad');
   syncTabHints({ inputScheme: 'gamepad' });
   const route = editorInputRoute();
 
   if (route.wasPressed('editor.togglePanel')) { route.consume('editor.togglePanel'); toggleEditorPanel(); }
-  if (route.wasPressed('editor.toggleMode')) { route.consume('editor.toggleMode'); toggleControllerCanvasMode(); }
-  if (route.wasPressed('editor.zoomOut')) { route.consume('editor.zoomOut'); zoomBy(0.88); }
-  if (route.wasPressed('editor.zoomIn')) { route.consume('editor.zoomIn'); zoomBy(1.14); }
-  if (route.wasPressed('editor.resetView')) { route.consume('editor.resetView'); resetCurrentView(); }
 
   const xValue = route.value('menu.navigateX');
   const yValue = route.value('menu.navigateY');
@@ -858,6 +857,10 @@ function processEditorControllerFrame() {
   const yDirection = navDirection(yValue);
 
   if (overlayHidden) {
+    if (route.wasPressed('editor.toggleMode')) { route.consume('editor.toggleMode'); toggleControllerCanvasMode(); }
+    if (route.wasPressed('editor.zoomOut')) { route.consume('editor.zoomOut'); zoomBy(0.88); }
+    if (route.wasPressed('editor.zoomIn')) { route.consume('editor.zoomIn'); zoomBy(1.14); }
+    if (route.wasPressed('editor.resetView')) { route.consume('editor.resetView'); resetCurrentView(); }
     if (route.wasPressed('editor.previousBrush')) { route.consume('editor.previousBrush'); cycleBrush(-1); }
     if (route.wasPressed('editor.nextBrush')) { route.consume('editor.nextBrush'); cycleBrush(1); }
 
@@ -974,40 +977,84 @@ function moveControllerPointer(dx, dy) {
 
 function setBrush(candidate) {
   const previous = brush;
+  activeEditLayerId = candidate.layerId;
+  const palette = palettesForLayer(activeEditLayerId).find(candidatePalette => candidatePalette.brushIds.includes(candidate.id)) ?? defaultPaletteForLayer(activeEditLayerId);
+  activePaletteId = palette?.id ?? activePaletteId;
   const worldPoint = pointer ? { x: (pointer.col + 0.5) * previous.cellSize, y: (pointer.row + 0.5) * previous.cellSize } : null;
   brush = candidate;
   if (worldPoint) pointer = clampBrushCell({ col: Math.floor(worldPoint.x / brush.cellSize), row: Math.floor(worldPoint.y / brush.cellSize) });
+  buildLayerButtons();
   buildBrushButtons();
   render();
 }
 
+function brushesForActivePalette() {
+  const paletteBrushes = brushesForPalette(activePaletteId);
+  return paletteBrushes.length ? paletteBrushes : BRUSHES.filter(candidate => candidate.layerId === activeEditLayerId);
+}
+
+function activeLayerConfig() { return layerById(activeEditLayerId); }
+
+function setActiveEditLayer(layerId) {
+  const nextLayer = layerById(layerId);
+  if (nextLayer.disabled) return;
+  activeEditLayerId = nextLayer.id;
+  activePaletteId = defaultPaletteForLayer(activeEditLayerId)?.id ?? null;
+  const layerBrushes = brushesForActivePalette();
+  if (!layerBrushes.some(candidate => candidate.id === brush.id)) setBrush(layerBrushes[0]);
+  else { buildLayerButtons(); buildBrushButtons(); }
+  setStatus(`Layer: ${activeLayerConfig().label} · ${activeLayerConfig().gridLabel}.`, '');
+}
+
 function cycleBrush(direction) {
-  const index = BRUSHES.findIndex(candidate => candidate.id === brush.id);
-  const nextIndex = ((index < 0 ? 0 : index) + direction + BRUSHES.length) % BRUSHES.length;
-  setBrush(BRUSHES[nextIndex]);
-  setStatus(`Brush: ${brush.label}.`, '');
+  const paletteBrushes = brushesForActivePalette();
+  const index = paletteBrushes.findIndex(candidate => candidate.id === brush.id);
+  const nextIndex = ((index < 0 ? 0 : index) + direction + paletteBrushes.length) % paletteBrushes.length;
+  setBrush(paletteBrushes[nextIndex]);
+  setStatus(`Palette: ${brush.label}.`, '');
 }
 
 function toggleControllerCanvasMode() {
   controllerCanvasMode = controllerCanvasMode === 'draw' ? 'navigate' : 'draw';
   document.body.dataset.editorControllerMode = controllerCanvasMode;
-  setStatus(controllerCanvasMode === 'draw' ? 'Controller draw mode: left stick moves cursor, A paints, LB/RB changes brush.' : 'Controller navigate mode: left stick pans. Press X for draw mode.', '');
+  setStatus(controllerCanvasMode === 'draw' ? 'Controller draw mode: left stick moves cursor, A paints, LB/RB changes palette item.' : 'Controller navigate mode: left stick pans. Press X for draw mode.', '');
 }
 
 function toggleEditorPanel() {
   setActiveTab(activeTab, { show: overlayHidden });
-  if (overlayHidden) setStatus('Brush panel hidden. Press Y to show it.', '');
-  else setStatus('Brush panel shown. Press B or Y to return to canvas.', '');
+  if (overlayHidden) setStatus('Palette panel hidden. Press Y to show it.', '');
+  else setStatus('Palette panel shown. Press B or Y to return to canvas.', '');
+}
+
+function buildLayerButtons() {
+  for (const button of dom.editLayerButtons) {
+    const layer = layerById(button.dataset.editLayer);
+    const selected = layer.id === activeEditLayerId;
+    button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    button.disabled = Boolean(layer.disabled);
+    button.setAttribute('aria-disabled', layer.disabled ? 'true' : 'false');
+    button.querySelector('span').textContent = layer.label;
+    button.querySelector('small').textContent = `${layer.description} · ${layer.gridLabel}`;
+  }
 }
 
 function buildBrushButtons() {
+  const layer = activeLayerConfig();
+  const palette = palettesForLayer(activeEditLayerId).find(candidate => candidate.id === activePaletteId) ?? defaultPaletteForLayer(activeEditLayerId);
+  if (dom.paletteSectionTitle) dom.paletteSectionTitle.textContent = layer.paletteTitle;
+  if (dom.paletteSummary) dom.paletteSummary.textContent = palette ? `${palette.label}: ${palette.description}. ${layer.gridLabel}.` : layer.gridLabel;
+  if (dom.brushSectionTitle) dom.brushSectionTitle.textContent = `Selected: ${brush.label}`;
+  if (dom.brushLayerHint) dom.brushLayerHint.textContent = layer.hint;
   dom.brushes.innerHTML = '';
-  for (const candidate of BRUSHES) {
+  for (const candidate of brushesForActivePalette()) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = candidate.label;
-    button.className = candidate.id === brush.id ? 'active' : '';
+    button.className = candidate.id === brush.id ? 'active palette-chip' : 'palette-chip';
     button.setAttribute('aria-pressed', candidate.id === brush.id ? 'true' : 'false');
+    button.setAttribute('aria-label', candidate.label);
+    button.innerHTML = `<span class="palette-chip__swatch" aria-hidden="true"></span><span class="palette-chip__label"></span>`;
+    button.querySelector('.palette-chip__swatch').style.setProperty('--swatch', candidate.swatch ?? candidate.cursor);
+    button.querySelector('.palette-chip__label').textContent = candidate.shortLabel ?? candidate.label;
     button.addEventListener('click', () => { setBrush(candidate); });
     dom.brushes.append(button);
   }
@@ -1101,6 +1148,7 @@ function setup() {
     dom.tilemapSelect.append(option);
   }
   dom.tilemapSelect.value = registeredTilemaps.some(tilemap => tilemap.id === draft.id) ? draft.id : getDefaultTilemap().id;
+  buildLayerButtons();
   buildBrushButtons();
   resizeViewport(viewport);
   compileDraft();
@@ -1139,6 +1187,7 @@ function setup() {
     writeBooleanPreference(localStorage, FLOATING_CONTROLS_STORAGE_KEY, floatingControlsEnabled);
     syncPreferencesUi();
   });
+  for (const button of dom.editLayerButtons) button.addEventListener('click', () => setActiveEditLayer(button.dataset.editLayer));
   dom.controllerBrushSensitivityInput?.addEventListener('input', () => {
     controllerBrushSettings.sensitivity = Math.round(clampNumber(dom.controllerBrushSensitivityInput.value, 1, 10, DEFAULT_CONTROLLER_BRUSH_SETTINGS.sensitivity));
     writeControllerBrushSettings();

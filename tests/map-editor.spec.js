@@ -352,7 +352,7 @@ test('map editor shows desktop viewport shortcuts until a controller is active',
   await expect(desktopHints).toBeHidden();
 });
 
-test('map editor controller viewport hints replace floating buttons and trigger zoom', async ({ page }) => {
+test('map editor controller hints follow panel vs canvas focus and zoom only on canvas', async ({ page }) => {
   await page.addInitScript(() => {
     const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));
     const pad = { index: 0, id: 'Mock Controller', mapping: 'standard', buttons, axes: [0, 0, 0, 0] };
@@ -365,17 +365,44 @@ test('map editor controller viewport hints replace floating buttons and trigger 
   await expect(page.locator('#controllerViewportHints')).toBeHidden();
 
   await page.evaluate(() => window.__setMockGamepadButton(7, true));
-  await expect.poll(() => page.locator('#editorCanvas').getAttribute('data-zoom')).not.toBe(before);
   await expect(page.locator('#controllerViewportHints')).toBeVisible();
+  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Select' })).toBeVisible();
+  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Zoom in' })).toBeHidden();
+  await expect.poll(() => page.locator('#editorCanvas').getAttribute('data-zoom')).toBe(before);
+
+  await page.evaluate(() => window.__setMockGamepadButton(7, false));
+  await page.evaluate(() => window.__setMockGamepadButton(3, true));
+  await expect(page.locator('#editorOverlay')).toBeHidden();
+  await page.evaluate(() => window.__setMockGamepadButton(3, false));
+  await page.evaluate(() => window.__setMockGamepadButton(7, true));
+  await expect.poll(() => page.locator('#editorCanvas').getAttribute('data-zoom')).not.toBe(before);
   await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Zoom in' })).toBeVisible();
-  await expect(page.locator('#controllerPanelHint')).toBeHidden();
+  await expect(page.locator('#controllerPanelHint')).toBeVisible();
   await expect(page.locator('#hideOverlayButton .input-hint__label').filter({ hasText: 'Hide sidebar' })).toBeAttached();
   await expect(page.locator('#zoomReadout')).toContainText('%');
   await expect(page.locator('#zoomInButton')).toBeHidden();
 });
 
+test('map editor edit tab groups palette items by editable layer', async ({ page }) => {
+  await page.goto('/editor.html');
+
+  await expect(page.getByRole('heading', { name: 'Layers' })).toBeVisible();
+  await expect(page.locator('#paletteSectionTitle')).toHaveText('Starter terrain palette');
+  await expect(page.locator('#brushSectionTitle')).toHaveText('Selected: Grass');
+  await expect(page.getByRole('button', { name: 'Grass' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Player P' })).toHaveCount(0);
+
+  await page.getByRole('button', { name: /Entities/ }).click();
+  await expect(page.locator('#paletteSectionTitle')).toHaveText('Actor stamp palette');
+  await expect(page.locator('#brushSectionTitle')).toHaveText('Selected: Player P');
+  await expect(page.getByRole('button', { name: 'Player P' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Grass' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Lights/ })).toBeDisabled();
+});
+
 test('map editor persists controller brush sensitivity and momentum settings', async ({ page }) => {
   await page.goto('/editor.html');
+  await page.getByRole('tab', { name: 'Settings' }).click();
 
   await page.locator('#controllerBrushSensitivityInput').fill('8');
   await expect(page.locator('#controllerBrushSensitivityValue')).toHaveText('8');
@@ -387,6 +414,7 @@ test('map editor persists controller brush sensitivity and momentum settings', a
   expect(saved).toEqual({ sensitivity: 8, momentumEnabled: true, momentumDelayMs: 300, momentumMaxSpeed: 3.25 });
 
   await page.reload();
+  await page.getByRole('tab', { name: 'Settings' }).click();
   await expect(page.locator('#controllerBrushSensitivityInput')).toHaveValue('8');
   await expect(page.locator('#controllerBrushMomentumToggle')).toBeChecked();
   await expect(page.locator('#controllerBrushMomentumDelayInput')).toHaveValue('300');
@@ -406,7 +434,7 @@ test('map editor controller paints a continuous stroke while the paint button is
   await page.evaluate(() => window.__setMockGamepadButton(3, true));
   await expect(page.locator('#editorOverlay')).toBeHidden();
   await expect(page.locator('#editorOverlay')).toHaveAttribute('data-collapsed', 'true');
-  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Open menu' })).toBeVisible();
+  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Open panel' })).toBeVisible();
   await page.evaluate(() => window.__setMockGamepadButton(3, false));
 
   await page.evaluate(() => window.__setMockGamepadButton(0, true));

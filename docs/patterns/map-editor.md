@@ -22,7 +22,7 @@ Do not reintroduce a permanent sidebar, permanent generated-source pane, or canv
 Tabs are editor action groups:
 
 - **Map**: registered map selection, metadata, dimensions, new/reload, local workflow, portability, generated source disclosure.
-- **Edit**: brushes and undo/redo.
+- **Edit**: layers, palettes, current palette item, and undo/redo.
 - **View**: grid/collision toggles and viewport-control preferences.
 
 There is no separate Export tab. Export/import/preview/source belong to **Map** because they operate on the draft as a whole.
@@ -63,6 +63,16 @@ Draft ids must be kebab-case before durable local save/export flows.
 Preview is separate from durable Local drafts. Use **Save local** for maps that should appear in Level Select.
 
 Generated JavaScript source remains live-updated but hidden behind a disclosure in the Map panel. Avoid dedicating permanent screen space to source output.
+
+## Edit domain
+
+Use the editor language consistently:
+
+- **Layer**: what kind of map content is being authored (`terrain`, `entities`, future `lights`/`decor`). Each layer owns its snap contract/grid size, which may be gridless later.
+- **Palette**: a small controller-friendly collection of placeable items for one layer. Shoulder cycling changes the selected item within the active palette while the panel is hidden.
+- **Palette item / brush**: the concrete symbol/material stamped into the active layer.
+
+Keep layer/palette definitions in `src/editor/edit-domain.js`; the editor shell should render and route those concepts rather than hard-coding UI labels.
 
 ## View controls
 

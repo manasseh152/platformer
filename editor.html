@@ -16,6 +16,7 @@
         <button id="mapTab" type="button" role="tab" aria-label="Map" aria-selected="false" aria-controls="mapPanel" data-editor-tab="map"><span>Map</span></button>
         <button id="editTab" type="button" role="tab" aria-label="Edit" aria-selected="true" aria-controls="editPanel" data-editor-tab="edit"><span>Edit</span></button>
         <button id="viewTab" type="button" role="tab" aria-label="View" aria-selected="false" aria-controls="viewPanel" data-editor-tab="view"><span>View</span></button>
+        <button id="settingsTab" type="button" role="tab" aria-label="Settings" aria-selected="false" aria-controls="settingsPanel" data-editor-tab="settings"><span>Settings</span></button>
         <span class="editor-tabs__hint" data-editor-tab-hint="next" data-input-tab-hint data-input-action="editor.nextTab" aria-hidden="true" hidden>RB</span>
       </div>
 
@@ -86,23 +87,22 @@
         </section>
 
         <section id="editPanel" class="tab-panel" role="tabpanel" aria-labelledby="editTab">
-          <div class="panel-section">
-            <h2>Brushes</h2>
-            <div id="brushes" class="brush-grid" role="toolbar" aria-label="Paint brushes"></div>
-            <p class="hint">Controller: <kbd>Y</kbd> uses the Hide/Edit button, <kbd>X</kbd> switches draw/navigate, <kbd>A</kbd> paints, <kbd>LB</kbd>/<kbd>RB</kbd> changes brush when the panel is hidden.</p>
-          </div>
-          <div class="panel-section">
-            <h2>Controller brush</h2>
-            <label class="field">
-              <span>Sensitivity <output id="controllerBrushSensitivityValue">5</output></span>
-              <input id="controllerBrushSensitivityInput" type="range" min="1" max="10" step="1" value="5" />
-            </label>
-            <label class="check"><input id="controllerBrushMomentumToggle" type="checkbox" /> <span>Momentum</span></label>
-            <div class="field-grid">
-              <label class="field"><span>Ramp after ms</span><input id="controllerBrushMomentumDelayInput" type="number" min="100" max="2000" step="50" value="450" /></label>
-              <label class="field"><span>Max speed ×</span><input id="controllerBrushMomentumSpeedInput" type="number" min="1" max="5" step="0.25" value="2.5" /></label>
+          <div class="panel-section edit-layer-section">
+            <h2>Layers</h2>
+            <p class="section-kicker">Choose what kind of thing the cursor is editing.</p>
+            <div id="editLayers" class="layer-switcher" role="toolbar" aria-label="Editable layers">
+              <button type="button" data-edit-layer="terrain" aria-pressed="true"><span>Terrain</span><small>Solid authored ground · 16 px build grid</small></button>
+              <button type="button" data-edit-layer="entities" aria-pressed="false"><span>Entities</span><small>Gameplay objects · 32 px gameplay grid</small></button>
+              <button type="button" data-edit-layer="lights" disabled aria-disabled="true"><span>Lights</span><small>Mood and visibility · Gridless</small></button>
+              <button type="button" data-edit-layer="decor" disabled aria-disabled="true"><span>Decor</span><small>Non-colliding dressing · 8 px / gridless</small></button>
             </div>
-            <p class="hint">Sensitivity sets base cursor repeat speed. Momentum makes held directions accelerate after the ramp delay.</p>
+          </div>
+          <div class="panel-section palette-section">
+            <h2 id="paletteSectionTitle">Starter terrain palette</h2>
+            <p id="paletteSummary" class="section-kicker">Starter terrain: five core terrain materials. 16 px build grid.</p>
+            <div id="brushes" class="brush-grid" role="toolbar" aria-label="Palette items"></div>
+            <h3 id="brushSectionTitle" class="selected-brush-title">Selected: Grass</h3>
+            <p id="brushLayerHint" class="hint">LB/RB changes terrain while the panel is hidden. A paints the selected cell.</p>
           </div>
           <div class="panel-section">
             <h2>History</h2>
@@ -122,6 +122,22 @@
               <label class="check"><input id="floatingControlsToggle" type="checkbox" checked /> <span>Floating zoom controls</span></label>
             </div>
             <p class="hint">Wheel or pinch to zoom. Hold <kbd>Space</kbd> or middle-drag to pan.</p>
+          </div>
+        </section>
+
+        <section id="settingsPanel" class="tab-panel" role="tabpanel" aria-labelledby="settingsTab" hidden>
+          <div class="panel-section">
+            <h2>Controller brush</h2>
+            <label class="field">
+              <span>Sensitivity <output id="controllerBrushSensitivityValue">5</output></span>
+              <input id="controllerBrushSensitivityInput" type="range" min="1" max="10" step="1" value="5" />
+            </label>
+            <label class="check"><input id="controllerBrushMomentumToggle" type="checkbox" /> <span>Momentum</span></label>
+            <div class="field-grid">
+              <label class="field"><span>Ramp after ms</span><input id="controllerBrushMomentumDelayInput" type="number" min="100" max="2000" step="50" value="450" /></label>
+              <label class="field"><span>Max speed ×</span><input id="controllerBrushMomentumSpeedInput" type="number" min="1" max="5" step="0.25" value="2.5" /></label>
+            </div>
+            <p class="hint">Sensitivity sets base cursor repeat speed. Momentum makes held directions accelerate after the ramp delay.</p>
           </div>
         </section>
       </aside>
@@ -144,13 +160,19 @@
         <span data-input-hint data-input-action="editor.preview" data-input-label="Preview"></span>
       </div>
 
-      <div id="controllerViewportHints" class="viewport-input-hints controller-viewport-hints" aria-label="Controller viewport controls">
-        <span data-input-hint data-input-action="menu.navigateX" data-input-label="Pan"></span>
-        <span data-input-hint data-input-action="editor.zoomOut" data-input-label="Zoom out"></span>
-        <span data-input-hint data-input-action="editor.zoomIn" data-input-label="Zoom in"></span>
-        <span data-input-hint data-input-action="editor.resetView" data-input-label="Reset view"></span>
-        <span id="controllerPanelHint" data-input-hint data-input-action="editor.togglePanel" data-input-label="Open menu" hidden></span>
-        <span data-input-hint data-input-action="editor.toggleMode" data-input-label="Draw / pan"></span>
+      <div id="controllerViewportHints" class="viewport-input-hints controller-viewport-hints" aria-label="Controller controls">
+        <span data-editor-hint-scope="canvas" data-input-hint data-input-action="menu.navigateX" data-input-label="Move cursor / pan"></span>
+        <span data-editor-hint-scope="canvas" data-input-hint data-input-action="editor.paint" data-input-label="Paint"></span>
+        <span data-editor-hint-scope="canvas" data-input-hint data-input-action="editor.zoomOut" data-input-label="Zoom out"></span>
+        <span data-editor-hint-scope="canvas" data-input-hint data-input-action="editor.zoomIn" data-input-label="Zoom in"></span>
+        <span data-editor-hint-scope="canvas" data-input-hint data-input-action="editor.resetView" data-input-label="Reset view"></span>
+        <span id="controllerPanelHint" data-editor-hint-scope="canvas" data-input-hint data-input-action="editor.togglePanel" data-input-label="Open panel" hidden></span>
+        <span data-editor-hint-scope="canvas" data-input-hint data-input-action="editor.toggleMode" data-input-label="Draw / pan"></span>
+        <span data-editor-hint-scope="panel" data-input-hint data-input-action="menu.navigateX" data-input-label="Move focus"></span>
+        <span data-editor-hint-scope="panel" data-input-hint data-input-action="menu.accept" data-input-label="Select"></span>
+        <span data-editor-hint-scope="panel" data-input-hint data-input-action="menu.back" data-input-label="Back to canvas"></span>
+        <span data-editor-hint-scope="panel" data-input-hint data-input-action="editor.previousTab" data-input-label="Previous tab"></span>
+        <span data-editor-hint-scope="panel" data-input-hint data-input-action="editor.nextTab" data-input-label="Next tab"></span>
       </div>
 
       <p id="status" class="status ds-status" role="status">Ready.</p>
