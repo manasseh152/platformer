@@ -350,11 +350,19 @@ bun run build
 bunx playwright test tests/scene.spec.js tests/render-pipeline.spec.js --project=chromium
 ```
 
-### Slice 4: Rendering gym content
+### Slice 4: Rendering gym content — Complete
 
-- Add dark ambient and two warm torch scene objects to `rendering-gym-map.js`.
-- Keep them invisible.
-- Add tests asserting the rendering gym frame emits one authored ambient and two point packets.
+Implemented in:
+
+- `src/content/tilemaps/definitions/rendering-gym-map.js` with a dedicated invisible `lights` grid layer containing one dark ambient light and two warm torch point lights.
+- `tests/render-pipeline.spec.js` asserting the rendering gym frame emits one authored ambient packet and two point packets.
+
+Validated with:
+
+```sh
+bunx playwright test tests/render-pipeline.spec.js --project=chromium
+bun run build
+```
 
 ### Slice 5: Backend selection scaffolding
 

@@ -395,6 +395,28 @@ test('light packet extraction emits default ambient and culled/native point pack
   expect(packets[1]).toMatchObject({ kind: 'light2d', lightKind: 'point', sourceId: 'torch:light2d:0', lighting: 'light', x: 40, y: 48, radius: 64, color: [255, 176, 92, 255], intensity: 1.5, volumetricIntensity: 0.02, castsShadows: true });
 });
 
+test('rendering gym emits one authored ambient and two point light packets', () => {
+  const view = { width: 640, height: 360, bufferWidth: 320, bufferHeight: 180 };
+  const session = createGameplaySession(getTilemapById('rendering-gym-map'), { view, scenarioId: 'rendering-gym' });
+  const game = { view, devTools: { flags: {} } };
+  syncGameplaySessionToGame(game, session);
+
+  const { frame } = extractGameplayRenderFrame({ game, runtime: { now: () => 0, random: () => 0.5 }, assetRegistry: createAssetRegistry({}) });
+  const lightPackets = frame.packets.filter(packet => packet.kind === 'light2d');
+  const ambientPackets = lightPackets.filter(packet => packet.lightKind === 'ambient');
+  const pointPackets = lightPackets.filter(packet => packet.lightKind === 'point');
+
+  expect(ambientPackets).toEqual([
+    expect.objectContaining({ sourceId: 'lights:0,0:light2d:0', color: [12, 16, 28, 255], intensity: 0.55 })
+  ]);
+  expect(ambientPackets[0].defaultLight).toBeUndefined();
+  expect(pointPackets).toHaveLength(2);
+  expect(pointPackets.map(packet => packet.sourceId)).toEqual(['lights:4,3:light2d:0', 'lights:12,3:light2d:0']);
+  expect(pointPackets).toEqual(expect.arrayContaining([
+    expect.objectContaining({ color: [255, 176, 92, 255], intensity: 1, radius: 64, volumetricIntensity: 0.02, castsShadows: false })
+  ]));
+});
+
 test('gameplay render read model collects multiple light components and authored ambient replaces default', () => {
   const tilemap = defineScene({
     id: 'lights-scene',
