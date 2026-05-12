@@ -6,6 +6,7 @@
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "render:map": "node tools/render-map.js",
+    "generate:icons": "node tools/generate-icons.js",
     "validate:map-render": "node tools/render-map.js .temp/full-map.png",
     "validate:foundation": "bun run build && bunx playwright test --project=chromium && bun run validate:map-render"
   },

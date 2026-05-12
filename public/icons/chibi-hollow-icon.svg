@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Chibi Hollow app icon</title>
+  <desc id="desc">Pixel-art shield mark with a chibi knight helmet, sword, and moon.</desc>
+  <defs>
+    <linearGradient id="night" x1="96" y1="44" x2="416" y2="468" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#17213b"/>
+      <stop offset="0.55" stop-color="#0b1020"/>
+      <stop offset="1" stop-color="#05070d"/>
+    </linearGradient>
+    <linearGradient id="grass" x1="140" y1="356" x2="372" y2="448" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5bd36a"/>
+      <stop offset="1" stop-color="#218b4a"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="512" height="512" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <rect x="20" y="20" width="472" height="472" rx="72" fill="url(#night)"/>
+  <path d="M256 70 390 126v136c0 92-53 151-134 190-81-39-134-98-134-190V126L256 70Z" fill="#111827" stroke="#f5c84b" stroke-width="18" stroke-linejoin="round" filter="url(#shadow)"/>
+  <path d="M256 92 367 138v124c0 74-38 124-111 164-73-40-111-90-111-164V138L256 92Z" fill="#19213a"/>
+  <circle cx="156" cy="150" r="38" fill="#ffe38f"/>
+  <circle cx="174" cy="138" r="38" fill="#19213a"/>
+  <path d="M130 394h252v34H130z" fill="url(#grass)"/>
+  <path d="M170 366h172v34H170z" fill="#37b662"/>
+  <path d="M322 160h32v188h-32z" fill="#f8fafc"/>
+  <path d="M306 194h64v24h-64z" fill="#f5c84b"/>
+  <path d="M314 348h48v38h-48z" fill="#8b5a2b"/>
+  <path d="M182 204h148v42h-22v44h-24v32h-56v-32h-24v-44h-22z" fill="#d9e2ef"/>
+  <path d="M204 182h104v42H204z" fill="#eef4ff"/>
+  <path d="M226 154h60v42h-60z" fill="#f5c84b"/>
+  <path d="M204 246h104v38H204z" fill="#1f2937"/>
+  <path d="M220 246h20v20h-20zm52 0h20v20h-20z" fill="#71f0ff"/>
+  <path d="M236 290h40v18h-40z" fill="#f29f67"/>
+  <path d="M158 250h46v44h-46z" fill="#a7b4c8"/>
+  <path d="M308 250h46v44h-46z" fill="#a7b4c8"/>
+  <path d="M194 326h124v42H194z" fill="#e14848"/>
+  <path d="M222 326h68v42h-68z" fill="#f05b5b"/>
+  <path d="M162 140h32v32h-32zm206 206h24v24h-24zm-254 190h284v-24H114z" fill="#f5c84b" opacity="0.9"/>
+</svg>
