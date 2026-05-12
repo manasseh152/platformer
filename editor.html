@@ -150,6 +150,24 @@
         <button id="panToggleButton" class="floating-view-controls__button" type="button" aria-pressed="false">Pan</button>
       </div>
 
+      <section id="paletteWheelHud" class="palette-wheel-hud" aria-label="Controller palette wheel" aria-live="polite">
+        <div id="paletteWheelItems" class="palette-wheel-hud__items" aria-hidden="true"></div>
+        <div class="palette-wheel-hud__card">
+          <div class="palette-wheel-hud__topline">
+            <span id="wheelLayerLabel" class="palette-wheel-hud__pill">Terrain</span>
+            <output id="wheelZoomReadout" class="palette-wheel-hud__zoom" aria-label="Zoom level">100%</output>
+          </div>
+          <div class="palette-wheel-hud__brush">
+            <span id="wheelBrushSwatch" class="palette-wheel-hud__swatch" aria-hidden="true"></span>
+            <span class="palette-wheel-hud__copy">
+              <strong id="wheelBrushLabel">Grass</strong>
+              <span id="wheelPaletteLabel">Starter terrain</span>
+            </span>
+          </div>
+          <div class="palette-wheel-hud__zoom-track" aria-hidden="true"><span id="wheelZoomFill"></span></div>
+        </div>
+      </section>
+
       <div id="desktopViewportHints" class="viewport-input-hints desktop-viewport-hints" aria-label="Desktop viewport controls">
         <span data-input-hint data-input-action="editor.paint" data-input-device-type="pointer" data-input-label="Paint"></span>
         <span data-input-hint data-input-action="editor.panModifier" data-input-label="Pan"></span>
@@ -177,7 +195,6 @@
         <span data-editor-hint-scope="panel" data-input-hint data-input-action="editor.nextTab" data-input-label="Next tab"></span>
       </div>
 
-      <p id="status" class="status ds-status" role="status">Ready.</p>
     </section>
   </main>
 

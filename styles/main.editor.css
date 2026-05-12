@@ -228,7 +228,7 @@ body[data-editor-input="gamepad"] .overlay-toggle-hint { display: inline-flex; }
 }
 .layer-switcher button[aria-pressed="true"] small { color: rgba(16,16,22,.68); }
 .layer-switcher button:disabled { opacity: .38; cursor: not-allowed; }
-.brush-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
+.brush-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
 .palette-chip {
   min-height: 64px;
   display: grid;
@@ -303,29 +303,7 @@ body[data-editor-input="gamepad"] .overlay-toggle-hint { display: inline-flex; }
 }
 .floating-view-controls[hidden] { display: none; }
 .floating-view-controls button { min-width: 40px; }
-body[data-editor-input="gamepad"] .floating-view-controls {
-  right: calc(18px + env(safe-area-inset-right));
-  bottom: calc(20px + env(safe-area-inset-bottom));
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  backdrop-filter: none;
-  box-shadow: none;
-  pointer-events: none;
-}
-body[data-editor-input="gamepad"] .floating-view-controls__button { display: none; }
-body[data-editor-input="gamepad"] .floating-view-controls output {
-  min-width: 76px;
-  min-height: 34px;
-  color: rgba(255, 246, 232, .58);
-  background: transparent;
-  border-color: transparent;
-  font: 950 .88rem/1 var(--font-ui);
-  letter-spacing: .055em;
-  text-transform: uppercase;
-  text-shadow: 0 2px 8px rgba(0,0,0,.72), 0 0 18px rgba(0,0,0,.55);
-}
+body[data-editor-input="gamepad"] .floating-view-controls { display: none; }
 .floating-view-controls output {
   display: grid;
   place-items: center;
@@ -338,6 +316,124 @@ body[data-editor-input="gamepad"] .floating-view-controls output {
   font-weight: 800;
 }
 #panToggleButton[aria-pressed="true"] { color: #101016; background: rgba(255,246,232,.92); border-color: transparent; }
+
+.palette-wheel-hud {
+  --wheel-size: 198px;
+  --wheel-item: 28px;
+  --wheel-radius: -68px;
+  --wheel-card-width: 126px;
+  position: absolute;
+  z-index: 13;
+  right: calc(18px + env(safe-area-inset-right));
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  width: var(--wheel-size);
+  height: var(--wheel-size);
+  display: none;
+  opacity: .86;
+  transform: scale(.92);
+  transform-origin: right bottom;
+  transition: opacity .18s ease, transform .18s ease;
+  pointer-events: none;
+}
+body[data-editor-input="gamepad"] .palette-wheel-hud { display: block; }
+body[data-editor-input="gamepad"][data-editor-panel="open"] .palette-wheel-hud { opacity: .46; transform: scale(.72); }
+.palette-wheel-hud.is-awake { opacity: 1; transform: scale(1); }
+.palette-wheel-hud::before {
+  content: "";
+  position: absolute;
+  inset: 34px;
+  border: 1px solid rgba(255, 246, 232, .12);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(121, 240, 197, .11), transparent 62%),
+    conic-gradient(from -135deg, rgba(255,246,232,.22), transparent 28%, rgba(89,217,231,.22), transparent 70%, rgba(255,211,106,.24));
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.22), 0 18px 42px rgba(0,0,0,.34);
+  mask: radial-gradient(circle, transparent 0 53%, #000 54% 100%);
+}
+.palette-wheel-hud__items { position: absolute; inset: 0; border-radius: 50%; overflow: visible; }
+.palette-wheel-hud__item {
+  --angle: 0deg;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--wheel-item);
+  height: var(--wheel-item);
+  margin: calc(var(--wheel-item) / -2) 0 0 calc(var(--wheel-item) / -2);
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,246,232,.14);
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.16), transparent 44%),
+    var(--swatch, rgba(255,246,232,.72));
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.24), 0 10px 22px rgba(0,0,0,.26);
+  transform: rotate(var(--angle)) translateY(var(--wheel-radius)) rotate(calc(-1 * var(--angle)));
+}
+.palette-wheel-hud__item::after {
+  content: attr(data-short-label);
+  max-width: 24px;
+  overflow: hidden;
+  color: rgba(5,7,12,.78);
+  font: 950 7px/1 var(--font-ui);
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255,255,255,.24);
+}
+.palette-wheel-hud__item.is-duplicate { opacity: .56; filter: saturate(.78); }
+.palette-wheel-hud__item.is-active {
+  z-index: 2;
+  opacity: 1;
+  filter: none;
+  border-color: rgba(255,246,232,.9);
+  transform: rotate(var(--angle)) translateY(calc(var(--wheel-radius) - 5px)) rotate(calc(-1 * var(--angle))) scale(1.12);
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.22), 0 0 0 4px rgba(255,246,232,.12), 0 0 28px color-mix(in srgb, var(--swatch, #79f0c5) 58%, transparent);
+}
+.palette-wheel-hud__card {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: var(--wheel-card-width);
+  display: grid;
+  gap: 7px;
+  padding: 9px;
+  border: 1px solid rgba(255,246,232,.13);
+  border-radius: 16px;
+  background: rgba(9, 12, 18, .72);
+  backdrop-filter: blur(18px) saturate(135%);
+  box-shadow: 0 18px 52px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.05);
+}
+.palette-wheel-hud__topline,
+.palette-wheel-hud__brush { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.palette-wheel-hud__topline { justify-content: space-between; }
+.palette-wheel-hud__pill,
+.palette-wheel-hud__zoom {
+  min-width: 0;
+  border: 1px solid rgba(255,246,232,.11);
+  border-radius: 999px;
+  padding: 4px 7px;
+  color: rgba(255,246,232,.76);
+  background: rgba(255,255,255,.055);
+  font: 950 9px/1 var(--font-ui);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.palette-wheel-hud__zoom { flex: 0 0 auto; color: #101016; background: rgba(255,246,232,.9); }
+.palette-wheel-hud__swatch {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border: 2px solid rgba(255,246,232,.22);
+  border-radius: 11px;
+  background: linear-gradient(135deg, rgba(255,255,255,.24), transparent 44%), var(--swatch, #79f0c5);
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.22), 0 8px 18px rgba(0,0,0,.22);
+}
+.palette-wheel-hud__copy { min-width: 0; display: grid; gap: 2px; }
+.palette-wheel-hud__copy strong,
+.palette-wheel-hud__copy span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.palette-wheel-hud__copy strong { color: rgba(255,246,232,.94); font: 950 12px/1.05 var(--font-display); letter-spacing: .01em; }
+.palette-wheel-hud__copy span { color: rgba(255,246,232,.52); font-size: 9px; font-weight: 850; }
+.palette-wheel-hud__zoom-track { height: 5px; overflow: hidden; border-radius: 999px; background: rgba(255,246,232,.12); }
+.palette-wheel-hud__zoom-track span { display: block; width: 50%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #79f0c5, #59d9e7 58%, #ffd36a); box-shadow: 0 0 16px rgba(89,217,231,.32); }
 .viewport-input-hints {
   position: absolute;
   z-index: 11;
@@ -417,50 +513,6 @@ body[data-editor-input="gamepad"]:not([data-editor-panel="open"]) .controller-vi
   letter-spacing: inherit;
   text-transform: uppercase;
 }
-.status {
-  position: absolute;
-  z-index: 12;
-  right: 16px;
-  bottom: 78px;
-  max-width: min(420px, calc(100vw - 32px));
-  min-height: 38px;
-  display: flex;
-  align-items: center;
-  margin: 0;
-  padding: .55rem .78rem;
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  color: var(--color-text-muted);
-  background: rgba(9, 12, 18, .72);
-  backdrop-filter: blur(16px) saturate(130%);
-  line-height: 1.25;
-  font-size: .86rem;
-  box-shadow: 0 12px 36px rgba(0,0,0,.32);
-}
-.status.error { color: #ffd2cf; border-color: rgba(255, 94, 80, .42); background: rgba(70, 20, 18, .72); }
-.status.ok { color: #d9ffdd; border-color: rgba(124, 255, 139, .28); background: rgba(12, 42, 21, .62); }
-body[data-editor-input="gamepad"] .status {
-  right: calc(104px + env(safe-area-inset-right));
-  bottom: calc(20px + env(safe-area-inset-bottom));
-  min-height: 34px;
-  padding: 0;
-  border: 0;
-  color: rgba(255, 246, 232, .58);
-  background: transparent;
-  backdrop-filter: none;
-  font: 950 .88rem/1 var(--font-ui);
-  letter-spacing: .055em;
-  text-transform: uppercase;
-  text-shadow: 0 2px 8px rgba(0,0,0,.72), 0 0 18px rgba(0,0,0,.55);
-  box-shadow: none;
-}
-body[data-editor-input="gamepad"] .status.ok,
-body[data-editor-input="gamepad"] .status.error {
-  color: rgba(255, 246, 232, .58);
-  border-color: transparent;
-  background: transparent;
-}
-
 @media (max-width: 760px) {
   body { overflow: hidden; }
   .editor-topbar { grid-template-columns: auto 1fr auto; gap: 6px; left: 8px; right: 8px; top: 8px; min-height: 48px; }
@@ -478,10 +530,9 @@ body[data-editor-input="gamepad"] .status.error {
   .floating-view-controls { right: 8px; bottom: calc(min(62vh, calc(100vh - 72px)) + 18px); flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 16px); }
   .editor-overlay[hidden] ~ .floating-view-controls { bottom: 8px; }
   body[data-editor-input="gamepad"] .floating-view-controls { right: 8px; bottom: 8px; }
+  .palette-wheel-hud { right: 8px; bottom: 8px; transform: scale(.82); }
   .desktop-viewport-hints { left: 8px; right: 8px; bottom: 126px; max-width: calc(100vw - 16px); }
-  .controller-viewport-hints { left: 8px; right: 8px; bottom: 48px; grid-template-columns: 1fr; max-width: calc(100vw - 16px); }
-  .status { right: 8px; bottom: 72px; }
-  body[data-editor-input="gamepad"] .status { right: 92px; bottom: 8px; max-width: calc(100vw - 184px); }
+  .controller-viewport-hints { left: 8px; right: 164px; bottom: 48px; grid-template-columns: 1fr; max-width: calc(100vw - 172px); }
   .field-grid, .button-row, .layer-switcher { grid-template-columns: 1fr; }
   .brush-grid { grid-template-columns: repeat(5, minmax(52px, 1fr)); overflow-x: auto; padding-bottom: 2px; }
 }

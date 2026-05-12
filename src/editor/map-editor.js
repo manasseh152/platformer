@@ -62,6 +62,14 @@ const dom = {
   zoomInButton: document.querySelector('#zoomInButton'),
   resetViewButton: document.querySelector('#resetViewButton'),
   zoomReadout: document.querySelector('#zoomReadout'),
+  paletteWheelHud: document.querySelector('#paletteWheelHud'),
+  paletteWheelItems: document.querySelector('#paletteWheelItems'),
+  wheelLayerLabel: document.querySelector('#wheelLayerLabel'),
+  wheelZoomReadout: document.querySelector('#wheelZoomReadout'),
+  wheelZoomFill: document.querySelector('#wheelZoomFill'),
+  wheelBrushSwatch: document.querySelector('#wheelBrushSwatch'),
+  wheelBrushLabel: document.querySelector('#wheelBrushLabel'),
+  wheelPaletteLabel: document.querySelector('#wheelPaletteLabel'),
   controllerViewportHints: document.querySelector('#controllerViewportHints'),
   undoButton: document.querySelector('#undoButton'),
   redoButton: document.querySelector('#redoButton'),
@@ -127,6 +135,7 @@ let controllerPaintActive = false;
 let controllerNextMoveAt = 0;
 let controllerMoveHeldSince = 0;
 let controllerMoveHoldKey = '';
+let paletteWheelWakeTimer = 0;
 
 function storageKey(id) { return localDraftStorageKey(id); }
 function viewStorageKey(id) { return localDraftViewStorageKey(id); }
@@ -196,6 +205,8 @@ function sharePayload() {
 }
 
 function setStatus(message, kind = '') {
+  debug.lastStatus = { message, kind };
+  if (!dom.status) return;
   dom.status.textContent = message;
   dom.status.className = `status ${kind}`.trim();
 }
@@ -331,6 +342,7 @@ function setEditorInputMode(mode) {
   if (editorInputMode === mode) return;
   editorInputMode = mode;
   syncPreferencesUi();
+  if (mode === 'gamepad') wakePaletteWheel();
 }
 
 function syncViewportHints() {
@@ -757,8 +769,62 @@ function render() {
 }
 
 function updateZoomReadout() {
-  if (dom.zoomReadout) dom.zoomReadout.textContent = `${Math.round(viewport.camera.zoom * 100)}%`;
+  const zoomPercent = Math.round(viewport.camera.zoom * 100);
+  if (dom.zoomReadout) dom.zoomReadout.textContent = `${zoomPercent}%`;
+  if (dom.wheelZoomReadout) dom.wheelZoomReadout.textContent = `${zoomPercent}%`;
+  if (dom.wheelZoomFill) {
+    const range = viewport.maxZoom - viewport.minZoom || 1;
+    const zoomFill = Math.max(6, Math.min(100, ((viewport.camera.zoom - viewport.minZoom) / range) * 100));
+    dom.wheelZoomFill.style.width = `${zoomFill}%`;
+  }
   dom.canvas.dataset.zoom = viewport.camera.zoom.toFixed(3);
+}
+
+function activePaletteConfig() {
+  return palettesForLayer(activeEditLayerId).find(candidate => candidate.id === activePaletteId) ?? defaultPaletteForLayer(activeEditLayerId);
+}
+
+function wakePaletteWheel() {
+  if (!dom.paletteWheelHud) return;
+  dom.paletteWheelHud.classList.add('is-awake');
+  clearTimeout(paletteWheelWakeTimer);
+  paletteWheelWakeTimer = setTimeout(() => dom.paletteWheelHud?.classList.remove('is-awake'), 1300);
+}
+
+function updatePaletteWheel() {
+  const layer = activeLayerConfig();
+  const palette = activePaletteConfig();
+  if (dom.wheelLayerLabel) dom.wheelLayerLabel.textContent = layer.label;
+  if (dom.wheelBrushLabel) dom.wheelBrushLabel.textContent = brush.label;
+  if (dom.wheelPaletteLabel) dom.wheelPaletteLabel.textContent = palette?.label ?? layer.gridLabel;
+  if (dom.wheelBrushSwatch) dom.wheelBrushSwatch.style.setProperty('--swatch', brush.swatch ?? brush.cursor);
+  updateZoomReadout();
+}
+
+function buildPaletteWheelItems() {
+  if (!dom.paletteWheelItems) return;
+  const items = brushesForActivePalette();
+  if (!items.length) { dom.paletteWheelItems.innerHTML = ''; updatePaletteWheel(); return; }
+  const activeIndex = Math.max(0, items.findIndex(candidate => candidate.id === brush.id));
+  const selectedAngle = -52;
+  const step = 36;
+  const visualSlots = items.length >= 9 ? items.length : 11;
+  const beforeSlots = Math.floor((visualSlots - 1) / 2);
+  const afterSlots = visualSlots - beforeSlots - 1;
+  dom.paletteWheelItems.innerHTML = '';
+  for (let slot = -beforeSlots; slot <= afterSlots; slot++) {
+    const itemIndex = ((activeIndex + slot) % items.length + items.length) % items.length;
+    const candidate = items[itemIndex];
+    const visualItem = document.createElement('span');
+    const duplicate = Math.abs(slot) >= items.length;
+    visualItem.className = `palette-wheel-hud__item${slot === 0 ? ' is-active' : ''}${duplicate ? ' is-duplicate' : ''}`;
+    visualItem.style.setProperty('--angle', `${selectedAngle + slot * step}deg`);
+    visualItem.style.setProperty('--swatch', candidate.swatch ?? candidate.cursor);
+    visualItem.dataset.shortLabel = candidate.shortLabel ?? candidate.label;
+    visualItem.title = duplicate ? `${candidate.label} (visual repeat)` : candidate.label;
+    dom.paletteWheelItems.append(visualItem);
+  }
+  updatePaletteWheel();
 }
 
 function pointerCell(event) {
@@ -1023,6 +1089,7 @@ function setBrush(candidate) {
   if (worldPoint) pointer = clampBrushCell({ col: Math.floor(worldPoint.x / brush.cellSize), row: Math.floor(worldPoint.y / brush.cellSize) });
   buildLayerButtons();
   buildBrushButtons();
+  wakePaletteWheel();
   render();
 }
 
@@ -1098,6 +1165,7 @@ function buildBrushButtons() {
     button.addEventListener('click', () => { setBrush(candidate); });
     dom.brushes.append(button);
   }
+  buildPaletteWheelItems();
 }
 
 function loadSelected(resetSaved = false) {
@@ -1134,12 +1202,14 @@ function loadSelected(resetSaved = false) {
 function zoomBy(factor, screenPoint = { x: viewport.width / 2, y: viewport.height / 2 }) {
   zoomAtScreenPoint(viewport, screenPoint.x, screenPoint.y, viewport.camera.zoom * factor, worldWidth(), worldHeight());
   saveView();
+  wakePaletteWheel();
   render();
 }
 
 function resetCurrentView() {
   resetView(viewport, worldWidth(), worldHeight());
   saveView();
+  wakePaletteWheel();
   render();
 }
 
