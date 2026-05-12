@@ -1,9 +1,11 @@
+import { Color } from '../../core/color.js';
 import { ACTOR_SIZE, TILE_SIZE } from '../../core/constants.js';
+import { Vec } from '../../core/vector.js';
 import { defineObject } from '../../engine/scene/objects.js';
-import { enemyController, hazard, health, patrol, physicsBody, playerController, renderGoal, renderTerrain, solid, spawner, terrain, transition, velocity } from '../../engine/scene/components.js';
+import { enemyController, hazard, health, patrol, physicsBody, playerController, renderGoal, renderLight2d, renderTerrain, solid, spawner, terrain, transition, velocity } from '../../engine/scene/components.js';
 
 export { defineObject } from '../../engine/scene/objects.js';
-export { enemyController, hazard, health, patrol, physicsBody, playerController, renderGoal, renderTerrain, solid, spawner, terrain, transition, velocity } from '../../engine/scene/components.js';
+export { enemyController, hazard, health, patrol, physicsBody, playerController, renderGoal, renderLight2d, renderTerrain, solid, spawner, terrain, transition, velocity } from '../../engine/scene/components.js';
 
 // ARCHIVED: pre-terrainLayer terrain object used by the removed buildTerrain string-grid flow.
 // Kept temporarily for validation tests/migration reference; do not use in active tilemap definitions.
@@ -25,6 +27,24 @@ export const slime = defineObject({
 export const finishGate = defineObject({
   id: 'finish-gate',
   components: [transition({ kind: 'finish' }), renderGoal()]
+});
+
+export const darkAmbientLight = defineObject({
+  id: 'dark-ambient-light',
+  components: [renderLight2d({ kind: 'ambient', color: Color.rgb(12, 16, 28), intensity: 0.55 })]
+});
+
+export const warmTorchLight = defineObject({
+  id: 'warm-torch-light',
+  components: [renderLight2d({
+    kind: 'point',
+    radius: 128,
+    color: Color.rgb(255, 176, 92),
+    intensity: 1,
+    offset: Vec.xy(0, -8),
+    volumetricIntensity: 0.02,
+    castsShadows: false
+  })]
 });
 
 export const playerSpawner = defineObject({ id: 'player-spawner', components: [spawner(player)] });

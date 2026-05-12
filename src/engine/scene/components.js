@@ -1,3 +1,6 @@
+import { Color, assertRgba } from '../../core/color.js';
+import { Vec, assertVec2 } from '../../core/vector.js';
+
 const CAMERA_BUFFER_SPACE = 'camera-buffer';
 
 function finiteNumber(value, name) {
@@ -9,6 +12,26 @@ function nonNegativeNumber(value, name) {
   const number = finiteNumber(value, name);
   if (number < 0) throw new Error(`${name} must be non-negative`);
   return number;
+}
+
+function positiveNumber(value, name) {
+  if (typeof value !== 'number') throw new Error(`${name} must be positive`);
+  const number = finiteNumber(value, name);
+  if (number <= 0) throw new Error(`${name} must be positive`);
+  return number;
+}
+
+function cloneRgba(value, name) {
+  return Object.freeze([...assertRgba(value, name)]);
+}
+
+function cloneVec2(value, name) {
+  return Object.freeze([...assertVec2(value, name)]);
+}
+
+function booleanValue(value, name) {
+  if (typeof value !== 'boolean') throw new Error(`${name} must be true or false`);
+  return value;
 }
 
 function normalizeOverscan(value = 0) {
@@ -65,4 +88,31 @@ export function renderTexture({ asset, repeat = false, opacity = 1 } = {}) {
   finiteNumber(opacity, 'renderTexture.opacity');
   if (opacity < 0 || opacity > 1) throw new Error('renderTexture.opacity must be between 0 and 1');
   return { type: 'render:texture', asset, repeat, opacity };
+}
+
+export function renderLight2d(props = {}) {
+  const { kind } = props;
+  if (kind === 'ambient') {
+    return {
+      type: 'render:light2d',
+      kind,
+      color: cloneRgba(props.color ?? Color.rgb(255, 255, 255), 'renderLight2d.color'),
+      intensity: nonNegativeNumber(props.intensity ?? 1, 'renderLight2d.intensity')
+    };
+  }
+
+  if (kind === 'point') {
+    return {
+      type: 'render:light2d',
+      kind,
+      radius: positiveNumber(props.radius, 'renderLight2d.radius'),
+      color: cloneRgba(props.color ?? Color.rgb(255, 255, 255), 'renderLight2d.color'),
+      intensity: nonNegativeNumber(props.intensity ?? 1, 'renderLight2d.intensity'),
+      offset: cloneVec2(props.offset ?? Vec.xy(0, 0), 'renderLight2d.offset'),
+      volumetricIntensity: nonNegativeNumber(props.volumetricIntensity ?? 0, 'renderLight2d.volumetricIntensity'),
+      castsShadows: booleanValue(props.castsShadows ?? false, 'renderLight2d.castsShadows')
+    };
+  }
+
+  throw new Error('renderLight2d.kind must be "ambient" or "point"');
 }

@@ -316,12 +316,21 @@ bunx playwright test tests/core-primitives.spec.js --project=chromium
 bun run build
 ```
 
-### Slice 2: Light component and prefabs
+### Slice 2: Light component and prefabs — Complete
 
-- Add `renderLight2d()` to `src/engine/scene/components.js`.
-- Re-export/import it through `src/content/tilemaps/objects.js` as needed.
-- Add `darkAmbientLight` and `warmTorchLight` prefabs.
-- Add component schema tests.
+Implemented in:
+
+- `src/engine/scene/components.js` with `renderLight2d()` for ambient and point light schemas.
+- `src/content/tilemaps/objects.js` with `darkAmbientLight` and `warmTorchLight` prefabs and `renderLight2d` re-export.
+- `tests/light-components.spec.js` covering schema validation, cloned/frozen nested tuples, field filtering, and prefab shapes.
+
+Validated with:
+
+```sh
+bunx playwright test tests/light-components.spec.js --project=chromium
+bunx playwright test tests/scene.spec.js tests/light-components.spec.js --project=chromium
+bun run build
+```
 
 ### Slice 3: Read model and light packet extraction
 
