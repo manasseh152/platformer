@@ -85,6 +85,31 @@ async function expectFocusedLevelRow(page, levelId) {
   await expect.poll(() => page.evaluate(() => document.activeElement?.dataset.scenarioId || '')).toBe(levelId);
 }
 
+async function pressMenuKey(page, key) {
+  await page.keyboard.down(key);
+  await page.waitForTimeout(50);
+  await page.keyboard.up(key);
+  await page.waitForTimeout(80);
+}
+
+async function closeSettingsByBack(page) {
+  for (let i = 0; i < 8; i += 1) {
+    if (await page.locator('#pauseScreen').getAttribute('data-menu-page') !== 'settings-category') break;
+    await page.evaluate(() => {
+      const menu = document.querySelector('#pauseScreen');
+      const layer = menu?.dataset.settingsFocusLayer || 'primary-tabs';
+      const selector = layer === 'nested-tabs'
+        ? '[role="tab"][data-controls-page][aria-selected="true"]'
+        : layer === 'primary-tabs'
+          ? '[role="tab"][data-settings-tab][aria-selected="true"]'
+          : '[data-settings-nav-layer="content"] button, [data-settings-nav-layer="content"] input, [data-settings-nav-layer="content"] textarea';
+      menu?.querySelector(selector)?.focus();
+    });
+    await pressMenuKey(page, 'Escape');
+    await page.waitForTimeout(120);
+  }
+}
+
 test('canvas presentation exposes integer scale and letterbox offsets', async ({ page }) => {
   const canvas = page.locator('#game');
   await expect(canvas).toHaveAttribute('data-presentation-scale', /^\d+(\.\d+)?$/);
@@ -115,6 +140,60 @@ test('browser Tab focus remains native while Escape opens start settings', async
   await page.keyboard.press('Escape');
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'settings-category');
   await expect(page.locator('#menuTitle')).toHaveText('Controls');
+});
+
+test('settings layered keyboard navigation enters nested tabs and climbs back out', async ({ page }) => {
+  await openStartSettings(page);
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-settings-focus-layer', 'primary-tabs');
+  await page.locator('[data-settings-tab="controls"]').focus();
+
+  await pressMenuKey(page, 'ArrowRight');
+  await expect(page.locator('[data-settings-tab="gameplay"]')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-settings-focus-layer', 'primary-tabs');
+  await page.locator('[data-settings-tab="gameplay"]').focus();
+
+  await pressMenuKey(page, 'ArrowLeft');
+  await expect(page.locator('[data-settings-tab="controls"]')).toHaveAttribute('aria-selected', 'true');
+  await page.locator('[data-settings-tab="controls"]').focus();
+
+  await pressMenuKey(page, 'ArrowDown');
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-settings-focus-layer', 'nested-tabs');
+  await page.locator('[data-controls-page="profiles"]').focus();
+
+  await pressMenuKey(page, 'ArrowRight');
+  await expect(page.locator('[data-controls-page="gameplay"]')).toHaveAttribute('aria-selected', 'true');
+  await page.locator('[data-controls-page="gameplay"]').focus();
+
+  await pressMenuKey(page, 'ArrowDown');
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-settings-focus-layer', 'content');
+  await expect(page.locator('button[data-bind-action="left"][data-bind-mode="replace"]')).toBeVisible();
+
+  await pressMenuKey(page, 'Escape');
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-settings-focus-layer', 'nested-tabs');
+  await page.locator('[data-controls-page="gameplay"]').focus();
+
+  await pressMenuKey(page, 'Escape');
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-settings-focus-layer', 'primary-tabs');
+});
+
+test('controller settings navigation uses the same layered focus model', async ({ page }) => {
+  await installMockGamepad(page);
+  await openStartSettings(page);
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-settings-focus-layer', 'primary-tabs');
+
+  await pressPadButtonFrom(page, 13, '[data-settings-tab="controls"]');
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-settings-focus-layer', 'nested-tabs');
+  await expect(page.locator('[data-controls-page="profiles"]')).toHaveClass(/controller-focus/);
+
+  await pressPadButtonFrom(page, 15, '[data-controls-page="profiles"]');
+  await expect(page.locator('[data-controls-page="gameplay"]')).toHaveAttribute('aria-selected', 'true');
+
+  await pressPadButtonFrom(page, 0, '[data-controls-page="gameplay"]');
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-settings-focus-layer', 'content');
+  await expect(page.locator('button[data-bind-action="left"][data-bind-mode="replace"]').first()).toHaveClass(/controller-focus/);
+
+  await pressPadButtonFrom(page, 1, 'button[data-bind-action="left"][data-bind-mode="replace"]');
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-settings-focus-layer', 'nested-tabs');
 });
 
 test('single hint layer owns global controls across start, gameplay, and pause', async ({ page }) => {
@@ -206,7 +285,7 @@ test('settings tabs, accessibility motion, advanced JSON, and start flow', async
   await page.getByRole('button', { name: 'Replace app settings' }).click();
   await expect(page.locator('#settingsJsonStatus')).toContainText('Replace failed');
 
-  await page.keyboard.press('Escape');
+  await closeSettingsByBack(page);
   await expect(pauseScreen).toHaveAttribute('data-menu-page', 'main');
 });
 
@@ -226,7 +305,7 @@ test('developer maps are only available in the normal Level Select when Develope
   await expect(page.locator('#developerTools')).toBeHidden();
   await page.locator('[data-setting-row="developer-mode"]').click();
   await expect(page.locator('#developerTools')).toBeVisible();
-  await page.keyboard.press('Escape');
+  await closeSettingsByBack(page);
 
   await page.locator('#startLevelSelectButton').click();
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'level-select');
@@ -257,7 +336,7 @@ test('controller can navigate and choose levels in Level Select', async ({ page 
   await openCategory(page, 'advanced', 'Advanced');
   await page.locator('[data-setting-row="developer-mode"]').click();
   await expect(page.locator('#developerTools')).toBeVisible();
-  await page.keyboard.press('Escape');
+  await closeSettingsByBack(page);
 
   await page.locator('#startLevelSelectButton').click();
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'level-select');
@@ -364,7 +443,7 @@ test('keyboard and controller settings rows, binds, diagnostics, and pause flow'
   await page.getByRole('button', { name: 'Reset Controller Defaults' }).click();
   await expect(page.locator('#settingsStatus')).toContainText('Restored Controller defaults');
 
-  await page.keyboard.press('Escape');
+  await closeSettingsByBack(page);
 
   await page.locator('#startButton').click();
   await expect(body).toHaveClass(/\bplaying\b/);
@@ -376,7 +455,7 @@ test('keyboard and controller settings rows, binds, diagnostics, and pause flow'
   await page.locator('#settingsButton').click();
   await expect(pauseScreen).toHaveAttribute('data-menu-page', 'settings-category');
   await expect(page.getByRole('tab', { name: 'Controls' })).toHaveAttribute('aria-selected', 'true');
-  await page.keyboard.press('Escape');
+  await closeSettingsByBack(page);
   await expect(pauseScreen).toHaveAttribute('data-menu-page', 'main');
   await pauseScreen.getByRole('button', { name: 'Continue' }).click();
   await expect(body).not.toHaveClass(/\bpaused\b/);

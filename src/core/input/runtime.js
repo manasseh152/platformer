@@ -211,7 +211,10 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
       const edgeValue = bindingValueFromRaw(binding, edge.value);
       const pressedEarlierThisFrame = state.edges.slice(0, edgeIndex).some(candidate => candidate.type === 'press' && candidate.sourceKey === edge.sourceKey);
       const matched = type === 'press' ? edgeValue !== 0 : previous !== 0 || pressedEarlierThisFrame;
-      if (matched) rememberActive(slot, binding, edge.device?.id || current.deviceId);
+      if (matched) {
+        edge.actionValue = edgeValue;
+        rememberActive(slot, binding, edge.device?.id || current.deviceId);
+      }
       return matched;
     });
     const seen = new Set(matches.map(edge => edge.sourceKey));
@@ -224,7 +227,7 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
       const isDown = current.value !== 0;
       if ((type === 'press' && !wasDown && isDown) || (type === 'release' && wasDown && !isDown)) {
         rememberActive(slot, binding, current.deviceId);
-        matches.push({ id: `${state.frame}:semantic:${matches.length}`, sourceKey: current.sourceKey, type, value: current.value, timestamp: 0, control: null, device: { id: current.deviceId }, meta: { semantic: true } });
+        matches.push({ id: `${state.frame}:semantic:${matches.length}`, sourceKey: current.sourceKey, type, value: current.value, actionValue: current.value, timestamp: 0, control: null, device: { id: current.deviceId }, meta: { semantic: true } });
         seen.add(current.sourceKey);
       }
     }
@@ -233,6 +236,9 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
 
   function wasPressed(actionId, options = {}) { return matchingEdges(actionId, 'press', options).length > 0; }
   function wasReleased(actionId, options = {}) { return matchingEdges(actionId, 'release', options).length > 0; }
+  function pressedValue(actionId, options = {}) {
+    return matchingEdges(actionId, 'press', options).reduce((best, edge) => Math.abs(edge.actionValue || 0) > Math.abs(best) ? edge.actionValue || 0 : best, 0);
+  }
 
   function consume(actionId, options = {}) {
     const edges = [...matchingEdges(actionId, 'press', options), ...matchingEdges(actionId, 'release', options)];
@@ -249,6 +255,7 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
       isDown: actionId => guard(actionId) && isDown(actionId, { slot }),
       wasPressed: actionId => guard(actionId) && wasPressed(actionId, { slot }),
       wasReleased: actionId => guard(actionId) && wasReleased(actionId, { slot }),
+      pressedValue: actionId => guard(actionId) ? pressedValue(actionId, { slot }) : 0,
       consume: actionId => guard(actionId) && consume(actionId, { slot }),
       contexts: ordered
     };
@@ -256,5 +263,5 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
 
   function endFrame() { state.edges = []; state.consumedSources.clear(); }
 
-  return { profile, settings, warnings: normalized.warnings, state, beginFrame, endFrame, handleEvent, updateDeviceSnapshot, unregisterDevice, connectedDevices, selectGamepad, value, isDown, wasPressed, wasReleased, consume, route, lastActiveSource: slot => state.lastActiveSource[slot || 'player1'] || null };
+  return { profile, settings, warnings: normalized.warnings, state, beginFrame, endFrame, handleEvent, updateDeviceSnapshot, unregisterDevice, connectedDevices, selectGamepad, value, isDown, wasPressed, wasReleased, pressedValue, consume, route, lastActiveSource: slot => state.lastActiveSource[slot || 'player1'] || null };
 }

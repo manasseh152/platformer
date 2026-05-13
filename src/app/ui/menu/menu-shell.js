@@ -40,6 +40,7 @@ export function updateMenuChrome(game) {
   ui.pauseScreen.dataset.menuDirection = menu.direction;
   ui.pauseScreen.dataset.currentSettingsCategory = menu.settingsCategory || '';
   ui.pauseScreen.dataset.currentSettingsSubpage = menu.settingsSubpage || '';
+  ui.pauseScreen.dataset.settingsFocusLayer = menu.settingsFocusLayer || 'primary-tabs';
   document.body.dataset.menuOrigin = menu.origin;
   const category = selectedCategory(game);
   const scenarioBrowserTitle = game.settings.developerMode || game.session?.developerModeOverride ? 'Scenario Browser' : 'Level Select';
@@ -65,6 +66,16 @@ export function focusAndReveal(game, el) {
 
 export function focusFirstMenuItem(game) {
   const root = activeMenuRoot(game);
+  if (game.menu.page === 'settings-category') {
+    const layer = game.menu.settingsFocusLayer || 'primary-tabs';
+    const selector = layer === 'nested-tabs'
+      ? `[role="tab"][data-controls-page="${game.menu.controlsPage || 'profiles'}"]`
+      : layer === 'primary-tabs'
+        ? `[role="tab"][data-settings-tab="${game.menu.settingsCategory || 'controls'}"]`
+        : null;
+    const tab = selector ? root?.querySelector(selector) : null;
+    if (tab) return focusAndReveal(game, tab);
+  }
   ensureMenuFocus(root, game.menu.lastFocused, el => focusAndReveal(game, el));
 }
 
@@ -84,11 +95,13 @@ export function setSettingsTab(game, categoryId) {
   game.input.controllerDebugLock = false;
   game.input.controllerDebugExitStartedAt = 0;
   game.menu.settingsSubpage = null;
+  game.menu.settingsFocusLayer = 'primary-tabs';
   return setSettingsTabSelection(game, categoryId, { updateMenuChrome, focusElement: el => focusAndReveal(game, el) });
 }
 
 export function moveSettingsTab(game, direction) {
-  return moveSettingsTabSelection(game, direction, { updateMenuChrome, focusElement: () => focusFirstMenuItem(game) });
+  game.menu.settingsFocusLayer = 'primary-tabs';
+  return moveSettingsTabSelection(game, direction, { updateMenuChrome, focusElement: el => focusAndReveal(game, el) });
 }
 
 function commitMenuPageChange(game, change, after, context = 'menu-forward') {
@@ -101,6 +114,8 @@ export function setMenuPage(game, page, direction = 'forward', category = null) 
     game.menu.direction = direction;
     game.menu.settingsCategory = category;
     game.menu.settingsSubpage = null;
+    game.menu.settingsFocusLayer = 'primary-tabs';
+    if (page === 'settings-category' && category === 'controls' && !game.menu.controlsPage) game.menu.controlsPage = 'profiles';
     renderSettings(game);
     if (page === 'level-select') renderScenarioBrowser(game);
     updateMenuChrome(game);
@@ -113,6 +128,8 @@ export function openSettings(game, origin) {
     game.menu.page = 'settings-category';
     game.menu.settingsCategory = settingsCategories[0]?.id || null;
     game.menu.settingsSubpage = null;
+    game.menu.settingsFocusLayer = 'primary-tabs';
+    game.menu.controlsPage = 'profiles';
     game.menu.direction = 'forward';
     renderSettings(game);
     updateMenuChrome(game);
@@ -149,6 +166,7 @@ export function closeSettingsSubpage(game) {
     game.input.controllerDebugLock = false;
     game.input.controllerDebugExitStartedAt = 0;
     game.menu.settingsSubpage = null;
+    game.menu.settingsFocusLayer = 'content';
     renderSettings(game);
     updateMenuChrome(game);
   }, () => focusFirstMenuItem(game), 'menu-back');
@@ -164,6 +182,7 @@ export function closeSettings(game) {
     game.menu.page = 'main';
     game.menu.settingsCategory = null;
     game.menu.settingsSubpage = null;
+    game.menu.settingsFocusLayer = 'primary-tabs';
     game.menu.direction = 'back';
     game.menu.origin = origin === 'start' ? 'none' : 'pause';
     updateMenuChrome(game);

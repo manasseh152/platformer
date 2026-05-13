@@ -10,6 +10,13 @@ import {
   moveMenuFocus,
   moveSettingsTab
 } from './menu-shell.js';
+import {
+  ensureSettingsLayerFocus,
+  enterSettingsLayer,
+  leaveSettingsLayer,
+  moveSettingsLayerX,
+  moveSettingsLayerY
+} from './settings-layer-navigation.js';
 
 const backablePages = ['level-select', 'settings', 'settings-category'];
 
@@ -34,7 +41,51 @@ function activateSemanticMenuAction(game, actionId) {
   return false;
 }
 
+function handleSettingsRouteInput(game, route) {
+  ensureSettingsLayerFocus(game);
+  if (route.wasPressed('menu.previousTab') && moveSettingsTab(game, -1)) { route.consume('menu.previousTab'); return true; }
+  if (route.wasPressed('menu.nextTab') && moveSettingsTab(game, 1)) { route.consume('menu.nextTab'); return true; }
+
+  if (!route.isDown('menu.navigateX')) game.menu.settingsHeldNavigateX = 0;
+  if (!route.isDown('menu.navigateY')) game.menu.settingsHeldNavigateY = 0;
+
+  const xSign = Math.sign(route.value('menu.navigateX'));
+  if (route.wasPressed('menu.navigateX') || (xSign && xSign !== game.menu.settingsHeldNavigateX)) {
+    game.menu.settingsHeldNavigateX = xSign;
+    const x = route.value('menu.navigateX') || route.pressedValue?.('menu.navigateX') || 0;
+    const direction = x < 0 ? -1 : x > 0 ? 1 : 0;
+    if (direction && moveSettingsLayerX(game, direction, { movePrimaryTab: dir => moveSettingsTab(game, dir) })) { route.consume('menu.navigateX'); return true; }
+  }
+
+  const ySign = Math.sign(route.value('menu.navigateY'));
+  if (route.wasPressed('menu.navigateY') || (ySign && ySign !== game.menu.settingsHeldNavigateY)) {
+    game.menu.settingsHeldNavigateY = ySign;
+    const y = route.value('menu.navigateY') || route.pressedValue?.('menu.navigateY') || 0;
+    route.consume('menu.navigateY');
+    if (moveSettingsLayerY(game, y)) return true;
+  }
+
+  if (route.wasPressed('menu.accept')) {
+    route.consume('menu.accept');
+    return enterSettingsLayer(game);
+  }
+
+  if (route.wasPressed('menu.back')) {
+    route.consume('menu.back');
+    return leaveSettingsLayer(game);
+  }
+
+  if (route.wasPressed('menu.settings')) {
+    route.consume('menu.settings');
+    return activateSemanticMenuAction(game, 'menu.settings');
+  }
+
+  return false;
+}
+
 function handleMenuRouteInput(game, route) {
+  if (game.menu.page === 'settings-category' && handleSettingsRouteInput(game, route)) return true;
+
   ensureMenuFocus(activeMenuRoot(game), game.menu.lastFocused, el => focusAndReveal(game, el));
 
   if (route.wasPressed('menu.previousTab') && moveSettingsTab(game, -1)) {
@@ -48,13 +99,13 @@ function handleMenuRouteInput(game, route) {
   }
 
   if (route.wasPressed('menu.navigateX')) {
-    const x = route.value('menu.navigateX');
+    const x = route.value('menu.navigateX') || route.pressedValue?.('menu.navigateX') || 0;
     if (x < 0 && moveHorizontalGroupFocus(game, -1)) { route.consume('menu.navigateX'); return true; }
     if (x > 0 && moveHorizontalGroupFocus(game, 1)) { route.consume('menu.navigateX'); return true; }
   }
 
   if (route.wasPressed('menu.navigateY')) {
-    const y = route.value('menu.navigateY');
+    const y = route.value('menu.navigateY') || route.pressedValue?.('menu.navigateY') || 0;
     if (y < 0) {
       route.consume('menu.navigateY');
       if (moveHorizontalGroupFocus(game, 1)) return true;

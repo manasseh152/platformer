@@ -145,7 +145,11 @@ function profileCards(game) {
 
 function controlsSubtabs(game) {
   const page = game.menu.controlsPage || 'profiles';
-  return `<div class="settings-tabs" role="tablist">${controlsPages.map(entry => `<button type="button" role="tab" aria-selected="${entry.id === page ? 'true' : 'false'}" data-controls-page="${entry.id}">${entry.title}</button>`).join('')}</div>`;
+  const activeLayer = game.menu.settingsFocusLayer === 'nested-tabs';
+  return `<div class="settings-tabs settings-tabs--nested" role="tablist" aria-label="Controls pages" data-settings-nav-layer="nested-tabs">${controlsPages.map(entry => {
+    const selected = entry.id === page;
+    return `<button type="button" role="tab" aria-selected="${selected ? 'true' : 'false'}" tabindex="${activeLayer && selected ? '0' : '-1'}" data-controls-page="${entry.id}">${entry.title}</button>`;
+  }).join('')}</div>`;
 }
 
 function navigationOverview(game) {
@@ -250,11 +254,12 @@ export function activeSettingsCategory(game) {
 
 export function renderSettingsTabs(game) {
   const active = activeSettingsCategory(game).id;
-  return `<div class="settings-tabs" role="tablist" aria-label="Settings categories">
+  const activeLayer = (game.menu.settingsFocusLayer || 'primary-tabs') === 'primary-tabs';
+  return `<div class="settings-tabs settings-tabs--primary" role="tablist" aria-label="Settings categories" data-settings-nav-layer="primary-tabs">
     <span class="settings-tabs__hint" data-settings-tab-hint="previous" data-input-tab-hint data-input-action="menu.previousTab" aria-hidden="true" hidden>LB</span>
     ${settingsCategories.map(category => {
       const selected = category.id === active;
-      return `<button type="button" role="tab" aria-selected="${selected ? 'true' : 'false'}" data-settings-tab="${category.id}">
+      return `<button type="button" role="tab" aria-selected="${selected ? 'true' : 'false'}" tabindex="${activeLayer && selected ? '0' : '-1'}" data-settings-tab="${category.id}">
         <span class="settings-tab__label">${category.title}</span>
       </button>`;
     }).join('')}
@@ -299,7 +304,7 @@ export function renderSettingsCategory(game, runtime = browserRuntime) {
   const controllerPage = (category.id === 'controller' || (category.id === 'controls' && game.menu.controlsPage === 'controller')) ? controllerSubpages.find(page => page.id === game.menu.settingsSubpage) : null;
   ui.settingsCategoryDescription.textContent = controllerPage ? controllerPage.description : category.description;
   if (game.input.bindError && runtime.now() > game.input.bindError.until) game.input.bindError = null;
-  ui.settingsCategoryBody.innerHTML = `${renderSettingsTabs(game)}<div class="settings-tab-panel" role="tabpanel">${renderers[category.id](game)}</div>`;
+  ui.settingsCategoryBody.innerHTML = `${renderSettingsTabs(game)}<div class="settings-tab-panel" role="tabpanel" data-settings-nav-layer="content">${renderers[category.id](game)}</div>`;
   refreshDynamicRefs(game);
 }
 

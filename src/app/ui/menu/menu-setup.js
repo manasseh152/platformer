@@ -23,6 +23,7 @@ import {
   updateMenuChrome
 } from './menu-shell.js';
 import { activateSemanticMenuAction } from './menu-input.js';
+import { syncSettingsFocusLayerFromActiveElement } from './settings-layer-navigation.js';
 
 function handleSettingsClick(game, e, runtime = browserRuntime) {
   const tabButton = e.target.closest('button[data-level-select-tab]');
@@ -59,6 +60,7 @@ export function setupMenu(game, runtime = browserRuntime) {
 
   addEventListener('focusin', e => {
     game.menu.lastFocused = e.target;
+    if (game.menu.page === 'settings-category') syncSettingsFocusLayerFromActiveElement(game);
     document.querySelectorAll('.controller-focus').forEach(node => { if (node !== e.target) node.classList.remove('controller-focus'); });
   });
 

@@ -242,7 +242,14 @@ export function handleSettingsActionsClick(game, e, runtime = browserRuntime, ca
   const controllerBack = e.target.closest('[data-controller-settings-back]');
   if (controllerBack) { closeControllerSubpage(game, callbacks); return true; }
   const controlsPage = e.target.closest('button[data-controls-page]');
-  if (controlsPage) { game.menu.controlsPage = controlsPage.dataset.controlsPage; renderSettingsCategory(game); return true; }
+  if (controlsPage) {
+    game.menu.controlsPage = controlsPage.dataset.controlsPage;
+    game.menu.settingsFocusLayer = 'nested-tabs';
+    renderSettingsCategory(game);
+    callbacks.updateMenuChrome?.(game);
+    callbacks.focusAndReveal?.(game, game.ui.pauseScreen?.querySelector(`[role="tab"][data-controls-page="${game.menu.controlsPage}"]`));
+    return true;
+  }
   const controlsProfile = e.target.closest('button[data-controls-profile]');
   if (controlsProfile) { game.settings.input.activeProfileId = controlsProfile.dataset.controlsProfile; game.input.inputScheme = controlsProfile.dataset.controlsProfile === 'controller' ? 'gamepad' : controlsProfile.dataset.controlsProfile; commitSettings(game, runtime); renderSettingsCategory(game); return true; }
   const bindButton = e.target.closest('button[data-bind-action]');
