@@ -4,6 +4,8 @@ import {
   act01Level2Tilemap,
   act01Level3Tilemap,
   act01Level4Tilemap,
+  act01Level5Tilemap,
+  act01Level6Tilemap,
   getAllTilemaps,
   getDefaultTilemap,
   getTilemapById,
@@ -17,6 +19,8 @@ test('tilemap registry owns parsed tilemap level definitions', () => {
   expect(getTilemapById('act-01-level-2')).toBe(act01Level2Tilemap);
   expect(getTilemapById('act-01-level-3')).toBe(act01Level3Tilemap);
   expect(getTilemapById('act-01-level-4')).toBe(act01Level4Tilemap);
+  expect(getTilemapById('act-01-level-5')).toBe(act01Level5Tilemap);
+  expect(getTilemapById('act-01-level-6')).toBe(act01Level6Tilemap);
   expect(getTilemapById('movement-gym-map')).toBe(movementGymMapTilemap);
   expect(getTilemapById('rendering-gym-map')).toBe(renderingGymMapTilemap);
   expect(getAllTilemaps().map(definition => definition.id)).toEqual([
@@ -24,6 +28,8 @@ test('tilemap registry owns parsed tilemap level definitions', () => {
     'act-01-level-2',
     'act-01-level-3',
     'act-01-level-4',
+    'act-01-level-5',
+    'act-01-level-6',
     'movement-gym-map',
     'rendering-gym-map',
     'finish-gate-gym-map',
