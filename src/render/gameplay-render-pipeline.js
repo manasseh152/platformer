@@ -5,6 +5,7 @@ import { createWebGlNativeFrameBackend } from './backends/webgl-native-frame-bac
 import { defaultAssetRegistry } from './browser-asset-registry.js';
 import { DEFERRED_LIGHTING_BACKEND_KIND, selectNativeFrameBackendKindForFrame } from './deferred-lighting-selection.js';
 import { extractGameplayRenderFrame } from './extractors/gameplay-render-extractor.js';
+import { summarizeRenderFrame } from './render-frame-diagnostics.js';
 
 export function ensureNativeFrameBackend(game, { assetRegistry = defaultAssetRegistry, nativeBackendKind = game.renderPipeline?.nativeBackendKind ?? 'canvas2d' } = {}) {
   const width = game.view.bufferWidth;
@@ -43,13 +44,31 @@ export function ensureCanvas2DNativeFrameBackend(game, assetRegistry = defaultAs
   return ensureNativeFrameBackend(game, { assetRegistry, nativeBackendKind: 'canvas2d' });
 }
 
+function nativeBackendKindFromDevTools(flags = {}, nativeBackendKind) {
+  if (nativeBackendKind) return nativeBackendKind;
+  if (flags.forceCanvas2DNativeFrame) return 'canvas2d';
+  if (flags.forceWebGlNativeFrame) return 'webgl';
+  return undefined;
+}
+
+function writeRenderPipelineDiagnostics(game, frame, { requestedBackendKind, selectedBackendKind } = {}) {
+  game.renderPipeline = game.renderPipeline ?? {};
+  game.renderPipeline.diagnostics = {
+    requestedBackendKind: requestedBackendKind ?? 'auto',
+    selectedBackendKind,
+    frame: summarizeRenderFrame(frame)
+  };
+}
+
 export function renderGameplayFrame(runtime, game, { assetRegistry = defaultAssetRegistry, nativeBackendKind } = {}) {
   if (!game) {
     game = runtime;
     runtime = { now: () => performance.now(), random: Math.random };
   }
   const { frame } = extractGameplayRenderFrame({ game, runtime, assetRegistry });
-  const selectedBackendKind = selectNativeFrameBackendKindForFrame(frame, { nativeBackendKind, devToolsFlags: game.devTools?.flags });
+  const requestedBackendKind = nativeBackendKindFromDevTools(game.devTools?.flags, nativeBackendKind);
+  const selectedBackendKind = selectNativeFrameBackendKindForFrame(frame, { nativeBackendKind: requestedBackendKind, devToolsFlags: game.devTools?.flags });
+  writeRenderPipelineDiagnostics(game, frame, { requestedBackendKind, selectedBackendKind });
   let nativeBackend = ensureNativeFrameBackend(game, { assetRegistry, nativeBackendKind: selectedBackendKind });
   if (selectedBackendKind === DEFERRED_LIGHTING_BACKEND_KIND && (nativeBackend.kind !== 'webgl2-deferred-native-frame-backend' || nativeBackend.lost)) {
     game.renderPipeline.deferredFallbackReason = [{ reason: nativeBackend.lost ? 'webgl2 deferred native-frame context lost' : WEBGL2_DEFERRED_BACKEND_UNAVAILABLE_REASON }];

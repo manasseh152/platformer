@@ -1,4 +1,5 @@
 import { clone, samePhysicalBinding } from '#/core/input/utils.js';
+import { defaultInputSettings } from '#/core/input/settings.js';
 import { gameInputProfile } from './game-input-profile.js';
 import { bindingLabel, gamepadLabel, hintPartForBinding, keyLabel } from './input-hints.js';
 
@@ -19,10 +20,14 @@ export const bindGroups = [
 ];
 
 const rowEntries = () => Object.entries(bindRows);
+const profileIds = new Set(['keyboard-mouse', 'wasd', 'arrows', 'controller']);
 const deviceTypeFor = device => device === 'controller' ? 'gamepad' : device;
+const deviceTypesFor = device => device === 'keyboard-mouse' ? ['keyboard', 'pointer'] : [deviceTypeFor(device)];
+const profileBindingsFor = (settings, profileId, actionId) => settings?.input?.profiles?.[profileId]?.bindings?.[actionId];
 
 function rowMatchesBinding(row, binding, deviceType) {
-  if (!binding || binding.deviceType !== deviceType) return false;
+  const types = Array.isArray(deviceType) ? deviceType : [deviceType];
+  if (!binding || !types.includes(binding.deviceType)) return false;
   if (row.scale === undefined) return true;
   return binding.control === 'axis' || binding.scale === row.scale || binding.direction === row.scale;
 }
@@ -30,7 +35,7 @@ function rowMatchesBinding(row, binding, deviceType) {
 function bindingWithRowScale(binding, row) {
   if (row.scale === undefined) return clone(binding);
   const next = clone(binding);
-  if (next.deviceType === 'keyboard') next.scale = row.scale;
+  if (next.deviceType === 'keyboard' || next.deviceType === 'pointer') next.scale = row.scale;
   if (next.deviceType === 'gamepad' && next.control === 'axisDirection') next.direction = row.scale;
   else if (next.deviceType === 'gamepad' && next.control !== 'button') next.scale = row.scale;
   return next;
@@ -42,8 +47,9 @@ export function bindLabel(rowId) { return bindRows[rowId]?.label || rowId; }
 export function rowBindings(settings, rowId, device = 'keyboard') {
   const row = rowForId(rowId);
   if (!row) return [];
-  const deviceType = deviceTypeFor(device);
-  return (settings?.input?.bindings?.[row.actionId] || []).filter(binding => rowMatchesBinding(row, binding, deviceType));
+  const deviceType = deviceTypesFor(device);
+  const source = profileIds.has(device) ? profileBindingsFor(settings, device, row.actionId) || [] : settings?.input?.bindings?.[row.actionId] || [];
+  return source.filter(binding => rowMatchesBinding(row, binding, deviceType));
 }
 
 function rowDisplayBinding(row, binding, device) {
@@ -71,10 +77,10 @@ export function rowText(settings, rowId, device = 'keyboard') {
   }).join(' / ');
 }
 
-export function findBindRowConflict(settings, rowId, binding) {
+export function findBindRowConflict(settings, rowId, binding, { profileId = null } = {}) {
   for (const [candidateRowId, row] of rowEntries()) {
     if (candidateRowId === rowId) continue;
-    const bindings = settings?.input?.bindings?.[row.actionId] || [];
+    const bindings = profileId ? profileBindingsFor(settings, profileId, row.actionId) || [] : settings?.input?.bindings?.[row.actionId] || [];
     if (bindings.some(candidate => samePhysicalBinding(candidate, binding))) {
       return { rowId: candidateRowId, actionId: row.actionId, label: row.label, binding };
     }
@@ -82,17 +88,18 @@ export function findBindRowConflict(settings, rowId, binding) {
   return null;
 }
 
-export function commitBindRow(settings, rowId, binding, { device = binding?.deviceType === 'gamepad' ? 'controller' : 'keyboard' } = {}) {
+export function commitBindRow(settings, rowId, binding, { device = binding?.deviceType === 'gamepad' ? 'controller' : 'keyboard', profileId = profileIds.has(device) ? device : null, mode = 'replace' } = {}) {
   const row = rowForId(rowId);
   if (!row || !binding) return { settings, ok: false, conflict: null };
   const normalizedBinding = bindingWithRowScale(binding, row);
-  const conflict = findBindRowConflict(settings, rowId, normalizedBinding);
+  const conflict = findBindRowConflict(settings, rowId, normalizedBinding, { profileId });
   const next = clone(settings);
   if (conflict) return { settings: next, ok: false, conflict };
-  const deviceType = deviceTypeFor(device);
-  const current = next.input.bindings[row.actionId] || [];
-  next.input.bindings[row.actionId] = [
-    ...current.filter(candidate => !rowMatchesBinding(row, candidate, deviceType)),
+  const deviceType = deviceTypesFor(device);
+  const target = profileId ? (next.input.profiles[profileId].bindings ||= {}) : next.input.bindings;
+  const current = target[row.actionId] || [];
+  target[row.actionId] = [
+    ...(mode === 'add' ? current : current.filter(candidate => !rowMatchesBinding(row, candidate, deviceType))),
     normalizedBinding
   ];
   return { settings: next, ok: true, conflict: null };
@@ -100,12 +107,15 @@ export function commitBindRow(settings, rowId, binding, { device = binding?.devi
 
 export function resetBindRowsToDefaults(settings, device = 'keyboard') {
   const next = clone(settings);
-  const deviceType = deviceTypeFor(device);
+  const profileId = profileIds.has(device) ? device : null;
+  const deviceType = deviceTypesFor(device);
+  const target = profileId ? (next.input.profiles[profileId].bindings ||= {}) : next.input.bindings;
+  const defaultTarget = profileId ? defaultInputSettings(gameInputProfile).input.profiles[profileId].bindings : gameInputProfile.defaultBindings;
   for (const row of Object.values(bindRows)) {
-    const current = next.input.bindings[row.actionId] || [];
-    const defaults = (gameInputProfile.defaultBindings[row.actionId] || []).filter(binding => rowMatchesBinding(row, binding, deviceType));
+    const current = target[row.actionId] || [];
+    const defaults = (defaultTarget[row.actionId] || []).filter(binding => rowMatchesBinding(row, binding, deviceType));
     const keep = current.filter(binding => !rowMatchesBinding(row, binding, deviceType));
-    next.input.bindings[row.actionId] = [...keep, ...clone(defaults)];
+    target[row.actionId] = [...keep, ...clone(defaults)];
   }
   return next;
 }

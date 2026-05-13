@@ -18,6 +18,7 @@ import { createGpuSystem } from '#/gpu/gpu-system.js';
 import { createDevToolsState, registerBuiltInDevTools } from '#/devtools/toolbox.js';
 import { registerDebugRenderDevTools } from '#/devtools/debug-render.js';
 import { registerGymDevTools } from '#/devtools/gym.js';
+import { registerRenderPipelineDevTools } from '#/devtools/render-pipeline.js';
 import { createSpeedRunState, prepareSpeedRunAttempt } from './speedrun/speedrun.js';
 
 /**
@@ -83,6 +84,7 @@ export function createGame(ui, runtime = browserRuntime) {
   game.scenarios.select(activeTilemap.id);
   registerBuiltInDevTools(game);
   registerGymDevTools(game);
+  registerRenderPipelineDevTools(game);
   registerDebugRenderDevTools(game);
   applySettingsToGame(game);
   if (game.settings.gpuExtras === 'auto') {

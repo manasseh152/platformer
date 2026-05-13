@@ -3,18 +3,26 @@ export const WEBGL2_DEFERRED_BACKEND_UNAVAILABLE_REASON = 'webgl2 deferred nativ
 const ALPHA_MASK_CUTOFF = 1 / 255;
 
 let colorParserCanvas = null;
+let colorParserContext = null;
+const cssColorCache = new Map();
+const MAX_CSS_COLOR_CACHE_ENTRIES = 256;
 
 function parseCssColor(value) {
   if (!value || typeof value !== 'string') return null;
+  const cached = cssColorCache.get(value);
+  if (cached) return cached;
   colorParserCanvas ??= document.createElement('canvas');
   colorParserCanvas.width = 1;
   colorParserCanvas.height = 1;
-  const ctx = colorParserCanvas.getContext('2d', { willReadFrequently: true });
-  ctx.clearRect(0, 0, 1, 1);
-  ctx.fillStyle = '#000';
-  ctx.fillStyle = value;
-  ctx.fillRect(0, 0, 1, 1);
-  return Array.from(ctx.getImageData(0, 0, 1, 1).data);
+  colorParserContext ??= colorParserCanvas.getContext('2d', { willReadFrequently: true });
+  colorParserContext.clearRect(0, 0, 1, 1);
+  colorParserContext.fillStyle = '#000';
+  colorParserContext.fillStyle = value;
+  colorParserContext.fillRect(0, 0, 1, 1);
+  const parsed = Object.freeze(Array.from(colorParserContext.getImageData(0, 0, 1, 1).data));
+  if (cssColorCache.size >= MAX_CSS_COLOR_CACHE_ENTRIES) cssColorCache.clear();
+  cssColorCache.set(value, parsed);
+  return parsed;
 }
 
 function resolveColor(fill) {
@@ -327,7 +335,7 @@ export function createWebGl2DeferredNativeFrameBackend({ width, height, canvas =
     };
   }
 
-  function drawQuad(program, vertices, setup = () => {}) {
+  function setupVertices(program, vertices, setup = () => {}) {
     const loc = locations(program);
     gl.useProgram(program);
     gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
@@ -338,7 +346,16 @@ export function createWebGl2DeferredNativeFrameBackend({ width, height, canvas =
     gl.vertexAttribPointer(loc.texcoord, 2, gl.FLOAT, false, 16, 8);
     if (loc.resolution) gl.uniform2f(loc.resolution, glCanvas.width, glCanvas.height);
     setup(program);
+  }
+
+  function drawQuad(program, vertices, setup = () => {}) {
+    setupVertices(program, vertices, setup);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
+
+  function drawTriangles(program, vertices, setup = () => {}) {
+    setupVertices(program, vertices, setup);
+    gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 4);
   }
 
   function rectVertices(x, y, w, h, u0 = 0, v0 = 0, u1 = 1, v1 = 1, rotation = 0) {
@@ -370,14 +387,34 @@ export function createWebGl2DeferredNativeFrameBackend({ width, height, canvas =
     return texture;
   }
 
-  function writeLitRect(packet) {
-    const color = resolveColorFloat(packet.fill);
-    if (!color) return;
-    drawQuad(albedoProgram, rectVertices(packet.x, packet.y, packet.w, packet.h), program => {
-      gl.uniform1i(gl.getUniformLocation(program, 'u_useTexture'), 0);
-      gl.uniform4f(gl.getUniformLocation(program, 'u_color'), color[0], color[1], color[2], color[3]);
-      gl.uniform1f(gl.getUniformLocation(program, 'u_alphaCutoff'), 0);
-    });
+  function rectTriangleVertices(x, y, w, h, u0 = 0, v0 = 0, u1 = 1, v1 = 1) {
+    return [
+      x, y, u0, v0, x + w, y, u1, v0, x, y + h, u0, v1,
+      x, y + h, u0, v1, x + w, y, u1, v0, x + w, y + h, u1, v1
+    ];
+  }
+
+  function writeLitRectBatch(packets) {
+    if (!packets.length) return;
+    const batches = new Map();
+    for (const packet of packets) {
+      const color = resolveColorFloat(packet.fill);
+      if (!color) continue;
+      const key = color.join(',');
+      let batch = batches.get(key);
+      if (!batch) {
+        batch = { color, vertices: [] };
+        batches.set(key, batch);
+      }
+      batch.vertices.push(...rectTriangleVertices(packet.x, packet.y, packet.w, packet.h));
+    }
+    for (const batch of batches.values()) {
+      drawTriangles(albedoProgram, batch.vertices, program => {
+        gl.uniform1i(gl.getUniformLocation(program, 'u_useTexture'), 0);
+        gl.uniform4f(gl.getUniformLocation(program, 'u_color'), batch.color[0], batch.color[1], batch.color[2], batch.color[3]);
+        gl.uniform1f(gl.getUniformLocation(program, 'u_alphaCutoff'), 0);
+      });
+    }
   }
 
   function writeLitImageLike(packet) {
@@ -500,18 +537,25 @@ export function createWebGl2DeferredNativeFrameBackend({ width, height, canvas =
       const overlayPackets = [];
       let seenLit = false;
       let litPacketCount = 0;
+      const pendingLitRects = [];
+      const flushLitRects = () => {
+        writeLitRectBatch(pendingLitRects);
+        pendingLitRects.length = 0;
+      };
 
       for (const packet of frame.packets) {
         if (packet.kind === 'light2d') continue;
         if (isOpaqueLitRect(packet)) {
           seenLit = true;
           litPacketCount++;
-          writeLitRect(packet);
+          pendingLitRects.push(packet);
         } else if (isOpaqueLitImageLike(packet, assetRegistry)) {
+          flushLitRects();
           seenLit = true;
           litPacketCount++;
           writeLitImageLike(packet);
         } else if (packet.lighting === 'lit') {
+          flushLitRects();
           const reason = packet.kind === 'rect'
             ? 'semi-transparent or unsupported lit rect rendered forward/unlit'
             : isImageLikePacket(packet)
@@ -525,6 +569,8 @@ export function createWebGl2DeferredNativeFrameBackend({ width, height, canvas =
           drawForwardPacket(ctx, packet, assetRegistry);
         }
       }
+
+      flushLitRects();
 
       if (litPacketCount) {
         accumulateLights(lights);

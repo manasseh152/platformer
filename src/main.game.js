@@ -5,7 +5,7 @@ import { syncHintLayer } from '#/app/ui/hint-layer.js';
 import { handleMenuInput } from '#/app/ui/menu/menu-input.js';
 import { setupMenu } from '#/app/ui/menu/menu-setup.js';
 import { activeMenuRoot, setPaused, startGame } from '#/app/ui/menu/menu-shell.js';
-import { handleListeningKey } from '#/app/ui/settings/settings-actions.js';
+import { handleListeningKey, handleListeningPointer } from '#/app/ui/settings/settings-actions.js';
 import { setupPresentationResize } from '#/app/presentation/resize.js';
 import { resetGame } from '#/app/game-state.js';
 import { createGameApp } from '#/app/game-app.js';
@@ -76,8 +76,10 @@ addEventListener('keydown', e => {
     return;
   }
 
-  if (e.code.startsWith('Arrow')) setInputScheme(game, 'arrows');
-  else if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) setInputScheme(game, 'wasd');
+  if (game.settings.input.profileSwitching === 'auto') {
+    if (e.code.startsWith('Arrow')) setInputScheme(game, 'arrows');
+    else if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) setInputScheme(game, 'wasd');
+  }
 
   if (!isStarted(game) && ['Enter','Space'].includes(e.code)) startGame(game, runtime);
   if (!isPaused(game) && !input.keys.has(e.code)) input.pressed.add(e.code);
@@ -90,9 +92,25 @@ addEventListener('keyup', e => {
   game.input.keys.delete(e.code);
 });
 
-addEventListener('pointerup', () => {
-  if (game.input.inputScheme === 'gamepad') setTimeout(() => setInputScheme(game, 'wasd'), 0);
+addEventListener('pointerdown', e => {
+  if (game.input.listeningFor && handleListeningPointer(game, e, runtime)) return;
+  if (e.target !== ui.canvas) return;
+  game.inputAdapter?.queuePointerButtonEvent(e);
+  if (game.settings.input.profileSwitching === 'auto') setInputScheme(game, 'keyboard-mouse');
 });
+
+addEventListener('pointerup', e => {
+  if (e.target === ui.canvas) game.inputAdapter?.queuePointerButtonEvent(e);
+});
+
+addEventListener('wheel', e => {
+  if (game.input.listeningFor && handleListeningPointer(game, e, runtime)) return;
+  if (e.target !== ui.canvas) return;
+  game.inputAdapter?.queueWheelEvent(e);
+  if (game.settings.input.profileSwitching === 'auto') setInputScheme(game, 'keyboard-mouse');
+}, { passive: false });
+
+ui.canvas?.addEventListener('contextmenu', event => event.preventDefault());
 
 function frame(now = runtime.now()) {
   const dt = Math.min(.033, (now - game.clock.last) / 1000);

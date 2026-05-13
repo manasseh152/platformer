@@ -210,7 +210,7 @@ test('canvas native backend draws image packets from atlas metadata', async ({ p
   expect(pixel).toEqual([0, 255, 0, 255]);
 });
 
-test('webgl native backend capability check rejects unsupported real gameplay packets', () => {
+test('webgl native backend capability check accepts real gameplay vector and light packets', () => {
   const view = { width: 640, height: 360, bufferWidth: 320, bufferHeight: 180 };
   const session = createGameplaySession(getTilemapById('act-01-level-1'), { view, scenarioId: 'act-01-level-1' });
   const game = { view, devTools: { flags: {} } };
@@ -218,17 +218,12 @@ test('webgl native backend capability check rejects unsupported real gameplay pa
 
   const { frame } = extractGameplayRenderFrame({ game, runtime: { now: () => 0, random: () => 0.5 }, assetRegistry: createAssetRegistry({}) });
   const support = analyzeWebGlNativeFrameSupport(frame);
-  const reasons = support.issues.map(issue => issue.reason);
 
-  expect(support.supported).toBe(false);
-  expect(reasons).toContain('unsupported packet kind: roundRect');
-  expect(reasons).toContain('unsupported packet kind: ellipse');
-  expect(reasons).toContain('unsupported packet kind: path');
-  expect(reasons).toContain('unsupported fill kind for rect: linearGradient');
-  expect(reasons).toContain('unsupported fill kind for rect: radialGradient');
+  expect(support.supported).toBe(true);
+  expect(support.issues).toEqual([]);
 });
 
-test('renderGameplayFrame falls back to canvas2d when requested webgl cannot draw extracted packets', async ({ page }) => {
+test('renderGameplayFrame keeps requested webgl for extracted gameplay packets', async ({ page }) => {
   await page.goto('/');
   const result = await page.evaluate(async () => {
     const [{ renderGameplayFrame }, { createAssetRegistry }, { createGameplaySession, syncGameplaySessionToGame }, { getTilemapById }] = await Promise.all([
@@ -272,9 +267,9 @@ test('renderGameplayFrame falls back to canvas2d when requested webgl cannot dra
     };
   });
 
-  expect(result.backendKind).toBe('canvas2d');
-  expect(result.backend).toBe('canvas2d-native-frame-backend');
-  expect(result.fallbackReasons).toContain('unsupported packet kind: roundRect');
+  expect(result.backendKind).toBe('webgl');
+  expect(result.backend).toBe('webgl-native-frame-backend');
+  expect(result.fallbackReasons).toEqual([]);
   expect(result.presentedWidth).toBe(320);
 });
 
@@ -305,6 +300,34 @@ test('webgl native backend draws clear and 1px rect packets from finalized frame
   expect(result.whiteLine).toEqual([255, 255, 255, 255]);
   expect(result.greenLine).toEqual([0, 255, 0, 255]);
   expect(result.greenOverWhite).toEqual([0, 255, 0, 255]);
+});
+
+test('webgl native backend draws gradients and vector packets via canvas texture path', async ({ page }) => {
+  await page.goto('/');
+  const result = await page.evaluate(async () => {
+    const [{ createRenderFrameBuilder }, { createWebGlNativeFrameBackend }] = await Promise.all([
+      import('/src/engine/render/frame-builder.js'),
+      import('/src/render/backends/webgl-native-frame-backend.js')
+    ]);
+    const backend = createWebGlNativeFrameBackend({ width: 8, height: 4 });
+    if (!backend) return { supported: false };
+    const frame = createRenderFrameBuilder({ width: 8, height: 4 })
+      .add({ kind: 'clear', fill: '#000000' })
+      .add({ kind: 'rect', x: 0, y: 0, w: 8, h: 4, fill: { kind: 'linearGradient', x0: 0, y0: 0, x1: 8, y1: 0, stops: [{ offset: 0, color: '#ff0000' }, { offset: 1, color: '#00ff00' }] } })
+      .add({ kind: 'ellipse', x: 4, y: 2, radiusX: 1.5, radiusY: 1.5, fill: '#0000ff' })
+      .finalize();
+    backend.draw(frame);
+    const gl = backend.gl;
+    const pixels = new Uint8Array(8 * 4 * 4);
+    gl.readPixels(0, 0, 8, 4, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    const at = (x, y) => Array.from(pixels.slice(((3 - y) * 8 + x) * 4, ((3 - y) * 8 + x) * 4 + 4));
+    return { supported: true, left: at(0, 1), right: at(7, 1), center: at(4, 2) };
+  });
+
+  expect(result.supported).toBe(true);
+  expect(result.left[0]).toBeGreaterThan(result.left[1]);
+  expect(result.right[1]).toBeGreaterThan(result.right[0]);
+  expect(result.center[2]).toBeGreaterThan(200);
 });
 
 test('webgl native backend draws atlas sprite packets through the same asset IDs', async ({ page }) => {
@@ -566,7 +589,7 @@ test('rendering gym emits one authored ambient and two point light packets', () 
   const pointPackets = lightPackets.filter(packet => packet.lightKind === 'point');
 
   expect(ambientPackets).toEqual([
-    expect.objectContaining({ sourceId: 'rendering-gym-ambient-light:light2d:0', color: [12, 16, 28, 255], intensity: 0.55 })
+    expect.objectContaining({ sourceId: 'rendering-gym-ambient-light:light2d:0', color: [56, 68, 84, 255], intensity: 0.72 })
   ]);
   expect(ambientPackets[0].defaultLight).toBeUndefined();
   expect(pointPackets).toHaveLength(2);

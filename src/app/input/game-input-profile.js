@@ -131,9 +131,9 @@ export const gameInputProfile = {
     ],
     'editor.previousBrush': [{ deviceType: 'gamepad', control: 'button', index: 4 }],
     'editor.nextBrush': [{ deviceType: 'gamepad', control: 'button', index: 5 }],
-    'editor.zoom': [{ deviceType: 'pointer', control: 'wheel' }],
-    'editor.zoomOut': [{ deviceType: 'gamepad', control: 'button', index: 6 }],
-    'editor.zoomIn': [{ deviceType: 'gamepad', control: 'button', index: 7 }],
+    'editor.zoom': [],
+    'editor.zoomOut': [{ deviceType: 'pointer', control: 'wheelDirection', direction: 1 }, { deviceType: 'gamepad', control: 'button', index: 6 }],
+    'editor.zoomIn': [{ deviceType: 'pointer', control: 'wheelDirection', direction: -1 }, { deviceType: 'gamepad', control: 'button', index: 7 }],
     'editor.resetView': [{ deviceType: 'gamepad', control: 'button', index: 11 }]
   },
   uiGroups: {

@@ -1,8 +1,10 @@
 export function createInputState() {
   return {
-    inputScheme: 'wasd',
+    inputScheme: 'keyboard-mouse',
     listeningFor: null,
     controllerBindAction: null,
+    bindMode: 'replace',
+    bindProfileId: null,
     bindCapture: null,
     bindDeadline: 0,
     bindError: null,

@@ -34,6 +34,11 @@ export const darkAmbientLight = defineObject({
   components: [renderLight2d({ kind: 'ambient', color: Color.rgb(12, 16, 28), intensity: 0.55 })]
 });
 
+export const renderingGymAmbientLight = defineObject({
+  id: 'rendering-gym-ambient-light',
+  components: [renderLight2d({ kind: 'ambient', color: Color.rgb(56, 68, 84), intensity: 0.72 })]
+});
+
 export const warmTorchLight = defineObject({
   id: 'warm-torch-light',
   components: [renderLight2d({

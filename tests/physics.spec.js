@@ -46,6 +46,8 @@ const actionCodes = {
 
 function createTestInput() {
   const input = createInputRuntime(gameInputProfile);
+  input.settings.input.activeProfileId = 'wasd';
+  input.settings.input.profileSwitching = 'locked';
   input.beginFrame();
   return input;
 }

@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 async function openStartSettings(page) {
   await page.locator('#startSettingsButton').click();
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'settings-category');
-  await expect(page.locator('#menuTitle')).toHaveText('Keyboard');
+  await expect(page.locator('#menuTitle')).toHaveText('Controls');
   await expect(page.locator('[data-settings-back]')).toHaveCount(0);
 }
 
@@ -27,7 +27,7 @@ test('settings opens on the first tab without inline back buttons', async ({ pag
   await expect(page.locator('#startScreen')).toBeVisible();
 
   await openStartSettings(page);
-  await expect(page.locator('[role="tab"][data-settings-tab="keyboard"]')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('[role="tab"][data-settings-tab="controls"]')).toHaveAttribute('aria-selected', 'true');
 });
 
 test('player can enable Speed Run Mode and see the timer HUD during play', async ({ page }) => {

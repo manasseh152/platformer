@@ -530,7 +530,7 @@ Changed files:
 
 Implemented:
 
-- Browser tests now expect start/pause Settings to open `settings-category` directly with Keyboard selected.
+- Browser tests now expect start/pause Settings to open `settings-category` directly with Controls selected.
 - Developer Mode setup in scenario-browser and devtools tests now uses the Advanced settings tab instead of stale hub category cards.
 - Settings pattern docs describe the current tab-based page model and removed settings hub expectations.
 

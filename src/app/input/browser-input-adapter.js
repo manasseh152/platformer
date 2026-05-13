@@ -26,6 +26,32 @@ export function createBrowserInputAdapter(inputRuntime, { now = () => globalThis
     });
   }
 
+  function queuePointerButtonEvent(event) {
+    queuedEvents.push({
+      type: event.type === 'pointerup' || event.type === 'mouseup' ? 'control-up' : 'control-down',
+      timestamp: event.timeStamp || now(),
+      device: { type: 'pointer', id: 'pointer' },
+      control: { type: 'pointerButton', button: event.button ?? 0 }
+    });
+  }
+
+  function queueWheelEvent(event) {
+    if (!event.deltaY) return;
+    const direction = event.deltaY > 0 ? 1 : -1;
+    queuedEvents.push({
+      type: 'control-down',
+      timestamp: event.timeStamp || now(),
+      device: { type: 'pointer', id: 'pointer' },
+      control: { type: 'wheelDirection', direction }
+    });
+    queuedEvents.push({
+      type: 'control-up',
+      timestamp: (event.timeStamp || now()) + 1,
+      device: { type: 'pointer', id: 'pointer' },
+      control: { type: 'wheelDirection', direction }
+    });
+  }
+
   function syncControllerEnabled(enabled) {
     const slot = inputRuntime.settings.input.slots.player1;
     slot.devices.gamepad.enabled = enabled !== false;
@@ -67,5 +93,5 @@ export function createBrowserInputAdapter(inputRuntime, { now = () => globalThis
     pollGamepads();
   }
 
-  return { queueKeyboardEvent, beginFrame, syncControllerEnabled, pollGamepads };
+  return { queueKeyboardEvent, queuePointerButtonEvent, queueWheelEvent, beginFrame, syncControllerEnabled, pollGamepads };
 }

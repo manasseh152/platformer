@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { createDevToolsRegistry } from '#/devtools/toolbox.js';
+import { createDevToolsRegistry, createDevToolsState } from '#/devtools/toolbox.js';
+import { registerRenderPipelineDevTools, summarizeRenderFrame } from '#/devtools/render-pipeline.js';
 
 test('devtools registry sorts sections and items by order with registration fallback', () => {
   const registry = createDevToolsRegistry();
@@ -49,4 +50,49 @@ test('devtools registry validates first pass item kinds', () => {
   expect(() => registry.registerSection({ id: 'bad', title: 'Bad', items: [
     { id: 'custom', kind: 'custom', label: 'Custom' }
   ] })).toThrow('Unsupported devtool item kind');
+});
+
+test('render pipeline devtools register render diagnostics and systems sections', () => {
+  const game = { devTools: createDevToolsState(), renderPipeline: { diagnostics: { requestedBackendKind: 'auto', selectedBackendKind: 'canvas2d', frame: { width: 320, height: 180, coordinateSpace: 'native', packetCount: 2, packetsByKind: [['clear', 1], ['rect', 1]], lightCount: 0, litPacketCount: 1, unlitPacketCount: 1 } } }, appState: { started: true }, enemies: [], dust: [], particles: [] };
+  registerRenderPipelineDevTools(game);
+
+  const sections = game.devTools.registry.snapshot();
+  expect(sections.map(section => section.id)).toEqual(['systems', 'render']);
+  expect(sections.find(section => section.id === 'render').items.map(item => item.id)).toEqual(expect.arrayContaining(['backend-kind', 'packet-kinds', 'force-deferred-lighting', 'disable-deferred-lighting']));
+  expect(sections.find(section => section.id === 'systems').items.map(item => item.id)).toEqual(expect.arrayContaining(['active-scene', 'app-state', 'actors']));
+});
+
+test('render frame summary counts packet diagnostics for devtools', () => {
+  const summary = summarizeRenderFrame({ width: 8, height: 4, coordinateSpace: 'native', packets: [
+    { kind: 'clear', layer: 0, lighting: 'unlit' },
+    { kind: 'rect', layer: 10, lighting: 'lit' },
+    { kind: 'light2d', layer: 20, lighting: 'light' }
+  ] });
+
+  expect(summary).toMatchObject({ width: 8, height: 4, coordinateSpace: 'native', packetCount: 3, lightCount: 1, litPacketCount: 1, unlitPacketCount: 1 });
+  expect(summary.packetsByKind).toEqual([['clear', 1], ['light2d', 1], ['rect', 1]]);
+  expect(summary.packetsByLayer).toEqual([[0, 1], [10, 1], [20, 1]]);
+});
+
+test('render pipeline fallback summary groups repeated WebGL support issues', () => {
+  const game = {
+    devTools: createDevToolsState(),
+    renderPipeline: {
+      webglFallbackReason: [
+        { reason: 'unsupported packet kind: roundRect' },
+        { reason: 'unsupported packet kind: roundRect' },
+        { reason: 'unsupported packet kind: ellipse' }
+      ]
+    },
+    appState: {},
+    enemies: [],
+    dust: [],
+    particles: []
+  };
+  registerRenderPipelineDevTools(game);
+  const fallbackItem = game.devTools.registry.getSections()
+    .find(section => section.id === 'render')
+    .items.find(item => item.id === 'fallback-reason');
+
+  expect(fallbackItem.get(game)).toBe('unsupported packet kind: roundRect ×2; unsupported packet kind: ellipse');
 });

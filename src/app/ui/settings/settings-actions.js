@@ -19,6 +19,8 @@ export function cancelBindListening(game, message = '') {
   const { input, ui } = game;
   input.listeningFor = null;
   input.controllerBindAction = null;
+  input.bindMode = 'replace';
+  input.bindProfileId = null;
   input.bindCapture = null;
   input.bindDeadline = 0;
   if (game.bindListenTimer) clearTimeout(game.bindListenTimer);
@@ -27,23 +29,27 @@ export function cancelBindListening(game, message = '') {
   if (message) setBindStatus(ui, message);
 }
 
-export function startBindListening(game, action, type, runtime = browserRuntime) {
+export function startBindListening(game, action, type, runtime = browserRuntime, { mode = 'replace' } = {}) {
   const { input, ui } = game;
   if (game.bindListenTimer) clearTimeout(game.bindListenTimer);
   input.bindError = null;
-  input.listeningFor = type === 'keyboard' ? action : null;
+  const profileId = game.settings.input.profiles?.[type] ? type : null;
+  const captureDeviceType = type === 'controller' ? 'gamepad' : type === 'keyboard-mouse' ? ['keyboard', 'pointer'] : 'keyboard';
+  input.listeningFor = type === 'controller' ? null : action;
   input.controllerBindAction = type === 'controller' ? action : null;
+  input.bindMode = mode;
+  input.bindProfileId = profileId;
   input.bindDeadline = runtime.now() + 6000;
   input.bindCapture = createBindCapture({
     actionId: action,
-    deviceType: type === 'controller' ? 'gamepad' : 'keyboard',
+    deviceType: captureDeviceType,
     timeoutAt: input.bindDeadline,
     cancelBindings: type === 'controller'
       ? [{ deviceType: 'gamepad', control: 'button', index: 1 }]
       : [{ deviceType: 'keyboard', control: 'key', code: 'Escape' }]
   });
   const label = bindLabel(action);
-  setBindStatus(ui, type === 'keyboard' ? `Press a key for ${label}. Escape cancels.` : `Press a controller button for ${label}. B / Circle cancels.`);
+  setBindStatus(ui, type === 'controller' ? `Press a controller button for ${label}. B / Circle cancels.` : `Press a key${type === 'keyboard-mouse' ? ', mouse button, or wheel' : ''} for ${label}. Escape cancels.`);
   renderSettingsCategory(game);
   game.bindListenTimer = setTimeout(() => cancelBindListening(game, 'Listening cancelled.'), 6000);
 }
@@ -224,7 +230,8 @@ function resetBinds(game, device, runtime = browserRuntime) {
   game.input.bindDeadline = 0;
   game.settings = resetBindRowsToDefaults(game.settings, device);
   commitSettings(game, runtime);
-  setBindStatus(game.ui, device === 'controller' ? 'Restored controller defaults.' : 'Restored keyboard defaults.');
+  const profileLabel = game.settings.input.profiles?.[device]?.label;
+  setBindStatus(game.ui, profileLabel ? `Restored ${profileLabel} defaults.` : device === 'controller' ? 'Restored controller defaults.' : 'Restored keyboard defaults.');
   runtime.emit('settings.binds-reset', { device });
   renderSettingsCategory(game);
 }
@@ -234,19 +241,25 @@ export function handleSettingsActionsClick(game, e, runtime = browserRuntime, ca
   if (controllerPage) { setControllerSubpage(game, controllerPage.dataset.controllerSettingsPage, callbacks); return true; }
   const controllerBack = e.target.closest('[data-controller-settings-back]');
   if (controllerBack) { closeControllerSubpage(game, callbacks); return true; }
+  const controlsPage = e.target.closest('button[data-controls-page]');
+  if (controlsPage) { game.menu.controlsPage = controlsPage.dataset.controlsPage; renderSettingsCategory(game); return true; }
+  const controlsProfile = e.target.closest('button[data-controls-profile]');
+  if (controlsProfile) { game.settings.input.activeProfileId = controlsProfile.dataset.controlsProfile; game.input.inputScheme = controlsProfile.dataset.controlsProfile === 'controller' ? 'gamepad' : controlsProfile.dataset.controlsProfile; commitSettings(game, runtime); renderSettingsCategory(game); return true; }
   const bindButton = e.target.closest('button[data-bind-action]');
-  if (bindButton) { startBindListening(game, bindButton.dataset.bindAction, bindButton.dataset.bindDevice, runtime); return true; }
+  if (bindButton) { startBindListening(game, bindButton.dataset.bindAction, bindButton.dataset.bindDevice, runtime, { mode: bindButton.dataset.bindMode || 'replace' }); return true; }
   const controllerSelect = e.target.closest('button[data-controller-select]');
   if (controllerSelect) { selectController(game, controllerSelect.dataset.controllerSelect, runtime); return true; }
   const row = e.target.closest('[data-setting-row]');
   if (row) {
     if (row.dataset.settingRow === 'motion') { cycleMotion(game, runtime, callbacks); return true; }
     if (row.dataset.settingRow === 'controller-enabled') { toggleController(game, runtime); return true; }
+    if (row.dataset.settingRow === 'profile-switching') { game.settings.input.profileSwitching = game.settings.input.profileSwitching === 'auto' ? 'locked' : 'auto'; commitSettings(game, runtime); renderSettingsCategory(game); return true; }
     if (row.dataset.settingRow === 'speed-run-mode') { toggleSpeedRunMode(game, runtime); return true; }
     if (row.dataset.settingRow === 'gpu-extras') { cycleGpuExtras(game, runtime); return true; }
     if (row.dataset.settingRow === 'developer-mode') { toggleDeveloperMode(game, runtime, callbacks); return true; }
   }
   const action = e.target.closest('[data-settings-action]')?.dataset.settingsAction;
+  if (action === 'reset-active-profile') { resetBinds(game, game.settings.input.activeProfileId, runtime); return true; }
   if (action === 'reset-keyboard') { resetBinds(game, 'keyboard', runtime); return true; }
   if (action === 'reset-controller') { resetBinds(game, 'controller', runtime); return true; }
   if (action === 'clear-speedrun-records') { clearRecords(game, runtime); return true; }
@@ -263,12 +276,13 @@ export function handleListeningKey(game, code, runtime = browserRuntime) {
   if (captured?.status !== 'captured') return;
   if (game.bindListenTimer) clearTimeout(game.bindListenTimer);
   game.bindListenTimer = null;
-  const result = commitBindRow(game.settings, action, captured.binding, { device: 'keyboard' });
+  const device = game.input.bindProfileId || 'keyboard';
+  const result = commitBindRow(game.settings, action, captured.binding, { device, profileId: game.input.bindProfileId, mode: game.input.bindMode || 'replace' });
   if (!result.ok) {
     game.input.listeningFor = null;
     game.input.bindCapture = null;
     game.input.bindDeadline = 0;
-    game.input.bindError = { device: 'keyboard', action, until: runtime.now() + 1800 };
+    game.input.bindError = { device, action, until: runtime.now() + 1800 };
     setBindStatus(game.ui, `${bindingLabel(captured.binding)} is already bound to ${result.conflict.label}.`, true);
     renderSettingsCategory(game);
     setTimeout(() => renderSettingsCategory(game), 1850);
@@ -276,10 +290,45 @@ export function handleListeningKey(game, code, runtime = browserRuntime) {
   }
   game.settings = result.settings;
   game.input.listeningFor = null;
+  game.input.bindMode = 'replace';
+  game.input.bindProfileId = null;
   game.input.bindCapture = null;
   game.input.bindDeadline = 0;
   commitSettings(game, runtime);
-  runtime.emit('settings.bind-changed', { device: 'keyboard', action, code });
+  runtime.emit('settings.bind-changed', { device, action, code });
   setBindStatus(game.ui, `${bindLabel(action)} updated.`);
   renderSettingsCategory(game);
+}
+
+export function handleListeningPointer(game, event, runtime = browserRuntime) {
+  const action = game.input.listeningFor;
+  if (!action) return false;
+  const captured = game.input.bindCapture?.pointer?.({ button: event.button, deltaY: event.deltaY, timestamp: runtime.now(), control: event.control });
+  if (captured?.status !== 'captured') return false;
+  event.preventDefault?.();
+  if (game.bindListenTimer) clearTimeout(game.bindListenTimer);
+  game.bindListenTimer = null;
+  const device = game.input.bindProfileId || 'keyboard-mouse';
+  const result = commitBindRow(game.settings, action, captured.binding, { device, profileId: game.input.bindProfileId, mode: game.input.bindMode || 'replace' });
+  if (!result.ok) {
+    game.input.listeningFor = null;
+    game.input.bindCapture = null;
+    game.input.bindDeadline = 0;
+    game.input.bindError = { device, action, until: runtime.now() + 1800 };
+    setBindStatus(game.ui, `${bindingLabel(captured.binding)} is already bound to ${result.conflict.label}.`, true);
+    renderSettingsCategory(game);
+    setTimeout(() => renderSettingsCategory(game), 1850);
+    return true;
+  }
+  game.settings = result.settings;
+  game.input.listeningFor = null;
+  game.input.bindMode = 'replace';
+  game.input.bindProfileId = null;
+  game.input.bindCapture = null;
+  game.input.bindDeadline = 0;
+  commitSettings(game, runtime);
+  runtime.emit('settings.bind-changed', { device, action, pointer: captured.binding });
+  setBindStatus(game.ui, `${bindLabel(action)} updated.`);
+  renderSettingsCategory(game);
+  return true;
 }

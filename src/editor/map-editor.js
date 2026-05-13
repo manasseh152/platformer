@@ -303,8 +303,8 @@ function loadViewOrReset() {
 }
 
 function syncInputs() {
-  if (dom.nameInput) dom.nameInput.value = draft.name || '';
-  if (dom.idInput) dom.idInput.value = draft.id || '';
+  if (dom.nameInput && document.activeElement !== dom.nameInput) dom.nameInput.value = draft.name || '';
+  if (dom.idInput && document.activeElement !== dom.idInput) dom.idInput.value = draft.id || '';
   dom.colsInput.value = draft.cols;
   dom.rowsInput.value = draft.rows;
   dom.exportText.value = generatedModule();

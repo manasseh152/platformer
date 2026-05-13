@@ -23,13 +23,22 @@ export function bindingFromGamepadControl(control = {}, { threshold = 0.35 } = {
   return null;
 }
 
+export function bindingFromPointerEvent(event = {}) {
+  if (event.control?.type === 'pointerButton') return { deviceType: 'pointer', control: 'button', button: event.control.button };
+  if (event.control?.type === 'wheelDirection') return { deviceType: 'pointer', control: 'wheelDirection', direction: event.control.direction };
+  if (Number.isInteger(event.button)) return { deviceType: 'pointer', control: 'button', button: event.button };
+  if (Number(event.deltaY) !== 0) return { deviceType: 'pointer', control: 'wheelDirection', direction: event.deltaY > 0 ? 1 : -1 };
+  return null;
+}
+
 export function createBindCapture({ actionId, deviceType = 'keyboard', timeoutAt = Infinity, cancelBindings = [] } = {}) {
   let done = false;
   function finish(result) { done = true; return result; }
   function consider(binding, timestamp = 0) {
     if (done) return { status: 'done' };
     if (timestamp > timeoutAt) return finish({ status: 'cancelled', reason: 'timeout' });
-    if (!binding || binding.deviceType !== deviceType) return { status: 'waiting' };
+    const allowedTypes = Array.isArray(deviceType) ? deviceType : [deviceType];
+    if (!binding || !allowedTypes.includes(binding.deviceType)) return { status: 'waiting' };
     if (cancelBindings.some(cancel => samePhysicalBinding(cancel, binding))) return finish({ status: 'cancelled', reason: 'user' });
     return finish({ status: 'captured', actionId, binding });
   }
@@ -38,6 +47,7 @@ export function createBindCapture({ actionId, deviceType = 'keyboard', timeoutAt
     deviceType,
     consider,
     event(event) { return consider(bindingFromKeyboardEvent(event), event?.timestamp ?? event?.timeStamp ?? 0); },
+    pointer(event) { return consider(bindingFromPointerEvent(event), event?.timestamp ?? event?.timeStamp ?? 0); },
     snapshot(snapshot = {}) {
       for (const control of snapshot.controls || []) {
         const result = consider(bindingFromGamepadControl(control, { threshold: snapshot.threshold }), snapshot.timestamp ?? 0);

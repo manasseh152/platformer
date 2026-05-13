@@ -151,7 +151,7 @@ function controllerName(code) {
 function finishControllerBinding(runtime, game, action, code) {
   const { input, ui } = game;
   const binding = bindingFromLegacyGamepadCode(code);
-  const result = commitBindRow(game.settings, action, binding, { device: 'controller' });
+  const result = commitBindRow(game.settings, action, binding, { device: 'controller', profileId: game.input.bindProfileId || 'controller', mode: game.input.bindMode || 'replace' });
   if (!result.ok) {
     input.bindError = { device: 'controller', action, until: runtime.now() + 1800 };
     const message = `${controllerName(code)} is already bound to ${result.conflict.label}.`;
@@ -163,6 +163,8 @@ function finishControllerBinding(runtime, game, action, code) {
   game.inputRuntime = createGameInputRuntime(game.settings);
   game.inputAdapter = createBrowserInputAdapter(game.inputRuntime, { now: game.runtime?.now || runtime.now });
   input.controllerBindAction = null;
+  input.bindMode = 'replace';
+  input.bindProfileId = null;
   input.bindCapture = null;
   input.bindDeadline = 0;
   input.suppressMenuInputOnce = true;

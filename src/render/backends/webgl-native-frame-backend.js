@@ -72,6 +72,42 @@ function resolveColor(fill) {
   return null;
 }
 
+function resolveCanvasFill(ctx, fill) {
+  if (!fill) return null;
+  if (typeof fill === 'string') return fill;
+  if (fill.kind === 'color') return fill.value;
+  if (fill.kind === 'linearGradient') {
+    const gradient = ctx.createLinearGradient(fill.x0, fill.y0, fill.x1, fill.y1);
+    for (const stop of fill.stops ?? []) gradient.addColorStop(stop.offset, stop.color);
+    return gradient;
+  }
+  if (fill.kind === 'radialGradient') {
+    const gradient = ctx.createRadialGradient(fill.x0, fill.y0, fill.r0, fill.x1, fill.y1, fill.r1);
+    for (const stop of fill.stops ?? []) gradient.addColorStop(stop.offset, stop.color);
+    return gradient;
+  }
+  return null;
+}
+
+function applyPathCommand(ctx, command) {
+  if (command.op === 'moveTo') ctx.moveTo(command.x, command.y);
+  else if (command.op === 'lineTo') ctx.lineTo(command.x, command.y);
+  else if (command.op === 'quadraticCurveTo') ctx.quadraticCurveTo(command.cpx, command.cpy, command.x, command.y);
+  else if (command.op === 'bezierCurveTo') ctx.bezierCurveTo(command.cp1x, command.cp1y, command.cp2x, command.cp2y, command.x, command.y);
+  else if (command.op === 'ellipse') ctx.ellipse(command.x, command.y, command.radiusX, command.radiusY, command.rotation ?? 0, command.startAngle ?? 0, command.endAngle ?? Math.PI * 2);
+  else if (command.op === 'closePath') ctx.closePath();
+}
+
+function fillAndStrokeCanvasPath(ctx, packet) {
+  const fill = resolveCanvasFill(ctx, packet.fill);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (packet.stroke) {
+    ctx.strokeStyle = packet.stroke;
+    ctx.lineWidth = packet.lineWidth ?? 1;
+    ctx.stroke();
+  }
+}
+
 function imageLoaded(assetRegistry, assetId) {
   return Boolean(assetRegistry?.isLoaded?.(assetId));
 }
@@ -100,6 +136,9 @@ export function createWebGlNativeFrameBackend({ width, height, canvas = document
   let buffer = null;
   let locations = null;
   const textureCache = new Map();
+  const vectorCanvas = document.createElement('canvas');
+  const vectorCtx = vectorCanvas.getContext('2d');
+  let vectorTexture = null;
 
   function initResources() {
     program = createProgram(gl);
@@ -122,6 +161,8 @@ export function createWebGlNativeFrameBackend({ width, height, canvas = document
   function clearResources() {
     for (const texture of textureCache.values()) gl.deleteTexture(texture.texture);
     textureCache.clear();
+    if (vectorTexture) gl.deleteTexture(vectorTexture);
+    vectorTexture = null;
     if (buffer) gl.deleteBuffer(buffer);
     if (program) gl.deleteProgram(program);
     buffer = null;
@@ -172,6 +213,45 @@ export function createWebGlNativeFrameBackend({ width, height, canvas = document
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
 
+  function ensureVectorTexture() {
+    if (vectorTexture) return vectorTexture;
+    vectorTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, vectorTexture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    return vectorTexture;
+  }
+
+  function drawCanvasPacket(packet) {
+    if (vectorCanvas.width !== canvas.width) vectorCanvas.width = canvas.width;
+    if (vectorCanvas.height !== canvas.height) vectorCanvas.height = canvas.height;
+    vectorCtx.setTransform(1, 0, 0, 1, 0, 0);
+    vectorCtx.clearRect(0, 0, vectorCanvas.width, vectorCanvas.height);
+    vectorCtx.globalAlpha = packet.alpha ?? 1;
+    if (packet.kind === 'clear') {
+      vectorCtx.fillStyle = resolveCanvasFill(vectorCtx, packet.fill ?? packet.color) ?? '#000';
+      vectorCtx.fillRect(0, 0, vectorCanvas.width, vectorCanvas.height);
+    } else if (packet.kind === 'rect') {
+      const fill = resolveCanvasFill(vectorCtx, packet.fill);
+      if (fill) { vectorCtx.fillStyle = fill; vectorCtx.fillRect(packet.x, packet.y, packet.w, packet.h); }
+      if (packet.stroke) { vectorCtx.strokeStyle = packet.stroke; vectorCtx.lineWidth = packet.lineWidth ?? 1; vectorCtx.strokeRect(packet.x, packet.y, packet.w, packet.h); }
+    } else if (packet.kind === 'roundRect') {
+      vectorCtx.beginPath(); vectorCtx.roundRect(packet.x, packet.y, packet.w, packet.h, packet.radius ?? 0); fillAndStrokeCanvasPath(vectorCtx, packet);
+    } else if (packet.kind === 'ellipse') {
+      vectorCtx.beginPath(); vectorCtx.ellipse(packet.x, packet.y, packet.radiusX, packet.radiusY, packet.rotation ?? 0, packet.startAngle ?? 0, packet.endAngle ?? Math.PI * 2); fillAndStrokeCanvasPath(vectorCtx, packet);
+    } else if (packet.kind === 'path') {
+      vectorCtx.beginPath(); for (const command of packet.commands ?? []) applyPathCommand(vectorCtx, command); fillAndStrokeCanvasPath(vectorCtx, packet);
+    }
+    vectorCtx.globalAlpha = 1;
+    const texture = ensureVectorTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, vectorCanvas);
+    drawQuad({ x: 0, y: 0, w: canvas.width, h: canvas.height, texture });
+  }
+
   function drawImageLikePacket(packet) {
     if (!imageLoaded(assetRegistry, packet.assetId)) return;
     const drawable = assetRegistry?.resolveDrawable?.(packet.assetId) ?? { image: assetRegistry?.getImage?.(packet.assetId) };
@@ -192,24 +272,34 @@ export function createWebGlNativeFrameBackend({ width, height, canvas = document
 
   function drawPacket(packet) {
     if (packet.kind === 'clear') {
-      const color = resolveColor(packet.fill ?? packet.color) ?? [0, 0, 0, 1];
-      gl.clearColor(color[0], color[1], color[2], color[3]);
-      gl.clear(gl.COLOR_BUFFER_BIT);
+      const color = resolveColor(packet.fill ?? packet.color);
+      if (color && (packet.alpha == null || packet.alpha === 1)) {
+        gl.clearColor(color[0], color[1], color[2], color[3]);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+      } else {
+        drawCanvasPacket(packet);
+      }
     } else if (packet.kind === 'rect') {
       const color = resolveColor(packet.fill);
-      if (color) drawQuad({ x: packet.x, y: packet.y, w: packet.w, h: packet.h, color, alpha: packet.alpha ?? 1 });
-      if (packet.stroke) {
-        const stroke = resolveColor(packet.stroke);
-        const line = packet.lineWidth ?? 1;
+      const stroke = resolveColor(packet.stroke);
+      if ((!packet.fill || color) && (!packet.stroke || stroke)) {
+        if (color) drawQuad({ x: packet.x, y: packet.y, w: packet.w, h: packet.h, color, alpha: packet.alpha ?? 1 });
         if (stroke) {
+          const line = packet.lineWidth ?? 1;
           drawQuad({ x: packet.x, y: packet.y, w: packet.w, h: line, color: stroke, alpha: packet.alpha ?? 1 });
           drawQuad({ x: packet.x, y: packet.y + packet.h - line, w: packet.w, h: line, color: stroke, alpha: packet.alpha ?? 1 });
           drawQuad({ x: packet.x, y: packet.y, w: line, h: packet.h, color: stroke, alpha: packet.alpha ?? 1 });
           drawQuad({ x: packet.x + packet.w - line, y: packet.y, w: line, h: packet.h, color: stroke, alpha: packet.alpha ?? 1 });
         }
+      } else {
+        drawCanvasPacket(packet);
       }
+    } else if (packet.kind === 'roundRect' || packet.kind === 'ellipse' || packet.kind === 'path') {
+      drawCanvasPacket(packet);
     } else if (packet.kind === 'image' || packet.kind === 'sprite' || packet.kind === 'texturedQuad') {
       drawImageLikePacket(packet);
+    } else if (packet.kind === 'light2d') {
+      // The forward WebGL backend does not apply lights; light packets are consumed by the deferred backend.
     }
   }
 

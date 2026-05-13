@@ -13,6 +13,10 @@ function gamepad(runtime, controls, runtimeId = 'gamepad:0') {
   runtime.updateDeviceSnapshot({ device: { type: 'gamepad', runtimeId, id: runtimeId, fingerprint: 'pad' }, controls });
 }
 
+function pointer(runtime, type, control) {
+  runtime.handleEvent({ type, device: { type: 'pointer', id: 'pointer' }, control, timestamp: runtime.state.frame });
+}
+
 test('keyboard actions expose press, down, release across explicit frames', () => {
   const input = createInputRuntime(gameInputProfile);
 
@@ -295,6 +299,31 @@ test('bind capture captures keyboard bindings, supports cancel, and prevents dup
   const { settings } = normalizeInputSettings(gameInputProfile, {});
   expect(findBindingConflict(settings, 'player.jump', { deviceType: 'keyboard', control: 'key', code: 'KeyJ' })).toMatchObject({ actionId: 'player.attack' });
   expect(applyCapturedBinding(settings, 'player.jump', result.binding).ok).toBe(false);
+});
+
+test('keyboard mouse profile maps LMB attack and wheel direction bindings', () => {
+  const input = createInputRuntime(gameInputProfile);
+
+  input.beginFrame();
+  pointer(input, 'control-down', { type: 'pointerButton', button: 0 });
+
+  expect(input.settings.input.activeProfileId).toBe('keyboard-mouse');
+  expect(input.wasPressed('player.attack')).toBe(true);
+  expect(hintPartsForAction(gameInputProfile, input.settings, 'player.attack', { inputScheme: 'keyboard-mouse' }).parts.map(part => part.label)).toEqual(['LMB']);
+
+  input.beginFrame();
+  pointer(input, 'control-down', { type: 'wheelDirection', direction: -1 });
+  pointer(input, 'control-up', { type: 'wheelDirection', direction: -1 });
+
+  expect(input.wasPressed('editor.zoomIn')).toBe(true);
+});
+
+test('bind capture captures pointer buttons and wheel directions', () => {
+  const capture = createBindCapture({ actionId: 'player.attack', deviceType: ['keyboard', 'pointer'] });
+  expect(capture.pointer({ button: 2 })).toMatchObject({ status: 'captured', binding: { deviceType: 'pointer', control: 'button', button: 2 } });
+
+  const wheel = createBindCapture({ actionId: 'editor.zoomIn', deviceType: 'pointer' });
+  expect(wheel.pointer({ deltaY: -100 })).toMatchObject({ status: 'captured', binding: { deviceType: 'pointer', control: 'wheelDirection', direction: -1 } });
 });
 
 test('bind capture captures gamepad buttons and axis directions', () => {

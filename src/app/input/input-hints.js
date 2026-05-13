@@ -174,6 +174,7 @@ export function bindingLabel(binding = {}) {
   if (binding.deviceType === 'gamepad') return gamepadLabel(binding);
   if (binding.deviceType === 'pointer') {
     if (binding.control === 'wheel') return 'Wheel';
+    if (binding.control === 'wheelDirection') return binding.direction < 0 ? 'Wheel Up' : 'Wheel Down';
     if (binding.control === 'button') return binding.button === 0 ? 'LMB' : binding.button === 1 ? 'MMB' : binding.button === 2 ? 'RMB' : `Mouse ${binding.button}`;
   }
   return binding.label || 'Input';
@@ -197,6 +198,7 @@ export function hintPartForBinding(binding, options = {}) {
 }
 
 function displayGroupFor(runtime, fallbackScheme = 'wasd', slot = 'player1') {
+  if (fallbackScheme === 'keyboard-mouse') return 'keyboard-mouse';
   if (['gamepad', 'arrows', 'wasd'].includes(fallbackScheme)) return fallbackScheme;
   const active = runtime?.lastActiveSource?.(slot);
   if (active?.deviceType === 'gamepad') return 'gamepad';
@@ -211,15 +213,18 @@ function matchesRequest(binding, request = {}) {
 }
 
 export function bindingsForHint(settings, actionId, { runtime = null, inputScheme = 'wasd', slot = 'player1', axisScale, deviceType } = {}) {
-  const bindings = settings?.input?.bindings?.[actionId] || [];
+  const requestedProfileId = inputScheme === 'gamepad' ? 'controller' : inputScheme;
+  const profileBindings = settings?.input?.profiles?.[requestedProfileId]?.bindings || settings?.input?.profiles?.[settings.input.activeProfileId]?.bindings;
+  const bindings = profileBindings?.[actionId] || settings?.input?.bindings?.[actionId] || [];
   const group = displayGroupFor(runtime, inputScheme, slot);
   const requested = { axisScale, deviceType };
   const candidates = bindings.filter(binding => matchesRequest(binding, requested));
   if (group === 'gamepad') return candidates.filter(binding => binding.deviceType === 'gamepad').slice(0, 2);
   if (deviceType) return candidates.slice(0, 2);
+  if (group === 'keyboard-mouse') return candidates.filter(binding => binding.deviceType === 'keyboard' || binding.deviceType === 'pointer').slice(0, 2);
   const grouped = candidates.filter(binding => binding.deviceType === 'keyboard' && (binding.displayGroup || null) === group);
   if (grouped.length) return grouped.slice(0, 2);
-  return candidates.filter(binding => binding.deviceType === 'keyboard').slice(0, 2);
+  return candidates.filter(binding => binding.deviceType === 'keyboard' || binding.deviceType === 'pointer').slice(0, 2);
 }
 
 export function hintPartsForAction(profile, settings, actionId, options = {}) {

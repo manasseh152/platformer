@@ -2,6 +2,18 @@ import { bindingKey, controlKey, normalizeAxisValue } from './utils.js';
 import { defaultInputSettings, normalizeInputSettings } from './settings.js';
 
 const KEYBOARD_ID = 'keyboard';
+const POINTER_ID = 'pointer';
+const PROFILE_ACTIONS = new Set(['player.moveX', 'player.jump', 'player.dash', 'player.attack', 'system.pause', 'system.restart']);
+
+function profileIdForControl(device, control) {
+  if (device.type === 'gamepad') return 'controller';
+  if (device.type === 'pointer') return 'keyboard-mouse';
+  if (device.type === 'keyboard') {
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(control?.code)) return 'arrows';
+    if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(control?.code)) return 'wasd';
+  }
+  return null;
+}
 
 export function createInputRuntime(profile, candidateSettings = defaultInputSettings(profile)) {
   const normalized = candidateSettings.input ? { settings: candidateSettings, warnings: [] } : normalizeInputSettings(profile, candidateSettings);
@@ -48,6 +60,7 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
     const devices = slotConfig(slot).devices;
     if (binding.deviceType === 'keyboard') return devices.keyboard.enabled ? KEYBOARD_ID : null;
     if (binding.deviceType === 'gamepad') return assignedGamepadRuntimeId(slot);
+    if (binding.deviceType === 'pointer') return POINTER_ID;
     return binding.deviceId || binding.deviceType;
   }
 
@@ -70,6 +83,8 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
     const device = event.device || { type: 'keyboard', id: KEYBOARD_ID };
     const control = event.control || (event.code ? { type: 'key', code: event.code } : null);
     if (!control) return;
+    const nextProfile = profileIdForControl(device, control);
+    if (nextProfile && settings.input.profileSwitching === 'auto' && event.type !== 'control-up' && event.type !== 'keyup') settings.input.activeProfileId = nextProfile;
     const value = event.type === 'control-up' || event.type === 'keyup' ? 0 : 1;
     setControl(device, control, value, event.timestamp, { modifiers: event.modifiers || {} });
   }
@@ -79,6 +94,7 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
     const runtimeId = device.runtimeId || device.id || `gamepad:${device.index ?? 0}`;
     const meta = { ...device, type: device.type || 'gamepad', runtimeId, id: runtimeId };
     state.devices.set(runtimeId, meta);
+    if (settings.input.profileSwitching === 'auto' && (snapshot.controls || []).some(control => Number(control.value) !== 0)) settings.input.activeProfileId = 'controller';
     for (const control of snapshot.controls || []) {
       const normalized = control.type === 'button'
         ? { type: 'button', index: control.index }
@@ -133,7 +149,10 @@ export function createInputRuntime(profile, candidateSettings = defaultInputSett
     return bindingValueFromControls(binding, slot, state.controls);
   }
 
-  function actionBindings(actionId) { return settings.input.bindings[actionId] || []; }
+  function actionBindings(actionId) {
+    if (PROFILE_ACTIONS.has(actionId)) return settings.input.profiles?.[settings.input.activeProfileId]?.bindings?.[actionId] || settings.input.bindings[actionId] || [];
+    return settings.input.bindings[actionId] || [];
+  }
   function actionDef(actionId) { return profile.actions[actionId] || { kind: 'button' }; }
 
   function value(actionId, options = {}) {

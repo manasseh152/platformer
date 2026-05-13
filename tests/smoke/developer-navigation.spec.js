@@ -23,7 +23,7 @@ test('Browser smoke: developer mode exposes clean scenarios and loads Movement G
 
   await page.locator('#startSettingsButton').click();
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'settings-category');
-  await expect(page.getByRole('tab', { name: 'Keyboard' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: 'Controls' })).toHaveAttribute('aria-selected', 'true');
   await page.getByRole('tab', { name: 'Advanced' }).click();
   await expect(page.locator('#menuTitle')).toHaveText('Advanced');
   await expect(page.locator('[data-setting-row="developer-mode"]')).toContainText('Off');

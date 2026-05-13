@@ -1,10 +1,11 @@
 import { bindGroups, bindLabel, rowHintParts, rowText } from '../../input/semantic-bind-rows.js';
+import { bindingLabel } from '../../input/input-hints.js';
 import { motionStatusText } from '../transitions.js';
 import { browserRuntime } from '../../runtime/browser-runtime.js';
 import { formatRunTime, getBestTime } from '../../speedrun/speedrun.js';
 
 const categoryDescriptions = {
-  keyboard: 'Remap keyboard controls. Selecting a binding replaces that action’s current keys. Reset defaults restores alternate keys.',
+  controls: 'Choose profiles, remap gameplay controls, review navigation, and configure devices.',
   controller: 'Enable controller input, verify detection, inspect raw input, and remap controller buttons.',
   gameplay: 'Tune optional run tracking and gameplay-facing helpers.',
   accessibility: 'Adjust motion and comfort options.',
@@ -17,8 +18,7 @@ const controllerSubpages = [
 ];
 
 export const settingsCategories = [
-  { id: 'keyboard', title: 'Keyboard', description: categoryDescriptions.keyboard },
-  { id: 'controller', title: 'Controller', description: categoryDescriptions.controller },
+  { id: 'controls', title: 'Controls', description: categoryDescriptions.controls },
   { id: 'gameplay', title: 'Gameplay', description: categoryDescriptions.gameplay },
   { id: 'accessibility', title: 'Accessibility', description: categoryDescriptions.accessibility },
   { id: 'graphics', title: 'Graphics', description: categoryDescriptions.graphics },
@@ -111,14 +111,15 @@ function controllerDebugger(game) {
 function bindRow(game, device, action) {
   const listening = device === 'controller' ? game.input.controllerBindAction === action : game.input.listeningFor === action;
   const text = rowText(game.settings, action, device);
-  const prompt = device === 'controller' ? 'Press controller input…' : 'Press a key…';
+  const prompt = device === 'controller' ? 'Press controller input…' : device === 'keyboard-mouse' ? 'Press a key, mouse button, or wheel…' : 'Press a key…';
   const parts = rowHintParts(game.settings, action, device, { iconPack: game.settings.input?.gamepad?.globalIconPack || 'xbox' });
   const value = listening ? escapeHtml(prompt) : (parts.length ? controlGlyphs(parts) : keycaps(text));
   const error = game.input.bindError?.device === device && game.input.bindError?.action === action;
-  return `<button type="button" class="ds-setting-row ds-setting-row--bind${listening ? ' is-listening' : ''}${error ? ' is-error' : ''}" data-bind-action="${action}" data-bind-device="${device}">
+  return `<div class="ds-setting-row ds-setting-row--bind${listening ? ' is-listening' : ''}${error ? ' is-error' : ''}">
     <span class="ds-setting-row__copy"><span class="ds-setting-row__label">${bindLabel(action)}</span></span>
     <span class="ds-setting-row__value bind-keycaps">${value}</span>
-  </button>`;
+    <span class="ds-action-row"><button type="button" class="ds-button ds-button--secondary" data-bind-action="${action}" data-bind-device="${device}" data-bind-mode="replace">Replace</button><button type="button" class="ds-button ds-button--secondary" data-bind-action="${action}" data-bind-device="${device}" data-bind-mode="add">Add</button></span>
+  </div>`;
 }
 
 function bindSections(game, device) {
@@ -129,10 +130,40 @@ function pageNote(text) {
   return `<p class="settings-page-note helper">${text}</p>`;
 }
 
-function renderKeyboard(game) {
-  return `${pageNote('Select a row, then press a key. Escape cancels. Duplicate keys are blocked.')}
-    ${bindSections(game, 'keyboard')}
-    <div class="settings-actions ds-action-row"><button type="button" class="secondary ds-button ds-button--secondary" data-settings-action="reset-keyboard">Reset Keyboard Defaults</button></div>`;
+const controlsPages = [
+  { id: 'profiles', title: 'Profiles' },
+  { id: 'gameplay', title: 'Gameplay' },
+  { id: 'navigation', title: 'Navigation & System' },
+  { id: 'controller', title: 'Controller' },
+  { id: 'touch', title: 'Touch' }
+];
+
+function profileCards(game) {
+  const active = game.settings.input.activeProfileId;
+  return `<div class="settings-category-list">${Object.values(game.settings.input.profiles).map(profile => `<button type="button" class="settings-category-card ds-list-card" data-controls-profile="${profile.id}" aria-pressed="${profile.id === active ? 'true' : 'false'}"><span class="settings-category-card__title">${profile.label}</span><span class="settings-category-card__description">${profile.deviceTypes.join(' + ')} · ${profile.id === active ? 'Active' : 'Select profile'}</span></button>`).join('')}</div>`;
+}
+
+function controlsSubtabs(game) {
+  const page = game.menu.controlsPage || 'profiles';
+  return `<div class="settings-tabs" role="tablist">${controlsPages.map(entry => `<button type="button" role="tab" aria-selected="${entry.id === page ? 'true' : 'false'}" data-controls-page="${entry.id}">${entry.title}</button>`).join('')}</div>`;
+}
+
+function navigationOverview(game) {
+  const labels = { 'menu.navigateX': 'Navigate Horizontal', 'menu.navigateY': 'Navigate Vertical', 'menu.accept': 'Accept', 'menu.back': 'Back', 'menu.settings': 'Settings', 'system.pause': 'Pause', 'system.restart': 'Restart' };
+  const rows = Object.keys(labels);
+  return section('Shared navigation & system binds', `<div class="settings-row-list">${rows.map(action => `<div class="ds-setting-row ds-setting-row--info"><span class="ds-setting-row__copy"><span class="ds-setting-row__label">${labels[action]}</span></span><span class="ds-setting-row__value bind-keycaps">${escapeHtml((game.settings.input.bindings[action] || []).map(bindingLabel).join(' / ') || 'Unbound')}</span></div>`).join('')}</div>`);
+}
+
+function renderControls(game) {
+  const page = game.menu.controlsPage || 'profiles';
+  const active = game.settings.input.profiles[game.settings.input.activeProfileId];
+  const header = `${controlsSubtabs(game)}${pageNote(`Active profile: ${active?.label || game.settings.input.activeProfileId} · Switching: ${game.settings.input.profileSwitching}`)}`;
+  if (page === 'profiles') return `${header}${section('Profiles', profileCards(game))}${section('Switching', `<div class="settings-row-list">${valueRow({ id: 'profile-switching', label: 'Profile Switching', value: game.settings.input.profileSwitching === 'auto' ? 'Auto' : 'Locked', description: 'Auto switches profiles from the input you use; locked keeps the selected profile.', kind: 'toggle' })}</div>`)}`;
+  if (page === 'gameplay') return `${header}${pageNote('Replace swaps the current bind for this profile. Add keeps existing binds and appends another. Escape cancels keyboard/mouse listening.')}${bindSections(game, game.settings.input.activeProfileId)}<div class="settings-actions ds-action-row"><button type="button" class="secondary ds-button ds-button--secondary" data-settings-action="reset-active-profile">Reset ${active?.label || 'Profile'} Defaults</button></div>`;
+  if (page === 'navigation') return `${header}${pageNote('Shared menu/navigation binds are shown for overview. Editing these will come later.')}${navigationOverview(game)}`;
+  if (page === 'controller') return `${header}${renderController(game)}`;
+  if (page === 'touch') return `${header}${section('Touch Controls', pageNote('Touch controls are planned.'))}`;
+  return header;
 }
 
 function controllerSubpageCard(page) {
@@ -211,7 +242,7 @@ function renderAdvanced(game) {
   </div>`;
 }
 
-const renderers = { keyboard: renderKeyboard, controller: renderController, gameplay: renderGameplay, accessibility: renderAccessibility, graphics: renderGraphics, advanced: renderAdvanced };
+const renderers = { controls: renderControls, gameplay: renderGameplay, accessibility: renderAccessibility, graphics: renderGraphics, advanced: renderAdvanced };
 
 export function activeSettingsCategory(game) {
   return selectedCategory(game) || settingsCategories[0];
@@ -265,7 +296,7 @@ export function renderSettingsCategory(game, runtime = browserRuntime) {
   const category = selectedCategory(game);
   const { ui } = game;
   if (!category) return;
-  const controllerPage = category.id === 'controller' ? controllerSubpages.find(page => page.id === game.menu.settingsSubpage) : null;
+  const controllerPage = (category.id === 'controller' || (category.id === 'controls' && game.menu.controlsPage === 'controller')) ? controllerSubpages.find(page => page.id === game.menu.settingsSubpage) : null;
   ui.settingsCategoryDescription.textContent = controllerPage ? controllerPage.description : category.description;
   if (game.input.bindError && runtime.now() > game.input.bindError.until) game.input.bindError = null;
   ui.settingsCategoryBody.innerHTML = `${renderSettingsTabs(game)}<div class="settings-tab-panel" role="tabpanel">${renderers[category.id](game)}</div>`;

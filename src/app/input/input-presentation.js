@@ -3,12 +3,13 @@ import { gameInputProfile } from './game-input-profile.js';
 import { syncHintLayer } from '../ui/hint-layer.js';
 
 const inputPresets = {
-  wasd: { move:'A/D', jump:'Space', dash:'Shift', attack:'J', pause:'Esc', restart:'R' },
+  'keyboard-mouse': { move:'A/D', jump:'Space', dash:'Shift', attack:'LMB', pause:'Esc', restart:'R' },
+  wasd: { move:'A/D', jump:'Space/W', dash:'Shift', attack:'J', pause:'Esc', restart:'R' },
   arrows: { move:'←/→', jump:'↑', dash:'Shift', attack:'X', pause:'Esc', restart:'R' },
   gamepad: { move:'Left Stick', jump:'A', dash:'RB', attack:'X', pause:'Start', restart:'Back' }
 };
 
-const platformForScheme = scheme => scheme === 'gamepad' ? 'gamepad' : 'keyboard';
+const platformForScheme = scheme => scheme === 'gamepad' ? 'gamepad' : scheme === 'keyboard-mouse' ? 'keyboard-mouse' : 'keyboard';
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
@@ -69,8 +70,9 @@ export function renderTabInputHints(input, root = document, gameOrOptions = {}) 
 
 export function setInputScheme(game, scheme) {
   const input = game.input;
-  if (input.inputScheme === scheme) return;
+  if (input.inputScheme === scheme && game.settings?.input?.activeProfileId === scheme) return;
   input.inputScheme = scheme;
+  if (game.settings?.input?.profiles?.[scheme]) game.settings.input.activeProfileId = scheme;
   syncHintLayer(game);
   renderInputHints(input, document, game);
 }
@@ -106,6 +108,6 @@ export function renderInputHints(input, root = document, gameOrOptions = {}) {
 }
 
 export function controlsText(input) {
-  const p = inputPresets[input.inputScheme] || inputPresets.wasd;
+  const p = inputPresets[input.inputScheme] || inputPresets['keyboard-mouse'];
   return `Move: ${p.move} · Jump: ${p.jump} · Dash: ${p.dash} · Attack: ${p.attack} · Pause: ${p.pause} · Restart: ${p.restart}`;
 }

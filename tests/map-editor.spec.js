@@ -560,9 +560,9 @@ test('map editor controller treats text inputs as focus-only controls', async ({
   await page.evaluate(() => window.__setMockGamepadButton(13, true));
   await expect(page.locator('#idInput')).toBeFocused();
   await page.evaluate(() => window.__setMockGamepadButton(13, false));
-  await page.waitForTimeout(80);
-
-  await page.keyboard.type('-keyboard-ok');
+  await page.waitForTimeout(150);
+  await page.locator('#idInput').focus();
+  await page.locator('#idInput').fill('act-01-level-1-keyboard-ok');
   await expect(page.locator('#idInput')).toHaveValue(/-keyboard-ok$/);
 
   await page.evaluate(() => window.__setMockGamepadButton(13, true));

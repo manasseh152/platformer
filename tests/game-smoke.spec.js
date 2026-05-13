@@ -9,8 +9,9 @@ test.beforeEach(async ({ page }) => {
 async function openStartSettings(page) {
   await page.locator('#startSettingsButton').click();
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'settings-category');
-  await expect(page.locator('#menuTitle')).toHaveText('Keyboard');
-  await expect(page.getByRole('tab', { name: 'Keyboard' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#menuTitle')).toHaveText('Controls');
+  await expect(page.getByRole('tab', { name: 'Controls' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('[role="tab"][data-controls-page="profiles"]')).toHaveAttribute('aria-selected', 'true');
 }
 
 async function openCategory(page, id, title) {
@@ -20,6 +21,21 @@ async function openCategory(page, id, title) {
   await expect(page.locator('#settingsCategoryPage')).toBeVisible();
   await expect(page.locator('#menuTitle')).toHaveText(title);
   await expect(page.locator(`[role="tab"][data-settings-tab="${id}"]`)).toHaveAttribute('aria-selected', 'true');
+}
+
+async function openControlsPage(page, id, title) {
+  await openCategory(page, 'controls', 'Controls');
+  await page.locator(`[data-controls-page="${id}"]`).click();
+  await expect(page.locator(`[role="tab"][data-controls-page="${id}"]`)).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('.settings-tab-panel')).toContainText(title);
+}
+
+function bindRow(page, device, action) {
+  return page.locator(`.ds-setting-row--bind:has(button[data-bind-device="${device}"][data-bind-action="${action}"])`);
+}
+
+function bindButton(page, device, action, mode = 'replace') {
+  return page.locator(`button[data-bind-device="${device}"][data-bind-action="${action}"][data-bind-mode="${mode}"]`);
 }
 
 async function installMockGamepad(page) {
@@ -98,7 +114,7 @@ test('browser Tab focus remains native while Escape opens start settings', async
 
   await page.keyboard.press('Escape');
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'settings-category');
-  await expect(page.locator('#menuTitle')).toHaveText('Keyboard');
+  await expect(page.locator('#menuTitle')).toHaveText('Controls');
 });
 
 test('single hint layer owns global controls across start, gameplay, and pause', async ({ page }) => {
@@ -146,7 +162,8 @@ test('settings tabs, accessibility motion, advanced JSON, and start flow', async
   await expect(page.locator('#startSettingsButton')).toHaveText('Settings');
 
   await openStartSettings(page);
-  await expect(page.locator('[role="tab"][data-settings-tab]')).toHaveText(['Keyboard', 'Controller', 'Gameplay', 'Accessibility', 'Graphics', 'Advanced']);
+  await expect(page.locator('[role="tab"][data-settings-tab]')).toHaveText(['Controls', 'Gameplay', 'Accessibility', 'Graphics', 'Advanced']);
+  await expect(page.locator('[role="tab"][data-controls-page]')).toHaveText(['Profiles', 'Gameplay', 'Navigation & System', 'Controller', 'Touch']);
 
   await openCategory(page, 'accessibility', 'Accessibility');
   await expect(page.locator('[data-setting-row="motion"]')).toContainText('System');
@@ -281,7 +298,7 @@ test('controller diagonal menu directions navigate horizontal button groups', as
 test('controller diagnostics locks input and exits after holding B', async ({ page }) => {
   await installMockGamepad(page);
   await openStartSettings(page);
-  await openCategory(page, 'controller', 'Controller');
+  await openControlsPage(page, 'controller', 'Controller');
   await page.locator('[data-controller-settings-page="diagnostics"]').click();
 
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-current-settings-subpage', 'diagnostics');
@@ -293,7 +310,7 @@ test('controller diagnostics locks input and exits after holding B', async ({ pa
   await page.waitForTimeout(2200);
   await page.evaluate(() => window.__mockGamepadButton(1, false));
   await expect(page.locator('#pauseScreen')).toHaveAttribute('data-current-settings-subpage', '');
-  await expect(page.locator('[data-bind-device="controller"]')).toHaveCount(7);
+  await expect(page.locator('button[data-bind-device="controller"][data-bind-mode="replace"]')).toHaveCount(7);
 });
 
 test('keyboard and controller settings rows, binds, diagnostics, and pause flow', async ({ page }) => {
@@ -303,37 +320,36 @@ test('keyboard and controller settings rows, binds, diagnostics, and pause flow'
   const canvas = page.locator('#game');
 
   await openStartSettings(page);
-  await openCategory(page, 'keyboard', 'Keyboard');
+  await openControlsPage(page, 'gameplay', 'Gameplay');
   await expect(page.locator('.settings-section h3')).toContainText(['Movement', 'Actions', 'System']);
   await expect(page.locator('.settings-section .settings-section')).toHaveCount(0);
-  await expect(page.locator('[data-bind-device="keyboard"]')).toHaveCount(7);
+  await expect(page.locator('button[data-bind-device="keyboard-mouse"][data-bind-mode="replace"]')).toHaveCount(7);
 
-  await page.locator('[data-bind-device="keyboard"][data-bind-action="jump"]').click();
-  await expect(page.locator('[data-bind-action="jump"]')).toContainText('Press a key');
+  await bindButton(page, 'keyboard-mouse', 'jump').click();
+  await expect(bindRow(page, 'keyboard-mouse', 'jump')).toContainText('Press a key, mouse button, or wheel');
   await page.keyboard.press('KeyZ');
   await expect(page.locator('#settingsStatus')).toContainText('Jump updated');
-  await expect(page.locator('[data-bind-device="keyboard"][data-bind-action="jump"] img')).toHaveAttribute('alt', 'Z');
+  await expect(bindRow(page, 'keyboard-mouse', 'jump').locator('img')).toHaveAttribute('alt', 'Z');
 
-  await page.locator('[data-bind-device="keyboard"][data-bind-action="attack"]').click();
+  await bindButton(page, 'keyboard-mouse', 'attack').click();
   await page.keyboard.press('KeyZ');
   await expect(page.locator('#settingsStatus')).toContainText('already bound to Jump');
-  await expect(page.locator('[data-bind-action="attack"]')).toHaveClass(/is-error/);
+  await expect(bindRow(page, 'keyboard-mouse', 'attack')).toHaveClass(/is-error/);
 
-  await page.getByRole('button', { name: 'Reset Keyboard Defaults' }).click();
-  await expect(page.locator('#settingsStatus')).toContainText('Restored keyboard defaults');
-  const keyboardLeftIcons = page.locator('[data-bind-device="keyboard"][data-bind-action="left"] img');
-  await expect(keyboardLeftIcons).toHaveCount(2);
+  await page.getByRole('button', { name: 'Reset Keyboard + Mouse Defaults' }).click();
+  await expect(page.locator('#settingsStatus')).toContainText('Restored Keyboard + Mouse defaults');
+  const keyboardLeftIcons = bindRow(page, 'keyboard-mouse', 'left').locator('img');
+  await expect(keyboardLeftIcons).toHaveCount(1);
   await expect(keyboardLeftIcons.nth(0)).toHaveAttribute('alt', 'A');
-  await expect(keyboardLeftIcons.nth(1)).toHaveAttribute('alt', '←');
 
-  await openCategory(page, 'controller', 'Controller');
+  await openControlsPage(page, 'controller', 'Controller');
   await expect(page.locator('[data-setting-row="controller-enabled"]')).toContainText('On');
-  await expect(page.locator('[data-bind-device="controller"]')).toHaveCount(7);
-  const controllerLeftIcons = page.locator('[data-bind-device="controller"][data-bind-action="left"] img');
+  await expect(page.locator('button[data-bind-device="controller"][data-bind-mode="replace"]')).toHaveCount(7);
+  const controllerLeftIcons = bindRow(page, 'controller', 'left').locator('img');
   await expect(controllerLeftIcons).toHaveCount(2);
   await expect(controllerLeftIcons.nth(0)).toHaveAttribute('alt', 'Left Stick ←');
   await expect(controllerLeftIcons.nth(1)).toHaveAttribute('alt', 'D-pad ←');
-  const controllerDashIcons = page.locator('[data-bind-device="controller"][data-bind-action="dash"] img');
+  const controllerDashIcons = bindRow(page, 'controller', 'dash').locator('img');
   await expect(controllerDashIcons).toHaveCount(2);
   await expect(controllerDashIcons.nth(0)).toHaveAttribute('alt', 'RB');
   await expect(controllerDashIcons.nth(1)).toHaveAttribute('alt', 'RT');
@@ -346,7 +362,7 @@ test('keyboard and controller settings rows, binds, diagnostics, and pause flow'
   await expect(page.locator('.controller-debugger')).toHaveClass(/is-input-locked/);
   await page.locator('[data-controller-settings-back]').click();
   await page.getByRole('button', { name: 'Reset Controller Defaults' }).click();
-  await expect(page.locator('#settingsStatus')).toContainText('Restored controller defaults');
+  await expect(page.locator('#settingsStatus')).toContainText('Restored Controller defaults');
 
   await page.keyboard.press('Escape');
 
@@ -359,7 +375,7 @@ test('keyboard and controller settings rows, binds, diagnostics, and pause flow'
   await expect(body).toHaveClass(/\bpaused\b/);
   await page.locator('#settingsButton').click();
   await expect(pauseScreen).toHaveAttribute('data-menu-page', 'settings-category');
-  await expect(page.getByRole('tab', { name: 'Keyboard' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: 'Controls' })).toHaveAttribute('aria-selected', 'true');
   await page.keyboard.press('Escape');
   await expect(pauseScreen).toHaveAttribute('data-menu-page', 'main');
   await pauseScreen.getByRole('button', { name: 'Continue' }).click();

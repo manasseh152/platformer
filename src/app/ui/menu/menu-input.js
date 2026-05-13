@@ -94,7 +94,7 @@ function handleMenuRouteInput(game, route) {
 
 function handleControllerDebuggerExitHold(game) {
   const { input, ui } = game;
-  const inControllerDebugger = game.menu.page === 'settings-category' && game.menu.settingsCategory === 'controller' && game.menu.settingsSubpage === 'diagnostics';
+  const inControllerDebugger = game.menu.page === 'settings-category' && (game.menu.settingsCategory === 'controller' || (game.menu.settingsCategory === 'controls' && game.menu.controlsPage === 'controller')) && game.menu.settingsSubpage === 'diagnostics';
   if (!inControllerDebugger || !input.controllerDebugLock) return false;
   if (!input.gamepadDown.has('PadButton1') && !input.gamepadDown.has('PadB')) {
     input.controllerDebugExitStartedAt = 0;
@@ -116,7 +116,7 @@ export function handleMenuInput(game) {
   const root = activeMenuRoot(game);
   if (!root) return false;
   if (handleControllerDebuggerExitHold(game)) return true;
-  if (input.controllerDebugLock && game.menu.page === 'settings-category' && game.menu.settingsCategory === 'controller' && (input.gamepadPressed.size || input.gamepadDown.size)) return true;
+  if (input.controllerDebugLock && game.menu.page === 'settings-category' && (game.menu.settingsCategory === 'controller' || (game.menu.settingsCategory === 'controls' && game.menu.controlsPage === 'controller')) && (input.gamepadPressed.size || input.gamepadDown.size)) return true;
   if (input.controllerBindAction) return false;
   if (input.suppressMenuInputOnce) { input.suppressMenuInputOnce = false; return true; }
   if (input.listeningFor) return false;

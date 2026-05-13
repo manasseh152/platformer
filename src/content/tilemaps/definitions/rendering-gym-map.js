@@ -2,7 +2,7 @@ import { CELL_SIZE } from '../../../core/constants.js';
 import { defineTilemap, gridLayer } from '../../../core/tilemaps/tilemap.js';
 import { TERRAIN_KIND as K, terrainLayer } from '../../../core/tilemaps/terrain-layer.js';
 import { sceneObject } from '../../../engine/scene/objects.js';
-import { darkAmbientLight, playerSpawner, slimeSpawner, warmTorchLight } from '../objects.js';
+import { playerSpawner, renderingGymAmbientLight, slimeSpawner, warmTorchLight } from '../objects.js';
 
 const COLS = 18;
 const ROWS = 10;
@@ -58,7 +58,7 @@ export const renderingGymMapDefinition = {
     })
   ],
   objects: [
-    prefabObject({ id: 'rendering-gym-ambient-light', definition: darkAmbientLight, col: 0, row: 0 }),
+    prefabObject({ id: 'rendering-gym-ambient-light', definition: renderingGymAmbientLight, col: 0, row: 0 }),
     prefabObject({ id: 'rendering-gym-left-torch-light', definition: warmTorchLight, col: 4, row: 3 }),
     prefabObject({ id: 'rendering-gym-right-torch-light', definition: warmTorchLight, col: 12, row: 3 })
   ]

@@ -1,9 +1,58 @@
 import { clone } from './utils.js';
 
+export const INPUT_PROFILE_IDS = ['keyboard-mouse', 'wasd', 'arrows', 'controller'];
+
+const profileLabels = {
+  'keyboard-mouse': 'Keyboard + Mouse',
+  wasd: 'WASD',
+  arrows: 'Arrows',
+  controller: 'Controller'
+};
+
+function profileBindings(profile, profileId) {
+  const bindings = profile.defaultBindings || {};
+  const keyboardGroup = profileId === 'arrows' ? 'arrows' : 'wasd';
+  const deviceType = profileId === 'controller' ? 'gamepad' : null;
+  const only = actionId => clone(bindings[actionId] || []);
+  if (profileId === 'keyboard-mouse') return {
+    'player.moveX': only('player.moveX').filter(binding => binding.deviceType === 'keyboard' && binding.displayGroup === 'wasd'),
+    'player.jump': [{ deviceType: 'keyboard', control: 'key', code: 'Space' }],
+    'player.dash': [{ deviceType: 'keyboard', control: 'key', code: 'ShiftLeft' }, { deviceType: 'keyboard', control: 'key', code: 'ShiftRight' }],
+    'player.attack': [{ deviceType: 'pointer', control: 'button', button: 0 }],
+    'system.pause': [{ deviceType: 'keyboard', control: 'key', code: 'Escape' }, { deviceType: 'keyboard', control: 'key', code: 'KeyP' }],
+    'system.restart': [{ deviceType: 'keyboard', control: 'key', code: 'KeyR' }]
+  };
+  const result = {};
+  for (const actionId of ['player.moveX', 'player.jump', 'player.dash', 'player.attack', 'system.pause', 'system.restart']) {
+    result[actionId] = only(actionId).filter(binding => {
+      if (deviceType) return binding.deviceType === deviceType;
+      if (binding.deviceType !== 'keyboard') return false;
+      if (binding.displayGroup) return binding.displayGroup === keyboardGroup;
+      if (profileId === 'arrows' && actionId === 'player.attack') return binding.code === 'KeyX';
+      if (profileId === 'wasd' && actionId === 'player.attack') return binding.code === 'KeyJ';
+      return true;
+    });
+  }
+  return result;
+}
+
+function defaultProfiles(profile) {
+  return Object.fromEntries(INPUT_PROFILE_IDS.map(id => [id, {
+    id,
+    label: profileLabels[id],
+    hintPack: id === 'controller' ? 'xbox' : 'kenney-keyboard-mouse',
+    deviceTypes: id === 'controller' ? ['gamepad'] : id === 'keyboard-mouse' ? ['keyboard', 'pointer'] : ['keyboard'],
+    bindings: profileBindings(profile, id)
+  }]));
+}
+
 export function defaultInputSettings(profile) {
   return {
     schemaVersion: 2,
     input: {
+      activeProfileId: 'keyboard-mouse',
+      profileSwitching: 'auto',
+      profiles: defaultProfiles(profile),
       slots: {
         player1: {
           devices: {
@@ -75,12 +124,15 @@ function validBinding(binding) {
     if (binding.control === 'axis') return Number.isInteger(binding.index) && binding.index >= 0;
     if (binding.control === 'axisDirection') return Number.isInteger(binding.index) && [-1, 1].includes(binding.direction);
   }
-  if (binding.deviceType === 'pointer') return binding.control === 'button' && Number.isInteger(binding.button);
+  if (binding.deviceType === 'pointer') {
+    if (binding.control === 'button') return Number.isInteger(binding.button);
+    if (binding.control === 'wheelDirection') return [-1, 1].includes(binding.direction);
+  }
   return false;
 }
 
-function normalizeBindings(profile, value, warnings) {
-  const defaults = profile.defaultBindings || {};
+function normalizeBindings(profile, value, warnings, defaultsOverride = null) {
+  const defaults = defaultsOverride || profile.defaultBindings || {};
   const result = {};
   const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
   for (const actionId of Object.keys(defaults)) {
@@ -97,6 +149,21 @@ function normalizeBindings(profile, value, warnings) {
   }
   for (const actionId of Object.keys(source)) {
     if (!(actionId in defaults)) warnings.push({ path: `input.bindings.${actionId}`, code: 'unknown-action-stripped' });
+  }
+  return result;
+}
+
+function normalizeProfiles(profile, value, warnings) {
+  const defaults = defaultProfiles(profile);
+  const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const result = {};
+  for (const id of INPUT_PROFILE_IDS) {
+    const candidate = source[id] && typeof source[id] === 'object' && !Array.isArray(source[id]) ? source[id] : {};
+    result[id] = {
+      ...clone(defaults[id]),
+      ...(typeof candidate.hintPack === 'string' ? { hintPack: candidate.hintPack } : {}),
+      bindings: normalizeBindings(profile, candidate.bindings, warnings, defaults[id].bindings)
+    };
   }
   return result;
 }
@@ -130,10 +197,30 @@ export function normalizeInputSettings(profile, candidate = {}, options = {}) {
   const bindings = inputSource
     ? normalizeBindings(profile, inputSource.bindings, warnings)
     : migrateLegacyBinds(source, defaults.input.bindings, warnings);
+  const profiles = inputSource?.profiles
+    ? normalizeProfiles(profile, inputSource.profiles, warnings)
+    : defaultProfiles(profile);
+  if (!inputSource?.profiles && inputSource?.bindings) {
+    const activeLegacyProfile = ['gamepad', 'controller'].includes(inputSource.activeProfileId || source.inputScheme) ? 'controller' : inputSource.activeProfileId === 'arrows' || source.inputScheme === 'arrows' ? 'arrows' : 'wasd';
+    profiles[activeLegacyProfile].bindings = normalizeBindings(profile, inputSource.bindings, warnings, profiles[activeLegacyProfile].bindings);
+  } else if (!inputSource?.profiles && !inputSource && (source.keyboardBinds || source.gamepadBinds)) {
+    for (const [actionId, actionBindings] of Object.entries(bindings)) {
+      const keyboard = actionBindings.filter(binding => binding.deviceType === 'keyboard');
+      const gamepad = actionBindings.filter(binding => binding.deviceType === 'gamepad');
+      if (keyboard.length && profiles.wasd.bindings[actionId]) profiles.wasd.bindings[actionId] = keyboard;
+      if (gamepad.length && profiles.controller.bindings[actionId]) profiles.controller.bindings[actionId] = gamepad;
+    }
+  }
+  const legacyActiveProfileId = ['gamepad', 'controller'].includes(source.inputScheme) ? 'controller' : source.inputScheme === 'arrows' ? 'arrows' : (source.keyboardBinds || source.gamepadBinds || (inputSource?.bindings && !inputSource?.profiles)) ? 'wasd' : defaults.input.activeProfileId;
+  const activeProfileId = INPUT_PROFILE_IDS.includes(inputSource?.activeProfileId) ? inputSource.activeProfileId : legacyActiveProfileId;
+  const profileSwitching = inputSource?.profileSwitching === 'locked' ? 'locked' : 'auto';
   const defaultDeadzone = Number(inputSource?.gamepad?.defaultDeadzone ?? defaults.input.gamepad.defaultDeadzone);
   const settings = {
     schemaVersion: 2,
     input: {
+      activeProfileId,
+      profileSwitching,
+      profiles,
       slots: { player1: normalizeSlot(inputSource?.slots?.player1, warnings) },
       gamepad: {
         defaultDeadzone: Number.isFinite(defaultDeadzone) && defaultDeadzone >= 0 && defaultDeadzone < 1 ? defaultDeadzone : defaults.input.gamepad.defaultDeadzone,

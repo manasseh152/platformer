@@ -66,6 +66,7 @@ export function snapshotGame(game) {
       flags: JSON.parse(JSON.stringify(game.devTools?.flags ?? {})),
       sections: game.devTools?.registry?.snapshot?.() ?? []
     },
+    renderPipeline: game.renderPipeline?.diagnostics ? JSON.parse(JSON.stringify(game.renderPipeline.diagnostics)) : null,
     gym: game.gym?.snapshot?.() ?? null
   };
 }

@@ -142,7 +142,7 @@ Initial slice order:
    - Implemented: conflicting terrain ADR authoring details and duplicate `0003` numbering are marked as historical.
 
 8. **Update settings-tab UI validation and remove stale settings-hub expectations** — completed
-   - Invariant: start/pause Settings opens the new settings tab system directly, with Keyboard as the default tab and explicit tab navigation for Controller, Gameplay, Accessibility, Graphics, and Advanced.
+   - Invariant: start/pause Settings opens the new settings tab system directly, with Controls as the default tab and explicit tab navigation for Gameplay, Accessibility, Graphics, and Advanced.
    - Implemented: `tests/game-smoke.spec.js`, `tests/scenario-browser.spec.js`, `tests/devtools-toolbox.spec.js`, and `tests/gyms/ui-navigation.gym.spec.js` now use role=`tab` settings categories and expect `settings-category` directly instead of the removed settings hub.
    - Implemented: `docs/patterns/settings-and-ui.md` now describes the current tab-based settings page model.
    - Validation passed:

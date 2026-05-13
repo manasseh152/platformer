@@ -1,5 +1,6 @@
-const SUPPORTED_PACKET_KINDS = new Set(['clear', 'rect', 'image', 'sprite', 'texturedQuad']);
+const SUPPORTED_PACKET_KINDS = new Set(['clear', 'rect', 'roundRect', 'ellipse', 'path', 'image', 'sprite', 'texturedQuad', 'light2d']);
 const IMAGE_PACKET_KINDS = new Set(['image', 'sprite', 'texturedQuad']);
+const SUPPORTED_FILL_KINDS = new Set(['color', 'linearGradient', 'radialGradient']);
 
 function fillKind(fill) {
   if (fill == null) return 'none';
@@ -8,8 +9,8 @@ function fillKind(fill) {
   return fill.kind ?? typeof fill;
 }
 
-function isColorFill(fill) {
-  return fill == null || typeof fill === 'string' || fill.kind === 'color';
+function isSupportedFill(fill) {
+  return fill == null || typeof fill === 'string' || SUPPORTED_FILL_KINDS.has(fill.kind);
 }
 
 function issue(packet, reason) {
@@ -26,7 +27,7 @@ export function getWebGlNativeFramePacketSupportIssues(packet) {
   if (!packet || typeof packet !== 'object') return [{ kind: undefined, reason: 'packet is not an object' }];
   const issues = [];
   if (!SUPPORTED_PACKET_KINDS.has(packet.kind)) issues.push(issue(packet, `unsupported packet kind: ${packet.kind}`));
-  if ((packet.kind === 'clear' || packet.kind === 'rect') && !isColorFill(packet.fill ?? packet.color)) {
+  if ((packet.kind === 'clear' || packet.kind === 'rect' || packet.kind === 'roundRect' || packet.kind === 'ellipse' || packet.kind === 'path') && !isSupportedFill(packet.fill ?? packet.color)) {
     issues.push(issue(packet, `unsupported fill kind for ${packet.kind}: ${fillKind(packet.fill ?? packet.color)}`));
   }
   if (IMAGE_PACKET_KINDS.has(packet.kind) && packet.rotation) issues.push(issue(packet, 'image rotation is not supported'));

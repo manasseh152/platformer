@@ -75,7 +75,7 @@ Current pages:
 - `settings-category`
 - `level-select`
 
-Settings categories are tabs inside `settings-category`, tracked by transient `game.menu.settingsCategory`. Start and pause Settings open `settings-category` directly with Keyboard selected by default.
+Settings categories are tabs inside `settings-category`, tracked by transient `game.menu.settingsCategory`. Start and pause Settings open `settings-category` directly with Controls selected by default.
 
 Back behavior should be explicit and predictable:
 
@@ -110,7 +110,7 @@ Use shared design-system primitives for reusable UI pieces:
 Prefer data attributes for state:
 
 ```html
-<div id="pauseScreen" data-menu-page="settings-category" data-current-settings-category="keyboard" data-menu-origin="pause"></div>
+<div id="pauseScreen" data-menu-page="settings-category" data-current-settings-category="controls" data-menu-origin="pause"></div>
 ```
 
 CSS should reveal pages from state, not from ad-hoc classes:
@@ -159,16 +159,15 @@ If View Transition API is unavailable or motion is reduced, structural changes a
 
 Settings uses a direct tab system, not a separate settings hub. The category tabs render inside the settings category page and switch panels without changing the page model.
 
-Recommended order:
+Recommended category order:
 
-1. Keyboard
-2. Controller
-3. Gameplay
-4. Accessibility
-5. Graphics
-6. Advanced
+1. Controls
+2. Gameplay
+3. Accessibility
+4. Graphics
+5. Advanced
 
-Category tab panels use the same row/section primitives. Add new settings by adding category metadata and renderers, not by inventing new page mechanics.
+The Controls category owns profile selection plus sub-tabs for Profiles, Gameplay, Navigation & System, Controller, and Touch. Category tab panels use the same row/section primitives. Add new settings by adding category metadata and renderers, not by inventing new page mechanics.
 
 ## Advanced tools
 
@@ -191,4 +190,4 @@ Replacing settings JSON should validate before applying and show a clear status 
 
 `settings.input` is the persisted source of truth for gameplay, menu, system, devtools, and editor shortcuts. Store semantic action ids such as `player.moveX`, `menu.accept`, and `editor.undo`; do not persist legacy `keyboardBinds` / `gamepadBinds` rows.
 
-Keyboard/Controller settings pages may render friendly rows such as “Move Left” and “Move Right”, but commits should normalize through the core input settings helpers and write structured bindings. Controller enable/disable is separate from selected controller identity, and keyboard should remain enabled to prevent no-input lockout.
+Controls sub-pages may render friendly rows such as “Move Left” and “Move Right”, but commits should normalize through the core input settings helpers and write structured profile bindings. Controller enable/disable is separate from selected controller identity, and keyboard should remain enabled to prevent no-input lockout.
