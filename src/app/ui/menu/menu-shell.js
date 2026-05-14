@@ -52,6 +52,7 @@ export function updateMenuChrome(game) {
   syncHintLayer(game);
   if (ui.developerTools) ui.developerTools.hidden = !game.settings.developerMode;
   applyMotionPreference(game);
+  game.nativeBack?.sync?.();
 }
 
 export function focusAndReveal(game, el) {

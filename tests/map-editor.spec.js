@@ -35,6 +35,16 @@ test('start screen points the map editor button at the extensionless production 
   await expect(page).toHaveURL(/\/editor$/);
 });
 
+test('native browser back closes the editor action panel', async ({ page }) => {
+  await page.goto('/editor.html');
+  await expect(page.locator('#editorOverlay')).toBeVisible();
+
+  await page.evaluate(() => history.back());
+
+  await expect(page.locator('body')).toHaveAttribute('data-editor-panel', 'closed');
+  await expect(page.locator('#editorOverlay')).toBeHidden();
+});
+
 test('map editor loads registered tilemaps and exports new terrainLayer format', async ({ page }) => {
   await page.goto('/editor.html');
 

@@ -2,9 +2,11 @@ import { getUI } from '#/app/dom.js';
 import { pollGamepads } from '#/app/input/controller-diagnostics.js';
 import { controlsText, setInputScheme } from '#/app/input/input-presentation.js';
 import { syncHintLayer } from '#/app/ui/hint-layer.js';
-import { handleMenuInput } from '#/app/ui/menu/menu-input.js';
+import { activateSemanticMenuAction, handleMenuInput } from '#/app/ui/menu/menu-input.js';
 import { setupMenu } from '#/app/ui/menu/menu-setup.js';
 import { activeMenuRoot, setPaused, startGame } from '#/app/ui/menu/menu-shell.js';
+import { leaveSettingsLayer } from '#/app/ui/menu/settings-layer-navigation.js';
+import { createNativeBackAdapter } from '#/app/navigation/native-back.js';
 import { handleListeningKey, handleListeningPointer } from '#/app/ui/settings/settings-actions.js';
 import { setupPresentationResize } from '#/app/presentation/resize.js';
 import { resetGame } from '#/app/game-state.js';
@@ -29,6 +31,14 @@ syncHintLayer(game);
 game.resetGame = () => resetGame(game, runtime);
 
 setupMenu(game, runtime);
+game.nativeBack = createNativeBackAdapter({
+  canGoBack: () => ['level-select', 'settings', 'settings-category'].includes(game.menu.page) || (isStarted(game) && isPaused(game)),
+  onBack: () => {
+    if (game.menu.page === 'settings-category') leaveSettingsLayer(game);
+    else activateSemanticMenuAction(game, 'menu.back');
+  }
+});
+game.nativeBack.sync();
 setupDevTools(game);
 scenes.register(createGameplayScene(game));
 scenes.switchScene('gameplay');

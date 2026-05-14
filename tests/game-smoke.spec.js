@@ -289,6 +289,34 @@ test('settings tabs, accessibility motion, advanced JSON, and start flow', async
   await expect(pauseScreen).toHaveAttribute('data-menu-page', 'main');
 });
 
+test('native browser back routes through layered settings navigation', async ({ page }) => {
+  await installMockGamepad(page);
+  await openStartSettings(page);
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-settings-focus-layer', 'primary-tabs');
+
+  await pressPadButtonFrom(page, 13, '[role="tab"][data-settings-tab="controls"]');
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-settings-focus-layer', 'nested-tabs');
+  await pressPadButtonFrom(page, 0, '[role="tab"][data-controls-page="profiles"]');
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-settings-focus-layer', 'content');
+
+  await page.evaluate(() => history.back());
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-settings-focus-layer', 'nested-tabs');
+  await page.evaluate(() => history.back());
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-settings-focus-layer', 'primary-tabs');
+  await page.evaluate(() => history.back());
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'main');
+});
+
+test('native browser back closes level select without leaving a stale menu entry', async ({ page }) => {
+  await page.locator('#startLevelSelectButton').click();
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'level-select');
+  await page.evaluate(() => history.back());
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'main');
+
+  await page.locator('#startLevelSelectButton').click();
+  await expect(page.locator('#pauseScreen')).toHaveAttribute('data-menu-page', 'level-select');
+});
+
 test('developer maps are only available in the normal Level Select when Developer Mode is enabled', async ({ page }) => {
   await page.goto('/?level=movement-gym');
   await expect(page.locator('body')).toHaveAttribute('data-tilemap-id', 'act-01-level-1');

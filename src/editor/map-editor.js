@@ -29,6 +29,7 @@ import { renderInputHints, renderTabInputHints } from '../app/input/input-presen
 import { gameInputProfile } from '../app/input/game-input-profile.js';
 import { loadSettings } from '#/app/settings/settings.js';
 import { currentFocusElement, ensureMenuFocus, moveLinearFocus, visibleFocusables } from '../ui/navigation.js';
+import { createNativeBackAdapter } from '../app/navigation/native-back.js';
 const AUTO_SAVE_STORAGE_KEY = 'chibi.tilemap-editor.auto-save';
 const FLOATING_CONTROLS_STORAGE_KEY = 'chibi.tilemap-editor.floating-controls';
 const CONTROLLER_BRUSH_SETTINGS_STORAGE_KEY = 'chibi.tilemap-editor.controller-brush';
@@ -136,6 +137,7 @@ let controllerNextMoveAt = 0;
 let controllerMoveHeldSince = 0;
 let controllerMoveHoldKey = '';
 let paletteWheelWakeTimer = 0;
+let nativeBack = null;
 
 function storageKey(id) { return localDraftStorageKey(id); }
 function viewStorageKey(id) { return localDraftViewStorageKey(id); }
@@ -377,6 +379,7 @@ function setActiveTab(tabId, { show = true, focus = false } = {}) {
   for (const panel of dom.panels) panel.hidden = overlayHidden || panel.id !== `${activeTab}Panel`;
   syncTabHints({ inputScheme: editorInputMode === 'gamepad' ? 'gamepad' : 'wasd' });
   if (!show) clearEditorControllerFocus();
+  nativeBack?.sync?.();
 }
 
 function toggleTab(tabId) {
@@ -1266,6 +1269,10 @@ function setup() {
   syncInputs();
   syncPreferencesUi();
   document.body.dataset.editorControllerMode = controllerCanvasMode;
+  nativeBack = createNativeBackAdapter({
+    canGoBack: () => !overlayHidden,
+    onBack: () => setActiveTab(activeTab, { show: false })
+  });
   setActiveTab('edit', { show: true });
 
   new ResizeObserver(() => { resizeViewport(viewport); clampCamera(viewport, worldWidth(), worldHeight()); render(); }).observe(dom.canvas.parentElement);

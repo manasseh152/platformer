@@ -106,12 +106,12 @@ Status: Implemented.
 
 ### Slice 5: App-wide native/browser back integration
 
-Status: Deferred.
+Status: Implemented.
 
-- Design a shared browser-history/native-back adapter for game and editor.
-- Route native back through the same semantic navigation stack used by controller/keyboard back.
-- Avoid trapping users in synthetic history loops.
-- Do not add Settings-only browser back behavior before the app-wide model exists.
+- Added a shared browser-history/native-back adapter for game and editor.
+- Game native back routes through the same semantic menu back behavior used by controller/keyboard back, including Settings layer climbs.
+- Editor native back closes the editor action panel through the existing panel state path.
+- The adapter keeps at most one same-URL synthetic history entry while app-owned back targets exist, re-arms only when another target remains, and removes stale entries after UI/controller closure to avoid trapping users in synthetic history loops.
 
 ## Consequences
 
@@ -119,4 +119,4 @@ Status: Deferred.
 - Navigation state is explicit and testable rather than inferred from DOM focus alone.
 - UI primitives can be reused by future pages and editor overlays.
 - The first slice can be implemented and tested without committing to final visual design.
-- Browser/mobile back remains out of scope until a whole-app navigation model is designed.
+- Browser/mobile back now participates in the app-wide menu/editor navigation model rather than a Settings-only special case.
