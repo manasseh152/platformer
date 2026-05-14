@@ -1,4 +1,5 @@
 import { syncGameplayHudPresentation } from '../app/ui/gameplay-hud.js';
+import { getNativeFrameBackendMaturity } from './backends/native-frame-capabilities.js';
 import { createCanvas2DNativeFrameBackend } from './backends/canvas2d-native-frame-backend.js';
 import { WEBGL2_DEFERRED_BACKEND_UNAVAILABLE_REASON, createWebGl2DeferredNativeFrameBackend } from './backends/webgl2-deferred-native-frame-backend.js';
 import { createWebGlNativeFrameBackend } from './backends/webgl-native-frame-backend.js';
@@ -63,6 +64,10 @@ function writeRenderPipelineDiagnostics(game, frame, { requestedBackendKind, can
     requestedBackendKind: requestedBackendKind ?? 'auto',
     candidateBackendKind,
     actualBackendKind,
+    maturity: {
+      candidate: getNativeFrameBackendMaturity(candidateBackendKind),
+      actual: getNativeFrameBackendMaturity(actualBackendKind)
+    },
     fallback: {
       occurred: issues.length > 0 || Boolean(fallbackFrom && fallbackTo && fallbackFrom !== fallbackTo),
       from: fallbackFrom ?? null,

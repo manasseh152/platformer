@@ -436,6 +436,10 @@ test('renderNativeFrame falls back from webgl on unsupported packet features', a
     requestedBackendKind: 'webgl',
     candidateBackendKind: 'webgl',
     actualBackendKind: 'canvas2d',
+    maturity: {
+      candidate: { tier: 'experimental', defaultEligible: false },
+      actual: { tier: 'reference', defaultEligible: true }
+    },
     fallback: { occurred: true, from: 'webgl', to: 'canvas2d' }
   });
   expect(result.diagnostics.fallback.issues).toEqual([

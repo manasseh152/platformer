@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { createDevToolsRegistry, createDevToolsState } from '#/devtools/toolbox.js';
 import { registerRenderPipelineDevTools, summarizeRenderFrame } from '#/devtools/render-pipeline.js';
+import { getNativeFrameBackendMaturity } from '#/render/backends/native-frame-capabilities.js';
 
 test('devtools registry sorts sections and items by order with registration fallback', () => {
   const registry = createDevToolsRegistry();
@@ -58,8 +59,22 @@ test('render pipeline devtools register render diagnostics and systems sections'
 
   const sections = game.devTools.registry.snapshot();
   expect(sections.map(section => section.id)).toEqual(['systems', 'render']);
-  expect(sections.find(section => section.id === 'render').items.map(item => item.id)).toEqual(expect.arrayContaining(['backend-kind', 'packet-kinds', 'force-deferred-lighting', 'disable-deferred-lighting']));
+  expect(sections.find(section => section.id === 'render').items.map(item => item.id)).toEqual(expect.arrayContaining(['backend-kind', 'backend-maturity', 'packet-kinds', 'force-deferred-lighting', 'disable-deferred-lighting']));
   expect(sections.find(section => section.id === 'systems').items.map(item => item.id)).toEqual(expect.arrayContaining(['active-scene', 'app-state', 'actors']));
+});
+
+test('native-frame backend maturity is exposed for diagnostics and devtools', () => {
+  expect(getNativeFrameBackendMaturity('canvas2d')).toMatchObject({ tier: 'reference', automaticEligible: true, defaultEligible: true });
+  expect(getNativeFrameBackendMaturity('webgl-native-frame-backend')).toMatchObject({ backendKind: 'webgl', tier: 'experimental', automaticEligible: false, defaultEligible: false });
+  expect(getNativeFrameBackendMaturity('webgl2-deferred')).toMatchObject({ tier: 'specialized', automaticEligible: true, defaultEligible: false });
+
+  const game = { devTools: createDevToolsState(), renderPipeline: { diagnostics: { actualBackendKind: 'webgl', maturity: { actual: getNativeFrameBackendMaturity('webgl') } } }, appState: {}, enemies: [], dust: [], particles: [] };
+  registerRenderPipelineDevTools(game);
+  const maturityItem = game.devTools.registry.getSections()
+    .find(section => section.id === 'render')
+    .items.find(item => item.id === 'backend-maturity');
+
+  expect(maturityItem.get(game)).toBe('experimental');
 });
 
 test('render frame summary counts packet diagnostics for devtools', () => {

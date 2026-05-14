@@ -1,3 +1,5 @@
+import { getNativeFrameBackendMaturity } from '../render/backends/native-frame-capabilities.js';
+
 export { summarizeRenderFrame } from '../render/render-frame-diagnostics.js';
 
 function formatCounts(counts) {
@@ -18,6 +20,17 @@ function fallbackSummary(game) {
 
 function pipelineDiagnostics(game) {
   return game.renderPipeline?.diagnostics ?? null;
+}
+
+function backendMaturitySummary(game) {
+  const diagnostics = pipelineDiagnostics(game);
+  const backendKind = diagnostics?.actualBackendKind ?? game.renderPipeline?.nativeBackendKind;
+  if (!backendKind) return 'Not rendered yet';
+  const maturity = diagnostics?.maturity?.actual ?? getNativeFrameBackendMaturity(backendKind);
+  const flags = [];
+  if (maturity.automaticEligible) flags.push('auto-eligible');
+  if (maturity.defaultEligible) flags.push('default-eligible');
+  return `${maturity.tier}${flags.length ? ` (${flags.join(', ')})` : ''}`;
 }
 
 function setExclusiveBackendFlag(game, flag, value) {
@@ -80,6 +93,7 @@ export function registerRenderPipelineDevTools(game) {
       { id: 'backend-request', kind: 'value', label: 'Backend request', get: game => pipelineDiagnostics(game)?.requestedBackendKind ?? 'auto' },
       { id: 'backend-selected', kind: 'value', label: 'Backend selected', get: game => pipelineDiagnostics(game)?.candidateBackendKind ?? 'Not rendered yet' },
       { id: 'backend-actual', kind: 'value', label: 'Backend actual', get: game => pipelineDiagnostics(game)?.actualBackendKind ?? game.renderPipeline?.nativeBackendKind ?? 'Not rendered yet' },
+      { id: 'backend-maturity', kind: 'value', label: 'Backend maturity', get: backendMaturitySummary },
       { id: 'frame-size', kind: 'value', label: 'Frame size', get: game => {
         const frame = pipelineDiagnostics(game)?.frame;
         return frame ? `${frame.width}×${frame.height} ${frame.coordinateSpace}` : 'Not rendered yet';
