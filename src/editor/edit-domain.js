@@ -30,7 +30,7 @@ export const EDIT_PACKS = Object.freeze([
     id: 'starter',
     label: 'Starter',
     description: 'Core terrain materials, spawn points, and hazards',
-    brushIds: ['grass', 'dirt', 'stone', 'invisibleTerrain', 'eraseTerrain', 'player', 'slime', 'gate', 'eraseEntity']
+    brushIds: ['grass', 'dirt', 'stone', 'sand', 'log', 'leaves', 'invisibleTerrain', 'eraseTerrain', 'player', 'slime', 'gate', 'eraseEntity']
   }
 ]);
 
@@ -38,6 +38,9 @@ export const BRUSHES = Object.freeze([
   { id: 'grass', label: 'Grass', shortLabel: 'Grass', layerId: 'terrain', symbol: TERRAIN_KIND.GRASS, cellSize: CELL_SIZE.BUILD, cursor: '#79f0c5', swatch: '#79f0c5' },
   { id: 'dirt', label: 'Dirt', shortLabel: 'Dirt', layerId: 'terrain', symbol: TERRAIN_KIND.DIRT, cellSize: CELL_SIZE.BUILD, cursor: '#b86f3d', swatch: '#b86f3d' },
   { id: 'stone', label: 'Stone', shortLabel: 'Stone', layerId: 'terrain', symbol: TERRAIN_KIND.STONE, cellSize: CELL_SIZE.BUILD, cursor: '#9aa7b2', swatch: '#9aa7b2' },
+  { id: 'sand', label: 'Sand', shortLabel: 'Sand', layerId: 'terrain', symbol: TERRAIN_KIND.SAND, cellSize: CELL_SIZE.BUILD, cursor: '#f0d58a', swatch: '#f0d58a' },
+  { id: 'log', label: 'Log', shortLabel: 'Log', layerId: 'terrain', symbol: TERRAIN_KIND.LOG, cellSize: CELL_SIZE.BUILD, cursor: '#a66a3f', swatch: '#a66a3f' },
+  { id: 'leaves', label: 'Leaves', shortLabel: 'Leaves', layerId: 'terrain', symbol: TERRAIN_KIND.LEAVES, cellSize: CELL_SIZE.BUILD, cursor: '#62bd63', swatch: '#62bd63' },
   { id: 'invisibleTerrain', label: 'Invisible', shortLabel: 'Ghost', layerId: 'terrain', symbol: TERRAIN_KIND.INVISIBLE, cellSize: CELL_SIZE.BUILD, cursor: '#a78bfa', swatch: '#a78bfa' },
   { id: 'eraseTerrain', label: 'Erase terrain', shortLabel: 'Erase', layerId: 'terrain', symbol: null, cellSize: CELL_SIZE.BUILD, cursor: '#ff8f8f', swatch: '#ff8f8f' },
   { id: 'player', label: 'Player P', shortLabel: 'Player', layerId: 'entities', symbol: 'P', cellSize: CELL_SIZE.GRID, cursor: '#78a8ff', swatch: '#78a8ff' },

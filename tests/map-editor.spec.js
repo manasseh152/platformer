@@ -757,7 +757,7 @@ test('map editor keyboard and controller use two-axis navigation inside two-colu
   await page.keyboard.press('ArrowRight');
   await expect(page.getByRole('button', { name: 'Dirt' })).toBeFocused();
   await page.keyboard.press('ArrowDown');
-  await expect(page.getByRole('button', { name: 'Invisible' })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Sand' })).toBeFocused();
   await page.keyboard.press('KeyW');
   await expect(page.getByRole('button', { name: 'Dirt' })).toBeFocused();
 
@@ -774,7 +774,7 @@ test('map editor keyboard and controller use two-axis navigation inside two-colu
   await expect(page.getByRole('button', { name: 'Dirt' })).toBeFocused();
   await page.evaluate(() => window.__setMockGamepadButton(15, false));
   await page.evaluate(() => window.__setMockGamepadButton(13, true));
-  await expect(page.getByRole('button', { name: 'Invisible' })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Sand' })).toBeFocused();
 });
 
 test('map editor controller treats text inputs as focus-only controls', async ({ page }) => {

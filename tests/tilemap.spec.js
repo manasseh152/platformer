@@ -67,7 +67,7 @@ test('defineTilemap requires explicit dimensions and validates terrain layers', 
   expect(parsed.objects).toHaveLength(0);
   expect(() => gridLayer({ id: 'bad-resolution', resolution: 2, symbols: { '#': solidTerrain }, rows: ['#'] })).toThrow(/cellSize/);
   expect(() => gridLayer({ id: 'bad-cell-size', cellSize: 10, symbols: { '#': solidTerrain }, rows: ['#'] })).toThrow(/unsupported cellSize/);
-  expect(() => terrainLayer({ rows: [[TERRAIN_KIND.GRASS, 'sand']] })).toThrow(/unknown terrain kind/);
+  expect(() => terrainLayer({ rows: [[TERRAIN_KIND.GRASS, 'unknown-terrain']] })).toThrow(/unknown terrain kind/);
   expect(() => defineTilemap({ id: 'missing-dimensions', layers: [terrainLayer({ rows: [[TERRAIN_KIND.GRASS]] })] })).toThrow(/cols/);
   expect(() => defineTilemap({ id: 'old-build-terrain-layer', cols: 1, rows: 1, layers: [gridLayer({ id: 'buildTerrain', cellSize: CELL_SIZE.BUILD, symbols: { '#': solidTerrain }, rows: ['##', '##'] })] })).toThrow(/buildTerrain layer is archived/);
   expect(() => defineTilemap({ id: 'bad-terrain-layer', cols: 1, rows: 1, layers: [gridLayer({ id: 'terrain', symbols: { '#': solidTerrain }, rows: ['#'] })] })).toThrow(/terrain layer must be created with terrainLayer/);
@@ -132,17 +132,20 @@ test('terrain kinds drive visibility and visual connectivity without changing so
     cols: 2,
     rows: 1,
     layers: [terrainLayer({ rows: [
-      [TERRAIN_KIND.GRASS, TERRAIN_KIND.STONE, TERRAIN_KIND.INVISIBLE, null],
-      [TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, null, null]
+      [TERRAIN_KIND.GRASS, TERRAIN_KIND.STONE, TERRAIN_KIND.SAND, TERRAIN_KIND.INVISIBLE],
+      [TERRAIN_KIND.GRASS, TERRAIN_KIND.GRASS, TERRAIN_KIND.LOG, TERRAIN_KIND.LEAVES]
     ] })]
   });
 
   expect(parsed.terrain.cells.map(cell => cell.kind)).toEqual([
     TERRAIN_KIND.GRASS,
     TERRAIN_KIND.STONE,
+    TERRAIN_KIND.SAND,
     TERRAIN_KIND.INVISIBLE,
     TERRAIN_KIND.GRASS,
-    TERRAIN_KIND.GRASS
+    TERRAIN_KIND.GRASS,
+    TERRAIN_KIND.LOG,
+    TERRAIN_KIND.LEAVES
   ]);
   expect(parsed.collisionLayers.terrainPrimitives.filter(cell => cell.terrainKind === TERRAIN_KIND.INVISIBLE)).toHaveLength(4);
   expect(parsed.renderLayers.containedTerrainTiles.map(tile => tile.kind)).not.toContain(TERRAIN_KIND.INVISIBLE);
