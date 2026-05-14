@@ -1,3 +1,7 @@
+---
+title: Rendering patterns
+---
+
 # Rendering patterns
 
 The current renderer is packetized:

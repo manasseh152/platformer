@@ -1,3 +1,7 @@
+---
+title: Scenes and scenarios
+---
+
 # Scenes and scenarios
 
 ## Terms

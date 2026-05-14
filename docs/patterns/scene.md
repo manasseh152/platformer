@@ -1,3 +1,7 @@
+---
+title: Scene model
+---
+
 # Scene model
 
 Generic scene/object/component primitives live in `src/engine/scene`. Tilemaps are one authoring format that compiles grid layers into scene objects.

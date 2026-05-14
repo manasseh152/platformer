@@ -1,3 +1,7 @@
+---
+title: Developer toolbox patterns
+---
+
 # Developer toolbox patterns
 
 ## Goals

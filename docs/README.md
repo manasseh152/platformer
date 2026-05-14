@@ -1,3 +1,7 @@
+---
+title: Project docs
+---
+
 # Project docs
 
 This directory is the project handbook. It documents **current working patterns** for developers and the **asset handoff source** for artists/designers.

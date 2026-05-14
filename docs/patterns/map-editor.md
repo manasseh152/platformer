@@ -1,3 +1,7 @@
+---
+title: Map editor patterns
+---
+
 # Map editor patterns
 
 The browser map editor is a same-device content tool, not a gameplay scene. Keep it optimized for fast local iteration while preserving clear save semantics.

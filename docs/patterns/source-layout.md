@@ -1,3 +1,7 @@
+---
+title: Source layout policy
+---
+
 # Source layout policy
 
 `src/*.js` is entrypoint-only. Current allowed root entrypoints are:

@@ -1,3 +1,7 @@
+---
+title: Settings and UI patterns
+---
+
 # Settings and UI patterns
 
 ## Goals

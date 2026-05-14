@@ -1,3 +1,7 @@
+---
+title: Terrain pipeline
+---
+
 # Terrain pipeline
 
 Terrain uses explicit cell sizes and separates authored terrain, visual terrain, and collision terrain.

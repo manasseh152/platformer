@@ -1,3 +1,7 @@
+---
+title: Asset creator handoff pattern
+---
+
 # Asset creator handoff pattern
 
 Single artist/designer handoff source:

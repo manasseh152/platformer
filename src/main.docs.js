@@ -5,11 +5,12 @@ const modules = import.meta.glob(['../docs/**/*.md', '!../docs/adr/**'], {
 });
 
 const documents = Object.entries(modules)
-  .map(([modulePath, markdown]) => {
+  .map(([modulePath, source]) => {
     const path = modulePath.replace(/^\.\.\//, '');
-    const title = markdown.match(/^#\s+(.+)$/m)?.[1]?.trim() || titleFromPath(path);
+    const { markdown, frontMatter } = parseMarkdownDocument(source);
+    const title = frontMatter.title || markdown.match(/^#\s+(.+)$/m)?.[1]?.trim() || titleFromPath(path);
     const id = slug(path.replace(/\.md$/, ''));
-    return { id, path, title, markdown };
+    return { id, path, title, markdown, frontMatter };
   })
   .sort((a, b) => sortKey(a.path).localeCompare(sortKey(b.path)));
 
@@ -97,8 +98,22 @@ function scrollToHashTarget() {
   });
 }
 
+function parseMarkdownDocument(source) {
+  const normalized = source.replace(/\r\n/g, '\n');
+  const match = normalized.match(/^---\n([\s\S]*?)\n---\n?/);
+  if (!match) return { markdown: normalized, frontMatter: {} };
+
+  const frontMatter = Object.fromEntries(match[1]
+    .split('\n')
+    .map(line => line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/))
+    .filter(Boolean)
+    .map(([, key, value]) => [key, value.replace(/^['\"]|['\"]$/g, '').trim()]));
+
+  return { markdown: normalized.slice(match[0].length), frontMatter };
+}
+
 function renderMarkdown(markdown, doc) {
-  const lines = markdown.replace(/\r\n/g, '\n').split('\n');
+  const lines = markdown.split('\n');
   let html = '';
   let paragraph = [];
   let list = null;

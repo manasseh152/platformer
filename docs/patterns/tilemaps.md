@@ -1,3 +1,7 @@
+---
+title: Tilemaps
+---
+
 # Tilemaps
 
 Tilemaps are one authoring format for core scenes.

@@ -1,3 +1,7 @@
+---
+title: Foundation review pattern
+---
+
 # Foundation review pattern
 
 This document is the living foundation review for the project. Keep it current when architecture, ownership, tests, or priorities change.

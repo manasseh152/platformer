@@ -1,3 +1,7 @@
+---
+title: Asset creator source
+---
+
 # Asset creator source
 
 Living brief for artists/designers creating or replacing game assets. It mirrors the code-owned facts a creator needs without requiring them to read the whole codebase.

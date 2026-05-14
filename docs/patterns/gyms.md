@@ -1,3 +1,7 @@
+---
+title: Gyms and machines
+---
+
 # Gyms and machines
 
 Gyms are developer-only, in-engine system validation scenarios. A gym must open as a gameplay world/tilemap that can be inspected with developer tools and validated by runtime machines. Browser shell/navigation smoke tests are not gyms.

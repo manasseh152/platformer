@@ -1,3 +1,7 @@
+---
+title: Scene components
+---
+
 # Scene components
 
 Components are plain serializable data created by factories in `src/engine/scene/components.js`.

@@ -1,3 +1,7 @@
+---
+title: Speed run patterns
+---
+
 # Speed run patterns
 
 ## Goals

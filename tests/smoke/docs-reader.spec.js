@@ -6,6 +6,7 @@ test('Docs reader renders one selected markdown file with sidebar navigation', a
   const articles = page.locator('.doc-card');
   await expect(articles).toHaveCount(1);
   await expect(page.locator('.docs-nav-link[aria-current="page"]')).toHaveCount(1);
+  await expect(articles.first()).not.toContainText('title: Project docs');
 
   const firstPath = await page.locator('.doc-card__header p').last().textContent();
   const secondNavLink = page.locator('.docs-nav-link').nth(1);
