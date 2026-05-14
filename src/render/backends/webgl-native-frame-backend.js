@@ -335,14 +335,14 @@ export function createWebGlNativeFrameBackend({ width, height, canvas = document
     kind: 'webgl-native-frame-backend',
     canvas,
     gl,
-    get lost() { return lost; },
+    get lost() { return lost || gl.isContextLost?.() === true; },
     resize(nextWidth, nextHeight) {
       if (canvas.width !== nextWidth) canvas.width = nextWidth;
       if (canvas.height !== nextHeight) canvas.height = nextHeight;
       gl.viewport(0, 0, canvas.width, canvas.height);
     },
     supportsFrame(frame) {
-      if (this.lost) return { supported: false, issues: [{ reason: 'webgl native-frame context lost' }] };
+      if (this.lost) return { backendKind: 'webgl', supported: false, issues: [{ reason: 'webgl native-frame context lost', severity: 'required' }] };
       return analyzeWebGlNativeFrameSupport(frame, { assetRegistry });
     },
     draw(frame) {

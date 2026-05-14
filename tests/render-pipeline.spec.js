@@ -490,6 +490,56 @@ test('renderNativeFrame falls back from webgl when image assets are not loaded',
   ]);
 });
 
+test('renderNativeFrame reports context-loss fallback from an existing webgl backend', async ({ page }) => {
+  await page.goto('/');
+  const result = await page.evaluate(async () => {
+    if (!document.createElement('canvas').getContext('webgl')) return { supported: false };
+    const [{ createRenderFrameBuilder }, { renderNativeFrame }, { createAssetRegistry }] = await Promise.all([
+      import('/src/engine/render/frame-builder.js'),
+      import('/src/render/gameplay-render-pipeline.js'),
+      import('/src/render/asset-registry.js')
+    ]);
+    const frame = createRenderFrameBuilder({ width: 4, height: 4 })
+      .add({ kind: 'clear', fill: '#000' })
+      .finalize();
+    const game = {
+      view: { bufferWidth: 4, bufferHeight: 4 },
+      renderCanvas: document.createElement('canvas'),
+      renderPipeline: {},
+      devTools: { flags: {} }
+    };
+    const assetRegistry = createAssetRegistry({});
+    renderNativeFrame({ now: () => 0, random: () => 0.5 }, game, frame, { assetRegistry, nativeBackendKind: 'webgl' });
+    const initialBackend = game.renderPipeline.nativeBackend;
+    const loseContext = initialBackend.gl.getExtension('WEBGL_lose_context');
+    if (!loseContext) return { supported: false };
+    loseContext.loseContext();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    renderNativeFrame({ now: () => 0, random: () => 0.5 }, game, frame, { assetRegistry, nativeBackendKind: 'webgl' });
+    return {
+      supported: true,
+      backendKind: game.renderPipeline.nativeBackendKind,
+      backend: game.renderPipeline.nativeBackend.kind,
+      sameBackend: game.renderPipeline.nativeBackend === initialBackend,
+      diagnostics: game.renderPipeline.diagnostics
+    };
+  });
+
+  test.skip(!result.supported, 'WebGL or WEBGL_lose_context unavailable in this browser');
+  expect(result.backendKind).toBe('canvas2d');
+  expect(result.backend).toBe('canvas2d-native-frame-backend');
+  expect(result.sameBackend).toBe(false);
+  expect(result.diagnostics).toMatchObject({
+    requestedBackendKind: 'webgl',
+    candidateBackendKind: 'webgl',
+    actualBackendKind: 'canvas2d',
+    fallback: { occurred: true, from: 'webgl', to: 'canvas2d' }
+  });
+  expect(result.diagnostics.fallback.issues).toEqual([
+    expect.objectContaining({ reason: 'webgl native-frame context lost', severity: 'required' })
+  ]);
+});
+
 test('webgl native backend draws clear and 1px rect packets from finalized frames', async ({ page }) => {
   await page.goto('/');
   const result = await page.evaluate(async () => {

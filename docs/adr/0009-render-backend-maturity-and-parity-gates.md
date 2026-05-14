@@ -295,6 +295,12 @@ Backend maturity tiers are now represented in `src/render/backends/native-frame-
 
 Covered by `tests/devtools-registry.spec.js` and `tests/render-pipeline.spec.js`.
 
+### 12. Preserve GPU context-loss fallback diagnostics — Complete
+
+When an existing requested GPU native-frame backend is already context-lost, `renderNativeFrame(...)` now preserves that as the normalized fallback issue even though `ensureNativeFrameBackend(...)` replaces the unusable backend with Canvas2D. The forward WebGL backend also reports `gl.isContextLost()` through its `lost` getter and returns a normalized context-loss support result.
+
+Covered by `tests/render-pipeline.spec.js`, which forces `WEBGL_lose_context`, renders the next frame with WebGL requested, and verifies Canvas2D fallback with a structured `webgl native-frame context lost` diagnostic.
+
 ## Consequences
 
 ### Positive

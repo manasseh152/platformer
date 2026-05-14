@@ -81,6 +81,12 @@ function writeRenderPipelineDiagnostics(game, frame, { requestedBackendKind, can
 export function renderNativeFrame(runtime, game, frame, { assetRegistry = defaultAssetRegistry, nativeBackendKind } = {}) {
   const requestedBackendKind = nativeBackendKindFromDevTools(game.devTools?.flags, nativeBackendKind);
   const candidateBackendKind = selectNativeFrameBackendKindForFrame(frame, { nativeBackendKind: requestedBackendKind, devToolsFlags: game.devTools?.flags });
+  const previousBackend = game.renderPipeline?.nativeBackend;
+  const previousCandidateContextLoss = candidateBackendKind === DEFERRED_LIGHTING_BACKEND_KIND && previousBackend?.kind === 'webgl2-deferred-native-frame-backend' && previousBackend.lost
+    ? 'webgl2 deferred native-frame context lost'
+    : (candidateBackendKind === 'webgl' && previousBackend?.kind === 'webgl-native-frame-backend' && previousBackend.lost
+        ? 'webgl native-frame context lost'
+        : null);
   let nativeBackend = ensureNativeFrameBackend(game, { assetRegistry, nativeBackendKind: candidateBackendKind });
   let fallbackFrom = null;
   let fallbackTo = null;
@@ -89,11 +95,11 @@ export function renderNativeFrame(runtime, game, frame, { assetRegistry = defaul
   if (candidateBackendKind === DEFERRED_LIGHTING_BACKEND_KIND && nativeBackend.kind !== 'webgl2-deferred-native-frame-backend') {
     fallbackFrom = DEFERRED_LIGHTING_BACKEND_KIND;
     fallbackTo = 'canvas2d';
-    fallbackIssues = [normalizedIssue(WEBGL2_DEFERRED_BACKEND_UNAVAILABLE_REASON)];
+    fallbackIssues = [normalizedIssue(previousCandidateContextLoss ?? WEBGL2_DEFERRED_BACKEND_UNAVAILABLE_REASON)];
   } else if (candidateBackendKind === 'webgl' && nativeBackend.kind !== 'webgl-native-frame-backend') {
     fallbackFrom = 'webgl';
     fallbackTo = 'canvas2d';
-    fallbackIssues = [normalizedIssue('webgl native-frame backend unavailable')];
+    fallbackIssues = [normalizedIssue(previousCandidateContextLoss ?? 'webgl native-frame backend unavailable')];
   } else {
     const support = nativeBackend.supportsFrame?.(frame);
     if (candidateBackendKind === DEFERRED_LIGHTING_BACKEND_KIND && (nativeBackend.lost || (support && !support.supported))) {
