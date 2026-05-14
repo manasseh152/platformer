@@ -1,0 +1,218 @@
+const modules = import.meta.glob(['../docs/**/*.md', '!../docs/adr/**'], {
+  query: '?raw',
+  import: 'default',
+  eager: true
+});
+
+const documents = Object.entries(modules)
+  .map(([modulePath, markdown]) => {
+    const path = modulePath.replace(/^\.\.\//, '');
+    const title = markdown.match(/^#\s+(.+)$/m)?.[1]?.trim() || titleFromPath(path);
+    const id = slug(path.replace(/\.md$/, ''));
+    return { id, path, title, markdown };
+  })
+  .sort((a, b) => sortKey(a.path).localeCompare(sortKey(b.path)));
+
+const documentIdsByPath = new Map(documents.map(doc => [doc.path, doc.id]));
+const nav = document.getElementById('docsNav');
+const content = document.getElementById('docsContent');
+const filter = document.getElementById('docsFilter');
+
+render(documents);
+filter?.addEventListener('input', () => {
+  const query = filter.value.trim().toLowerCase();
+  const matches = query
+    ? documents.filter(doc => `${doc.title} ${doc.path} ${doc.markdown}`.toLowerCase().includes(query))
+    : documents;
+  render(matches, query);
+});
+
+function render(docs, query = '') {
+  renderNav(docs, query);
+  content.innerHTML = docs.length
+    ? docs.map(renderDocument).join('')
+    : `<article class="doc-card doc-card--empty"><h2>No docs match “${escapeHtml(query)}”.</h2><p>Try a broader pattern, system, or workflow term.</p></article>`;
+}
+
+function renderNav(docs, query) {
+  const groups = groupByDirectory(docs);
+  nav.innerHTML = docs.length
+    ? Object.entries(groups).map(([group, entries]) => `
+      <section class="docs-nav-group">
+        <h2>${escapeHtml(group)}</h2>
+        ${entries.map(doc => `<a href="#${doc.id}"><span>${escapeHtml(doc.title)}</span><small>${escapeHtml(doc.path)}</small></a>`).join('')}
+      </section>
+    `).join('')
+    : `<p class="docs-nav-empty">No docs match “${escapeHtml(query)}”.</p>`;
+}
+
+function renderDocument(doc) {
+  return `<article id="${doc.id}" class="doc-card" data-doc-path="${escapeHtml(doc.path)}">
+    <header class="doc-card__header">
+      <p>${escapeHtml(doc.path)}</p>
+      <a href="#${doc.id}" aria-label="Link to ${escapeHtml(doc.title)}">#</a>
+    </header>
+    ${renderMarkdown(doc.markdown, doc)}
+  </article>`;
+}
+
+function renderMarkdown(markdown, doc) {
+  const lines = markdown.replace(/\r\n/g, '\n').split('\n');
+  let html = '';
+  let paragraph = [];
+  let list = null;
+  let code = null;
+  let tableRows = [];
+
+  const flushParagraph = () => {
+    if (!paragraph.length) return;
+    html += `<p>${inline(paragraph.join(' '), doc)}</p>`;
+    paragraph = [];
+  };
+  const closeList = () => {
+    if (!list) return;
+    html += `</${list}>`;
+    list = null;
+  };
+  const flushTable = () => {
+    if (!tableRows.length) return;
+    html += renderTable(tableRows, doc);
+    tableRows = [];
+  };
+
+  for (const line of lines) {
+    if (code) {
+      if (line.startsWith('```')) {
+        html += `<pre><code>${escapeHtml(code.lines.join('\n'))}</code></pre>`;
+        code = null;
+      } else code.lines.push(line);
+      continue;
+    }
+    if (line.startsWith('```')) {
+      flushParagraph();
+      closeList();
+      code = { lines: [] };
+      continue;
+    }
+
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushParagraph();
+      closeList();
+      flushTable();
+      continue;
+    }
+
+    if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+      flushParagraph();
+      closeList();
+      tableRows.push(trimmed);
+      continue;
+    }
+    flushTable();
+
+    const heading = trimmed.match(/^(#{1,6})\s+(.+)$/);
+    if (heading) {
+      flushParagraph();
+      closeList();
+      const level = Math.min(heading[1].length + 1, 6);
+      const text = stripInline(heading[2]);
+      const id = `${doc.id}-${slug(text)}`;
+      html += `<h${level} id="${id}">${inline(heading[2], doc)}<a class="heading-anchor" href="#${id}" aria-label="Link to ${escapeHtml(text)}">#</a></h${level}>`;
+      continue;
+    }
+
+    const unordered = trimmed.match(/^[-*]\s+(.+)$/);
+    const ordered = trimmed.match(/^\d+\.\s+(.+)$/);
+    if (unordered || ordered) {
+      flushParagraph();
+      const type = unordered ? 'ul' : 'ol';
+      if (list !== type) {
+        closeList();
+        html += `<${type}>`;
+        list = type;
+      }
+      html += `<li>${inline((unordered || ordered)[1], doc)}</li>`;
+      continue;
+    }
+
+    closeList();
+    paragraph.push(trimmed);
+  }
+
+  flushParagraph();
+  closeList();
+  flushTable();
+  if (code) html += `<pre><code>${escapeHtml(code.lines.join('\n'))}</code></pre>`;
+  return html;
+}
+
+function renderTable(rows, doc) {
+  if (rows.length < 2 || !/^\|\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|$/.test(rows[1])) {
+    return rows.map(row => `<p>${inline(row, doc)}</p>`).join('');
+  }
+  const cells = row => row.slice(1, -1).split('|').map(cell => cell.trim());
+  const header = cells(rows[0]);
+  const body = rows.slice(2).map(cells);
+  return `<div class="doc-table-wrap"><table><thead><tr>${header.map(cell => `<th>${inline(cell, doc)}</th>`).join('')}</tr></thead><tbody>${body.map(row => `<tr>${row.map(cell => `<td>${inline(cell, doc)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+
+function inline(text, doc) {
+  return escapeHtml(text)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label, href) => renderLink(label, href, doc));
+}
+
+function renderLink(label, href, doc) {
+  if (/^[a-z]+:/i.test(href) || href.startsWith('#')) return `<a href="${escapeAttr(href)}">${label}</a>`;
+  const [target, hash = ''] = href.split('#');
+  const targetPath = normalizeDocPath(doc.path, target);
+  const targetId = documentIdsByPath.get(targetPath);
+  if (targetId) return `<a href="#${targetId}${hash ? `-${slug(hash)}` : ''}">${label}</a>`;
+  if (targetPath.includes('/adr/') || targetPath.startsWith('docs/adr/')) return `<span class="doc-link-muted" title="ADR excluded from this docs page">${label}</span>`;
+  return `<a href="${escapeAttr(href)}">${label}</a>`;
+}
+
+function normalizeDocPath(fromPath, href) {
+  if (href.startsWith('/')) return href.replace(/^\//, '');
+  const base = fromPath.split('/').slice(0, -1);
+  for (const part of href.split('/')) {
+    if (!part || part === '.') continue;
+    if (part === '..') base.pop();
+    else base.push(part);
+  }
+  return base.join('/');
+}
+
+function groupByDirectory(docs) {
+  return docs.reduce((groups, doc) => {
+    const group = doc.path.split('/').slice(0, -1).join('/') || 'docs';
+    (groups[group] ||= []).push(doc);
+    return groups;
+  }, {});
+}
+
+function titleFromPath(path) {
+  return path.split('/').pop().replace(/\.md$/, '').replace(/[-_]/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function sortKey(path) {
+  return path === 'docs/README.md' ? '0' : path;
+}
+
+function slug(value) {
+  return String(value).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'section';
+}
+
+function stripInline(text) {
+  return text.replace(/[`*_\[\]()]/g, '').trim();
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[char]);
+}
+
+function escapeAttr(value) {
+  return escapeHtml(value).replace(/'/g, '&#39;');
+}

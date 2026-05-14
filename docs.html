@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#080b11" />
+  <meta name="description" content="Project documentation for Chibi Hollow Platformer, excluding ADR history." />
+  <title>Docs — Chibi Hollow Platformer</title>
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="stylesheet" href="/styles/main.docs.css" />
+</head>
+<body>
+  <div class="docs-shell">
+    <header class="docs-hero">
+      <div>
+        <p class="docs-kicker">Chibi Hollow // working notes</p>
+        <h1>Project Docs</h1>
+        <p class="docs-lede">Current implementation guides and patterns in one readable page. Architecture Decision Records are intentionally excluded.</p>
+      </div>
+      <nav class="docs-links" aria-label="Page links">
+        <a href="/">Game</a>
+        <a href="/editor">Editor</a>
+      </nav>
+    </header>
+
+    <main class="docs-layout">
+      <aside class="docs-index" aria-label="Documentation index">
+        <div class="docs-index__sticky">
+          <label class="docs-search">
+            <span>Filter docs</span>
+            <input id="docsFilter" type="search" placeholder="terrain, rendering, gyms…" autocomplete="off" />
+          </label>
+          <nav id="docsNav" aria-label="Documents"></nav>
+        </div>
+      </aside>
+      <section id="docsContent" class="docs-content" aria-live="polite"></section>
+    </main>
+  </div>
+
+  <script type="module" src="/src/main.docs.js"></script>
+</body>
+</html>
