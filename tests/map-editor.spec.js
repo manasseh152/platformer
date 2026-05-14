@@ -310,9 +310,13 @@ test('map editor tabs and panels use the shared primitive contract', async ({ pa
   await expect(page.getByRole('tab', { name: 'Edit' })).toHaveClass(/ds-tab/);
   await expect(page.getByRole('tab', { name: 'Edit' })).toHaveAttribute('tabindex', '0');
   await expect(page.getByRole('tab', { name: 'Map' })).toHaveAttribute('tabindex', '-1');
+  await expect(page.getByRole('tab', { name: 'Settings' })).toHaveCount(0);
+  await expect(page.getByRole('tab')).toHaveText(['Edit', 'Map', 'View']);
   await page.getByRole('tab', { name: 'Map' }).click();
   await expect(page.locator('#mapPanel')).toHaveClass(/ds-tab-panel/);
   await expect(page.getByRole('tab', { name: 'Map' })).toHaveAttribute('tabindex', '0');
+  await expect(page.getByRole('heading', { name: 'Map identity' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Starting point' })).toBeVisible();
 });
 
 test('map editor tab clicks toggle the floating overlay', async ({ page }) => {
@@ -343,16 +347,16 @@ test('map editor shoulder buttons switch tabs and show controller hints', async 
   await expect(page.locator('[data-editor-tab-hint="next"]')).toBeHidden();
 
   await page.evaluate(() => window.__setMockGamepadButton(5, true));
-  await expect(page.locator('#viewPanel')).toBeVisible();
+  await expect(page.locator('#mapPanel')).toBeVisible();
   await expect(page.locator('[data-editor-tab-hint="previous"]')).toBeVisible();
   await expect(page.locator('[data-editor-tab-hint="previous"] .input-hint__icon')).toHaveAttribute('alt', 'LB');
   await expect(page.locator('[data-editor-tab-hint="next"]')).toBeVisible();
   await expect(page.locator('[data-editor-tab-hint="next"] .input-hint__icon')).toHaveAttribute('alt', 'RB');
-  await page.getByRole('tab', { name: 'View' }).click();
+  await page.getByRole('tab', { name: 'Map' }).click();
   await expect(page.locator('#editorOverlay')).toHaveAttribute('data-collapsed', 'true');
   await expect(page.locator('[data-editor-tab-hint="previous"]')).toBeHidden();
   await expect(page.locator('[data-editor-tab-hint="next"]')).toBeHidden();
-  await page.getByRole('tab', { name: 'View' }).click();
+  await page.getByRole('tab', { name: 'Map' }).click();
   await expect(page.locator('[data-editor-tab-hint="previous"]')).toBeVisible();
   await expect(page.locator('[data-editor-tab-hint="next"]')).toBeVisible();
   await page.evaluate(() => window.__setMockGamepadButton(5, false));
@@ -440,7 +444,9 @@ test('map editor edit tab groups pack items by editable layer', async ({ page })
 
 test('map editor persists controller brush sensitivity and momentum settings', async ({ page }) => {
   await page.goto('/editor.html');
-  await page.getByRole('tab', { name: 'Settings' }).click();
+  await expect(page.getByRole('tab', { name: 'Settings' })).toHaveCount(0);
+  await expect(page.locator('#controllerBrushSensitivityInput')).toBeHidden();
+  await page.getByText('Controller cursor').click();
 
   await page.locator('#controllerBrushSensitivityInput').fill('8');
   await expect(page.locator('#controllerBrushSensitivityValue')).toHaveText('8');
@@ -452,7 +458,7 @@ test('map editor persists controller brush sensitivity and momentum settings', a
   expect(saved).toEqual({ sensitivity: 8, momentumEnabled: true, momentumDelayMs: 300, momentumMaxSpeed: 3.25 });
 
   await page.reload();
-  await page.getByRole('tab', { name: 'Settings' }).click();
+  await page.getByText('Controller cursor').click();
   await expect(page.locator('#controllerBrushSensitivityInput')).toHaveValue('8');
   await expect(page.locator('#controllerBrushMomentumToggle')).toBeChecked();
   await expect(page.locator('#controllerBrushMomentumDelayInput')).toHaveValue('300');
@@ -546,9 +552,9 @@ test('map editor controller navigates and activates controls in the selected tab
   });
   await page.goto('/editor.html');
 
-  await page.evaluate(() => window.__setMockGamepadButton(5, true));
+  await page.evaluate(() => window.__setMockGamepadButton(4, true));
   await expect(page.locator('#viewPanel')).toBeVisible();
-  await page.evaluate(() => window.__setMockGamepadButton(5, false));
+  await page.evaluate(() => window.__setMockGamepadButton(4, false));
 
   await page.evaluate(() => window.__setMockGamepadButton(13, true));
   await expect(page.locator('#gridToggle')).toBeFocused();
@@ -581,7 +587,7 @@ test('map editor keyboard and controller use two-axis navigation inside two-colu
   await page.keyboard.press('ArrowRight');
   await expect(page.locator('#rowsInput')).toBeFocused();
   await page.keyboard.press('ArrowDown');
-  await expect(page.locator('#resetButton')).toBeFocused();
+  await expect(page.locator('#newButton')).toBeFocused();
 
   await page.getByRole('tab', { name: 'Edit' }).click();
   await page.getByRole('button', { name: 'Grass' }).focus();
@@ -620,12 +626,15 @@ test('map editor controller treats text inputs as focus-only controls', async ({
   await page.locator('#idInput').fill('act-01-level-1-keyboard-ok');
   await expect(page.locator('#idInput')).toHaveValue(/-keyboard-ok$/);
 
-  await page.evaluate(() => window.__setMockGamepadButton(13, true));
+  await page.locator('#colsInput').focus();
+  await page.locator('#colsInput').fill('12');
+  await page.evaluate(() => window.__setMockGamepadButton(0, true));
+  await page.waitForTimeout(120);
   await expect(page.locator('#colsInput')).toBeFocused();
-  await page.evaluate(() => window.__setMockGamepadButton(13, false));
-  await page.waitForTimeout(80);
-  await page.evaluate(() => window.__setMockGamepadButton(12, true));
-  await expect(page.locator('#idInput')).toBeFocused();
+  await expect(page.locator('#colsInput')).toHaveValue('12');
+  await page.evaluate(() => window.__setMockGamepadButton(0, false));
+  await page.evaluate(() => window.__setMockGamepadButton(13, true));
+  await expect(page.locator('#newButton')).toBeFocused();
 });
 
 test('map editor controller does not change a focused select until A opens it', async ({ page }) => {

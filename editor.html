@@ -15,10 +15,9 @@
 
       <div class="editor-tabs ds-tabs ds-tabs--primary" role="tablist" aria-label="Editor action groups">
         <span class="editor-tabs__hint" data-editor-tab-hint="previous" data-input-tab-hint data-input-action="editor.previousTab" aria-hidden="true" hidden>LB</span>
-        <button id="mapTab" class="ds-tab" type="button" role="tab" aria-label="Map" aria-selected="false" aria-controls="mapPanel" data-editor-tab="map" tabindex="-1"><span>Map</span></button>
         <button id="editTab" class="ds-tab" type="button" role="tab" aria-label="Edit" aria-selected="true" aria-controls="editPanel" data-editor-tab="edit" tabindex="0"><span>Edit</span></button>
+        <button id="mapTab" class="ds-tab" type="button" role="tab" aria-label="Map" aria-selected="false" aria-controls="mapPanel" data-editor-tab="map" tabindex="-1"><span>Map</span></button>
         <button id="viewTab" class="ds-tab" type="button" role="tab" aria-label="View" aria-selected="false" aria-controls="viewPanel" data-editor-tab="view" tabindex="-1"><span>View</span></button>
-        <button id="settingsTab" class="ds-tab" type="button" role="tab" aria-label="Settings" aria-selected="false" aria-controls="settingsPanel" data-editor-tab="settings" tabindex="-1"><span>Settings</span></button>
         <span class="editor-tabs__hint" data-editor-tab-hint="next" data-input-tab-hint data-input-action="editor.nextTab" aria-hidden="true" hidden>RB</span>
       </div>
 
@@ -40,11 +39,7 @@
 
         <section id="mapPanel" class="tab-panel ds-tab-panel" role="tabpanel" aria-labelledby="mapTab" hidden>
           <div class="panel-section">
-            <h2>Map setup</h2>
-            <label class="field">
-              <span>Registered tilemap</span>
-              <select id="tilemapSelect"></select>
-            </label>
+            <h2>Map identity</h2>
             <label class="field">
               <span>Map name</span>
               <input id="nameInput" type="text" value="New Tilemap" />
@@ -54,13 +49,28 @@
               <input id="idInput" type="text" value="new-tilemap" aria-describedby="idHint" />
             </label>
             <p id="idHint" class="hint">Use kebab-case, e.g. <code>my-map-01</code>.</p>
+          </div>
+
+          <div class="panel-section">
+            <h2>Map size</h2>
             <div class="field-grid">
               <label class="field"><span>Cols</span><input id="colsInput" type="number" min="1" max="120" value="36" /></label>
               <label class="field"><span>Rows</span><input id="rowsInput" type="number" min="1" max="80" value="16" /></label>
             </div>
-            <div class="button-row">
+            <div class="button-row button-row--single">
               <button id="newButton" type="button">New blank</button>
-              <button id="resetButton" type="button">Reload</button>
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <h2>Starting point</h2>
+            <p class="section-kicker">Load a registered map as the base for this draft.</p>
+            <label class="field">
+              <span>Registered tilemap</span>
+              <select id="tilemapSelect"></select>
+            </label>
+            <div class="button-row button-row--single">
+              <button id="resetButton" type="button">Reload from selected</button>
             </div>
           </div>
 
@@ -114,23 +124,10 @@
               <button id="redoButton" type="button" disabled>Redo</button>
             </div>
           </div>
-        </section>
 
-        <section id="viewPanel" class="tab-panel ds-tab-panel" role="tabpanel" aria-labelledby="viewTab" hidden>
-          <div class="panel-section">
-            <h2>View</h2>
-            <div class="switch-stack">
-              <label class="check"><input id="gridToggle" type="checkbox" checked /> <span>Grid</span></label>
-              <label class="check"><input id="collisionToggle" type="checkbox" /> <span>Collision rects</span></label>
-              <label class="check"><input id="floatingControlsToggle" type="checkbox" checked /> <span>Floating zoom controls</span></label>
-            </div>
-            <p class="hint">Wheel or pinch to zoom. Hold <kbd>Space</kbd> or middle-drag to pan.</p>
-          </div>
-        </section>
-
-        <section id="settingsPanel" class="tab-panel ds-tab-panel" role="tabpanel" aria-labelledby="settingsTab" hidden>
-          <div class="panel-section">
-            <h2>Controller brush</h2>
+          <details class="panel-section panel-disclosure">
+            <summary>Controller cursor</summary>
+            <p class="section-kicker">Tune gamepad cursor repeat speed and acceleration.</p>
             <label class="field">
               <span>Sensitivity <output id="controllerBrushSensitivityValue">5</output></span>
               <input id="controllerBrushSensitivityInput" type="range" min="1" max="10" step="1" value="5" />
@@ -141,6 +138,23 @@
               <label class="field"><span>Max speed ×</span><input id="controllerBrushMomentumSpeedInput" type="number" min="1" max="5" step="0.25" value="2.5" /></label>
             </div>
             <p class="hint">Sensitivity sets base cursor repeat speed. Momentum makes held directions accelerate after the ramp delay.</p>
+          </details>
+        </section>
+
+        <section id="viewPanel" class="tab-panel ds-tab-panel" role="tabpanel" aria-labelledby="viewTab" hidden>
+          <div class="panel-section">
+            <h2>Canvas overlays</h2>
+            <div class="switch-stack">
+              <label class="check"><input id="gridToggle" type="checkbox" checked /> <span>Grid</span></label>
+              <label class="check"><input id="collisionToggle" type="checkbox" /> <span>Collision rects</span></label>
+            </div>
+          </div>
+          <div class="panel-section">
+            <h2>Viewport controls</h2>
+            <div class="switch-stack">
+              <label class="check"><input id="floatingControlsToggle" type="checkbox" checked /> <span>Floating zoom controls</span></label>
+            </div>
+            <p class="hint">Wheel or pinch to zoom. Hold <kbd>Space</kbd> or middle-drag to pan.</p>
           </div>
         </section>
       </aside>

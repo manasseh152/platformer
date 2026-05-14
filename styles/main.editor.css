@@ -261,6 +261,39 @@ body[data-editor-input="gamepad"] .overlay-toggle-hint { display: inline-flex; }
   .field select option:checked { background: var(--color-accent); color: var(--color-accent-text); }
 }
 .field-grid, .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.button-row--single { grid-template-columns: 1fr; }
+.panel-disclosure { color: var(--color-text-muted); }
+.panel-disclosure summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: -12px;
+  padding: 12px;
+  cursor: pointer;
+  color: rgba(255,246,232,.82);
+  font-family: var(--font-display);
+  font-size: .9rem;
+  font-weight: 750;
+  letter-spacing: -.01em;
+  list-style: none;
+}
+.panel-disclosure summary::-webkit-details-marker { display: none; }
+.panel-disclosure summary::after {
+  content: "+";
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(255,246,232,.12);
+  border-radius: 50%;
+  color: var(--color-accent-muted);
+  background: rgba(255,255,255,.045);
+  font-family: var(--font-ui);
+  font-weight: 900;
+}
+.panel-disclosure[open] summary { margin-bottom: 0; }
+.panel-disclosure[open] summary::after { content: "−"; }
 .layer-switcher { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .layer-switcher button {
   min-height: 64px;
