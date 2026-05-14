@@ -267,13 +267,19 @@ After diagnostics consumers are migrated, remove split fields such as backend-sp
 
 Implemented by removing `webglFallbackReason` and `deferredFallbackReason` writes from `renderNativeFrame(...)`, removing the legacy `selectedBackendKind` diagnostics bridge, and migrating devtools/tests to read `diagnostics.fallback.issues` plus `candidateBackendKind`.
 
-### 8. Keep WebGPU native/deferred backend as a future spike
+### 8. Add asset-load capability diagnostics for WebGL image packets — Complete
+
+WebGL image-like packet support now checks asset readiness when an asset registry is available. Missing or unloaded `image`, `sprite`, and `texturedQuad` assets are reported as structured required `asset` capability issues before draw, causing the forward WebGL path to fall back through normalized diagnostics instead of silently omitting the packet.
+
+Covered by `tests/render-pipeline.spec.js` with both direct capability analysis and `renderNativeFrame(...)` fallback coverage for an unloaded sprite asset.
+
+### 9. Keep WebGPU native/deferred backend as a future spike
 
 Do not introduce a WebGPU native-frame backend as part of this ADR's immediate implementation. Revisit after capability manifests, diagnostics, and WebGL/WebGL2 parity gates are established, or if deferred/material requirements outgrow WebGL2.
 
 Because bundled Chromium is a likely target runtime, WebGPU is a credible future native-frame/deferred backend target. Its first slice should be narrow, such as drawing clear/rect/image packets into a `NativeFrameSource`, and it must enter through the same packet contract, capability manifest, diagnostics, and fallback rules.
 
-### 9. Keep external renderer evaluation as a future escape hatch
+### 10. Keep external renderer evaluation as a future escape hatch
 
 Do not migrate to Three.js as part of renderer maturity work. Revisit external renderers only if one of these becomes true:
 

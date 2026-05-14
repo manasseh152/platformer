@@ -343,7 +343,7 @@ export function createWebGlNativeFrameBackend({ width, height, canvas = document
     },
     supportsFrame(frame) {
       if (this.lost) return { supported: false, issues: [{ reason: 'webgl native-frame context lost' }] };
-      return analyzeWebGlNativeFrameSupport(frame);
+      return analyzeWebGlNativeFrameSupport(frame, { assetRegistry });
     },
     draw(frame) {
       if (lost) return;

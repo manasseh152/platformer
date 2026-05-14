@@ -337,6 +337,19 @@ test('webgl native backend capability check accepts real gameplay vector and lig
   expect(support.issues).toEqual([]);
 });
 
+test('webgl native backend capability check reports unloaded image assets', () => {
+  const frame = createRenderFrameBuilder({ width: 4, height: 4 })
+    .add({ kind: 'clear', fill: '#000' })
+    .add({ kind: 'image', assetId: 'missing.image', x: 0, y: 0, w: 4, h: 4 })
+    .finalize();
+  const support = analyzeWebGlNativeFrameSupport(frame, { assetRegistry: createAssetRegistry({}) });
+
+  expect(support).toMatchObject({ backendKind: 'webgl', supported: false });
+  expect(support.issues).toEqual([
+    expect.objectContaining({ packetKind: 'image', feature: 'asset', reason: 'asset not loaded: missing.image', severity: 'required' })
+  ]);
+});
+
 test('renderGameplayFrame keeps requested webgl for extracted gameplay packets', async ({ page }) => {
   await page.goto('/');
   const result = await page.evaluate(async () => {
@@ -429,6 +442,48 @@ test('renderNativeFrame falls back from webgl on unsupported packet features', a
     expect.objectContaining({ packetKind: 'rect', feature: 'fill', reason: 'unsupported fill kind for rect: conicGradient', severity: 'required' })
   ]);
   expect(result.fallbackReasons).toEqual(['unsupported fill kind for rect: conicGradient']);
+});
+
+test('renderNativeFrame falls back from webgl when image assets are not loaded', async ({ page }) => {
+  await page.goto('/');
+  const result = await page.evaluate(async () => {
+    if (!document.createElement('canvas').getContext('webgl')) return { supported: false };
+    const [{ createRenderFrameBuilder }, { renderNativeFrame }, { createAssetRegistry }] = await Promise.all([
+      import('/src/engine/render/frame-builder.js'),
+      import('/src/render/gameplay-render-pipeline.js'),
+      import('/src/render/asset-registry.js')
+    ]);
+    const frame = createRenderFrameBuilder({ width: 4, height: 4 })
+      .add({ kind: 'clear', fill: '#000' })
+      .add({ kind: 'sprite', assetId: 'missing.sprite', x: 0, y: 0, w: 4, h: 4 })
+      .finalize();
+    const game = {
+      view: { bufferWidth: 4, bufferHeight: 4 },
+      renderCanvas: document.createElement('canvas'),
+      renderPipeline: {},
+      devTools: { flags: {} }
+    };
+    renderNativeFrame({ now: () => 0, random: () => 0.5 }, game, frame, { assetRegistry: createAssetRegistry({}), nativeBackendKind: 'webgl' });
+    return {
+      supported: true,
+      backendKind: game.renderPipeline.nativeBackendKind,
+      backend: game.renderPipeline.nativeBackend.kind,
+      diagnostics: game.renderPipeline.diagnostics
+    };
+  });
+
+  test.skip(!result.supported, 'WebGL unavailable in this browser');
+  expect(result.backendKind).toBe('canvas2d');
+  expect(result.backend).toBe('canvas2d-native-frame-backend');
+  expect(result.diagnostics).toMatchObject({
+    requestedBackendKind: 'webgl',
+    candidateBackendKind: 'webgl',
+    actualBackendKind: 'canvas2d',
+    fallback: { occurred: true, from: 'webgl', to: 'canvas2d' }
+  });
+  expect(result.diagnostics.fallback.issues).toEqual([
+    expect.objectContaining({ packetKind: 'sprite', feature: 'asset', reason: 'asset not loaded: missing.sprite', severity: 'required' })
+  ]);
 });
 
 test('webgl native backend draws clear and 1px rect packets from finalized frames', async ({ page }) => {
