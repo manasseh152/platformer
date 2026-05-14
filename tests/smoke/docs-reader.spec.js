@@ -24,3 +24,14 @@ test('Docs reader renders one selected markdown file with sidebar navigation', a
   await expect(articles).toHaveCount(1);
   await expect(page.locator('.doc-card__header')).toContainText(secondPath.trim());
 });
+
+test('Docs reader page scrolls through long document content', async ({ page }) => {
+  await page.goto('/docs');
+  await page.waitForSelector('.doc-card');
+
+  const maxScroll = await page.evaluate(() => document.scrollingElement.scrollHeight - window.innerHeight);
+  expect(maxScroll).toBeGreaterThan(0);
+
+  await page.mouse.wheel(0, 1000);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+});

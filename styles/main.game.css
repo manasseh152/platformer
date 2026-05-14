@@ -783,7 +783,10 @@ body.playing:not(.paused):not([data-menu-origin="start"]) #pauseScreen { visibil
 ::view-transition-old(root),
 ::view-transition-new(root),
 ::view-transition-old(menu-card),
-::view-transition-new(menu-card) { animation-duration: .16s; animation-timing-function: ease; }
+::view-transition-new(menu-card) {
+  animation-duration: var(--duration-view-transition);
+  animation-timing-function: var(--ease-view-transition);
+}
 ::view-transition-old(hint-layer) { animation: none; opacity: 0; }
 ::view-transition-new(hint-layer) { animation: none; opacity: 1; }
 #startScreen { view-transition-name: start-screen; }
@@ -800,21 +803,42 @@ body.playing:not(.paused):not([data-menu-origin="start"]) #pauseScreen { visibil
 ::view-transition-old(menu-title),
 ::view-transition-new(menu-title),
 ::view-transition-old(menu-eyebrow),
-::view-transition-new(menu-eyebrow) { animation-duration: .22s; animation-timing-function: cubic-bezier(.18,.9,.2,1); }
+::view-transition-new(menu-eyebrow),
 ::view-transition-old(menu-page),
 ::view-transition-new(menu-page),
 ::view-transition-old(level-select-panel),
 ::view-transition-new(level-select-panel),
 ::view-transition-old(menu-actions),
-::view-transition-new(menu-actions) { animation-duration: .24s; animation-timing-function: cubic-bezier(.18,.9,.2,1); }
+::view-transition-new(menu-actions),
 ::view-transition-old(level-select-tabs),
-::view-transition-new(level-select-tabs) { animation-duration: .18s; animation-timing-function: ease; }
+::view-transition-new(level-select-tabs) {
+  animation-duration: var(--duration-view-transition);
+  animation-timing-function: var(--ease-view-transition);
+}
 :root[data-transition-context="menu-forward"] ::view-transition-old(menu-page),
 :root[data-transition-context="start-to-settings"] ::view-transition-old(menu-page),
 :root[data-transition-context="start-to-level-select"] ::view-transition-old(menu-page) { animation-name: menu-page-context-out-forward; }
 :root[data-transition-context="menu-forward"] ::view-transition-new(menu-page),
 :root[data-transition-context="start-to-settings"] ::view-transition-new(menu-page),
 :root[data-transition-context="start-to-level-select"] ::view-transition-new(menu-page) { animation-name: menu-page-context-in-forward; }
+:root[data-transition-context="start-to-settings"] ::view-transition-old(root),
+:root[data-transition-context="start-to-settings"] ::view-transition-new(root),
+:root[data-transition-context="start-to-settings"] ::view-transition-old(start-screen),
+:root[data-transition-context="start-to-settings"] ::view-transition-new(pause-screen),
+:root[data-transition-context="start-to-settings"] ::view-transition-old(start-card),
+:root[data-transition-context="start-to-settings"] ::view-transition-new(menu-card),
+:root[data-transition-context="start-to-settings"] ::view-transition-old(menu-title),
+:root[data-transition-context="start-to-settings"] ::view-transition-new(menu-title),
+:root[data-transition-context="start-to-settings"] ::view-transition-old(menu-eyebrow),
+:root[data-transition-context="start-to-settings"] ::view-transition-new(menu-eyebrow),
+:root[data-transition-context="start-to-settings"] ::view-transition-old(menu-page),
+:root[data-transition-context="start-to-settings"] ::view-transition-new(menu-page),
+:root[data-transition-context="start-to-settings"] ::view-transition-old(menu-actions),
+:root[data-transition-context="start-to-settings"] ::view-transition-new(menu-actions),
+:root[data-transition-context="start-to-settings"] ::view-transition-old(level-select-tabs),
+:root[data-transition-context="start-to-settings"] ::view-transition-new(level-select-tabs),
+:root[data-transition-context="start-to-settings"] ::view-transition-old(level-select-panel),
+:root[data-transition-context="start-to-settings"] ::view-transition-new(level-select-panel) { animation: none !important; }
 :root[data-transition-context="menu-back"] ::view-transition-old(menu-page),
 :root[data-transition-context="menu-to-start"] ::view-transition-old(menu-page) { animation-name: menu-page-context-out-back; }
 :root[data-transition-context="menu-back"] ::view-transition-new(menu-page),
@@ -822,17 +846,17 @@ body.playing:not(.paused):not([data-menu-origin="start"]) #pauseScreen { visibil
 :root[data-transition-context="scenario-tab"] ::view-transition-old(level-select-panel) { animation-name: scenario-panel-out; }
 :root[data-transition-context="scenario-tab"] ::view-transition-new(level-select-panel) { animation-name: scenario-panel-in; }
 :root[data-transition-context="game-start"] ::view-transition-old(start-card),
-:root[data-transition-context="pause-close"] ::view-transition-old(menu-card) { animation-name: menu-shell-dismiss; animation-duration: .22s; }
+:root[data-transition-context="pause-close"] ::view-transition-old(menu-card) { animation-name: menu-shell-dismiss; animation-duration: var(--duration-view-transition); }
 :root[data-transition-context="pause-open"] ::view-transition-new(menu-card),
-:root[data-transition-context="main-menu"] ::view-transition-new(start-card) { animation-name: menu-shell-summon; animation-duration: .22s; }
-@keyframes menu-page-context-out-forward { to { opacity: 0; transform: translate3d(-18px, 0, 0) scale(.985); } }
-@keyframes menu-page-context-in-forward { from { opacity: 0; transform: translate3d(26px, 0, 0) scale(.992); filter: blur(4px); } }
-@keyframes menu-page-context-out-back { to { opacity: 0; transform: translate3d(18px, 0, 0) scale(.985); } }
-@keyframes menu-page-context-in-back { from { opacity: 0; transform: translate3d(-26px, 0, 0) scale(.992); filter: blur(4px); } }
-@keyframes scenario-panel-out { to { opacity: 0; transform: translateY(10px) scale(.992); } }
-@keyframes scenario-panel-in { from { opacity: 0; transform: translateY(-8px) scale(.992); filter: blur(3px); } }
-@keyframes menu-shell-dismiss { to { opacity: 0; transform: translateY(18px) scale(.975); } }
-@keyframes menu-shell-summon { from { opacity: 0; transform: translateY(-14px) scale(.982); filter: blur(5px); } }
+:root[data-transition-context="main-menu"] ::view-transition-new(start-card) { animation-name: menu-shell-summon; animation-duration: var(--duration-view-transition); }
+@keyframes menu-page-context-out-forward { to { opacity: 0; transform: translate3d(-10px, 0, 0) scale(.995); } }
+@keyframes menu-page-context-in-forward { from { opacity: 0; transform: translate3d(12px, 0, 0) scale(.995); } }
+@keyframes menu-page-context-out-back { to { opacity: 0; transform: translate3d(10px, 0, 0) scale(.995); } }
+@keyframes menu-page-context-in-back { from { opacity: 0; transform: translate3d(-12px, 0, 0) scale(.995); } }
+@keyframes scenario-panel-out { to { opacity: 0; transform: translateY(6px) scale(.996); } }
+@keyframes scenario-panel-in { from { opacity: 0; transform: translateY(-6px) scale(.996); } }
+@keyframes menu-shell-dismiss { to { opacity: 0; transform: translateY(10px) scale(.99); } }
+@keyframes menu-shell-summon { from { opacity: 0; transform: translateY(-10px) scale(.99); } }
 
 .menu-pages { position: relative; padding: 4px; margin: -4px; }
 .menu-page { display: none; width: 100%; text-align: left; transform-origin: 50% 18%; }
@@ -846,22 +870,22 @@ body.playing:not(.paused):not([data-menu-origin="start"]) #pauseScreen { visibil
 #pauseScreen[data-menu-direction="forward"] [data-page="level-select"],
 #pauseScreen[data-menu-direction="forward"] [data-page="settings"],
 #pauseScreen[data-menu-direction="forward"] [data-page="settings-category"] {
-  animation: menu-page-forward .15s cubic-bezier(.2,.9,.18,1) both;
+  animation: menu-page-forward var(--duration-view-transition) var(--ease-view-transition) both;
   will-change: opacity, transform;
 }
 #pauseScreen[data-menu-direction="back"] [data-page="main"],
 #pauseScreen[data-menu-direction="back"] [data-page="level-select"],
 #pauseScreen[data-menu-direction="back"] [data-page="settings"],
 #pauseScreen[data-menu-direction="back"] [data-page="settings-category"] {
-  animation: menu-page-back .14s cubic-bezier(.2,.9,.18,1) both;
+  animation: menu-page-back var(--duration-view-transition) var(--ease-view-transition) both;
   will-change: opacity, transform;
 }
 @keyframes menu-page-forward {
-  from { opacity: 0; transform: translate3d(14px, 0, 0) scale(.992); }
+  from { opacity: 0; transform: translate3d(10px, 0, 0) scale(.996); }
   to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
 }
 @keyframes menu-page-back {
-  from { opacity: 0; transform: translate3d(-12px, 0, 0) scale(.994); }
+  from { opacity: 0; transform: translate3d(-10px, 0, 0) scale(.996); }
   to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
 }
 body.motion-reduce #pauseScreen .menu-page { animation: none !important; }

@@ -59,8 +59,10 @@
   --shadow-glow: 0 14px 36px color-mix(in srgb, var(--color-accent) 18%, transparent);
 
   --ease-standard: cubic-bezier(.2, .8, .2, 1);
+  --ease-view-transition: cubic-bezier(.22, .72, .18, 1);
   --duration-fast: 140ms;
   --duration-base: 190ms;
+  --duration-view-transition: 130ms;
 
   --game-ui-scale: 1;
   --menu-ui-scale: 1;
