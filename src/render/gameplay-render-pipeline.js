@@ -63,7 +63,6 @@ function writeRenderPipelineDiagnostics(game, frame, { requestedBackendKind, can
     requestedBackendKind: requestedBackendKind ?? 'auto',
     candidateBackendKind,
     actualBackendKind,
-    selectedBackendKind: candidateBackendKind,
     fallback: {
       occurred: issues.length > 0 || Boolean(fallbackFrom && fallbackTo && fallbackFrom !== fallbackTo),
       from: fallbackFrom ?? null,
@@ -72,14 +71,6 @@ function writeRenderPipelineDiagnostics(game, frame, { requestedBackendKind, can
     },
     frame: summarizeRenderFrame(frame)
   };
-}
-
-function setLegacyFallbackFields(game, fallbackKind, issues) {
-  delete game.renderPipeline.deferredFallbackReason;
-  delete game.renderPipeline.webglFallbackReason;
-  if (!issues.length) return;
-  if (fallbackKind === DEFERRED_LIGHTING_BACKEND_KIND) game.renderPipeline.deferredFallbackReason = issues;
-  else if (fallbackKind === 'webgl') game.renderPipeline.webglFallbackReason = issues;
 }
 
 export function renderNativeFrame(runtime, game, frame, { assetRegistry = defaultAssetRegistry, nativeBackendKind } = {}) {
@@ -113,7 +104,6 @@ export function renderNativeFrame(runtime, game, frame, { assetRegistry = defaul
 
   if (fallbackIssues.length) nativeBackend = ensureNativeFrameBackend(game, { assetRegistry, nativeBackendKind: 'canvas2d' });
   const actualBackendKind = game.renderPipeline.nativeBackendKind;
-  setLegacyFallbackFields(game, fallbackFrom, fallbackIssues);
   writeRenderPipelineDiagnostics(game, frame, { requestedBackendKind, candidateBackendKind, actualBackendKind, fallbackIssues, fallbackFrom, fallbackTo });
   nativeBackend.draw(frame);
   return nativeBackend;

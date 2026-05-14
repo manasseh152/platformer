@@ -53,7 +53,7 @@ test('devtools registry validates first pass item kinds', () => {
 });
 
 test('render pipeline devtools register render diagnostics and systems sections', () => {
-  const game = { devTools: createDevToolsState(), renderPipeline: { diagnostics: { requestedBackendKind: 'auto', selectedBackendKind: 'canvas2d', frame: { width: 320, height: 180, coordinateSpace: 'native', packetCount: 2, packetsByKind: [['clear', 1], ['rect', 1]], lightCount: 0, litPacketCount: 1, unlitPacketCount: 1 } } }, appState: { started: true }, enemies: [], dust: [], particles: [] };
+  const game = { devTools: createDevToolsState(), renderPipeline: { diagnostics: { requestedBackendKind: 'auto', candidateBackendKind: 'canvas2d', actualBackendKind: 'canvas2d', frame: { width: 320, height: 180, coordinateSpace: 'native', packetCount: 2, packetsByKind: [['clear', 1], ['rect', 1]], lightCount: 0, litPacketCount: 1, unlitPacketCount: 1 } } }, appState: { started: true }, enemies: [], dust: [], particles: [] };
   registerRenderPipelineDevTools(game);
 
   const sections = game.devTools.registry.snapshot();
@@ -78,11 +78,15 @@ test('render pipeline fallback summary groups repeated WebGL support issues', ()
   const game = {
     devTools: createDevToolsState(),
     renderPipeline: {
-      webglFallbackReason: [
-        { reason: 'unsupported packet kind: roundRect' },
-        { reason: 'unsupported packet kind: roundRect' },
-        { reason: 'unsupported packet kind: ellipse' }
-      ]
+      diagnostics: {
+        fallback: {
+          issues: [
+            { reason: 'unsupported packet kind: roundRect' },
+            { reason: 'unsupported packet kind: roundRect' },
+            { reason: 'unsupported packet kind: ellipse' }
+          ]
+        }
+      }
     },
     appState: {},
     enemies: [],

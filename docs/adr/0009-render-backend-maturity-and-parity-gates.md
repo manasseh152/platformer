@@ -225,7 +225,7 @@ Render diagnostics should expose:
 
 Keep temporary legacy fallback fields only as a compatibility bridge. Add a cleanup slice to remove them once devtools/tests read the normalized system.
 
-Implemented through `renderNativeFrame(...)` and `renderGameplayFrame(...)` diagnostics: `requestedBackendKind`, `candidateBackendKind`, `actualBackendKind`, `fallback.occurred`, `fallback.from`, `fallback.to`, and normalized fallback issues are recorded. Legacy `webglFallbackReason` / `deferredFallbackReason` fields remain as a bridge.
+Implemented through `renderNativeFrame(...)` and `renderGameplayFrame(...)` diagnostics: `requestedBackendKind`, `candidateBackendKind`, `actualBackendKind`, `fallback.occurred`, `fallback.from`, `fallback.to`, and normalized fallback issues are recorded. Legacy `webglFallbackReason` / `deferredFallbackReason` fields were removed in slice 7.
 
 ### 4. Add focused unsupported-feature fallback tests — Complete
 
@@ -261,9 +261,11 @@ Create focused render scenarios for:
 
 Implemented in `src/render/parity-render-scenarios.js`, with coverage and Canvas2D/WebGL sampled-pixel parity checks in `tests/render-pipeline.spec.js`. The scenarios are focused fixtures for the ADR 0009 representative packet families; debug/vector samples allow bounded tolerance where Canvas2D compatibility paths and WebGL rasterization differ on antialiasing or alpha blending.
 
-### 7. Cleanup legacy fallback fields
+### 7. Cleanup legacy fallback fields — Complete
 
 After diagnostics consumers are migrated, remove split fields such as backend-specific fallback reason properties in favor of the normalized diagnostics object.
+
+Implemented by removing `webglFallbackReason` and `deferredFallbackReason` writes from `renderNativeFrame(...)`, removing the legacy `selectedBackendKind` diagnostics bridge, and migrating devtools/tests to read `diagnostics.fallback.issues` plus `candidateBackendKind`.
 
 ### 8. Keep WebGPU native/deferred backend as a future spike
 

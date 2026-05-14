@@ -7,7 +7,7 @@ function formatCounts(counts) {
 
 function fallbackSummary(game) {
   const pipeline = game.renderPipeline ?? {};
-  const issues = pipeline.diagnostics?.fallback?.issues ?? pipeline.deferredFallbackReason ?? pipeline.webglFallbackReason ?? [];
+  const issues = pipeline.diagnostics?.fallback?.issues ?? [];
   if (!issues.length) return 'None';
   const counts = new Map();
   for (const issue of issues) counts.set(issue.reason, (counts.get(issue.reason) ?? 0) + 1);
@@ -78,7 +78,7 @@ export function registerRenderPipelineDevTools(game) {
     items: [
       { id: 'backend-kind', kind: 'value', label: 'Native backend', get: game => game.renderPipeline?.nativeBackend?.kind ?? 'Not rendered yet' },
       { id: 'backend-request', kind: 'value', label: 'Backend request', get: game => pipelineDiagnostics(game)?.requestedBackendKind ?? 'auto' },
-      { id: 'backend-selected', kind: 'value', label: 'Backend selected', get: game => pipelineDiagnostics(game)?.candidateBackendKind ?? pipelineDiagnostics(game)?.selectedBackendKind ?? 'Not rendered yet' },
+      { id: 'backend-selected', kind: 'value', label: 'Backend selected', get: game => pipelineDiagnostics(game)?.candidateBackendKind ?? 'Not rendered yet' },
       { id: 'backend-actual', kind: 'value', label: 'Backend actual', get: game => pipelineDiagnostics(game)?.actualBackendKind ?? game.renderPipeline?.nativeBackendKind ?? 'Not rendered yet' },
       { id: 'frame-size', kind: 'value', label: 'Frame size', get: game => {
         const frame = pipelineDiagnostics(game)?.frame;

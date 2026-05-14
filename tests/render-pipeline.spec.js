@@ -376,7 +376,7 @@ test('renderGameplayFrame keeps requested webgl for extracted gameplay packets',
     return {
       backendKind: game.renderPipeline.nativeBackendKind,
       backend: game.renderPipeline.nativeBackend.kind,
-      fallbackReasons: game.renderPipeline.webglFallbackReason?.map(issue => issue.reason) ?? [],
+      fallbackReasons: game.renderPipeline.diagnostics?.fallback?.issues?.map(issue => issue.reason) ?? [],
       presentedWidth: game.presentation.lastSource?.width
     };
   });
@@ -412,7 +412,7 @@ test('renderNativeFrame falls back from webgl on unsupported packet features', a
       backendKind: game.renderPipeline.nativeBackendKind,
       backend: game.renderPipeline.nativeBackend.kind,
       diagnostics: game.renderPipeline.diagnostics,
-      legacyReasons: game.renderPipeline.webglFallbackReason?.map(issue => issue.reason) ?? []
+      fallbackReasons: game.renderPipeline.diagnostics?.fallback?.issues?.map(issue => issue.reason) ?? []
     };
   });
 
@@ -428,7 +428,7 @@ test('renderNativeFrame falls back from webgl on unsupported packet features', a
   expect(result.diagnostics.fallback.issues).toEqual([
     expect.objectContaining({ packetKind: 'rect', feature: 'fill', reason: 'unsupported fill kind for rect: conicGradient', severity: 'required' })
   ]);
-  expect(result.legacyReasons).toEqual(['unsupported fill kind for rect: conicGradient']);
+  expect(result.fallbackReasons).toEqual(['unsupported fill kind for rect: conicGradient']);
 });
 
 test('webgl native backend draws clear and 1px rect packets from finalized frames', async ({ page }) => {
@@ -766,7 +766,7 @@ test('authored gameplay lights select the webgl2 deferred backend when available
     return {
       backendKind: game.renderPipeline.nativeBackendKind,
       backend: game.renderPipeline.nativeBackend.kind,
-      deferredFallbackReasons: game.renderPipeline.deferredFallbackReason?.map(issue => issue.reason) ?? [],
+      deferredFallbackReasons: game.renderPipeline.diagnostics?.fallback?.issues?.map(issue => issue.reason) ?? [],
       presentedWidth: game.presentation.lastSource?.width
     };
   });
