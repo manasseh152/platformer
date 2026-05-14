@@ -185,6 +185,7 @@ export function closeSettings(game) {
     game.menu.settingsFocusLayer = 'primary-tabs';
     game.menu.direction = 'back';
     game.menu.origin = origin === 'start' ? 'none' : 'pause';
+    game.menu.justClosedSettingsAt = performance.now?.() || Date.now();
     updateMenuChrome(game);
   }, () => focusAndReveal(game, origin === 'start' ? game.ui.startSettingsButton : game.ui.settingsButton), origin === 'start' ? 'menu-to-start' : 'menu-back');
 }

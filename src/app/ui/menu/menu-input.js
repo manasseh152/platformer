@@ -15,7 +15,8 @@ import {
   enterSettingsLayer,
   leaveSettingsLayer,
   moveSettingsLayerX,
-  moveSettingsLayerY
+  moveSettingsLayerY,
+  syncSettingsFocusLayerFromActiveElement
 } from './settings-layer-navigation.js';
 
 const backablePages = ['level-select', 'settings', 'settings-category'];
@@ -25,7 +26,10 @@ function activateSemanticMenuAction(game, actionId) {
   if (actionId === 'menu.accept') { document.activeElement?.click?.(); return true; }
   if (actionId === 'menu.back') {
     if (backablePages.includes(game.menu.page)) goBack(game);
-    else if (isStarted(game)) ui.resumeButton?.click?.();
+    else if (isStarted(game)) {
+      const now = performance.now?.() || Date.now();
+      if (!game.menu.justClosedSettingsAt || now - game.menu.justClosedSettingsAt > 400) ui.resumeButton?.click?.();
+    }
     return true;
   }
   if (actionId === 'menu.settings') {
@@ -43,6 +47,7 @@ function activateSemanticMenuAction(game, actionId) {
 
 function handleSettingsRouteInput(game, route) {
   ensureSettingsLayerFocus(game);
+  syncSettingsFocusLayerFromActiveElement(game);
   if (route.wasPressed('menu.previousTab') && moveSettingsTab(game, -1)) { route.consume('menu.previousTab'); return true; }
   if (route.wasPressed('menu.nextTab') && moveSettingsTab(game, 1)) { route.consume('menu.nextTab'); return true; }
 

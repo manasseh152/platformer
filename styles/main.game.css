@@ -1946,6 +1946,251 @@ kbd.ds-keycap,
 .devtool-toggle { border-radius: 12px; background: rgba(255,246,232,.92); box-shadow: 0 14px 42px rgba(0,0,0,.34); }
 .devtool-panel__header { background: rgba(9, 12, 18, .82); backdrop-filter: blur(18px) saturate(130%); }
 
+/* Settings redesign: layered navigation cockpit */
+#pauseScreen[data-menu-page="settings"],
+#pauseScreen[data-menu-page="settings-category"] {
+  --settings-amber: #f7c95f;
+  --settings-cyan: #59d9e7;
+  --settings-rose: #ff8e68;
+  --settings-ink: rgba(3, 6, 11, .58);
+  --settings-line: rgba(255, 246, 232, .115);
+  --settings-active-layer: var(--settings-cyan);
+  background:
+    radial-gradient(circle at 16% 17%, rgba(247, 201, 95, .14), transparent 27rem),
+    radial-gradient(circle at 76% 24%, rgba(89, 217, 231, .13), transparent 30rem),
+    linear-gradient(140deg, #090d14, #111821 48%, #07090d);
+}
+#pauseScreen[data-settings-focus-layer="primary-tabs"] { --settings-active-layer: var(--settings-amber); }
+#pauseScreen[data-settings-focus-layer="nested-tabs"] { --settings-active-layer: var(--settings-rose); }
+#pauseScreen[data-settings-focus-layer="content"] { --settings-active-layer: var(--settings-cyan); }
+#pauseScreen[data-menu-page="settings-category"] .menu-card::after {
+  content: "";
+  grid-column: 1;
+  grid-row: 2;
+  align-self: start;
+  width: min(220px, 70%);
+  height: 4px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--settings-active-layer), transparent);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--settings-active-layer) 44%, transparent);
+}
+#pauseScreen[data-menu-page="settings-category"] #menuEyebrow {
+  color: color-mix(in srgb, var(--settings-active-layer) 76%, rgba(255,246,232,.78));
+}
+#pauseScreen[data-menu-page="settings-category"] #menuTitle {
+  text-shadow: 0 0 32px color-mix(in srgb, var(--settings-active-layer) 14%, transparent);
+}
+#pauseScreen[data-menu-page="settings-category"] .settings-layout {
+  position: relative;
+  padding-right: 12px;
+}
+#pauseScreen[data-menu-page="settings-category"] .settings-category-body {
+  gap: 12px;
+}
+#pauseScreen[data-menu-page="settings-category"] #settingsCategoryDescription {
+  max-width: 74ch;
+  margin-bottom: 6px;
+  color: rgba(255,246,232,.72);
+}
+.settings-tabs {
+  position: relative;
+  gap: 6px;
+  padding: 6px;
+  border-color: var(--settings-line);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.025)),
+    rgba(5, 8, 13, .72);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 18px 54px rgba(0,0,0,.34);
+  transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+.settings-tabs--primary { margin-bottom: 12px; }
+.settings-tabs--nested {
+  width: 100%;
+  margin-bottom: 10px;
+  border-radius: 18px;
+}
+.settings-tabs--nested button { flex: 1 1 auto; }
+.settings-tabs[data-settings-nav-layer]::after,
+.settings-tab-panel[data-settings-nav-layer]::before {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--settings-active-layer) 36%, transparent);
+  color: color-mix(in srgb, var(--settings-active-layer) 86%, white);
+  background: rgba(3, 6, 11, .78);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--settings-active-layer) 18%, transparent);
+  font: 950 10px/1 var(--font-ui);
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.settings-tabs[data-settings-nav-layer]::after {
+  content: attr(data-settings-nav-layer);
+  right: 12px;
+  bottom: -9px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  opacity: 0;
+  transform: translateY(-3px);
+}
+.settings-tab-panel {
+  position: relative;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(255,246,232,.075);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--settings-active-layer) 7%, transparent), transparent 22rem),
+    rgba(3, 6, 11, .20);
+}
+.settings-tab-panel[data-settings-nav-layer]::before {
+  content: "content";
+  top: -9px;
+  right: 18px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  opacity: 0;
+  transform: translateY(3px);
+}
+#pauseScreen[data-settings-focus-layer="primary-tabs"] [data-settings-nav-layer="primary-tabs"],
+#pauseScreen[data-settings-focus-layer="nested-tabs"] [data-settings-nav-layer="nested-tabs"],
+#pauseScreen[data-settings-focus-layer="content"] [data-settings-nav-layer="content"] {
+  border-color: color-mix(in srgb, var(--settings-active-layer) 54%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.075),
+    0 0 0 1px color-mix(in srgb, var(--settings-active-layer) 16%, transparent),
+    0 18px 54px rgba(0,0,0,.34),
+    0 0 32px color-mix(in srgb, var(--settings-active-layer) 16%, transparent);
+}
+#pauseScreen[data-settings-focus-layer="primary-tabs"] [data-settings-nav-layer="primary-tabs"]::after,
+#pauseScreen[data-settings-focus-layer="nested-tabs"] [data-settings-nav-layer="nested-tabs"]::after,
+#pauseScreen[data-settings-focus-layer="content"] [data-settings-nav-layer="content"]::before {
+  opacity: 1;
+  transform: translateY(0);
+}
+.settings-tabs button {
+  position: relative;
+  isolation: isolate;
+  min-height: 38px;
+  border-radius: 999px;
+  color: rgba(255,246,232,.68);
+  letter-spacing: .075em;
+  transition: color .14s ease, background-color .14s ease, border-color .14s ease, box-shadow .14s ease, transform .14s ease;
+}
+.settings-tabs button::before {
+  content: "";
+  position: absolute;
+  inset: 6px auto 6px 8px;
+  width: 5px;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+}
+.settings-tabs button[aria-selected="true"] {
+  color: var(--color-text);
+  border-color: color-mix(in srgb, var(--settings-active-layer) 34%, rgba(255,255,255,.12));
+  background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.055));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+}
+.settings-tabs button[aria-selected="true"]::before {
+  background: var(--settings-active-layer);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--settings-active-layer) 68%, transparent);
+}
+.settings-tabs button.controller-focus,
+.settings-tabs button:focus-visible {
+  color: #11151b !important;
+  border-color: transparent !important;
+  background: var(--settings-active-layer) !important;
+  box-shadow: 0 0 0 3px rgba(255,246,232,.88), 0 0 28px color-mix(in srgb, var(--settings-active-layer) 58%, transparent) !important;
+}
+.settings-section {
+  position: relative;
+  overflow: hidden;
+  padding: 16px;
+  border: 1px solid rgba(255,246,232,.095);
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.075), rgba(255,255,255,.018)),
+    var(--settings-ink);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.055), 0 16px 48px rgba(0,0,0,.28);
+}
+.settings-section::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 0 999px 999px 0;
+  background: linear-gradient(var(--settings-active-layer), transparent);
+  opacity: .72;
+}
+.settings-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 13px;
+  color: rgba(255,246,232,.92);
+  letter-spacing: .15em;
+}
+.settings-section h3::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--settings-active-layer);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--settings-active-layer) 72%, transparent);
+}
+.settings-page-note {
+  padding: 10px 12px;
+  border: 1px solid rgba(255,246,232,.075);
+  border-radius: 14px;
+  background: rgba(255,246,232,.035);
+}
+.ds-list-card,
+.settings-category-card,
+.ds-setting-row {
+  border-color: rgba(255,255,255,.085);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.022));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.045);
+}
+.settings-category-card:hover,
+.ds-setting-row:hover {
+  border-color: color-mix(in srgb, var(--settings-active-layer) 38%, rgba(255,255,255,.16));
+  background: linear-gradient(180deg, rgba(255,255,255,.085), rgba(255,255,255,.035));
+}
+.settings-category-card.controller-focus,
+.ds-setting-row.controller-focus,
+.settings-category-card:focus-visible,
+.ds-setting-row:focus-visible {
+  border-color: var(--settings-active-layer) !important;
+  box-shadow: 0 0 0 3px rgba(255,246,232,.82), 0 0 30px color-mix(in srgb, var(--settings-active-layer) 32%, transparent) !important;
+}
+.ds-setting-row__value {
+  color: color-mix(in srgb, var(--settings-active-layer) 56%, var(--color-accent-muted));
+}
+.ds-setting-row--bind .ds-action-row {
+  justify-content: flex-end;
+  gap: 7px;
+}
+.ds-setting-row--bind.is-listening {
+  border-color: color-mix(in srgb, var(--settings-active-layer) 78%, transparent);
+  background: color-mix(in srgb, var(--settings-active-layer) 13%, rgba(3,6,11,.42));
+  box-shadow: inset 4px 0 0 var(--settings-active-layer), 0 0 28px color-mix(in srgb, var(--settings-active-layer) 20%, transparent);
+}
+.settings-actions {
+  border-top: 1px solid rgba(255,246,232,.075);
+}
+.settings-actions .ds-button,
+.ds-setting-row--bind .ds-button,
+.controller-select-list .ds-button {
+  min-height: 34px;
+  border-radius: 12px;
+}
+body.motion-reduce .settings-tabs,
+body.motion-reduce .settings-tabs button { transition: none !important; }
+
 @media (max-width: 620px), (max-height: 680px) {
   #startScreen,
   #pauseScreen,

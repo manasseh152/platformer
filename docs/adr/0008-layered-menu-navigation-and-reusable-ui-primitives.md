@@ -88,7 +88,7 @@ Status: Implemented.
 
 ### Slice 3: Visual redesign of Settings
 
-Status: Planned.
+Status: Implemented.
 
 - Redesign Settings using the new primitives and layer state.
 - Make active navigation layer, focus, and selected tab visually distinct.
