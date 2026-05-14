@@ -67,6 +67,18 @@ ADRs record important decisions and migration history. Prefer pattern docs for d
 - `0008` layered menu navigation and reusable UI primitives.
 - `0009` render backend maturity and parity gates.
 
+## Doc front matter
+
+Docs may start with a small YAML-style front matter block. The docs reader uses `title` for sidebar labels, strips the block from rendered markdown, includes `description` and `tags` in search, and can use numeric `order`/`navOrder` to pin a file ahead of the default path sort.
+
+```md
+---
+title: Rendering patterns
+description: Render pipeline ownership and validation
+tags: [rendering, assets]
+---
+```
+
 ## Maintenance rules
 
 - Update docs in the same change as code/assets when behavior, scale, IDs, file ownership, or workflow changes.

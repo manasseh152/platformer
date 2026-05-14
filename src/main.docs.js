@@ -12,7 +12,7 @@ const documents = Object.entries(modules)
     const id = slug(path.replace(/\.md$/, ''));
     return { id, path, title, markdown, frontMatter };
   })
-  .sort((a, b) => sortKey(a.path).localeCompare(sortKey(b.path)));
+  .sort(compareDocuments);
 
 const documentIdsByPath = new Map(documents.map(doc => [doc.path, doc.id]));
 const nav = document.getElementById('docsNav');
@@ -46,7 +46,7 @@ function render() {
 
 function filteredDocuments() {
   return currentQuery
-    ? documents.filter(doc => `${doc.title} ${doc.path} ${doc.markdown}`.toLowerCase().includes(currentQuery))
+    ? documents.filter(doc => [doc.title, doc.path, doc.frontMatter.description, doc.frontMatter.tags, doc.markdown].flat().join(' ').toLowerCase().includes(currentQuery))
     : documents;
 }
 
@@ -99,17 +99,56 @@ function scrollToHashTarget() {
 }
 
 function parseMarkdownDocument(source) {
-  const normalized = source.replace(/\r\n/g, '\n');
-  const match = normalized.match(/^---\n([\s\S]*?)\n---\n?/);
+  const normalized = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+  const match = normalized.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
   if (!match) return { markdown: normalized, frontMatter: {} };
 
-  const frontMatter = Object.fromEntries(match[1]
-    .split('\n')
-    .map(line => line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/))
-    .filter(Boolean)
-    .map(([, key, value]) => [key, value.replace(/^['\"]|['\"]$/g, '').trim()]));
+  return {
+    markdown: normalized.slice(match[0].length),
+    frontMatter: parseFrontMatter(match[1])
+  };
+}
 
-  return { markdown: normalized.slice(match[0].length), frontMatter };
+function parseFrontMatter(source) {
+  const data = {};
+  let currentListKey = null;
+
+  for (const rawLine of source.split('\n')) {
+    const line = rawLine.trimEnd();
+    if (!line.trim() || line.trimStart().startsWith('#')) continue;
+
+    const listItem = line.match(/^\s+-\s+(.+)$/);
+    if (listItem && currentListKey) {
+      data[currentListKey].push(parseFrontMatterValue(listItem[1]));
+      continue;
+    }
+
+    currentListKey = null;
+    const entry = line.match(/^([A-Za-z0-9_-]+):(?:\s*(.*))?$/);
+    if (!entry) continue;
+
+    const [, key, rawValue = ''] = entry;
+    if (!rawValue.trim()) {
+      data[key] = [];
+      currentListKey = key;
+    } else {
+      data[key] = parseFrontMatterValue(rawValue);
+    }
+  }
+
+  return data;
+}
+
+function parseFrontMatterValue(rawValue) {
+  const value = rawValue.trim();
+  if (!value) return '';
+  if (/^(true|false)$/i.test(value)) return value.toLowerCase() === 'true';
+  if (/^-?\d+(?:\.\d+)?$/.test(value)) return Number(value);
+  if (value.startsWith('[') && value.endsWith(']')) {
+    return value.slice(1, -1).split(',').map(item => parseFrontMatterValue(item)).filter(item => item !== '');
+  }
+  const quoted = value.match(/^(['"])([\s\S]*)\1$/);
+  return quoted ? quoted[2] : value;
 }
 
 function renderMarkdown(markdown, doc) {
@@ -251,6 +290,16 @@ function groupByDirectory(docs) {
 
 function titleFromPath(path) {
   return path.split('/').pop().replace(/\.md$/, '').replace(/[-_]/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function compareDocuments(a, b) {
+  const orderDelta = frontMatterOrder(a) - frontMatterOrder(b);
+  return orderDelta || sortKey(a.path).localeCompare(sortKey(b.path));
+}
+
+function frontMatterOrder(doc) {
+  const order = doc.frontMatter.order ?? doc.frontMatter.navOrder;
+  return Number.isFinite(order) ? order : Number.POSITIVE_INFINITY;
 }
 
 function sortKey(path) {
