@@ -1,8 +1,22 @@
 # Rendering patterns
 
+The current renderer is packetized:
+
+```txt
+extractors -> RenderFrame packets -> native-frame backend -> presentation backend
+```
+
+Generic packet/frame primitives live under `src/engine/render`. Game/browser extraction, asset resolution, native-frame backends, presentation, and snapshots live under `src/render`.
+
+## Asset rule
+
+Render packets reference stable asset IDs, not raw image objects. Browser compatibility images and metadata are resolved through `src/render/assets/**`, currently rooted at `src/render/assets/browser-assets.js`.
+
+For art-facing IDs and locations, update [`../asset-creator-source.md`](../asset-creator-source.md) whenever the registry changes.
+
 ## Pixel-perfect rect outlines
 
-Use `drawPixelRect` from `src/rendering/pixel-outline.js` for crisp world-space rectangle fills and outlines.
+Use `drawPixelRect` from `src/rendering/pixel-outline.js` for crisp world-space rectangle fills and outlines in Canvas2D/debug contexts.
 
 `drawPixelRect` normalizes rect edges to native pixels by default, then draws outlines with integer `fillRect` bands instead of `strokeRect`. This avoids blurry half-pixel strokes on moving objects and camera transforms.
 
@@ -31,31 +45,19 @@ drawPixelRect(ctx, object.transform, {
 
 For custom composition or tests, use `normalizePixelRect(rect)`. Pass `snap: false` to `drawPixelRect` only when the caller has already intentionally normalized the rect.
 
-## Current v1 usage
+## Current rect-helper usage
 
-V1 uses `drawPixelRect` for developer/debug overlays:
+`drawPixelRect` is used for developer/debug overlays:
 
 - authored terrain cells
 - collision cells
 - greedy-merged collision rects
 - runtime physics body rects
 
-## Known future candidates
-
-These are known reuse sites but are not migrated in v1:
-
-- selectable/interactable outlines
-- authored `render:outline` or visual outline components, if repeated usage proves useful
-- terrain tile debug strokes
-- raw terrain debug strokes
-- `DEBUG_CAMERA` camera/deadzone rects
-- sprite/silhouette outlines
-
-Sprite and silhouette outlines need a separate algorithm based on alpha masks, offscreen canvas, or shaders. Do not force them through the rect helper.
-
 ## Boundaries
 
-- Canvas 2D helper for now; no renderer abstraction in v1.
-- Generic rendering utility; no devtools dependency.
-- Rect-only v1; no scene component in v1.
+- Gameplay visuals should go through render extraction and packets, not ad-hoc canvas drawing.
+- Debug Canvas2D helpers such as `drawPixelRect` remain allowed near developer overlay code.
 - Keep color/style presets near the feature using them, not in `pixel-outline.js`.
+- Sprite/silhouette outlines need a separate algorithm based on alpha masks, offscreen canvas, or shaders. Do not force them through the rect helper.
+- GPU/WebGL/WebGPU work must stay behind backend contracts and the parity gates in ADR 0009.
