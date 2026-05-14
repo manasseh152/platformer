@@ -78,7 +78,10 @@ export function leaveSettingsLayer(game) {
   const domLayer = game.ui.pauseScreen?.dataset?.settingsFocusLayer;
   const layer = domLayer || game.menu.settingsFocusLayer || 'primary-tabs';
   game.menu.settingsFocusLayer = layer;
-  if (layer === 'content') return setSettingsFocusLayer(game, game.menu.settingsCategory === 'controls' ? 'nested-tabs' : 'primary-tabs');
+  if (layer === 'content') {
+    if (game.menu.settingsCategory === 'controls') return setSettingsFocusLayer(game, 'nested-tabs');
+    return goBack(game);
+  }
   if (layer === 'nested-tabs') return setSettingsFocusLayer(game, 'primary-tabs');
   return goBack(game);
 }
