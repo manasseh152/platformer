@@ -620,7 +620,10 @@ body[data-editor-input="gamepad"] .desktop-viewport-hints,
 body[data-editor-input="touch"] .desktop-viewport-hints { display: none; }
 .controller-viewport-hints { display: none; }
 body[data-editor-input="gamepad"] .controller-viewport-hints { display: flex; }
-body[data-editor-input="gamepad"][data-editor-panel="open"] .controller-viewport-hints [data-editor-hint-scope="canvas"],
+body[data-editor-input="gamepad"][data-editor-brush-picker="open"] .controller-viewport-hints [data-editor-hint-scope="canvas"],
+body[data-editor-input="gamepad"][data-editor-brush-picker="open"] .controller-viewport-hints [data-editor-hint-scope="panel"],
+body[data-editor-input="gamepad"]:not([data-editor-brush-picker="open"]) .controller-viewport-hints [data-editor-hint-scope="picker"],
+body[data-editor-input="gamepad"][data-editor-panel="open"]:not([data-editor-brush-picker="open"]) .controller-viewport-hints [data-editor-hint-scope="canvas"],
 body[data-editor-input="gamepad"]:not([data-editor-panel="open"]) .controller-viewport-hints [data-editor-hint-scope="panel"] { display: none; }
 .viewport-input-hints::before {
   content: "";

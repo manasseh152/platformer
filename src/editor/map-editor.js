@@ -384,7 +384,7 @@ function syncViewportHints() {
 }
 
 function setActiveTab(tabId, { show = true, focus = false } = {}) {
-  if (show && controllerBrushPickerOpen) closeControllerBrushPicker({ status: false });
+  if (show && controllerBrushPickerOpen) closeControllerBrushPicker({ status: false, syncBack: false });
   activeTab = tabId;
   overlayHidden = !show;
   if (dom.overlay) {
@@ -990,6 +990,7 @@ function updatePackWheel() {
   const layer = activeLayerConfig();
   const pack = activePackConfig();
   const displayBrush = controllerBrushPickerOpen ? highlightedPickerBrush() : brush;
+  document.body.dataset.editorBrushPicker = controllerBrushPickerOpen ? 'open' : 'closed';
   if (dom.packWheelHud) {
     dom.packWheelHud.toggleAttribute('data-picker-open', controllerBrushPickerOpen);
     dom.packWheelHud.dataset.highlightedBrush = displayBrush.id;
@@ -1404,15 +1405,17 @@ function openControllerBrushPicker() {
     clearTimeout(packWheelWakeTimer);
   }
   buildPackWheelItems();
+  nativeBack?.sync?.();
   setStatus('Brush palette: D-pad or stick chooses, A selects, B cancels.', '');
 }
 
-function closeControllerBrushPicker({ status = true } = {}) {
+function closeControllerBrushPicker({ status = true, syncBack = true } = {}) {
   if (!controllerBrushPickerOpen) return;
   controllerBrushPickerOpen = false;
   resetControllerBrushPickerRepeat();
   buildPackWheelItems();
   wakePackWheel();
+  if (syncBack) nativeBack?.sync?.();
   if (status) setStatus('Brush palette cancelled.', '');
 }
 
@@ -1424,6 +1427,7 @@ function commitControllerBrushPicker() {
   if (candidate && candidate.id !== brush.id) setBrush(candidate);
   else buildPackWheelItems();
   wakePackWheel();
+  nativeBack?.sync?.();
   setStatus(`Pack: ${brush.label}.`, '');
 }
 
@@ -1444,7 +1448,7 @@ function handleControllerBrushPickerInput(route, xDirection, yDirection) {
   if (!controllerBrushPickerOpen) return false;
   if (route.wasPressed('editor.togglePanel')) {
     route.consume('editor.togglePanel');
-    closeControllerBrushPicker({ status: false });
+    closeControllerBrushPicker({ status: false, syncBack: false });
     setActiveTab(activeTab, { show: true });
     setStatus('Pack panel shown. Press B or Y to return to canvas.', '');
     return true;
@@ -1490,7 +1494,7 @@ function toggleControllerCanvasMode() {
 
 function toggleEditorPanel() {
   if (controllerBrushPickerOpen) {
-    closeControllerBrushPicker({ status: false });
+    closeControllerBrushPicker({ status: false, syncBack: false });
     setActiveTab(activeTab, { show: true });
     setStatus('Pack panel shown. Press B or Y to return to canvas.', '');
     return;
@@ -1637,8 +1641,11 @@ function setup() {
   syncPreferencesUi();
   document.body.dataset.editorControllerMode = controllerCanvasMode;
   nativeBack = createNativeBackAdapter({
-    canGoBack: () => !overlayHidden,
-    onBack: () => setActiveTab(activeTab, { show: false })
+    canGoBack: () => controllerBrushPickerOpen || !overlayHidden,
+    onBack: () => {
+      if (controllerBrushPickerOpen) closeControllerBrushPicker({ status: false });
+      else setActiveTab(activeTab, { show: false });
+    }
   });
   setActiveTab('edit', { show: true });
 

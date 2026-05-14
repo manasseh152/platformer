@@ -45,6 +45,45 @@ test('native browser back closes the editor action panel', async ({ page }) => {
   await expect(page.locator('#editorOverlay')).toBeHidden();
 });
 
+test('native browser back closes controller brush picker before panel behavior and picker hints take over', async ({ page }) => {
+  await page.addInitScript(() => {
+    const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));
+    const pad = { index: 0, id: 'Mock Controller', mapping: 'standard', buttons, axes: [0, 0, 0, 0] };
+    window.__setMockGamepadButton = (index, pressed) => { buttons[index] = { pressed }; };
+    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] });
+  });
+  const press = async index => {
+    await page.evaluate(i => window.__setMockGamepadButton(i, true), index);
+    await page.waitForTimeout(80);
+    await page.evaluate(i => window.__setMockGamepadButton(i, false), index);
+    await page.waitForTimeout(80);
+  };
+  await page.goto('/editor.html');
+
+  await press(3);
+  await expect(page.locator('#editorOverlay')).toBeHidden();
+  await press(1);
+  await expect(page.locator('#packWheelHud')).toHaveAttribute('data-picker-open', '');
+
+  const hints = page.locator('#controllerViewportHints');
+  const pickerHints = hints.locator('[data-editor-hint-scope="picker"]');
+  await expect(pickerHints.locator('.input-hint__label').filter({ hasText: 'Choose item' })).toBeVisible();
+  await expect(pickerHints.locator('.input-hint__label').filter({ hasText: 'Select' })).toBeVisible();
+  await expect(pickerHints.locator('.input-hint__label').filter({ hasText: 'Cancel' })).toBeVisible();
+  await expect(pickerHints.locator('.input-hint__label').filter({ hasText: 'Previous' })).toBeVisible();
+  await expect(pickerHints.locator('.input-hint__label').filter({ hasText: 'Next' })).toBeVisible();
+  await expect(hints.locator('[data-editor-hint-scope="canvas"] .input-hint__label').filter({ hasText: 'Paint' })).toBeHidden();
+  await expect(hints.locator('[data-editor-hint-scope="canvas"] .input-hint__label').filter({ hasText: 'Zoom' })).toBeHidden();
+
+  await page.evaluate(() => history.back());
+
+  await expect(page.locator('#packWheelHud')).not.toHaveAttribute('data-picker-open', '');
+  await expect(page.locator('body')).toHaveAttribute('data-editor-panel', 'closed');
+  await expect(page.locator('#editorOverlay')).toBeHidden();
+  await expect(pickerHints.locator('.input-hint__label').filter({ hasText: 'Cancel' })).toBeHidden();
+  await expect(hints.locator('[data-editor-hint-scope="canvas"] .input-hint__label').filter({ hasText: 'Paint' })).toBeVisible();
+});
+
 test('map editor loads registered tilemaps and exports new terrainLayer format', async ({ page }) => {
   await page.goto('/editor.html');
 
@@ -400,7 +439,7 @@ test('map editor controller hints follow panel vs canvas focus and zoom only on 
 
   await page.evaluate(() => window.__setMockGamepadButton(7, true));
   await expect(page.locator('#controllerViewportHints')).toBeVisible();
-  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Select' })).toBeVisible();
+  await expect(page.locator('#controllerViewportHints [data-editor-hint-scope="panel"] .input-hint__label').filter({ hasText: 'Select' })).toBeVisible();
   await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Pack' })).toBeHidden();
   await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Zoom' })).toBeHidden();
   await expect.poll(() => page.locator('#editorCanvas').getAttribute('data-zoom')).toBe(before);
