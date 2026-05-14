@@ -1,3 +1,5 @@
+import { analyzeCanvas2DNativeFrameSupport } from './native-frame-capabilities.js';
+
 function resolveFill(ctx, fill) {
   if (!fill) return null;
   if (typeof fill === 'string') return fill;
@@ -98,6 +100,9 @@ export function createCanvas2DNativeFrameBackend({ width, height, canvas = docum
       if (canvas.width !== nextWidth) canvas.width = nextWidth;
       if (canvas.height !== nextHeight) canvas.height = nextHeight;
       ctx.imageSmoothingEnabled = false;
+    },
+    supportsFrame(frame) {
+      return analyzeCanvas2DNativeFrameSupport(frame);
     },
     draw(frame) {
       this.resize(frame.width ?? width, frame.height ?? height);

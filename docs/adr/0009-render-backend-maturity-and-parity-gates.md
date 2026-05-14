@@ -201,13 +201,15 @@ GPU tests should be capability-gated. CI must always run Canvas2D/reference and 
 
 Use a unique ADR number and mark the policy accepted before implementation slices begin.
 
-### 2. Formalize backend capability manifests
+### 2. Formalize backend capability manifests — Complete
 
 Move capability checks toward a shared manifest/inspection shape so backend selection and diagnostics do not duplicate ad-hoc packet support logic.
 
 Initial implementation may adapt the existing WebGL support analyzer rather than performing a big-bang rewrite. Canvas2D can declare reference support for accepted gameplay packets. Specialized deferred support can report specialized pass limitations and optional-effect degrade diagnostics.
 
-### 3. Normalize render diagnostics and fallback fields
+Implemented in `src/render/backends/native-frame-capabilities.js`, with the WebGL analyzer returning normalized `backendKind`, `supported`, and structured `issues`; Canvas2D now declares reference support through `supportsFrame()`.
+
+### 3. Normalize render diagnostics and fallback fields — Complete
 
 Render diagnostics should expose:
 
@@ -223,9 +225,13 @@ Render diagnostics should expose:
 
 Keep temporary legacy fallback fields only as a compatibility bridge. Add a cleanup slice to remove them once devtools/tests read the normalized system.
 
-### 4. Add focused unsupported-feature fallback tests
+Implemented through `renderNativeFrame(...)` and `renderGameplayFrame(...)` diagnostics: `requestedBackendKind`, `candidateBackendKind`, `actualBackendKind`, `fallback.occurred`, `fallback.from`, `fallback.to`, and normalized fallback issues are recorded. Legacy `webglFallbackReason` / `deferredFallbackReason` fields remain as a bridge.
+
+### 4. Add focused unsupported-feature fallback tests — Complete
 
 Create at least one focused finalized-frame test verifying an unsupported WebGL packet feature, such as rotated image/sprite/texturedQuad packets, causes fallback to Canvas2D with a structured diagnostic reason.
+
+Covered by `tests/render-pipeline.spec.js`, which verifies a rotated image packet requested through the WebGL native backend falls back to Canvas2D and records a structured `rotation` capability issue.
 
 ### 5. Close remaining WebGL native backend feature gaps
 

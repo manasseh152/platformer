@@ -520,7 +520,7 @@ export function createWebGl2DeferredNativeFrameBackend({ width, height, canvas =
       gl.viewport(0, 0, glCanvas.width, glCanvas.height);
       ensureTargets();
     },
-    supportsFrame() { return this.lost ? { supported: false, issues: [{ reason: 'webgl2 deferred native-frame context lost' }] } : { supported: true, issues: diagnostics }; },
+    supportsFrame() { return this.lost ? { backendKind: 'webgl2-deferred', supported: false, issues: [{ reason: 'webgl2 deferred native-frame context lost', severity: 'required' }] } : { backendKind: 'webgl2-deferred', supported: true, issues: diagnostics }; },
     draw(frame) {
       if (this.lost) return;
       this.resize(frame.width ?? width, frame.height ?? height);

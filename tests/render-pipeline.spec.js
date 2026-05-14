@@ -219,7 +219,7 @@ test('webgl native backend capability check accepts real gameplay vector and lig
   const { frame } = extractGameplayRenderFrame({ game, runtime: { now: () => 0, random: () => 0.5 }, assetRegistry: createAssetRegistry({}) });
   const support = analyzeWebGlNativeFrameSupport(frame);
 
-  expect(support.supported).toBe(true);
+  expect(support).toMatchObject({ backendKind: 'webgl', supported: true });
   expect(support.issues).toEqual([]);
 });
 
@@ -271,6 +271,50 @@ test('renderGameplayFrame keeps requested webgl for extracted gameplay packets',
   expect(result.backend).toBe('webgl-native-frame-backend');
   expect(result.fallbackReasons).toEqual([]);
   expect(result.presentedWidth).toBe(320);
+});
+
+test('renderNativeFrame falls back from webgl on unsupported rotated image packets', async ({ page }) => {
+  await page.goto('/');
+  const result = await page.evaluate(async () => {
+    if (!document.createElement('canvas').getContext('webgl')) return { supported: false };
+    const [{ createRenderFrameBuilder }, { renderNativeFrame }, { createAssetRegistry }] = await Promise.all([
+      import('/src/engine/render/frame-builder.js'),
+      import('/src/render/gameplay-render-pipeline.js'),
+      import('/src/render/asset-registry.js')
+    ]);
+    const frame = createRenderFrameBuilder({ width: 4, height: 4 })
+      .add({ kind: 'clear', fill: '#000' })
+      .add({ kind: 'image', assetId: 'missing.image', x: 1, y: 1, w: 2, h: 2, rotation: Math.PI / 4 })
+      .finalize();
+    const game = {
+      view: { bufferWidth: 4, bufferHeight: 4 },
+      renderCanvas: document.createElement('canvas'),
+      renderPipeline: {},
+      devTools: { flags: {} }
+    };
+    renderNativeFrame({ now: () => 0, random: () => 0.5 }, game, frame, { assetRegistry: createAssetRegistry({}), nativeBackendKind: 'webgl' });
+    return {
+      supported: true,
+      backendKind: game.renderPipeline.nativeBackendKind,
+      backend: game.renderPipeline.nativeBackend.kind,
+      diagnostics: game.renderPipeline.diagnostics,
+      legacyReasons: game.renderPipeline.webglFallbackReason?.map(issue => issue.reason) ?? []
+    };
+  });
+
+  test.skip(!result.supported, 'WebGL unavailable in this browser');
+  expect(result.backendKind).toBe('canvas2d');
+  expect(result.backend).toBe('canvas2d-native-frame-backend');
+  expect(result.diagnostics).toMatchObject({
+    requestedBackendKind: 'webgl',
+    candidateBackendKind: 'webgl',
+    actualBackendKind: 'canvas2d',
+    fallback: { occurred: true, from: 'webgl', to: 'canvas2d' }
+  });
+  expect(result.diagnostics.fallback.issues).toEqual([
+    expect.objectContaining({ packetKind: 'image', feature: 'rotation', reason: 'image rotation is not supported', severity: 'required' })
+  ]);
+  expect(result.legacyReasons).toEqual(['image rotation is not supported']);
 });
 
 test('webgl native backend draws clear and 1px rect packets from finalized frames', async ({ page }) => {

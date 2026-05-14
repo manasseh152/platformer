@@ -51,13 +51,72 @@ function nativeBackendKindFromDevTools(flags = {}, nativeBackendKind) {
   return undefined;
 }
 
-function writeRenderPipelineDiagnostics(game, frame, { requestedBackendKind, selectedBackendKind } = {}) {
+function normalizedIssue(reason, overrides = {}) {
+  if (typeof reason === 'string') return { reason, severity: 'required', ...overrides };
+  return { severity: 'required', ...reason, ...overrides };
+}
+
+function writeRenderPipelineDiagnostics(game, frame, { requestedBackendKind, candidateBackendKind, actualBackendKind, fallbackIssues = [], fallbackFrom, fallbackTo } = {}) {
   game.renderPipeline = game.renderPipeline ?? {};
+  const issues = fallbackIssues.map(issue => normalizedIssue(issue));
   game.renderPipeline.diagnostics = {
     requestedBackendKind: requestedBackendKind ?? 'auto',
-    selectedBackendKind,
+    candidateBackendKind,
+    actualBackendKind,
+    selectedBackendKind: candidateBackendKind,
+    fallback: {
+      occurred: issues.length > 0 || Boolean(fallbackFrom && fallbackTo && fallbackFrom !== fallbackTo),
+      from: fallbackFrom ?? null,
+      to: fallbackTo ?? null,
+      issues
+    },
     frame: summarizeRenderFrame(frame)
   };
+}
+
+function setLegacyFallbackFields(game, fallbackKind, issues) {
+  delete game.renderPipeline.deferredFallbackReason;
+  delete game.renderPipeline.webglFallbackReason;
+  if (!issues.length) return;
+  if (fallbackKind === DEFERRED_LIGHTING_BACKEND_KIND) game.renderPipeline.deferredFallbackReason = issues;
+  else if (fallbackKind === 'webgl') game.renderPipeline.webglFallbackReason = issues;
+}
+
+export function renderNativeFrame(runtime, game, frame, { assetRegistry = defaultAssetRegistry, nativeBackendKind } = {}) {
+  const requestedBackendKind = nativeBackendKindFromDevTools(game.devTools?.flags, nativeBackendKind);
+  const candidateBackendKind = selectNativeFrameBackendKindForFrame(frame, { nativeBackendKind: requestedBackendKind, devToolsFlags: game.devTools?.flags });
+  let nativeBackend = ensureNativeFrameBackend(game, { assetRegistry, nativeBackendKind: candidateBackendKind });
+  let fallbackFrom = null;
+  let fallbackTo = null;
+  let fallbackIssues = [];
+
+  if (candidateBackendKind === DEFERRED_LIGHTING_BACKEND_KIND && nativeBackend.kind !== 'webgl2-deferred-native-frame-backend') {
+    fallbackFrom = DEFERRED_LIGHTING_BACKEND_KIND;
+    fallbackTo = 'canvas2d';
+    fallbackIssues = [normalizedIssue(WEBGL2_DEFERRED_BACKEND_UNAVAILABLE_REASON)];
+  } else if (candidateBackendKind === 'webgl' && nativeBackend.kind !== 'webgl-native-frame-backend') {
+    fallbackFrom = 'webgl';
+    fallbackTo = 'canvas2d';
+    fallbackIssues = [normalizedIssue('webgl native-frame backend unavailable')];
+  } else {
+    const support = nativeBackend.supportsFrame?.(frame);
+    if (candidateBackendKind === DEFERRED_LIGHTING_BACKEND_KIND && (nativeBackend.lost || (support && !support.supported))) {
+      fallbackFrom = DEFERRED_LIGHTING_BACKEND_KIND;
+      fallbackTo = 'canvas2d';
+      fallbackIssues = nativeBackend.lost ? [normalizedIssue('webgl2 deferred native-frame context lost')] : [...support.issues];
+    } else if (candidateBackendKind === 'webgl' && (nativeBackend.lost || (support && !support.supported))) {
+      fallbackFrom = 'webgl';
+      fallbackTo = 'canvas2d';
+      fallbackIssues = nativeBackend.lost ? [normalizedIssue('webgl native-frame context lost')] : [...support.issues];
+    }
+  }
+
+  if (fallbackIssues.length) nativeBackend = ensureNativeFrameBackend(game, { assetRegistry, nativeBackendKind: 'canvas2d' });
+  const actualBackendKind = game.renderPipeline.nativeBackendKind;
+  setLegacyFallbackFields(game, fallbackFrom, fallbackIssues);
+  writeRenderPipelineDiagnostics(game, frame, { requestedBackendKind, candidateBackendKind, actualBackendKind, fallbackIssues, fallbackFrom, fallbackTo });
+  nativeBackend.draw(frame);
+  return nativeBackend;
 }
 
 export function renderGameplayFrame(runtime, game, { assetRegistry = defaultAssetRegistry, nativeBackendKind } = {}) {
@@ -66,24 +125,7 @@ export function renderGameplayFrame(runtime, game, { assetRegistry = defaultAsse
     runtime = { now: () => performance.now(), random: Math.random };
   }
   const { frame } = extractGameplayRenderFrame({ game, runtime, assetRegistry });
-  const requestedBackendKind = nativeBackendKindFromDevTools(game.devTools?.flags, nativeBackendKind);
-  const selectedBackendKind = selectNativeFrameBackendKindForFrame(frame, { nativeBackendKind: requestedBackendKind, devToolsFlags: game.devTools?.flags });
-  writeRenderPipelineDiagnostics(game, frame, { requestedBackendKind, selectedBackendKind });
-  let nativeBackend = ensureNativeFrameBackend(game, { assetRegistry, nativeBackendKind: selectedBackendKind });
-  if (selectedBackendKind === DEFERRED_LIGHTING_BACKEND_KIND && (nativeBackend.kind !== 'webgl2-deferred-native-frame-backend' || nativeBackend.lost)) {
-    game.renderPipeline.deferredFallbackReason = [{ reason: nativeBackend.lost ? 'webgl2 deferred native-frame context lost' : WEBGL2_DEFERRED_BACKEND_UNAVAILABLE_REASON }];
-    nativeBackend = ensureNativeFrameBackend(game, { assetRegistry, nativeBackendKind: 'canvas2d' });
-  } else if (game.renderPipeline) {
-    delete game.renderPipeline.deferredFallbackReason;
-  }
-  const support = nativeBackend.supportsFrame?.(frame);
-  if (nativeBackend.kind === 'webgl-native-frame-backend' && (nativeBackend.lost || (support && !support.supported))) {
-    game.renderPipeline.webglFallbackReason = nativeBackend.lost ? [{ reason: 'webgl native-frame context lost' }] : support.issues;
-    nativeBackend = ensureNativeFrameBackend(game, { assetRegistry, nativeBackendKind: 'canvas2d' });
-  } else if (game.renderPipeline) {
-    delete game.renderPipeline.webglFallbackReason;
-  }
-  nativeBackend.draw(frame);
+  const nativeBackend = renderNativeFrame(runtime, game, frame, { assetRegistry, nativeBackendKind });
   syncGameplayHudPresentation(game);
   game.presentation.present(nativeBackend.getSource());
 }
