@@ -425,6 +425,48 @@ test('map editor controller hints follow panel vs canvas focus and zoom only on 
   await expect(page.locator('#zoomInButton')).toBeHidden();
 });
 
+test('map editor controller brush picker previews, commits, and cancels brushes', async ({ page }) => {
+  await page.addInitScript(() => {
+    const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));
+    const pad = { index: 0, id: 'Mock Controller', mapping: 'standard', buttons, axes: [0, 0, 0, 0] };
+    window.__setMockGamepadButton = (index, pressed) => { buttons[index] = { pressed }; };
+    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] });
+  });
+  const press = async index => {
+    await page.evaluate(i => window.__setMockGamepadButton(i, true), index);
+    await page.waitForTimeout(80);
+    await page.evaluate(i => window.__setMockGamepadButton(i, false), index);
+    await page.waitForTimeout(80);
+  };
+  await page.goto('/editor.html');
+
+  await press(3);
+  await expect(page.locator('#editorOverlay')).toBeHidden();
+  await press(1);
+  await expect(page.locator('#packWheelHud')).toHaveAttribute('data-picker-open', '');
+  await expect.poll(() => page.evaluate(() => window.__mapEditorDebug.controllerBrushPicker)).toMatchObject({ open: true, highlightedBrushId: 'grass', committedBrushId: 'grass' });
+
+  await press(15);
+  await expect.poll(() => page.evaluate(() => window.__mapEditorDebug.controllerBrushPicker)).toMatchObject({ open: true, highlightedBrushId: 'dirt', committedBrushId: 'grass' });
+  await press(4);
+  await expect.poll(() => page.evaluate(() => window.__mapEditorDebug.controllerBrushPicker)).toMatchObject({ open: true, highlightedBrushId: 'grass', committedBrushId: 'grass' });
+  await press(5);
+  await expect.poll(() => page.evaluate(() => window.__mapEditorDebug.controllerBrushPicker)).toMatchObject({ open: true, highlightedBrushId: 'dirt', committedBrushId: 'grass' });
+  await expect(page.locator('#brushSectionTitle')).toHaveText('Selected: Grass');
+
+  await press(0);
+  await expect(page.locator('#packWheelHud')).not.toHaveAttribute('data-picker-open', '');
+  await expect.poll(() => page.evaluate(() => window.__mapEditorDebug.controllerBrushPicker)).toMatchObject({ open: false, committedBrushId: 'dirt' });
+  await expect(page.locator('#brushSectionTitle')).toHaveText('Selected: Dirt');
+
+  await press(1);
+  await press(4);
+  await expect.poll(() => page.evaluate(() => window.__mapEditorDebug.controllerBrushPicker)).toMatchObject({ open: true, highlightedBrushId: 'grass', committedBrushId: 'dirt' });
+  await press(1);
+  await expect.poll(() => page.evaluate(() => window.__mapEditorDebug.controllerBrushPicker)).toMatchObject({ open: false, committedBrushId: 'dirt' });
+  await expect(page.locator('#brushSectionTitle')).toHaveText('Selected: Dirt');
+});
+
 test('map editor edit tab groups pack items by editable layer', async ({ page }) => {
   await page.goto('/editor.html');
 

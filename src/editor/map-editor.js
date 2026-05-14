@@ -138,6 +138,12 @@ let controllerNextMoveAt = 0;
 let controllerMoveHeldSince = 0;
 let controllerMoveHoldKey = '';
 let controllerSelectBrowse = null;
+let controllerBrushPickerOpen = false;
+let controllerBrushPickerHighlightedIndex = 0;
+let controllerPickerNavX = 0;
+let controllerPickerNavY = 0;
+let controllerPickerNextMoveAt = 0;
+let controllerPickerMoveHoldKey = '';
 let packWheelWakeTimer = 0;
 let nativeBack = null;
 
@@ -358,6 +364,7 @@ function syncViewportHints() {
 }
 
 function setActiveTab(tabId, { show = true, focus = false } = {}) {
+  if (show && controllerBrushPickerOpen) closeControllerBrushPicker({ status: false });
   activeTab = tabId;
   overlayHidden = !show;
   if (dom.overlay) {
@@ -900,13 +907,32 @@ function wakePackWheel() {
   packWheelWakeTimer = setTimeout(() => dom.packWheelHud?.classList.remove('is-awake'), 1300);
 }
 
+function highlightedPickerBrush() {
+  const items = brushesForActivePack();
+  if (!items.length) return brush;
+  const index = ((controllerBrushPickerHighlightedIndex % items.length) + items.length) % items.length;
+  return items[index] ?? brush;
+}
+
 function updatePackWheel() {
   const layer = activeLayerConfig();
   const pack = activePackConfig();
+  const displayBrush = controllerBrushPickerOpen ? highlightedPickerBrush() : brush;
+  if (dom.packWheelHud) {
+    dom.packWheelHud.toggleAttribute('data-picker-open', controllerBrushPickerOpen);
+    dom.packWheelHud.dataset.highlightedBrush = displayBrush.id;
+    dom.packWheelHud.dataset.committedBrush = brush.id;
+  }
+  debug.controllerBrushPicker = {
+    open: controllerBrushPickerOpen,
+    highlightedBrushId: displayBrush.id,
+    committedBrushId: brush.id,
+    highlightedIndex: controllerBrushPickerHighlightedIndex
+  };
   if (dom.wheelLayerLabel) dom.wheelLayerLabel.textContent = layer.label;
-  if (dom.wheelBrushLabel) dom.wheelBrushLabel.textContent = brush.label;
+  if (dom.wheelBrushLabel) dom.wheelBrushLabel.textContent = displayBrush.label;
   if (dom.wheelPackLabel) dom.wheelPackLabel.textContent = pack?.label ?? layer.gridLabel;
-  if (dom.wheelBrushSwatch) dom.wheelBrushSwatch.style.setProperty('--swatch', brush.swatch ?? brush.cursor);
+  if (dom.wheelBrushSwatch) dom.wheelBrushSwatch.style.setProperty('--swatch', displayBrush.swatch ?? displayBrush.cursor);
   updateZoomReadout();
 }
 
@@ -914,7 +940,8 @@ function buildPackWheelItems() {
   if (!dom.packWheelItems) return;
   const items = brushesForActivePack();
   if (!items.length) { dom.packWheelItems.innerHTML = ''; updatePackWheel(); return; }
-  const activeIndex = Math.max(0, items.findIndex(candidate => candidate.id === brush.id));
+  const brushIndex = Math.max(0, items.findIndex(candidate => candidate.id === brush.id));
+  const activeIndex = controllerBrushPickerOpen ? ((controllerBrushPickerHighlightedIndex % items.length) + items.length) % items.length : brushIndex;
   const selectedAngle = -52;
   const step = 36;
   const visualSlots = items.length >= 9 ? items.length : 11;
@@ -926,7 +953,7 @@ function buildPackWheelItems() {
     const candidate = items[itemIndex];
     const visualItem = document.createElement('span');
     const duplicate = Math.abs(slot) >= items.length;
-    visualItem.className = `pack-wheel-hud__item${slot === 0 ? ' is-active' : ''}${duplicate ? ' is-duplicate' : ''}`;
+    visualItem.className = `pack-wheel-hud__item${slot === 0 ? ' is-active' : ''}${controllerBrushPickerOpen && candidate.id === brush.id ? ' is-committed' : ''}${duplicate ? ' is-duplicate' : ''}`;
     visualItem.style.setProperty('--angle', `${selectedAngle + slot * step}deg`);
     visualItem.style.setProperty('--swatch', candidate.swatch ?? candidate.cursor);
     visualItem.dataset.shortLabel = candidate.shortLabel ?? candidate.label;
@@ -1061,14 +1088,26 @@ function processEditorControllerFrame() {
 
   if (route.wasPressed('editor.mainMenu')) { route.consume('editor.mainMenu'); navigateMainMenu(); inputRuntime.endFrame(); requestAnimationFrame(processEditorControllerFrame); return; }
   if (route.wasPressed('editor.preview')) { route.consume('editor.preview'); previewDraft(); }
-  if (route.wasPressed('editor.togglePanel')) { route.consume('editor.togglePanel'); toggleEditorPanel(); }
 
   const xValue = route.value('menu.navigateX');
   const yValue = route.value('menu.navigateY');
   const xDirection = navDirection(xValue);
   const yDirection = navDirection(yValue);
 
+  if (handleControllerBrushPickerInput(route, xDirection, yDirection)) {
+    controllerNavX = xDirection;
+    controllerNavY = yDirection;
+    syncTabHints({ inputScheme: 'gamepad' });
+    inputRuntime.endFrame();
+    requestAnimationFrame(processEditorControllerFrame);
+    return;
+  }
+
+  if (route.wasPressed('editor.togglePanel')) { route.consume('editor.togglePanel'); toggleEditorPanel(); }
+
   if (overlayHidden) {
+    if (route.wasPressed('menu.back')) { route.consume('menu.back'); openControllerBrushPicker(); }
+    else {
     if (route.wasPressed('editor.toggleMode')) { route.consume('editor.toggleMode'); toggleControllerCanvasMode(); }
     if (route.wasPressed('editor.zoomOut')) { route.consume('editor.zoomOut'); zoomBy(0.88); }
     if (route.wasPressed('editor.zoomIn')) { route.consume('editor.zoomIn'); zoomBy(1.14); }
@@ -1130,6 +1169,7 @@ function processEditorControllerFrame() {
         route.consume('menu.navigateX');
         route.consume('menu.navigateY');
       }
+    }
     }
   } else {
     if (route.wasPressed('editor.previousTab')) { route.consume('editor.previousTab'); moveActiveTab(-1); }
@@ -1271,6 +1311,98 @@ function cycleBrush(direction) {
   setStatus(`Pack: ${brush.label}.`, '');
 }
 
+function resetControllerBrushPickerRepeat() {
+  controllerPickerNavX = 0;
+  controllerPickerNavY = 0;
+  controllerPickerNextMoveAt = 0;
+  controllerPickerMoveHoldKey = '';
+}
+
+function openControllerBrushPicker() {
+  const items = brushesForActivePack();
+  controllerBrushPickerHighlightedIndex = Math.max(0, items.findIndex(candidate => candidate.id === brush.id));
+  controllerBrushPickerOpen = true;
+  resetControllerBrushPickerRepeat();
+  if (dom.packWheelHud) {
+    dom.packWheelHud.classList.add('is-awake');
+    clearTimeout(packWheelWakeTimer);
+  }
+  buildPackWheelItems();
+  setStatus('Brush palette: D-pad or stick chooses, A selects, B cancels.', '');
+}
+
+function closeControllerBrushPicker({ status = true } = {}) {
+  if (!controllerBrushPickerOpen) return;
+  controllerBrushPickerOpen = false;
+  resetControllerBrushPickerRepeat();
+  buildPackWheelItems();
+  wakePackWheel();
+  if (status) setStatus('Brush palette cancelled.', '');
+}
+
+function commitControllerBrushPicker() {
+  if (!controllerBrushPickerOpen) return;
+  const candidate = highlightedPickerBrush();
+  controllerBrushPickerOpen = false;
+  resetControllerBrushPickerRepeat();
+  if (candidate && candidate.id !== brush.id) setBrush(candidate);
+  else buildPackWheelItems();
+  wakePackWheel();
+  setStatus(`Pack: ${brush.label}.`, '');
+}
+
+function moveControllerBrushPicker(direction) {
+  const items = brushesForActivePack();
+  if (!controllerBrushPickerOpen || !items.length) return;
+  controllerBrushPickerHighlightedIndex = ((controllerBrushPickerHighlightedIndex + direction) % items.length + items.length) % items.length;
+  buildPackWheelItems();
+}
+
+function pickerNavigationDirection(xDirection, yDirection) {
+  if (xDirection) return xDirection;
+  if (yDirection) return yDirection;
+  return 0;
+}
+
+function handleControllerBrushPickerInput(route, xDirection, yDirection) {
+  if (!controllerBrushPickerOpen) return false;
+  if (route.wasPressed('editor.togglePanel')) {
+    route.consume('editor.togglePanel');
+    closeControllerBrushPicker({ status: false });
+    setActiveTab(activeTab, { show: true });
+    setStatus('Pack panel shown. Press B or Y to return to canvas.', '');
+    return true;
+  }
+  if (route.wasPressed('menu.back')) { route.consume('menu.back'); closeControllerBrushPicker(); return true; }
+  if (route.wasPressed('menu.accept') || route.wasPressed('editor.paint')) {
+    route.consume('menu.accept');
+    route.consume('editor.paint');
+    commitControllerBrushPicker();
+    return true;
+  }
+  if (route.wasPressed('editor.previousBrush')) { route.consume('editor.previousBrush'); moveControllerBrushPicker(-1); return true; }
+  if (route.wasPressed('editor.nextBrush')) { route.consume('editor.nextBrush'); moveControllerBrushPicker(1); return true; }
+
+  const now = performance.now();
+  const holdKey = `${xDirection},${yDirection}`;
+  if (xDirection || yDirection) {
+    if (holdKey !== controllerPickerMoveHoldKey) {
+      controllerPickerMoveHoldKey = holdKey;
+      controllerPickerNextMoveAt = 0;
+    }
+  } else resetControllerBrushPickerRepeat();
+  const shouldMove = (xDirection || yDirection) && (xDirection !== controllerPickerNavX || yDirection !== controllerPickerNavY || now >= controllerPickerNextMoveAt);
+  if (shouldMove) {
+    moveControllerBrushPicker(pickerNavigationDirection(xDirection, yDirection));
+    controllerPickerNextMoveAt = now + controllerBrushRepeatMs();
+    route.consume('menu.navigateX');
+    route.consume('menu.navigateY');
+  }
+  controllerPickerNavX = xDirection;
+  controllerPickerNavY = yDirection;
+  return true;
+}
+
 function toggleControllerCanvasMode() {
   const nextMode = controllerCanvasMode === 'draw' ? 'navigate' : 'draw';
   controllerCanvasMode = nextMode;
@@ -1281,6 +1413,12 @@ function toggleControllerCanvasMode() {
 }
 
 function toggleEditorPanel() {
+  if (controllerBrushPickerOpen) {
+    closeControllerBrushPicker({ status: false });
+    setActiveTab(activeTab, { show: true });
+    setStatus('Pack panel shown. Press B or Y to return to canvas.', '');
+    return;
+  }
   setActiveTab(activeTab, { show: overlayHidden });
   if (overlayHidden) {
     if (controllerCanvasMode === 'draw') ensureControllerPointer({ renderIfChanged: true });

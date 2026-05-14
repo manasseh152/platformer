@@ -488,7 +488,8 @@ body[data-editor-input="gamepad"] .floating-view-controls { display: none; }
 }
 body[data-editor-input="gamepad"] .pack-wheel-hud { display: block; }
 body[data-editor-input="gamepad"][data-editor-panel="open"] .pack-wheel-hud { opacity: .46; transform: scale(.72); }
-.pack-wheel-hud.is-awake { opacity: 1; transform: scale(1); }
+.pack-wheel-hud.is-awake,
+.pack-wheel-hud[data-picker-open] { opacity: 1; transform: scale(1); }
 .pack-wheel-hud::before {
   content: "";
   position: absolute;
@@ -531,6 +532,7 @@ body[data-editor-input="gamepad"][data-editor-panel="open"] .pack-wheel-hud { op
   text-shadow: 0 1px 0 rgba(255,255,255,.24);
 }
 .pack-wheel-hud__item.is-duplicate { opacity: .56; filter: saturate(.78); }
+.pack-wheel-hud[data-picker-open] .pack-wheel-hud__item.is-committed:not(.is-active) { outline: 2px solid rgba(255,246,232,.48); outline-offset: 2px; }
 .pack-wheel-hud__item.is-active {
   z-index: 2;
   opacity: 1;
