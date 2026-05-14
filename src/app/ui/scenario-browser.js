@@ -1,6 +1,7 @@
 import { getCategoryById, primaryGroupCategoryFor } from '../../catalog/categories/registry.js';
 import { countLocalDraftRecords, listLocalDraftRecords } from '../../catalog/local-drafts/storage.js';
 import { getVisibleScenarioEntries } from '../../catalog/scenarios/registry.js';
+import { escapeHtml, renderInfoRow, renderSection, renderSettingRow, renderTabList, renderTabPanel } from './components/primitives.js';
 import { runDOMTransition } from './transitions.js';
 
 const LEVEL_SELECT_TAB_KEY = 'chibi.level-select.active-tab';
@@ -10,10 +11,6 @@ const LEVEL_SELECT_TABS = [
   { id: 'gyms', label: 'Gyms', developer: true },
   { id: 'zoos', label: 'Zoos', developer: true }
 ];
-
-function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
-}
 
 function developerModeFor(game) { return Boolean(game.settings.developerMode || game.session?.developerModeOverride); }
 
@@ -56,13 +53,14 @@ function renderScenarioRow(game, entry, current, currentScenarioId) {
   const docs = entry.docs?.length ? ` // Docs: ${entry.docs.join(', ')}` : '';
   const tests = entry.tests?.length ? ` // Tests: ${entry.tests.join(', ')}` : '';
   const covers = entry.covers?.length ? ` // Covers: ${entry.covers.join(', ')}` : '';
-  return `<button type="button" class="ds-setting-row level-select-row${isCurrent ? ' is-current' : ''}" data-scenario-id="${escapeHtml(entry.id)}" data-scenario-source="${escapeHtml(entry.source || '')}">
-    <span class="ds-setting-row__copy">
-      <span class="ds-setting-row__label">${escapeHtml(entry.name)}</span>
-      <span class="ds-setting-row__description">${escapeHtml(entry.description || '')}${tags ? ` // ${escapeHtml(tags)}` : ''}${entry.visibility === 'developer' ? ' // Developer' : ''}${entry.ci ? ' // CI' : ''}${escapeHtml(docs)}${escapeHtml(tests)}${escapeHtml(covers)}</span>
-    </span>
-    <span class="ds-setting-row__value">${actionLabelFor(game, isCurrent)}</span>
-  </button>`;
+  const description = `${entry.description || ''}${tags ? ` // ${tags}` : ''}${entry.visibility === 'developer' ? ' // Developer' : ''}${entry.ci ? ' // CI' : ''}${docs}${tests}${covers}`;
+  return renderSettingRow({
+    label: entry.name,
+    description,
+    value: escapeHtml(actionLabelFor(game, isCurrent)),
+    className: `level-select-row${isCurrent ? ' is-current' : ''}`,
+    attributes: { 'data-scenario-id': entry.id, 'data-scenario-source': entry.source || '' }
+  });
 }
 
 function formatSavedAt(value) {
@@ -72,25 +70,26 @@ function formatSavedAt(value) {
 
 function renderLocalDraftRow(game, record, currentScenarioId) {
   const draft = record.draft;
-  if (!draft) return `<div class="ds-setting-row ds-setting-row--info local-draft-row is-invalid">
-    <span class="ds-setting-row__copy"><span class="ds-setting-row__label">${escapeHtml(record.id || 'Unreadable local draft')}</span><span class="ds-setting-row__description">Invalid: ${escapeHtml(record.validation?.message || 'Saved JSON is malformed.')}</span></span>
-    <span class="ds-setting-row__value">Invalid</span>
-  </div>`;
+  if (!draft) return renderInfoRow({
+    label: record.id || 'Unreadable local draft',
+    description: `Invalid: ${record.validation?.message || 'Saved JSON is malformed.'}`,
+    value: 'Invalid',
+    className: 'local-draft-row is-invalid'
+  });
   const scenarioId = `local:${draft.id}`;
   const validation = record.validation;
   const status = !validation.ok ? `Invalid: ${validation.message}` : (!validation.playable ? validation.message : (validation.warning || 'Ready'));
   const isCurrent = currentScenarioId === scenarioId;
   const disabled = !validation.playable;
-  return `<div class="ds-setting-row local-draft-row${isCurrent ? ' is-current' : ''}${disabled ? ' is-invalid' : ''}" data-local-draft-id="${escapeHtml(draft.id)}">
-    <span class="ds-setting-row__copy">
-      <span class="ds-setting-row__label">${escapeHtml(draft.name || draft.id)}</span>
-      <span class="ds-setting-row__description">${escapeHtml(draft.id)} // ${draft.cols}×${draft.rows} // ${escapeHtml(formatSavedAt(draft.updatedAt))} // ${escapeHtml(status)}</span>
-    </span>
-    <span class="ds-setting-row__value local-draft-actions">
-      <button type="button" class="ds-button ds-button--secondary" data-scenario-id="${escapeHtml(scenarioId)}" data-scenario-source="local"${disabled ? ' disabled' : ''}>${actionLabelFor(game, isCurrent)}</button>
-      <button type="button" class="ds-button ds-button--secondary" data-local-draft-edit="${escapeHtml(draft.id)}">Edit</button>
-    </span>
-  </div>`;
+  return renderSettingRow({
+    label: draft.name || draft.id,
+    description: `${draft.id} // ${draft.cols}×${draft.rows} // ${formatSavedAt(draft.updatedAt)} // ${status}`,
+    value: `<button type="button" class="ds-button ds-button--secondary" data-scenario-id="${escapeHtml(scenarioId)}" data-scenario-source="local"${disabled ? ' disabled' : ''}>${escapeHtml(actionLabelFor(game, isCurrent))}</button><button type="button" class="ds-button ds-button--secondary" data-local-draft-edit="${escapeHtml(draft.id)}">Edit</button>`,
+    tag: 'div',
+    className: `local-draft-row${isCurrent ? ' is-current' : ''}${disabled ? ' is-invalid' : ''}`,
+    valueClassName: 'local-draft-actions',
+    attributes: { 'data-local-draft-id': draft.id }
+  });
 }
 
 function entriesForTab(entries, tabId) {
@@ -107,13 +106,21 @@ function renderActsTab(game, entries, current, currentScenarioId) {
     if (!groups.has(act.id)) groups.set(act.id, { group: act, entries: [] });
     groups.get(act.id).entries.push(entry);
   }
-  return [...groups.values()].sort((a, b) => a.group.order - b.group.order).map(({ group, entries }) => `<section class="ds-section settings-section level-select-group" data-scenario-source="campaigns">
-    <h3>${escapeHtml(group.name)}</h3><div class="settings-row-list">${entries.map(entry => renderScenarioRow(game, entry, current, currentScenarioId)).join('')}</div>
-  </section>`).join('');
+  return [...groups.values()].sort((a, b) => a.group.order - b.group.order).map(({ group, entries }) => renderSection({
+    title: group.name,
+    body: `<div class="settings-row-list">${entries.map(entry => renderScenarioRow(game, entry, current, currentScenarioId)).join('')}</div>`,
+    className: 'settings-section level-select-group',
+    attributes: { 'data-scenario-source': 'campaigns' }
+  })).join('');
 }
 
 function renderSourceTab(game, entries, current, currentScenarioId, title) {
-  return `<section class="ds-section settings-section level-select-group" data-scenario-source="${escapeHtml(title.toLowerCase())}"><h3>${escapeHtml(title)}</h3><div class="settings-row-list">${entries.map(entry => renderScenarioRow(game, entry, current, currentScenarioId)).join('')}</div></section>`;
+  return renderSection({
+    title,
+    body: `<div class="settings-row-list">${entries.map(entry => renderScenarioRow(game, entry, current, currentScenarioId)).join('')}</div>`,
+    className: 'settings-section level-select-group',
+    attributes: { 'data-scenario-source': title.toLowerCase() }
+  });
 }
 
 function renderLocalTab(game, currentScenarioId) {
@@ -151,17 +158,24 @@ export function renderScenarioBrowser(game, message = '') {
   const localCount = countLocalDraftRecords(game.runtime?.storage);
   const tabs = availableLevelSelectTabs(game);
   const tabId = activeLevelSelectTab(game);
-  const tabMarkup = `<div class="level-select-tabs" role="tablist" aria-label="Scenario categories">${tabs.map(tab => {
-    const selected = tab.id === tabId;
-    const label = tab.id === 'local' ? `${tab.label} (${localCount})` : tab.label;
-    return `<button type="button" class="ds-button level-select-tab" role="tab" aria-selected="${selected}" data-level-select-tab="${tab.id}">${escapeHtml(label)}</button>`;
-  }).join('')}</div>`;
+  const tabMarkup = renderTabList({
+    label: 'Scenario categories',
+    tabs: tabs.map(tab => ({
+      id: tab.id,
+      label: tab.id === 'local' ? `${tab.label} (${localCount})` : tab.label,
+      className: 'ds-button level-select-tab',
+      attributes: { 'data-level-select-tab': tab.id }
+    })),
+    activeId: tabId,
+    className: 'level-select-tabs',
+    variant: 'primary'
+  });
   const tabEntries = entriesForTab(entries, tabId);
   let panel = '';
   if (tabId === 'acts') panel = renderActsTab(game, tabEntries, current, currentScenarioId);
   else if (tabId === 'local') panel = renderLocalTab(game, currentScenarioId);
   else panel = renderSourceTab(game, tabEntries, current, currentScenarioId, tabId === 'gyms' ? 'Gyms' : 'Zoos');
-  ui.levelSelectList.innerHTML = `${tabMarkup}<div class="level-select-panel" role="tabpanel">${panel}</div>`;
+  ui.levelSelectList.innerHTML = `${tabMarkup}${renderTabPanel({ body: panel, className: 'level-select-panel' })}`;
   if (ui.levelSelectStatus) ui.levelSelectStatus.textContent = message || defaultLevelSelectStatus(game, tabId, localCount);
   renderSelectedTilemapSummary(game);
 }

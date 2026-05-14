@@ -97,11 +97,12 @@ Status: Implemented.
 
 ### Slice 4: Reuse primitives outside Settings
 
-Status: Planned.
+Status: Implemented.
 
-- Evaluate Scenario Browser tab rails and other game menu pages for migration to the same tab primitive.
-- Apply row/section/action primitives where they reduce duplication without forcing Settings-specific concepts into other pages.
-- Keep scene/page adapters responsible for page-specific state and copy.
+- Scenario Browser now renders its category tab rail with the shared tab primitive while preserving level-select-specific data attributes, copy, and tab persistence.
+- Scenario Browser panels now use the shared tab-panel primitive.
+- Scenario rows, local draft rows, and campaign/developer sections now use shared row/section primitives where the app-wide shape fits; bespoke local toolbar markup remains page-owned.
+- Scene/page adapters remain responsible for Scenario Browser state, grouping, local draft actions, and user-facing copy.
 
 ### Slice 5: App-wide native/browser back integration
 

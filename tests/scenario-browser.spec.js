@@ -33,6 +33,8 @@ test('developer mode presents Scenario Browser with tabs for acts local gyms and
   await expect(page.getByRole('tab', { name: /Local \(0\)/ })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Gyms' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Zoos' })).toBeVisible();
+  await expect(page.locator('#levelSelectList .level-select-tabs')).toHaveClass(/ds-tabs/);
+  await expect(page.locator('#levelSelectList .level-select-panel')).toHaveClass(/ds-tab-panel/);
   await expect(page.locator('#levelSelectList [data-scenario-source="campaigns"] h3')).toHaveText('Act 01');
 
   await page.getByRole('tab', { name: 'Gyms' }).click();

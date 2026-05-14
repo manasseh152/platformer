@@ -30,11 +30,11 @@ export function renderSection({ title, body, className = '', attributes = {} }) 
   return `<section class="${classes('ds-section', className)}"${attrs(attributes)}><h3>${escapeHtml(title)}</h3>${body}</section>`;
 }
 
-export function renderSettingRow({ id, label, value, description = '', kind = 'setting', tag = 'button', className = '', attributes = {} }) {
+export function renderSettingRow({ id, label, value, description = '', kind = 'setting', tag = 'button', className = '', valueClassName = '', attributes = {} }) {
   const type = tag === 'button' ? ' type="button"' : '';
   return `<${tag}${type} class="${classes('ds-setting-row', kind && `ds-setting-row--${kind}`, className)}"${id ? ` data-setting-row="${escapeHtml(id)}"` : ''}${attrs(attributes)}>
     <span class="ds-setting-row__copy"><span class="ds-setting-row__label">${escapeHtml(label)}</span>${description ? `<span class="ds-setting-row__description">${escapeHtml(description)}</span>` : ''}</span>
-    <span class="ds-setting-row__value">${value}</span>
+    <span class="${classes('ds-setting-row__value', valueClassName)}">${value}</span>
   </${tag}>`;
 }
 
