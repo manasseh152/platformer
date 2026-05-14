@@ -13,6 +13,7 @@ import { renderLight2d } from '#/engine/scene/components.js';
 import { defineScene } from '#/engine/scene/scene.js';
 import { getTilemapById } from '#/content/tilemaps/registry.js';
 import { addLightPackets, lightWorldPosition, pointLightIntersectsView } from '#/render/extractors/light-packets.js';
+import { createRenderParityScenarios } from '#/render/parity-render-scenarios.js';
 
 test('presentation viewport integer-scales and centers native frame', () => {
   expect(computePresentationViewport(800, 600, 320, 180)).toEqual({ scale: 2, width: 640, height: 360, offsetX: 80, offsetY: 120 });
@@ -80,6 +81,119 @@ test('asset registry exposes atlas sprite metadata without changing asset IDs', 
     extrude: 1
   });
   expect(registry.isLoaded(ASSET_IDS.HAZARD_SPIKES)).toBe(true);
+});
+
+test('render parity scenarios cover ADR 0009 representative packet families', () => {
+  const scenarios = createRenderParityScenarios();
+  expect(scenarios.map(scenario => scenario.id)).toEqual([
+    'clear-rect-vector-primitives',
+    'standalone-image-packets',
+    'atlas-sprite-packets',
+    'tilemap-contained-terrain-chunks',
+    'actors-and-flipped-rotated-sprites',
+    'lighting-primitives-lit-unlit-surfaces',
+    'debug-overlays'
+  ]);
+
+  const packetsByScenario = Object.fromEntries(scenarios.map(scenario => [scenario.id, scenario.frame.packets]));
+  expect(packetsByScenario['clear-rect-vector-primitives'].map(packet => packet.kind)).toEqual(expect.arrayContaining(['clear', 'rect', 'path', 'ellipse']));
+  expect(packetsByScenario['standalone-image-packets']).toEqual(expect.arrayContaining([expect.objectContaining({ kind: 'image' })]));
+  expect(packetsByScenario['atlas-sprite-packets']).toEqual(expect.arrayContaining([expect.objectContaining({ kind: 'sprite' })]));
+  expect(packetsByScenario['tilemap-contained-terrain-chunks'].filter(packet => packet.kind === 'rect' && packet.lighting === 'lit').length).toBeGreaterThan(1);
+  expect(packetsByScenario['actors-and-flipped-rotated-sprites']).toEqual(expect.arrayContaining([
+    expect.objectContaining({ kind: 'sprite', flipX: true }),
+    expect.objectContaining({ kind: 'sprite', rotation: expect.any(Number) })
+  ]));
+  expect(packetsByScenario['lighting-primitives-lit-unlit-surfaces']).toEqual(expect.arrayContaining([
+    expect.objectContaining({ kind: 'rect', lighting: 'lit' }),
+    expect.objectContaining({ kind: 'rect', lighting: 'unlit' }),
+    expect.objectContaining({ kind: 'light2d', lightKind: 'ambient' }),
+    expect.objectContaining({ kind: 'light2d', lightKind: 'point' })
+  ]));
+  expect(packetsByScenario['debug-overlays']).toEqual(expect.arrayContaining([
+    expect.objectContaining({ layer: expect.any(Number), stroke: expect.any(String) })
+  ]));
+});
+
+test('canvas2d and webgl native backends match on ADR 0009 parity render scenarios', async ({ page }) => {
+  await page.goto('/');
+  const result = await page.evaluate(async () => {
+    const [{ createRenderParityScenarios, PARITY_ASSET_IDS }, { createAssetRegistry, createAtlasSpriteMetadata }, { createCanvas2DNativeFrameBackend }, { createWebGlNativeFrameBackend }] = await Promise.all([
+      import('/src/render/parity-render-scenarios.js'),
+      import('/src/render/asset-registry.js'),
+      import('/src/render/backends/canvas2d-native-frame-backend.js'),
+      import('/src/render/backends/webgl-native-frame-backend.js')
+    ]);
+
+    const source = document.createElement('canvas');
+    source.width = 12;
+    source.height = 4;
+    const sourceCtx = source.getContext('2d');
+    sourceCtx.fillStyle = '#ff0000';
+    sourceCtx.fillRect(0, 0, 4, 4);
+    sourceCtx.fillStyle = '#00ff00';
+    sourceCtx.fillRect(4, 0, 4, 4);
+    sourceCtx.fillStyle = '#0000ff';
+    sourceCtx.fillRect(8, 0, 4, 4);
+    const atlas = new Image();
+    await new Promise(resolve => {
+      atlas.onload = resolve;
+      atlas.src = source.toDataURL();
+    });
+
+    const assetRegistry = createAssetRegistry(
+      { atlas },
+      { metadata: {
+        [PARITY_ASSET_IDS.standalone]: { kind: 'standalone-image', imageKey: 'atlas', rect: { x: 0, y: 0, w: 4, h: 4 } },
+        [PARITY_ASSET_IDS.atlasSprite]: createAtlasSpriteMetadata({ atlasId: 'atlas.parity', imageKey: 'atlas', x: 4, y: 0, w: 4, h: 4 }),
+        [PARITY_ASSET_IDS.actorSprite]: createAtlasSpriteMetadata({ atlasId: 'atlas.parity', imageKey: 'atlas', x: 0, y: 0, w: 4, h: 4 }),
+        [PARITY_ASSET_IDS.rotatedSprite]: createAtlasSpriteMetadata({ atlasId: 'atlas.parity', imageKey: 'atlas', x: 8, y: 0, w: 2, h: 4 })
+      } }
+    );
+    const probe = createWebGlNativeFrameBackend({ width: 1, height: 1, assetRegistry });
+    if (!probe) return { supported: false };
+    probe.destroy?.();
+
+    function canvasPixels(backend, points) {
+      return points.map(({ x, y }) => Array.from(backend.ctx.getImageData(x, y, 1, 1).data));
+    }
+
+    function webglPixels(backend, frame, points) {
+      const raw = new Uint8Array(frame.width * frame.height * 4);
+      backend.gl.readPixels(0, 0, frame.width, frame.height, backend.gl.RGBA, backend.gl.UNSIGNED_BYTE, raw);
+      return points.map(({ x, y }) => {
+        const offset = ((frame.height - 1 - y) * frame.width + x) * 4;
+        return Array.from(raw.slice(offset, offset + 4));
+      });
+    }
+
+    return {
+      supported: true,
+      scenarios: createRenderParityScenarios().map(scenario => {
+        const canvas = createCanvas2DNativeFrameBackend({ width: scenario.frame.width, height: scenario.frame.height, assetRegistry });
+        const webgl = createWebGlNativeFrameBackend({ width: scenario.frame.width, height: scenario.frame.height, assetRegistry });
+        canvas.draw(scenario.frame);
+        webgl.draw(scenario.frame);
+        return {
+          id: scenario.id,
+          tolerance: scenario.tolerance ?? 2,
+          support: webgl.supportsFrame(scenario.frame),
+          canvas: canvasPixels(canvas, scenario.samplePoints),
+          webgl: webglPixels(webgl, scenario.frame, scenario.samplePoints)
+        };
+      })
+    };
+  });
+
+  test.skip(!result.supported, 'WebGL unavailable in this browser');
+  for (const scenario of result.scenarios) {
+    expect(scenario.support).toMatchObject({ supported: true, issues: [] });
+    for (let point = 0; point < scenario.canvas.length; point++) {
+      for (let channel = 0; channel < 4; channel++) {
+        expect(Math.abs(scenario.webgl[point][channel] - scenario.canvas[point][channel]), `${scenario.id} point ${point} channel ${channel}: canvas=${scenario.canvas[point][channel]} webgl=${scenario.webgl[point][channel]}`).toBeLessThanOrEqual(scenario.tolerance);
+      }
+    }
+  }
 });
 
 test('canvas2d and webgl native backends match on tiny reference frames', async ({ page }) => {

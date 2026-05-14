@@ -247,7 +247,7 @@ Vector packets and gradient fills are currently supported through a Canvas2D tex
 
 Canvas2D remains the reference during this work.
 
-### 6. Add parity render scenarios
+### 6. Add parity render scenarios — Complete
 
 Create focused render scenarios for:
 
@@ -258,6 +258,8 @@ Create focused render scenarios for:
 - actors and flipped/rotated sprites
 - lighting primitives and lit/unlit surfaces
 - debug overlays
+
+Implemented in `src/render/parity-render-scenarios.js`, with coverage and Canvas2D/WebGL sampled-pixel parity checks in `tests/render-pipeline.spec.js`. The scenarios are focused fixtures for the ADR 0009 representative packet families; debug/vector samples allow bounded tolerance where Canvas2D compatibility paths and WebGL rasterization differ on antialiasing or alpha blending.
 
 ### 7. Cleanup legacy fallback fields
 
