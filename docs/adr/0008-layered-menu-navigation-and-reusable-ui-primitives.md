@@ -113,6 +113,15 @@ Status: Implemented.
 - Editor native back closes the editor action panel through the existing panel state path.
 - The adapter keeps at most one same-URL synthetic history entry while app-owned back targets exist, re-arms only when another target remains, and removes stale entries after UI/controller closure to avoid trapping users in synthetic history loops.
 
+### Slice 6: Editor tab primitive alignment
+
+Status: Implemented.
+
+- Editor action tabs now carry the shared `.ds-tabs`, `.ds-tabs--primary`, and `.ds-tab` primitive class contract while keeping editor-specific data attributes and input hints.
+- Editor panels now carry the shared `.ds-tab-panel` primitive class alongside existing editor panel classes.
+- Initial static markup now matches the runtime roving `tabindex` state so native browser `Tab` only enters the selected editor tab before JavaScript sync runs.
+- Added Playwright coverage for the editor primitive contract and roving tab selection.
+
 ## Consequences
 
 - Settings becomes controller/keyboard navigable without sacrificing browser-native `Tab` behavior.

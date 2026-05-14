@@ -302,6 +302,19 @@ test('map editor blocks preview until the draft has a player spawn', async ({ pa
   await expect.poll(() => page.evaluate(() => window.__openedPreviews.length)).toBe(0);
 });
 
+test('map editor tabs and panels use the shared primitive contract', async ({ page }) => {
+  await page.goto('/editor.html');
+
+  await expect(page.getByRole('tablist', { name: 'Editor action groups' })).toHaveClass(/ds-tabs/);
+  await expect(page.getByRole('tablist', { name: 'Editor action groups' })).toHaveClass(/ds-tabs--primary/);
+  await expect(page.getByRole('tab', { name: 'Edit' })).toHaveClass(/ds-tab/);
+  await expect(page.getByRole('tab', { name: 'Edit' })).toHaveAttribute('tabindex', '0');
+  await expect(page.getByRole('tab', { name: 'Map' })).toHaveAttribute('tabindex', '-1');
+  await page.getByRole('tab', { name: 'Map' }).click();
+  await expect(page.locator('#mapPanel')).toHaveClass(/ds-tab-panel/);
+  await expect(page.getByRole('tab', { name: 'Map' })).toHaveAttribute('tabindex', '0');
+});
+
 test('map editor tab clicks toggle the floating overlay', async ({ page }) => {
   await page.goto('/editor.html');
 

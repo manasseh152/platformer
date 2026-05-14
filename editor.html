@@ -13,12 +13,12 @@
     <header class="editor-topbar" aria-label="Editor controls">
       <button id="mainMenuButton" type="button" class="top-button ds-button ds-button--secondary">Main menu</button>
 
-      <div class="editor-tabs ds-tabs" role="tablist" aria-label="Editor action groups">
+      <div class="editor-tabs ds-tabs ds-tabs--primary" role="tablist" aria-label="Editor action groups">
         <span class="editor-tabs__hint" data-editor-tab-hint="previous" data-input-tab-hint data-input-action="editor.previousTab" aria-hidden="true" hidden>LB</span>
-        <button id="mapTab" type="button" role="tab" aria-label="Map" aria-selected="false" aria-controls="mapPanel" data-editor-tab="map"><span>Map</span></button>
-        <button id="editTab" type="button" role="tab" aria-label="Edit" aria-selected="true" aria-controls="editPanel" data-editor-tab="edit"><span>Edit</span></button>
-        <button id="viewTab" type="button" role="tab" aria-label="View" aria-selected="false" aria-controls="viewPanel" data-editor-tab="view"><span>View</span></button>
-        <button id="settingsTab" type="button" role="tab" aria-label="Settings" aria-selected="false" aria-controls="settingsPanel" data-editor-tab="settings"><span>Settings</span></button>
+        <button id="mapTab" class="ds-tab" type="button" role="tab" aria-label="Map" aria-selected="false" aria-controls="mapPanel" data-editor-tab="map" tabindex="-1"><span>Map</span></button>
+        <button id="editTab" class="ds-tab" type="button" role="tab" aria-label="Edit" aria-selected="true" aria-controls="editPanel" data-editor-tab="edit" tabindex="0"><span>Edit</span></button>
+        <button id="viewTab" class="ds-tab" type="button" role="tab" aria-label="View" aria-selected="false" aria-controls="viewPanel" data-editor-tab="view" tabindex="-1"><span>View</span></button>
+        <button id="settingsTab" class="ds-tab" type="button" role="tab" aria-label="Settings" aria-selected="false" aria-controls="settingsPanel" data-editor-tab="settings" tabindex="-1"><span>Settings</span></button>
         <span class="editor-tabs__hint" data-editor-tab-hint="next" data-input-tab-hint data-input-action="editor.nextTab" aria-hidden="true" hidden>RB</span>
       </div>
 
@@ -38,7 +38,7 @@
         </div>
         <p id="status" class="status" aria-live="polite"></p>
 
-        <section id="mapPanel" class="tab-panel" role="tabpanel" aria-labelledby="mapTab" hidden>
+        <section id="mapPanel" class="tab-panel ds-tab-panel" role="tabpanel" aria-labelledby="mapTab" hidden>
           <div class="panel-section">
             <h2>Map setup</h2>
             <label class="field">
@@ -89,7 +89,7 @@
           </details>
         </section>
 
-        <section id="editPanel" class="tab-panel" role="tabpanel" aria-labelledby="editTab">
+        <section id="editPanel" class="tab-panel ds-tab-panel" role="tabpanel" aria-labelledby="editTab">
           <div class="panel-section edit-layer-section">
             <h2>Layers</h2>
             <p class="section-kicker">Choose what kind of thing the cursor is editing.</p>
@@ -116,7 +116,7 @@
           </div>
         </section>
 
-        <section id="viewPanel" class="tab-panel" role="tabpanel" aria-labelledby="viewTab" hidden>
+        <section id="viewPanel" class="tab-panel ds-tab-panel" role="tabpanel" aria-labelledby="viewTab" hidden>
           <div class="panel-section">
             <h2>View</h2>
             <div class="switch-stack">
@@ -128,7 +128,7 @@
           </div>
         </section>
 
-        <section id="settingsPanel" class="tab-panel" role="tabpanel" aria-labelledby="settingsTab" hidden>
+        <section id="settingsPanel" class="tab-panel ds-tab-panel" role="tabpanel" aria-labelledby="settingsTab" hidden>
           <div class="panel-section">
             <h2>Controller brush</h2>
             <label class="field">
