@@ -132,6 +132,7 @@ let controllerNavX = 0;
 let controllerNavY = 0;
 let controllerCanvasMode = 'draw';
 let editorInputMode = 'pointer';
+let controllerGhostPointer = null;
 let controllerPaintActive = false;
 let controllerNextMoveAt = 0;
 let controllerMoveHeldSince = 0;
@@ -716,27 +717,37 @@ function drawEntities(ctx, rect) {
   ctx.restore();
 }
 
-function drawCursor(ctx, cursor) {
+function drawCursor(ctx, cursor, { ghost = false } = {}) {
   const layer = draft.layers.find(layer => layer.id === brush.layerId);
   if (!layer || cursor.row < 0 || cursor.row >= layer.rows.length || cursor.col < 0 || cursor.col >= layer.rows[0].length) return;
-  debug.cursorRenderCount = (debug.cursorRenderCount ?? 0) + 1;
-  debug.cursor = { col: cursor.col, row: cursor.row, layerId: brush.layerId, brushId: brush.id };
+  const debugCursor = { col: cursor.col, row: cursor.row, layerId: brush.layerId, brushId: brush.id };
+  if (ghost) {
+    debug.ghostCursorRenderCount = (debug.ghostCursorRenderCount ?? 0) + 1;
+    debug.ghostCursor = debugCursor;
+  } else {
+    debug.cursorRenderCount = (debug.cursorRenderCount ?? 0) + 1;
+    debug.cursor = debugCursor;
+  }
   const x = cursor.col * brush.cellSize;
   const y = cursor.row * brush.cellSize;
   const inset = 1 / viewport.camera.zoom;
-  const haloWidth = 6 / viewport.camera.zoom;
-  const lineWidth = 3 / viewport.camera.zoom;
+  const haloWidth = (ghost ? 4 : 6) / viewport.camera.zoom;
+  const lineWidth = (ghost ? 2 : 3) / viewport.camera.zoom;
   const corner = Math.max(4, brush.cellSize * 0.32);
   ctx.save();
-  ctx.fillStyle = 'rgba(8, 12, 22, .22)';
+  ctx.fillStyle = ghost ? 'rgba(255, 255, 255, .08)' : 'rgba(8, 12, 22, .22)';
   ctx.fillRect(x + inset, y + inset, brush.cellSize - inset * 2, brush.cellSize - inset * 2);
   ctx.lineJoin = 'round';
-  ctx.strokeStyle = 'rgba(0, 0, 0, .82)';
+  ctx.setLineDash(ghost ? [6 / viewport.camera.zoom, 5 / viewport.camera.zoom] : []);
+  ctx.strokeStyle = ghost ? 'rgba(0, 0, 0, .55)' : 'rgba(0, 0, 0, .82)';
   ctx.lineWidth = haloWidth;
   ctx.strokeRect(x + inset, y + inset, brush.cellSize - inset * 2, brush.cellSize - inset * 2);
   ctx.strokeStyle = brush.cursor;
+  ctx.globalAlpha = ghost ? .62 : 1;
   ctx.lineWidth = lineWidth;
   ctx.strokeRect(x + inset, y + inset, brush.cellSize - inset * 2, brush.cellSize - inset * 2);
+  ctx.setLineDash([]);
+  ctx.globalAlpha = ghost ? .7 : 1;
   ctx.strokeStyle = 'rgba(255, 255, 255, .95)';
   ctx.lineWidth = 1.5 / viewport.camera.zoom;
   const right = x + brush.cellSize - inset;
@@ -767,7 +778,8 @@ function render() {
   drawEntities(ctx, rect);
   if (dom.collisionToggle.checked && compiled) drawCollisionDebugOverlay(ctx, compiled, { showCollisionRects: true });
   if (dom.gridToggle.checked) drawGrid(ctx, rect);
-  if (pointer) drawCursor(ctx, pointer);
+  if (controllerCanvasMode === 'navigate' && overlayHidden && controllerGhostPointer) drawCursor(ctx, controllerGhostPointer, { ghost: true });
+  if (pointer && controllerCanvasMode !== 'navigate') drawCursor(ctx, pointer);
   updateZoomReadout();
 }
 
@@ -926,6 +938,7 @@ function processEditorKeyboardEvent(event) {
   inputAdapter.beginFrame({ controllerEnabled: false });
   const route = editorInputRoute();
   syncTabHints({ consoleActive: false });
+  if (route.wasPressed('editor.mainMenu')) { event.preventDefault(); route.consume('editor.mainMenu'); navigateMainMenu(); inputRuntime.endFrame(); return; }
   if (route.wasPressed('editor.save')) { event.preventDefault(); route.consume('editor.save'); saveLocalExplicit(); inputRuntime.endFrame(); return; }
   if (route.wasPressed('editor.preview')) { event.preventDefault(); route.consume('editor.preview'); previewDraft(); inputRuntime.endFrame(); return; }
   if (route.wasPressed('editor.redo')) { event.preventDefault(); route.consume('editor.redo'); applyHistoryAction('redo'); inputRuntime.endFrame(); return; }
@@ -952,6 +965,8 @@ function processEditorControllerFrame() {
   syncTabHints({ inputScheme: 'gamepad' });
   const route = editorInputRoute();
 
+  if (route.wasPressed('editor.mainMenu')) { route.consume('editor.mainMenu'); navigateMainMenu(); inputRuntime.endFrame(); requestAnimationFrame(processEditorControllerFrame); return; }
+  if (route.wasPressed('editor.preview')) { route.consume('editor.preview'); previewDraft(); }
   if (route.wasPressed('editor.togglePanel')) { route.consume('editor.togglePanel'); toggleEditorPanel(); }
 
   const xValue = route.value('menu.navigateX');
@@ -968,14 +983,17 @@ function processEditorControllerFrame() {
     if (route.wasPressed('editor.nextBrush')) { route.consume('editor.nextBrush'); cycleBrush(1); }
 
     if (controllerCanvasMode === 'navigate') {
+      syncControllerGhostPointer({ renderIfChanged: true });
       if (xValue || yValue) {
         panByScreenDelta(viewport, -xValue * 12, -yValue * 12, worldWidth(), worldHeight());
+        syncControllerGhostPointer({ renderIfChanged: true });
         saveView();
         scheduleRender();
         route.consume('menu.navigateX');
         route.consume('menu.navigateY');
       }
     } else {
+      if (controllerGhostPointer) adoptControllerGhostPointer({ renderIfChanged: true });
       ensureControllerPointer({ renderIfChanged: true });
       const paintPressed = route.wasPressed('editor.paint');
       const paintReleased = route.wasReleased('editor.paint');
@@ -1061,6 +1079,29 @@ function clampBrushCell(cell) {
 
 function sameCell(a, b) { return Boolean(a && b && a.col === b.col && a.row === b.row); }
 
+function controllerCenterCell() {
+  const rect = visibleWorldRect(viewport);
+  return clampBrushCell({
+    col: Math.floor((rect.x + rect.w / 2) / brush.cellSize),
+    row: Math.floor((rect.y + rect.h / 2) / brush.cellSize)
+  });
+}
+
+function syncControllerGhostPointer({ renderIfChanged = false } = {}) {
+  const previous = controllerGhostPointer ? { ...controllerGhostPointer } : null;
+  controllerGhostPointer = controllerCenterCell();
+  if (renderIfChanged && !sameCell(previous, controllerGhostPointer)) scheduleRender();
+  return controllerGhostPointer;
+}
+
+function adoptControllerGhostPointer({ renderIfChanged = false } = {}) {
+  const previous = pointer ? { ...pointer } : null;
+  pointer = clampBrushCell(controllerGhostPointer ?? controllerCenterCell());
+  controllerGhostPointer = null;
+  if (renderIfChanged && !sameCell(previous, pointer)) scheduleRender();
+  return pointer;
+}
+
 function ensureControllerPointer({ renderIfChanged = false } = {}) {
   const previous = pointer ? { ...pointer } : null;
   if (pointer) {
@@ -1087,9 +1128,14 @@ function setBrush(candidate) {
   activeEditLayerId = candidate.layerId;
   const palette = palettesForLayer(activeEditLayerId).find(candidatePalette => candidatePalette.brushIds.includes(candidate.id)) ?? defaultPaletteForLayer(activeEditLayerId);
   activePaletteId = palette?.id ?? activePaletteId;
-  const worldPoint = pointer ? { x: (pointer.col + 0.5) * previous.cellSize, y: (pointer.row + 0.5) * previous.cellSize } : null;
+  const anchor = controllerGhostPointer ?? pointer;
+  const worldPoint = anchor ? { x: (anchor.col + 0.5) * previous.cellSize, y: (anchor.row + 0.5) * previous.cellSize } : null;
   brush = candidate;
-  if (worldPoint) pointer = clampBrushCell({ col: Math.floor(worldPoint.x / brush.cellSize), row: Math.floor(worldPoint.y / brush.cellSize) });
+  if (worldPoint) {
+    const nextCell = clampBrushCell({ col: Math.floor(worldPoint.x / brush.cellSize), row: Math.floor(worldPoint.y / brush.cellSize) });
+    if (controllerGhostPointer) controllerGhostPointer = nextCell;
+    else pointer = nextCell;
+  }
   buildLayerButtons();
   buildBrushButtons();
   wakePaletteWheel();
@@ -1123,15 +1169,19 @@ function cycleBrush(direction) {
 }
 
 function toggleControllerCanvasMode() {
-  controllerCanvasMode = controllerCanvasMode === 'draw' ? 'navigate' : 'draw';
+  const nextMode = controllerCanvasMode === 'draw' ? 'navigate' : 'draw';
+  controllerCanvasMode = nextMode;
+  if (nextMode === 'navigate') syncControllerGhostPointer({ renderIfChanged: true });
+  else adoptControllerGhostPointer({ renderIfChanged: true });
   document.body.dataset.editorControllerMode = controllerCanvasMode;
-  setStatus(controllerCanvasMode === 'draw' ? 'Controller draw mode: left stick moves cursor, A paints, LB/RB changes palette item.' : 'Controller navigate mode: left stick pans. Press X for draw mode.', '');
+  setStatus(controllerCanvasMode === 'draw' ? 'Controller draw mode: cursor moved to ghost target. Left stick moves cursor, A paints, LB/RB changes palette item.' : 'Controller navigate mode: left stick pans the map under the ghost target. Press X for draw mode.', '');
 }
 
 function toggleEditorPanel() {
   setActiveTab(activeTab, { show: overlayHidden });
   if (overlayHidden) {
     if (controllerCanvasMode === 'draw') ensureControllerPointer({ renderIfChanged: true });
+    else syncControllerGhostPointer({ renderIfChanged: true });
     setStatus('Palette panel hidden. Press Y to show it.', '');
   } else setStatus('Palette panel shown. Press B or Y to return to canvas.', '');
 }

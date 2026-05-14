@@ -11,7 +11,7 @@
 <body>
   <main class="editor-shell">
     <header class="editor-topbar" aria-label="Editor controls">
-      <button id="mainMenuButton" type="button" class="top-button ds-button ds-button--secondary">Main menu</button>
+      <button id="mainMenuButton" type="button" class="top-button hint-button input-hint" data-input-hint data-input-action="editor.mainMenu" data-input-label="Main menu">Main menu</button>
 
       <div class="editor-tabs ds-tabs ds-tabs--primary" role="tablist" aria-label="Editor action groups">
         <span class="editor-tabs__hint" data-editor-tab-hint="previous" data-input-tab-hint data-input-action="editor.previousTab" aria-hidden="true" hidden>LB</span>
@@ -23,7 +23,7 @@
       </div>
 
       <div class="top-actions">
-        <button id="quickPreviewButton" type="button" class="quick-preview-button ds-button ds-button--primary" data-input-action="editor.preview">▶ Preview</button>
+        <button id="quickPreviewButton" type="button" class="quick-preview-button hint-button input-hint" data-input-hint data-input-action="editor.preview" data-input-label="Preview">Preview</button>
         <button id="saveLocalButton" type="button" class="save-state-button ds-button ds-button--secondary" data-save-state="clean" disabled>Saved</button>
       </div>
     </header>

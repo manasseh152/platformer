@@ -2086,12 +2086,11 @@ kbd.ds-keycap,
     0 18px 54px rgba(0,0,0,.34),
     0 0 32px color-mix(in srgb, var(--settings-active-layer) 16%, transparent);
 }
-#pauseScreen[data-settings-focus-layer="primary-tabs"] [data-settings-nav-layer="primary-tabs"]::after,
-#pauseScreen[data-settings-focus-layer="nested-tabs"] [data-settings-nav-layer="nested-tabs"]::after,
 #pauseScreen[data-settings-focus-layer="content"] [data-settings-nav-layer="content"]::before {
   opacity: 1;
   transform: translateY(0);
 }
+.settings-tabs[data-settings-nav-layer]::after { content: none; }
 .settings-tabs button {
   position: relative;
   isolation: isolate;
@@ -2224,4 +2223,308 @@ body.motion-reduce .settings-tabs button { transition: none !important; }
   #startScreen .menu-actions { grid-template-columns: 1fr; width: 100%; }
   #startScreen #startButton { grid-column: auto; }
   #hintLayer { left: calc(10px + env(safe-area-inset-left)); right: calc(10px + env(safe-area-inset-right)); bottom: calc(10px + env(safe-area-inset-bottom)); gap: 10px 14px; }
+}
+
+/* === Minimal UI pass ======================================================
+   Flatten nested card-on-card chrome. Keep one translucent shell per region,
+   use spacing, type, and small accent lines to show structure. */
+:root {
+  --ui-hairline: color-mix(in srgb, var(--color-text) 10%, transparent);
+  --ui-hairline-strong: color-mix(in srgb, var(--color-text) 18%, transparent);
+  --ui-accent-line: color-mix(in srgb, var(--color-accent) 62%, transparent);
+  --ui-flat: color-mix(in srgb, var(--color-bg) 34%, transparent);
+  --ui-flat-hover: color-mix(in srgb, var(--color-text) 7%, transparent);
+}
+
+body,
+#startScreen,
+#pauseScreen,
+#startScreen.ds-screen--hero,
+#pauseScreen.ds-screen--overlay,
+#pauseScreen[data-menu-page="settings"],
+#pauseScreen[data-menu-page="settings-category"] {
+  background:
+    radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--color-info) 8%, transparent), transparent 28rem),
+    radial-gradient(circle at 86% 8%, color-mix(in srgb, var(--color-accent) 8%, transparent), transparent 26rem),
+    linear-gradient(140deg, #090d13, #0f151e 48%, #07090d);
+}
+body::before,
+#startScreen::before { opacity: .08; }
+body::after { opacity: .24; }
+
+.menu-card,
+.ds-panel,
+#message,
+.devtool-panel,
+.editor-modal {
+  border: 1px solid var(--ui-hairline);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-bg) 68%, transparent);
+  backdrop-filter: blur(18px) saturate(112%);
+  box-shadow: var(--shadow-panel);
+}
+.menu-card::before,
+.ds-panel::before,
+#message::before,
+#pauseScreen[data-menu-page="settings-category"] .menu-card::after,
+.settings-section::before,
+.settings-section h3::before,
+.settings-tabs button::before { content: none; }
+
+#startScreen .start-stage.menu-card,
+#startScreen .start-stage.ds-panel,
+#pauseScreen[data-menu-page="main"] .menu-card,
+#pauseScreen[data-menu-page="level-select"] .menu-card,
+#pauseScreen[data-menu-page="settings"] .menu-card,
+#pauseScreen[data-menu-page="settings-category"] .menu-card {
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.ds-title,
+.menu-card h1,
+.menu-card h2 {
+  max-width: 11ch;
+  letter-spacing: -.045em;
+  text-transform: none;
+}
+.ds-overline,
+.eyebrow,
+.hud-label,
+.settings-section h3,
+.devtool-eyebrow {
+  color: var(--color-text-subtle);
+  letter-spacing: .11em;
+}
+.menu-card p,
+.hero-lede,
+.helper,
+.advanced-toggle span,
+.settings-category-card__description,
+.ds-setting-row__description {
+  color: var(--color-text-muted);
+}
+
+.ds-button,
+button,
+.settings-actions .ds-button,
+.ds-setting-row--bind .ds-button,
+.controller-select-list .ds-button {
+  min-height: 38px;
+  border: 1px solid var(--ui-hairline);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  box-shadow: none;
+  font-weight: 760;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.ds-button:hover:not(:disabled),
+button:hover:not(:disabled),
+button.active {
+  border-color: var(--ui-hairline-strong);
+  background: var(--ui-flat-hover);
+  transform: translateY(-1px);
+  box-shadow: none;
+}
+.ds-button--primary,
+.menu-actions button:first-child,
+#startButton,
+#resumeButton,
+#settingsBackButton,
+#settingsCategoryBackButton,
+#messageNextLevelButton,
+.quick-preview-button,
+.devtool-toggle {
+  border-color: transparent;
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  box-shadow: none;
+}
+.ds-button--primary:hover:not(:disabled),
+.menu-actions button:first-child:hover:not(:disabled),
+#startButton:hover:not(:disabled),
+#resumeButton:hover:not(:disabled),
+#settingsBackButton:hover:not(:disabled),
+#settingsCategoryBackButton:hover:not(:disabled),
+#messageNextLevelButton:hover:not(:disabled) {
+  background: var(--color-accent-muted);
+  color: var(--color-accent-text);
+}
+
+.hero-scene,
+.pause-main,
+.settings-section,
+.controller-debug,
+#levelSelectStatus,
+#pauseScreen[data-menu-page="level-select"] .level-select-group,
+.settings-tab-preview,
+.settings-tab-panel,
+.settings-page-note,
+.source-disclosure,
+.bind-row,
+.bind-editor,
+.devtool-row,
+.hud-health-row,
+.hud-objective-card,
+.hud-dash-card,
+.hud-speedrun-card {
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.pause-main,
+.settings-section,
+#pauseScreen[data-menu-page="level-select"] .level-select-group,
+.settings-tab-panel,
+.controller-debug {
+  padding: 0;
+}
+.settings-section + .settings-section,
+.devtool-section + .devtool-section {
+  margin-top: 22px;
+  padding-top: 22px;
+  border-top: 1px solid var(--ui-hairline);
+}
+
+.settings-category-card,
+.ds-setting-row,
+.ds-list-card,
+.level-select-row,
+.local-draft-row {
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  box-shadow: none;
+  padding: 13px 4px;
+  border-bottom: 1px solid var(--ui-hairline);
+}
+.settings-category-card:hover,
+.ds-setting-row:hover,
+.level-select-row:hover,
+.local-draft-row:hover {
+  border-color: var(--ui-hairline-strong);
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+  box-shadow: none;
+}
+.level-select-row.is-current,
+.ds-setting-row--bind.is-listening {
+  background: color-mix(in srgb, var(--color-accent) 9%, transparent);
+  box-shadow: inset 3px 0 0 var(--ui-accent-line);
+}
+
+.settings-tabs,
+#pauseScreen[data-menu-page="level-select"] .level-select-tabs,
+.ds-segmented,
+.segmented {
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--ui-hairline);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-bg) 40%, transparent);
+  box-shadow: none;
+  backdrop-filter: blur(12px) saturate(110%);
+}
+.settings-tabs button[aria-selected="true"],
+#pauseScreen[data-menu-page="level-select"] .level-select-tab[aria-selected="true"],
+.segmented button.active {
+  color: var(--color-accent-text);
+  border-color: transparent;
+  background: var(--color-accent);
+  box-shadow: none;
+}
+
+#hud {
+  width: min(300px, calc((100vw - 36px) / var(--game-ui-scale)));
+  padding: 12px 13px;
+  border: 0;
+  border-left: 3px solid var(--ui-accent-line);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-bg) 52%, transparent);
+  backdrop-filter: blur(10px) saturate(105%);
+  box-shadow: none;
+}
+.hud-topline { padding-bottom: 9px; border-bottom: 1px solid var(--ui-hairline); }
+.hud-act { border: 0; background: transparent; padding-inline: 0; }
+.hud-health-row,
+.hud-objective-card,
+.hud-dash-card,
+.hud-speedrun-card {
+  grid-template-columns: 72px minmax(0, 1fr);
+  padding: 9px 0;
+  border-top: 1px solid var(--ui-hairline);
+}
+.hud-health-row { margin: 0; border-top: 0; }
+.hud-dash-card::after { height: 2px; opacity: .18; }
+
+#message {
+  padding: 28px 30px;
+  text-shadow: none;
+}
+#message .big { text-transform: none; letter-spacing: -.04em; }
+
+.hero-scene {
+  border: 1px solid var(--ui-hairline);
+  background: color-mix(in srgb, var(--color-bg) 34%, transparent);
+}
+.hero-scene__badge,
+.hero-loadout div,
+#startScreen .selected-level-summary,
+.menu-meta li,
+.ds-chip,
+.ds-keycap,
+kbd.ds-keycap,
+.input-hint[data-input-platform="gamepad"] .ds-keycap {
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+  box-shadow: none;
+}
+.hero-loadout div { padding: 10px 0; background: transparent; }
+.hero-loadout { border-top: 1px solid var(--ui-hairline); }
+.command-bar,
+.settings-actions,
+.devtool-panel__header { border-color: var(--ui-hairline); }
+
+/* Settings pages should scroll as complete pages, not clip cards inside a nested
+   panel. Keep the shell fixed, then let the pause screen own vertical overflow. */
+#pauseScreen[data-menu-page="settings"],
+#pauseScreen[data-menu-page="settings-category"] {
+  overflow: auto;
+  align-items: start;
+}
+#pauseScreen[data-menu-page="settings"] .menu-card,
+#pauseScreen[data-menu-page="settings-category"] .menu-card,
+body[data-menu-origin="start"] #pauseScreen[data-menu-page="settings"] .menu-card,
+body[data-menu-origin="start"] #pauseScreen[data-menu-page="settings-category"] .menu-card {
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+  align-content: start;
+}
+#pauseScreen[data-menu-page="settings"] .menu-pages,
+#pauseScreen[data-menu-page="settings-category"] .menu-pages,
+#pauseScreen[data-menu-page="settings"] #settingsHubPage,
+#pauseScreen[data-menu-page="settings-category"] #settingsCategoryPage,
+#settingsHubPage .settings-root-rows,
+#settingsHubPage .settings-category-list,
+#settingsCategoryPage .settings-category-body,
+#settingsCategoryPage .settings-tab-panel,
+#settingsCategoryPage .settings-section {
+  overflow: visible;
+}
+#pauseScreen[data-menu-page="settings"] #settingsHubPage,
+#pauseScreen[data-menu-page="settings-category"] #settingsCategoryPage {
+  max-height: none;
+  padding-bottom: calc(74px + env(safe-area-inset-bottom));
+}
+
+@media (max-width: 620px), (max-height: 680px) {
+  #hud { width: min(280px, calc((100vw - 20px) / var(--game-ui-scale))); }
+  .settings-section + .settings-section { margin-top: 16px; padding-top: 16px; }
 }

@@ -72,7 +72,30 @@ kbd {
 }
 .top-button, .save-state-button { justify-self: start; min-width: 104px; background: rgba(9, 12, 18, .68); }
 .top-actions { justify-self: end; display: flex; align-items: center; gap: 8px; pointer-events: auto; }
-.quick-preview-button { min-width: 116px; color: #101016; border-color: transparent; background: linear-gradient(135deg, #ffe7a8, #80f5cf 58%, #78a8ff); font-weight: 950; letter-spacing: .01em; text-shadow: 0 1px 0 rgba(255,255,255,.35); }
+.input-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px 4px 6px;
+  border-radius: var(--radius-pill);
+}
+button.input-hint { text-align: left; }
+.input-hint__joiner { margin: 0 -6px; color: rgba(255,255,255,.48); }
+.input-hint__icon { width: 30px; height: 30px; object-fit: contain; image-rendering: auto; filter: brightness(0); }
+.input-hint__label { color: inherit; }
+.input-hint[data-input-platform="gamepad"] .ds-keycap {
+  min-width: 30px;
+  width: 30px;
+  padding: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #101016;
+  border-color: rgba(0,0,0,.22);
+}
+.hint-button { min-height: 40px; min-width: 132px; font-weight: 900; letter-spacing: .01em; }
+.top-button.hint-button { color: var(--color-text); }
+.quick-preview-button { min-width: 132px; color: #101016; border-color: transparent; background: linear-gradient(135deg, #ffe7a8, #80f5cf 58%, #78a8ff); font-weight: 950; letter-spacing: .01em; text-shadow: 0 1px 0 rgba(255,255,255,.35); }
+.quick-preview-button .input-hint__joiner { color: rgba(16, 16, 22, .48); }
 .quick-preview-button:hover:not(:disabled) { background: linear-gradient(135deg, #fff2c6, #9cffdf 58%, #98bdff); }
 .save-state-button { justify-self: end; }
 .save-state-button[data-save-state="dirty"],
@@ -539,4 +562,173 @@ body[data-editor-input="gamepad"]:not([data-editor-panel="open"]) .controller-vi
   .controller-viewport-hints { left: 8px; right: 164px; bottom: 48px; grid-template-columns: 1fr; max-width: calc(100vw - 172px); }
   .field-grid, .button-row, .layer-switcher { grid-template-columns: 1fr; }
   .brush-grid { grid-template-columns: repeat(5, minmax(52px, 1fr)); overflow-x: auto; padding-bottom: 2px; }
+}
+
+/* === Minimal editor pass ==================================================
+   Prefer one floating surface and quiet rows over nested bordered cards. */
+:root {
+  --editor-hairline: color-mix(in srgb, var(--color-text) 10%, transparent);
+  --editor-hairline-strong: color-mix(in srgb, var(--color-text) 18%, transparent);
+  --editor-active-layer: var(--color-accent);
+}
+
+body {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(89, 217, 231, .08), transparent 30rem),
+    radial-gradient(circle at 84% 5%, color-mix(in srgb, var(--color-accent) 8%, transparent), transparent 28rem),
+    linear-gradient(140deg, #090d13, #0f151e 48%, #07090d);
+}
+body::after { opacity: .28; }
+
+button {
+  border-radius: var(--radius-sm);
+  border-color: var(--editor-hairline);
+  background: transparent;
+  box-shadow: none;
+}
+button:hover:not(:disabled),
+button.active {
+  border-color: var(--editor-hairline-strong);
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+  box-shadow: none;
+}
+
+.top-button,
+.save-state-button,
+.editor-tabs,
+.floating-view-controls,
+.palette-wheel-hud__card,
+.editor-overlay {
+  border: 1px solid var(--editor-hairline);
+  background: color-mix(in srgb, var(--color-bg) 66%, transparent);
+  backdrop-filter: blur(16px) saturate(112%);
+  box-shadow: var(--shadow-panel);
+}
+.quick-preview-button,
+.save-state-button[data-save-state="dirty"],
+.save-state-button[data-save-state="saving"],
+.layer-switcher button[aria-pressed="true"],
+.palette-chip.active,
+#panToggleButton[aria-pressed="true"] {
+  color: var(--color-accent-text);
+  border-color: transparent;
+  background: var(--color-accent);
+  box-shadow: none;
+}
+
+.editor-tabs,
+.floating-view-controls {
+  padding: 3px;
+  border-radius: var(--radius-pill);
+}
+.editor-tabs:focus-within,
+.editor-tabs:has(.controller-focus) {
+  border-color: color-mix(in srgb, var(--editor-active-layer) 54%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.075),
+    0 0 0 1px color-mix(in srgb, var(--editor-active-layer) 16%, transparent),
+    0 18px 54px rgba(0,0,0,.34),
+    0 0 32px color-mix(in srgb, var(--editor-active-layer) 16%, transparent);
+}
+.editor-tabs button[aria-selected="true"] {
+  color: var(--color-accent-text);
+  border-color: transparent;
+  background: var(--color-accent);
+}
+
+.editor-overlay {
+  padding: 16px;
+  border-radius: var(--radius-lg);
+}
+.panel-section,
+.source-disclosure,
+.selected-brush-title,
+.check,
+.field input,
+.field select,
+textarea,
+.floating-view-controls output {
+  border-color: var(--editor-hairline);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  box-shadow: none;
+}
+.panel-section {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.panel-section + .panel-section,
+.source-disclosure {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--editor-hairline);
+}
+.layer-switcher button,
+.palette-chip,
+.check {
+  border: 0;
+  border-bottom: 1px solid var(--editor-hairline);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  box-shadow: none;
+}
+.layer-switcher button:hover,
+.palette-chip:hover,
+.check:hover {
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+}
+.palette-chip__swatch,
+.palette-wheel-hud__swatch,
+.palette-wheel-hud__item {
+  border-color: color-mix(in srgb, var(--color-text) 16%, transparent);
+  box-shadow: none;
+}
+
+.viewport-input-hints,
+#hintLayer {
+  text-transform: none;
+  letter-spacing: .02em;
+}
+.top-button.hint-button .input-hint__icon,
+#hideOverlayButton .input-hint__icon {
+  filter: grayscale(1) brightness(0) invert(1) opacity(.88);
+}
+.editor-tabs__hint .input-hint__icon {
+  filter: grayscale(1) brightness(0) opacity(.9);
+}
+.editor-tabs__hint,
+.editor-tabs__hint .ds-keycap {
+  background: color-mix(in srgb, var(--color-text) 82%, transparent);
+  color: var(--color-bg);
+}
+.layer-switcher button:focus-visible,
+.layer-switcher button.controller-focus,
+.palette-chip:focus-visible,
+.palette-chip.controller-focus {
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-accent) 58%, transparent);
+}
+.layer-switcher button[aria-pressed="true"]:focus-visible,
+.layer-switcher button[aria-pressed="true"].controller-focus,
+.palette-chip.active:focus-visible,
+.palette-chip.active.controller-focus {
+  color: var(--color-accent-text);
+  background: color-mix(in srgb, var(--color-accent) 84%, white 16%);
+  box-shadow:
+    inset 0 0 0 2px rgba(16,16,22,.64),
+    0 0 0 3px color-mix(in srgb, var(--color-accent) 68%, transparent),
+    0 0 0 6px rgba(255,246,232,.18);
+}
+.viewport-input-hints .ds-keycap,
+.ds-keycap,
+kbd {
+  border: 0;
+  background: color-mix(in srgb, var(--color-text) 70%, transparent);
+  color: var(--color-bg);
+  box-shadow: none;
+}
+.editor-tabs__hint {
+  border: 0;
+  box-shadow: none;
 }

@@ -142,6 +142,24 @@ test('global devtools pause can consume KeyP before gameplay pause sees it', () 
   expect(gameplay.wasPressed('system.pause')).toBe(false);
 });
 
+test('editor topbar actions have keyboard and gamepad shortcuts', () => {
+  const input = createInputRuntime(gameInputProfile);
+
+  input.beginFrame();
+  key(input, 'control-down', 'KeyM', { ctrl: true });
+  expect(input.route(['editor']).wasPressed('editor.mainMenu')).toBe(true);
+
+  input.beginFrame();
+  key(input, 'control-up', 'KeyM', { ctrl: true });
+  gamepad(input, [
+    { type: 'button', index: 8, value: 1 },
+    { type: 'button', index: 9, value: 1 }
+  ]);
+  const editor = input.route(['editor']);
+  expect(editor.wasPressed('editor.mainMenu')).toBe(true);
+  expect(editor.wasPressed('editor.preview')).toBe(true);
+});
+
 test('editor tab actions default to gamepad shoulder buttons', () => {
   const input = createInputRuntime(gameInputProfile);
 

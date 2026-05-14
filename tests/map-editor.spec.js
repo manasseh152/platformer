@@ -477,6 +477,38 @@ test('map editor shows a focused canvas cell as soon as controller drawing start
   await expect.poll(() => page.evaluate(() => window.__mapEditorDebug.cursor)).toEqual({ col: 4, row: 3, layerId: 'terrain', brushId: 'grass' });
 });
 
+test('map editor shows a ghost target while controller-panning and resumes drawing there', async ({ page }) => {
+  await page.addInitScript(() => {
+    const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));
+    const pad = { index: 0, id: 'Mock Controller', mapping: 'standard', buttons, axes: [0, 0, 0, 0] };
+    window.__setMockGamepadButton = (index, pressed) => { buttons[index] = { pressed }; };
+    window.__setMockGamepadAxis = (index, value) => { pad.axes[index] = value; };
+    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] });
+  });
+  await page.goto('/editor.html');
+  await createBlankMap(page, '60', '30');
+
+  await page.evaluate(() => window.__setMockGamepadButton(3, true));
+  await expect(page.locator('#editorOverlay')).toBeHidden();
+  await page.evaluate(() => window.__setMockGamepadButton(3, false));
+
+  await page.evaluate(() => window.__setMockGamepadButton(2, true));
+  await expect(page.locator('body')).toHaveAttribute('data-editor-controller-mode', 'navigate');
+  await page.evaluate(() => window.__setMockGamepadButton(2, false));
+  await expect.poll(() => page.evaluate(() => window.__mapEditorDebug.ghostCursorRenderCount ?? 0)).toBeGreaterThan(0);
+  const firstGhost = await page.evaluate(() => window.__mapEditorDebug.ghostCursor);
+
+  await page.evaluate(() => window.__setMockGamepadAxis(0, 1));
+  await expect.poll(() => page.evaluate(() => window.__mapEditorDebug.ghostCursor)).not.toEqual(firstGhost);
+  await page.evaluate(() => window.__setMockGamepadAxis(0, 0));
+  await page.waitForTimeout(100);
+  const targetGhost = await page.evaluate(() => window.__mapEditorDebug.ghostCursor);
+
+  await page.evaluate(() => window.__setMockGamepadButton(2, true));
+  await expect(page.locator('body')).toHaveAttribute('data-editor-controller-mode', 'draw');
+  await expect.poll(() => page.evaluate(() => window.__mapEditorDebug.cursor)).toEqual(targetGhost);
+});
+
 test('map editor controller paints a continuous stroke while the paint button is held', async ({ page }) => {
   await page.addInitScript(() => {
     const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));
@@ -630,6 +662,15 @@ test('map editor persists the floating zoom controls preference', async ({ page 
   await expect(page.locator('#floatingViewControls')).toBeHidden();
 });
 
+test('map editor topbar actions render shortcut hints', async ({ page }) => {
+  await page.goto('/editor.html');
+
+  await expect(page.locator('#mainMenuButton .input-hint__label')).toHaveText('Main menu');
+  await expect(page.locator('#quickPreviewButton .input-hint__label')).toHaveText('Preview');
+  await expect(page.locator('#mainMenuButton .input-hint__icon, #mainMenuButton .ds-keycap').first()).toBeVisible();
+  await expect(page.locator('#quickPreviewButton .input-hint__icon, #quickPreviewButton .ds-keycap').first()).toBeVisible();
+});
+
 test('map editor topbar preview opens without visiting the Map tab', async ({ page }) => {
   await page.addInitScript(() => {
     window.__openedPreviews = [];
@@ -641,10 +682,18 @@ test('map editor topbar preview opens without visiting the Map tab', async ({ pa
   await page.goto('/editor.html');
 
   await expect(page.locator('#editPanel')).toBeVisible();
-  await page.getByRole('button', { name: '▶ Preview' }).click();
+  await page.locator('#quickPreviewButton').click();
 
   await expect(page.locator('#status')).toContainText('Opened playable preview');
   await expect.poll(() => page.evaluate(() => window.__openedPreviews.length)).toBe(1);
+});
+
+test('map editor ctrl+m returns to the main menu', async ({ page }) => {
+  await page.goto('/editor.html');
+
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+M' : 'Control+M');
+
+  await expect(page).toHaveURL(/\/index\.html$/);
 });
 
 test('map editor ctrl+enter opens playable preview', async ({ page }) => {

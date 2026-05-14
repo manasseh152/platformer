@@ -8,11 +8,11 @@
   --color-bg-muted: oklch(14.5% 0.021 255);
   --color-bg-elevated: oklch(18% 0.024 255);
 
-  --color-surface: color-mix(in srgb, white 6%, transparent);
-  --color-surface-muted: color-mix(in srgb, white 4%, transparent);
-  --color-surface-strong: color-mix(in srgb, white 11%, transparent);
-  --color-surface-raised: oklch(19% 0.024 255);
-  --color-surface-glass: color-mix(in srgb, oklch(17% 0.024 255) 78%, transparent);
+  --color-surface: color-mix(in srgb, white 4%, transparent);
+  --color-surface-muted: color-mix(in srgb, white 2.5%, transparent);
+  --color-surface-strong: color-mix(in srgb, white 8%, transparent);
+  --color-surface-raised: oklch(17% 0.02 255);
+  --color-surface-glass: color-mix(in srgb, oklch(15.5% 0.02 255) 70%, transparent);
 
   --color-text: oklch(96% 0.018 82);
   --color-text-muted: color-mix(in srgb, var(--color-text) 66%, transparent);
@@ -30,11 +30,11 @@
   --color-success: oklch(78% 0.14 145);
   --color-danger: oklch(68% 0.18 28);
 
-  --radius-xs: 10px;
-  --radius-sm: 14px;
-  --radius-md: 20px;
-  --radius-lg: 30px;
-  --radius-xl: 42px;
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
   --radius-pill: 999px;
 
   --space-1: 6px;
@@ -53,10 +53,10 @@
   --font-display: var(--font-sans);
   --font-mono: var(--font-mono-family);
 
-  --shadow-panel: 0 22px 70px rgb(0 0 0 / .46), 0 0 0 1px rgb(255 255 255 / .04) inset;
-  --shadow-popover: 0 18px 52px rgb(0 0 0 / .42);
-  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-accent) 28%, transparent), 0 0 0 6px color-mix(in srgb, var(--color-text) 9%, transparent);
-  --shadow-glow: 0 14px 36px color-mix(in srgb, var(--color-accent) 18%, transparent);
+  --shadow-panel: 0 12px 34px rgb(0 0 0 / .26);
+  --shadow-popover: 0 14px 38px rgb(0 0 0 / .30);
+  --shadow-focus: 0 0 0 2px color-mix(in srgb, var(--color-accent) 46%, transparent), 0 0 0 5px color-mix(in srgb, var(--color-text) 8%, transparent);
+  --shadow-glow: 0 8px 22px color-mix(in srgb, var(--color-accent) 14%, transparent);
 
   --ease-standard: cubic-bezier(.2, .8, .2, 1);
   --ease-view-transition: cubic-bezier(.22, .72, .18, 1);
