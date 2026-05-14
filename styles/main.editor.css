@@ -488,12 +488,16 @@ body[data-editor-input="gamepad"] .floating-view-controls { display: none; }
 }
 body[data-editor-input="gamepad"] .pack-wheel-hud { display: block; }
 body[data-editor-input="gamepad"][data-editor-panel="open"] .pack-wheel-hud { opacity: .46; transform: scale(.72); }
+.pack-wheel-hud[data-palette-size="compact"] { --wheel-size: 168px; --wheel-item: 24px; --wheel-radius: -56px; --wheel-card-width: 112px; }
+.pack-wheel-hud[data-palette-size="normal"] { --wheel-size: 198px; --wheel-item: 28px; --wheel-radius: -68px; --wheel-card-width: 126px; }
+.pack-wheel-hud[data-palette-size="large"] { --wheel-size: 232px; --wheel-item: 34px; --wheel-radius: -82px; --wheel-card-width: 148px; }
+.pack-wheel-hud[data-palette-position="near-cursor"] { right: auto; bottom: auto; transform-origin: center center; }
 .pack-wheel-hud.is-awake,
 .pack-wheel-hud[data-picker-open] { opacity: 1; transform: scale(1); }
 .pack-wheel-hud::before {
   content: "";
   position: absolute;
-  inset: 34px;
+  inset: calc(var(--wheel-size) * .172);
   border: 1px solid rgba(255, 246, 232, .12);
   border-radius: 50%;
   background:
@@ -543,12 +547,12 @@ body[data-editor-input="gamepad"][data-editor-panel="open"] .pack-wheel-hud { op
 }
 .pack-wheel-hud__card {
   position: absolute;
-  right: 4px;
-  bottom: 4px;
+  right: calc(var(--wheel-size) * .02);
+  bottom: calc(var(--wheel-size) * .02);
   width: var(--wheel-card-width);
   display: grid;
-  gap: 7px;
-  padding: 9px;
+  gap: calc(var(--wheel-size) * .035);
+  padding: calc(var(--wheel-size) * .045);
   border: 1px solid rgba(255,246,232,.13);
   border-radius: 16px;
   background: rgba(9, 12, 18, .72);
@@ -573,8 +577,8 @@ body[data-editor-input="gamepad"][data-editor-panel="open"] .pack-wheel-hud { op
 .pack-wheel-hud__zoom { flex: 0 0 auto; color: #101016; background: rgba(255,246,232,.9); }
 .pack-wheel-hud__swatch {
   flex: 0 0 auto;
-  width: 26px;
-  height: 26px;
+  width: calc(var(--wheel-item) - 2px);
+  height: calc(var(--wheel-item) - 2px);
   border: 2px solid rgba(255,246,232,.22);
   border-radius: 11px;
   background: linear-gradient(135deg, rgba(255,255,255,.24), transparent 44%), var(--swatch, #79f0c5);

@@ -496,8 +496,20 @@ test('map editor persists controller brush sensitivity and momentum settings', a
   await page.locator('#controllerBrushMomentumDelayInput').fill('300');
   await page.locator('#controllerBrushMomentumSpeedInput').fill('3.25');
 
+  await page.locator('#controllerPalettePositionSelect').selectOption('near-cursor');
+  await page.locator('#controllerCursorPaletteSizeSelect').selectOption('large');
+  await page.locator('#controllerBottomRightPaletteSizeSelect').selectOption('compact');
+
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('chibi.tilemap-editor.controller-brush')));
-  expect(saved).toEqual({ sensitivity: 8, momentumEnabled: true, momentumDelayMs: 300, momentumMaxSpeed: 3.25 });
+  expect(saved).toEqual({
+    sensitivity: 8,
+    momentumEnabled: true,
+    momentumDelayMs: 300,
+    momentumMaxSpeed: 3.25,
+    palettePosition: 'near-cursor',
+    cursorPaletteSize: 'large',
+    bottomRightPaletteSize: 'compact'
+  });
 
   await page.reload();
   await page.getByText('Controller cursor').click();
@@ -505,6 +517,60 @@ test('map editor persists controller brush sensitivity and momentum settings', a
   await expect(page.locator('#controllerBrushMomentumToggle')).toBeChecked();
   await expect(page.locator('#controllerBrushMomentumDelayInput')).toHaveValue('300');
   await expect(page.locator('#controllerBrushMomentumSpeedInput')).toHaveValue('3.25');
+  await expect(page.locator('#controllerPalettePositionSelect')).toHaveValue('near-cursor');
+  await expect(page.locator('#controllerCursorPaletteSizeSelect')).toHaveValue('large');
+  await expect(page.locator('#controllerBottomRightPaletteSizeSelect')).toHaveValue('compact');
+});
+
+test('map editor controller brush picker applies bottom-right and cursor placement settings', async ({ page }) => {
+  await page.addInitScript(() => {
+    const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));
+    const pad = { index: 0, id: 'Mock Controller', mapping: 'standard', buttons, axes: [0, 0, 0, 0] };
+    window.__setMockGamepadButton = (index, pressed) => { buttons[index] = { pressed }; };
+    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] });
+  });
+  const press = async index => {
+    await page.evaluate(i => window.__setMockGamepadButton(i, true), index);
+    await page.waitForTimeout(80);
+    await page.evaluate(i => window.__setMockGamepadButton(i, false), index);
+    await page.waitForTimeout(80);
+  };
+  await page.goto('/editor.html');
+  await page.getByText('Controller cursor').click();
+  await page.locator('#controllerBottomRightPaletteSizeSelect').selectOption('large');
+
+  await press(3);
+  await press(1);
+  const hud = page.locator('#packWheelHud');
+  await expect(hud).toHaveAttribute('data-picker-open', '');
+  await expect(hud).toHaveAttribute('data-palette-position', 'bottom-right');
+  await expect(hud).toHaveAttribute('data-palette-size', 'large');
+  await expect.poll(() => hud.evaluate(el => ({ right: getComputedStyle(el).right, bottom: getComputedStyle(el).bottom, left: el.style.left }))).toMatchObject({ left: '' });
+  const largeBox = await hud.boundingBox();
+  expect(Math.round(largeBox.width)).toBeGreaterThanOrEqual(220);
+
+  await press(1);
+  await expect(hud).not.toHaveAttribute('data-picker-open', '');
+  await expect(hud).toHaveAttribute('data-palette-position', 'bottom-right');
+  await expect(hud).toHaveAttribute('data-palette-size', 'normal');
+
+  await press(3);
+  await page.locator('#controllerPalettePositionSelect').selectOption('near-cursor');
+  await page.locator('#controllerCursorPaletteSizeSelect').selectOption('compact');
+  await press(3);
+  await press(1);
+  await expect(hud).toHaveAttribute('data-palette-position', 'near-cursor');
+  await expect(hud).toHaveAttribute('data-palette-size', 'compact');
+  await expect(hud).toHaveAttribute('data-anchor-cell', /\d+,\d+/);
+  const placement = await hud.evaluate(el => {
+    const rect = el.getBoundingClientRect();
+    const workspace = el.closest('.workspace').getBoundingClientRect();
+    return { leftStyle: el.style.left, topStyle: el.style.top, width: rect.width, inside: rect.left >= workspace.left && rect.top >= workspace.top && rect.right <= workspace.right && rect.bottom <= workspace.bottom };
+  });
+  expect(placement.leftStyle).not.toBe('');
+  expect(placement.topStyle).not.toBe('');
+  expect(Math.round(placement.width)).toBeLessThanOrEqual(180);
+  expect(placement.inside).toBe(true);
 });
 
 test('map editor shows a focused canvas cell as soon as controller drawing starts', async ({ page }) => {

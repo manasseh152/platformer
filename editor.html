@@ -137,7 +137,12 @@
               <label class="field"><span>Ramp after ms</span><input id="controllerBrushMomentumDelayInput" type="number" min="100" max="2000" step="50" value="450" /></label>
               <label class="field"><span>Max speed ×</span><input id="controllerBrushMomentumSpeedInput" type="number" min="1" max="5" step="0.25" value="2.5" /></label>
             </div>
-            <p class="hint">Sensitivity sets base cursor repeat speed. Momentum makes held directions accelerate after the ramp delay.</p>
+            <div class="field-grid">
+              <label class="field"><span>Palette position</span><select id="controllerPalettePositionSelect"><option value="bottom-right">Bottom-right</option><option value="near-cursor">Near cursor</option></select></label>
+              <label class="field"><span>Cursor palette size</span><select id="controllerCursorPaletteSizeSelect"><option value="compact">Compact</option><option value="normal">Normal</option><option value="large">Large</option></select></label>
+              <label class="field"><span>Bottom-right palette size</span><select id="controllerBottomRightPaletteSizeSelect"><option value="compact">Compact</option><option value="normal">Normal</option><option value="large">Large</option></select></label>
+            </div>
+            <p class="hint">Sensitivity sets base cursor repeat speed. Momentum makes held directions accelerate after the ramp delay. Palette settings affect the controller-only brush picker.</p>
           </details>
         </section>
 

@@ -33,7 +33,17 @@ import { createNativeBackAdapter } from '../app/navigation/native-back.js';
 const AUTO_SAVE_STORAGE_KEY = 'chibi.tilemap-editor.auto-save';
 const FLOATING_CONTROLS_STORAGE_KEY = 'chibi.tilemap-editor.floating-controls';
 const CONTROLLER_BRUSH_SETTINGS_STORAGE_KEY = 'chibi.tilemap-editor.controller-brush';
-const DEFAULT_CONTROLLER_BRUSH_SETTINGS = Object.freeze({ sensitivity: 5, momentumEnabled: false, momentumDelayMs: 450, momentumMaxSpeed: 2.5 });
+const CONTROLLER_PALETTE_POSITIONS = new Set(['bottom-right', 'near-cursor']);
+const CONTROLLER_PALETTE_SIZES = new Set(['compact', 'normal', 'large']);
+const DEFAULT_CONTROLLER_BRUSH_SETTINGS = Object.freeze({
+  sensitivity: 5,
+  momentumEnabled: false,
+  momentumDelayMs: 450,
+  momentumMaxSpeed: 2.5,
+  palettePosition: 'bottom-right',
+  cursorPaletteSize: 'compact',
+  bottomRightPaletteSize: 'normal'
+});
 
 const dom = {
   canvas: document.querySelector('#editorCanvas'),
@@ -85,6 +95,9 @@ const dom = {
   controllerBrushMomentumToggle: document.querySelector('#controllerBrushMomentumToggle'),
   controllerBrushMomentumDelayInput: document.querySelector('#controllerBrushMomentumDelayInput'),
   controllerBrushMomentumSpeedInput: document.querySelector('#controllerBrushMomentumSpeedInput'),
+  controllerPalettePositionSelect: document.querySelector('#controllerPalettePositionSelect'),
+  controllerCursorPaletteSizeSelect: document.querySelector('#controllerCursorPaletteSizeSelect'),
+  controllerBottomRightPaletteSizeSelect: document.querySelector('#controllerBottomRightPaletteSizeSelect'),
   gridToggle: document.querySelector('#gridToggle'),
   collisionToggle: document.querySelector('#collisionToggle'),
   previewButton: document.querySelector('#previewButton'),
@@ -162,7 +175,10 @@ function readControllerBrushSettings() {
       sensitivity: Math.round(clampNumber(saved.sensitivity, 1, 10, DEFAULT_CONTROLLER_BRUSH_SETTINGS.sensitivity)),
       momentumEnabled: Boolean(saved.momentumEnabled),
       momentumDelayMs: Math.round(clampNumber(saved.momentumDelayMs, 100, 2000, DEFAULT_CONTROLLER_BRUSH_SETTINGS.momentumDelayMs)),
-      momentumMaxSpeed: clampNumber(saved.momentumMaxSpeed, 1, 5, DEFAULT_CONTROLLER_BRUSH_SETTINGS.momentumMaxSpeed)
+      momentumMaxSpeed: clampNumber(saved.momentumMaxSpeed, 1, 5, DEFAULT_CONTROLLER_BRUSH_SETTINGS.momentumMaxSpeed),
+      palettePosition: CONTROLLER_PALETTE_POSITIONS.has(saved.palettePosition) ? saved.palettePosition : DEFAULT_CONTROLLER_BRUSH_SETTINGS.palettePosition,
+      cursorPaletteSize: CONTROLLER_PALETTE_SIZES.has(saved.cursorPaletteSize) ? saved.cursorPaletteSize : DEFAULT_CONTROLLER_BRUSH_SETTINGS.cursorPaletteSize,
+      bottomRightPaletteSize: CONTROLLER_PALETTE_SIZES.has(saved.bottomRightPaletteSize) ? saved.bottomRightPaletteSize : DEFAULT_CONTROLLER_BRUSH_SETTINGS.bottomRightPaletteSize
     };
   } catch {
     return { ...DEFAULT_CONTROLLER_BRUSH_SETTINGS };
@@ -334,6 +350,10 @@ function syncControllerBrushSettingsUi() {
   if (dom.controllerBrushMomentumToggle) dom.controllerBrushMomentumToggle.checked = controllerBrushSettings.momentumEnabled;
   if (dom.controllerBrushMomentumDelayInput) dom.controllerBrushMomentumDelayInput.value = String(controllerBrushSettings.momentumDelayMs);
   if (dom.controllerBrushMomentumSpeedInput) dom.controllerBrushMomentumSpeedInput.value = String(controllerBrushSettings.momentumMaxSpeed);
+  if (dom.controllerPalettePositionSelect) dom.controllerPalettePositionSelect.value = controllerBrushSettings.palettePosition;
+  if (dom.controllerCursorPaletteSizeSelect) dom.controllerCursorPaletteSizeSelect.value = controllerBrushSettings.cursorPaletteSize;
+  if (dom.controllerBottomRightPaletteSizeSelect) dom.controllerBottomRightPaletteSizeSelect.value = controllerBrushSettings.bottomRightPaletteSize;
+  applyControllerPalettePresentation();
 }
 
 function syncPreferencesUi() {
@@ -882,6 +902,7 @@ function render() {
   if (controllerCanvasMode === 'navigate' && overlayHidden && controllerGhostPointer) drawCursor(ctx, controllerGhostPointer, { ghost: true });
   if (pointer && controllerCanvasMode !== 'navigate') drawCursor(ctx, pointer);
   updateZoomReadout();
+  if (controllerBrushPickerOpen) applyControllerPalettePresentation();
 }
 
 function updateZoomReadout() {
@@ -907,6 +928,57 @@ function wakePackWheel() {
   packWheelWakeTimer = setTimeout(() => dom.packWheelHud?.classList.remove('is-awake'), 1300);
 }
 
+function controllerPaletteAnchorCell() {
+  if (controllerCanvasMode === 'navigate') return clampBrushCell(controllerGhostPointer ?? controllerCenterCell());
+  return clampBrushCell(pointer ?? controllerCenterCell());
+}
+
+function worldToViewportScreen(point) {
+  return {
+    x: (point.x - viewport.camera.x) * viewport.camera.zoom,
+    y: (point.y - viewport.camera.y) * viewport.camera.zoom
+  };
+}
+
+function applyControllerPalettePresentation() {
+  if (!dom.packWheelHud) return;
+  const hud = dom.packWheelHud;
+  const position = controllerBrushPickerOpen ? controllerBrushSettings.palettePosition : 'bottom-right';
+  const size = controllerBrushPickerOpen
+    ? (position === 'near-cursor' ? controllerBrushSettings.cursorPaletteSize : controllerBrushSettings.bottomRightPaletteSize)
+    : DEFAULT_CONTROLLER_BRUSH_SETTINGS.bottomRightPaletteSize;
+  hud.dataset.palettePosition = position;
+  hud.dataset.paletteSize = size;
+  hud.style.left = '';
+  hud.style.top = '';
+  hud.style.right = '';
+  hud.style.bottom = '';
+  hud.style.transformOrigin = '';
+  delete hud.dataset.anchorCell;
+  if (!controllerBrushPickerOpen || position !== 'near-cursor') return;
+
+  resizeViewport(viewport);
+  const workspace = dom.canvas.parentElement;
+  const workspaceRect = workspace.getBoundingClientRect();
+  const canvasRect = dom.canvas.getBoundingClientRect();
+  const cell = controllerPaletteAnchorCell();
+  const world = { x: (cell.col + 0.5) * brush.cellSize, y: (cell.row + 0.5) * brush.cellSize };
+  const screen = worldToViewportScreen(world);
+  const anchorX = canvasRect.left - workspaceRect.left + screen.x;
+  const anchorY = canvasRect.top - workspaceRect.top + screen.y;
+  const width = hud.offsetWidth || 198;
+  const height = hud.offsetHeight || 198;
+  const padding = 12;
+  const left = Math.max(padding, Math.min(workspaceRect.width - width - padding, anchorX - width / 2));
+  const top = Math.max(padding, Math.min(workspaceRect.height - height - padding, anchorY - height / 2));
+  hud.style.left = `${left}px`;
+  hud.style.top = `${top}px`;
+  hud.style.right = 'auto';
+  hud.style.bottom = 'auto';
+  hud.style.transformOrigin = 'center center';
+  hud.dataset.anchorCell = `${cell.col},${cell.row}`;
+}
+
 function highlightedPickerBrush() {
   const items = brushesForActivePack();
   if (!items.length) return brush;
@@ -923,11 +995,15 @@ function updatePackWheel() {
     dom.packWheelHud.dataset.highlightedBrush = displayBrush.id;
     dom.packWheelHud.dataset.committedBrush = brush.id;
   }
+  applyControllerPalettePresentation();
   debug.controllerBrushPicker = {
     open: controllerBrushPickerOpen,
     highlightedBrushId: displayBrush.id,
     committedBrushId: brush.id,
-    highlightedIndex: controllerBrushPickerHighlightedIndex
+    highlightedIndex: controllerBrushPickerHighlightedIndex,
+    palettePosition: dom.packWheelHud?.dataset.palettePosition,
+    paletteSize: dom.packWheelHud?.dataset.paletteSize,
+    paletteAnchorCell: dom.packWheelHud?.dataset.anchorCell || null
   };
   if (dom.wheelLayerLabel) dom.wheelLayerLabel.textContent = layer.label;
   if (dom.wheelBrushLabel) dom.wheelBrushLabel.textContent = displayBrush.label;
@@ -1566,7 +1642,7 @@ function setup() {
   });
   setActiveTab('edit', { show: true });
 
-  new ResizeObserver(() => { resizeViewport(viewport); clampCamera(viewport, worldWidth(), worldHeight()); render(); }).observe(dom.canvas.parentElement);
+  new ResizeObserver(() => { resizeViewport(viewport); clampCamera(viewport, worldWidth(), worldHeight()); render(); applyControllerPalettePresentation(); }).observe(dom.canvas.parentElement);
   document.addEventListener('pointerup', () => setTimeout(() => syncTabHints({ consoleActive: false }), 0));
   dom.mainMenuButton?.addEventListener('click', navigateMainMenu);
   dom.hideOverlayButton?.addEventListener('click', () => toggleEditorPanel());
@@ -1615,6 +1691,22 @@ function setup() {
   });
   dom.controllerBrushMomentumSpeedInput?.addEventListener('input', () => {
     controllerBrushSettings.momentumMaxSpeed = clampNumber(dom.controllerBrushMomentumSpeedInput.value, 1, 5, DEFAULT_CONTROLLER_BRUSH_SETTINGS.momentumMaxSpeed);
+    writeControllerBrushSettings();
+    syncControllerBrushSettingsUi();
+  });
+  dom.controllerPalettePositionSelect?.addEventListener('change', () => {
+    controllerBrushSettings.palettePosition = CONTROLLER_PALETTE_POSITIONS.has(dom.controllerPalettePositionSelect.value) ? dom.controllerPalettePositionSelect.value : DEFAULT_CONTROLLER_BRUSH_SETTINGS.palettePosition;
+    writeControllerBrushSettings();
+    syncControllerBrushSettingsUi();
+    setStatus(`Controller palette position: ${dom.controllerPalettePositionSelect.selectedOptions[0]?.textContent ?? controllerBrushSettings.palettePosition}.`, '');
+  });
+  dom.controllerCursorPaletteSizeSelect?.addEventListener('change', () => {
+    controllerBrushSettings.cursorPaletteSize = CONTROLLER_PALETTE_SIZES.has(dom.controllerCursorPaletteSizeSelect.value) ? dom.controllerCursorPaletteSizeSelect.value : DEFAULT_CONTROLLER_BRUSH_SETTINGS.cursorPaletteSize;
+    writeControllerBrushSettings();
+    syncControllerBrushSettingsUi();
+  });
+  dom.controllerBottomRightPaletteSizeSelect?.addEventListener('change', () => {
+    controllerBrushSettings.bottomRightPaletteSize = CONTROLLER_PALETTE_SIZES.has(dom.controllerBottomRightPaletteSizeSelect.value) ? dom.controllerBottomRightPaletteSizeSelect.value : DEFAULT_CONTROLLER_BRUSH_SETTINGS.bottomRightPaletteSize;
     writeControllerBrushSettings();
     syncControllerBrushSettingsUi();
   });
