@@ -273,7 +273,7 @@ test('renderGameplayFrame keeps requested webgl for extracted gameplay packets',
   expect(result.presentedWidth).toBe(320);
 });
 
-test('renderNativeFrame falls back from webgl on unsupported rotated image packets', async ({ page }) => {
+test('renderNativeFrame falls back from webgl on unsupported packet features', async ({ page }) => {
   await page.goto('/');
   const result = await page.evaluate(async () => {
     if (!document.createElement('canvas').getContext('webgl')) return { supported: false };
@@ -284,7 +284,7 @@ test('renderNativeFrame falls back from webgl on unsupported rotated image packe
     ]);
     const frame = createRenderFrameBuilder({ width: 4, height: 4 })
       .add({ kind: 'clear', fill: '#000' })
-      .add({ kind: 'image', assetId: 'missing.image', x: 1, y: 1, w: 2, h: 2, rotation: Math.PI / 4 })
+      .add({ kind: 'rect', x: 0, y: 0, w: 4, h: 4, fill: { kind: 'conicGradient' } })
       .finalize();
     const game = {
       view: { bufferWidth: 4, bufferHeight: 4 },
@@ -312,9 +312,9 @@ test('renderNativeFrame falls back from webgl on unsupported rotated image packe
     fallback: { occurred: true, from: 'webgl', to: 'canvas2d' }
   });
   expect(result.diagnostics.fallback.issues).toEqual([
-    expect.objectContaining({ packetKind: 'image', feature: 'rotation', reason: 'image rotation is not supported', severity: 'required' })
+    expect.objectContaining({ packetKind: 'rect', feature: 'fill', reason: 'unsupported fill kind for rect: conicGradient', severity: 'required' })
   ]);
-  expect(result.legacyReasons).toEqual(['image rotation is not supported']);
+  expect(result.legacyReasons).toEqual(['unsupported fill kind for rect: conicGradient']);
 });
 
 test('webgl native backend draws clear and 1px rect packets from finalized frames', async ({ page }) => {
@@ -415,6 +415,77 @@ test('webgl native backend draws atlas sprite packets through the same asset IDs
   test.skip(!result.supported, 'WebGL unavailable in this browser');
   expect(result.pixel).toEqual([0, 255, 0, 255]);
   expect(result.source).toMatchObject({ kind: 'canvas2d', width: 2, height: 2 });
+});
+
+test('webgl native backend draws rotated image, sprite, and texturedQuad packets', async ({ page }) => {
+  await page.goto('/');
+  const result = await page.evaluate(async () => {
+    const [{ createRenderFrameBuilder }, { createAssetRegistry, createAtlasSpriteMetadata }, { createWebGlNativeFrameBackend }, { renderNativeFrame }] = await Promise.all([
+      import('/src/engine/render/frame-builder.js'),
+      import('/src/render/asset-registry.js'),
+      import('/src/render/backends/webgl-native-frame-backend.js'),
+      import('/src/render/gameplay-render-pipeline.js')
+    ]);
+
+    const source = document.createElement('canvas');
+    source.width = 6;
+    source.height = 6;
+    const sourceCtx = source.getContext('2d');
+    sourceCtx.clearRect(0, 0, 6, 6);
+    sourceCtx.fillStyle = '#00ff00';
+    sourceCtx.fillRect(0, 0, 2, 4);
+    sourceCtx.fillStyle = '#ff0000';
+    sourceCtx.fillRect(2, 0, 2, 4);
+    sourceCtx.fillStyle = '#0000ff';
+    sourceCtx.fillRect(4, 0, 2, 4);
+    const atlas = new Image();
+    await new Promise(resolve => {
+      atlas.onload = resolve;
+      atlas.src = source.toDataURL();
+    });
+    const registry = createAssetRegistry(
+      { atlas },
+      { metadata: {
+        rotatedImage: { kind: 'standalone-image', imageKey: 'atlas', rect: { x: 0, y: 0, w: 2, h: 4 } },
+        rotatedSprite: createAtlasSpriteMetadata({ atlasId: 'atlas.test', imageKey: 'atlas', x: 2, y: 0, w: 2, h: 4 }),
+        rotatedQuad: { kind: 'standalone-image', imageKey: 'atlas', rect: { x: 4, y: 0, w: 2, h: 4 } }
+      } }
+    );
+    const frame = createRenderFrameBuilder({ width: 18, height: 6 })
+      .add({ kind: 'clear', fill: '#000' })
+      .add({ kind: 'image', assetId: 'rotatedImage', x: 2, y: 1, w: 2, h: 4, rotation: Math.PI / 2 })
+      .add({ kind: 'sprite', assetId: 'rotatedSprite', x: 8, y: 1, w: 2, h: 4, rotation: Math.PI / 2 })
+      .add({ kind: 'texturedQuad', assetId: 'rotatedQuad', sourceRect: { x: 4, y: 0, w: 2, h: 4 }, x: 14, y: 1, w: 2, h: 4, rotation: Math.PI / 2 })
+      .finalize();
+
+    const game = { view: { bufferWidth: 18, bufferHeight: 6 }, renderCanvas: document.createElement('canvas'), renderPipeline: {}, devTools: { flags: {} } };
+    renderNativeFrame({ now: () => 0, random: () => 0.5 }, game, frame, { assetRegistry: registry, nativeBackendKind: 'webgl' });
+    const pipelineDiagnostics = game.renderPipeline.diagnostics;
+
+    const backend = createWebGlNativeFrameBackend({ width: 18, height: 6, assetRegistry: registry });
+    if (!backend) return { supported: false };
+    backend.draw(frame);
+    const pixels = new Uint8Array(18 * 6 * 4);
+    backend.gl.readPixels(0, 0, 18, 6, backend.gl.RGBA, backend.gl.UNSIGNED_BYTE, pixels);
+    const at = (x, y) => Array.from(pixels.slice(((5 - y) * 18 + x) * 4, ((5 - y) * 18 + x) * 4 + 4));
+    return {
+      supported: true,
+      actualBackendKind: pipelineDiagnostics.actualBackendKind,
+      fallback: pipelineDiagnostics.fallback,
+      imageRotatedExtent: at(1, 3),
+      imageOriginalExtent: at(3, 0),
+      spriteRotatedExtent: at(7, 3),
+      quadRotatedExtent: at(13, 3)
+    };
+  });
+
+  test.skip(!result.supported, 'WebGL unavailable in this browser');
+  expect(result.actualBackendKind).toBe('webgl');
+  expect(result.fallback.occurred).toBe(false);
+  expect(result.imageRotatedExtent).toEqual([0, 255, 0, 255]);
+  expect(result.imageOriginalExtent).toEqual([0, 0, 0, 255]);
+  expect(result.spriteRotatedExtent).toEqual([255, 0, 0, 255]);
+  expect(result.quadRotatedExtent).toEqual([0, 0, 255, 255]);
 });
 
 test('webgl2 deferred backend lights opaque rect terrain with point falloff', async ({ page }) => {

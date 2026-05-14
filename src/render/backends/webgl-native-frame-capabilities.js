@@ -1,7 +1,6 @@
 import { createCapabilityIssue, createCapabilityResult } from './native-frame-capabilities.js';
 
 const SUPPORTED_PACKET_KINDS = new Set(['clear', 'rect', 'roundRect', 'ellipse', 'path', 'image', 'sprite', 'texturedQuad', 'light2d']);
-const IMAGE_PACKET_KINDS = new Set(['image', 'sprite', 'texturedQuad']);
 const SUPPORTED_FILL_KINDS = new Set(['color', 'linearGradient', 'radialGradient']);
 
 function fillKind(fill) {
@@ -26,7 +25,6 @@ export function getWebGlNativeFramePacketSupportIssues(packet) {
   if ((packet.kind === 'clear' || packet.kind === 'rect' || packet.kind === 'roundRect' || packet.kind === 'ellipse' || packet.kind === 'path') && !isSupportedFill(packet.fill ?? packet.color)) {
     issues.push(issue(packet, `unsupported fill kind for ${packet.kind}: ${fillKind(packet.fill ?? packet.color)}`, 'fill'));
   }
-  if (IMAGE_PACKET_KINDS.has(packet.kind) && packet.rotation) issues.push(issue(packet, 'image rotation is not supported', 'rotation'));
   return issues;
 }
 

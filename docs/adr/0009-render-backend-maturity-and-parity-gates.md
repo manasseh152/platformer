@@ -231,15 +231,17 @@ Implemented through `renderNativeFrame(...)` and `renderGameplayFrame(...)` diag
 
 Create at least one focused finalized-frame test verifying an unsupported WebGL packet feature, such as rotated image/sprite/texturedQuad packets, causes fallback to Canvas2D with a structured diagnostic reason.
 
-Covered by `tests/render-pipeline.spec.js`, which verifies a rotated image packet requested through the WebGL native backend falls back to Canvas2D and records a structured `rotation` capability issue.
+Covered by `tests/render-pipeline.spec.js`, which verifies a frame with an unsupported WebGL fill feature falls back to Canvas2D and records a structured `fill` capability issue.
 
-### 5. Close remaining WebGL native backend feature gaps
+### 5. Close remaining WebGL native backend feature gaps — Complete
 
 Implement or explicitly reject support for current required packet feature gaps.
 
-Known current gap:
+Known current gap resolved:
 
 - rotated image, sprite, and texturedQuad packets in the forward WebGL native backend
+
+Implemented by rotating WebGL quad vertices around the packet destination center while preserving source rect, atlas sprite, flip, texture, and alpha handling. The WebGL capability analyzer no longer rejects rotated image-like packets. `tests/render-pipeline.spec.js` covers rotated `image`, `sprite`, and `texturedQuad` packets staying on WebGL without fallback, while the focused unsupported-feature fallback test now uses an unsupported fill feature.
 
 Vector packets and gradient fills are currently supported through a Canvas2D texture compatibility path. That path counts as correctness support for capability checks, but it does not by itself satisfy accelerated/default backend parity or performance gates.
 

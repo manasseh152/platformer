@@ -188,15 +188,39 @@ export function createWebGlNativeFrameBackend({ width, height, canvas = document
     return texture;
   }
 
-  function drawQuad({ x, y, w, h, u0 = 0, v0 = 0, u1 = 1, v1 = 1, color = [1, 1, 1, 1], texture = null, alpha = 1 }) {
+  function drawQuad({ x, y, w, h, u0 = 0, v0 = 0, u1 = 1, v1 = 1, color = [1, 1, 1, 1], texture = null, alpha = 1, rotation = 0 }) {
     gl.useProgram(program);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-      x, y, u0, v0,
-      x + w, y, u1, v0,
-      x, y + h, u0, v1,
-      x + w, y + h, u1, v1
-    ]), gl.STREAM_DRAW);
+    let vertices;
+    if (rotation) {
+      const cx = x + w / 2;
+      const cy = y + h / 2;
+      const c = Math.cos(rotation);
+      const s = Math.sin(rotation);
+      const rotate = (px, py) => {
+        const dx = px - cx;
+        const dy = py - cy;
+        return [cx + dx * c - dy * s, cy + dx * s + dy * c];
+      };
+      const topLeft = rotate(x, y);
+      const topRight = rotate(x + w, y);
+      const bottomLeft = rotate(x, y + h);
+      const bottomRight = rotate(x + w, y + h);
+      vertices = [
+        topLeft[0], topLeft[1], u0, v0,
+        topRight[0], topRight[1], u1, v0,
+        bottomLeft[0], bottomLeft[1], u0, v1,
+        bottomRight[0], bottomRight[1], u1, v1
+      ];
+    } else {
+      vertices = [
+        x, y, u0, v0,
+        x + w, y, u1, v0,
+        x, y + h, u0, v1,
+        x + w, y + h, u1, v1
+      ];
+    }
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STREAM_DRAW);
     gl.enableVertexAttribArray(locations.position);
     gl.vertexAttribPointer(locations.position, 2, gl.FLOAT, false, 16, 0);
     gl.enableVertexAttribArray(locations.texcoord);
@@ -267,7 +291,7 @@ export function createWebGlNativeFrameBackend({ width, height, canvas = document
     let v1 = (source.y + source.h) / imageH;
     if (packet.flipX) [u0, u1] = [u1, u0];
     if (packet.flipY) [v0, v1] = [v1, v0];
-    drawQuad({ x: packet.x, y: packet.y, w: packet.w, h: packet.h, u0, v0, u1, v1, texture: ensureTexture(packet.assetId, image), alpha: packet.alpha ?? 1 });
+    drawQuad({ x: packet.x, y: packet.y, w: packet.w, h: packet.h, u0, v0, u1, v1, texture: ensureTexture(packet.assetId, image), alpha: packet.alpha ?? 1, rotation: packet.rotation ?? 0 });
   }
 
   function drawPacket(packet) {
