@@ -137,6 +137,7 @@ let controllerPaintActive = false;
 let controllerNextMoveAt = 0;
 let controllerMoveHeldSince = 0;
 let controllerMoveHoldKey = '';
+let controllerSelectBrowse = null;
 let packWheelWakeTimer = 0;
 let nativeBack = null;
 
@@ -490,6 +491,97 @@ function isControllerPassiveInput(element) {
   if (element.tagName === 'TEXTAREA' || element.tagName === 'SELECT') return true;
   if (element.tagName !== 'INPUT') return false;
   return !['button', 'checkbox', 'radio', 'submit', 'reset'].includes(element.type);
+}
+
+function focusedEditorSelect() {
+  const panel = activeEditorPanel();
+  const current = currentFocusElement(panel, editorPanelLastFocused);
+  return panel && current?.tagName === 'SELECT' && panel.contains(current) ? current : null;
+}
+
+function clearControllerSelectBrowse({ restore = false, commit = false } = {}) {
+  const state = controllerSelectBrowse;
+  if (!state) return;
+  controllerSelectBrowse = null;
+  const { element } = state;
+  element?.removeAttribute?.('data-controller-select-open');
+  if (element) element.size = state.originalSize;
+  if (restore && element?.isConnected) element.value = state.originalValue;
+  if (commit && element?.isConnected && element.value !== state.originalValue) {
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+    element.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+}
+
+function beginControllerSelectBrowse(select) {
+  clearControllerSelectBrowse();
+  const enabledCount = Array.from(select.options).filter(option => !option.disabled).length;
+  controllerSelectBrowse = { element: select, originalValue: select.value, originalSize: select.size || 0 };
+  select.setAttribute('data-controller-select-open', 'true');
+  select.size = Math.max(2, Math.min(8, enabledCount || select.options.length || 2));
+  select.focus({ preventScroll: true });
+  select.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  const label = select.closest('label')?.querySelector('span')?.textContent || 'select';
+  setStatus(`Opened ${label}. D-pad or stick highlights an option; A selects; B cancels.`, '');
+}
+
+function stepSelectOption(select, direction) {
+  const enabledOptions = Array.from(select.options).filter(option => !option.disabled);
+  if (enabledOptions.length < 2) return false;
+  const currentOption = select.selectedOptions?.[0] || select.options[select.selectedIndex];
+  const currentIndex = Math.max(0, enabledOptions.indexOf(currentOption));
+  const nextOption = enabledOptions[(currentIndex + direction + enabledOptions.length) % enabledOptions.length];
+  if (!nextOption || nextOption.value === select.value) return false;
+  select.value = nextOption.value;
+  return true;
+}
+
+function controllerSelectStepDirection(route, actionId) {
+  const pressedValue = route.pressedValue(actionId);
+  if (!pressedValue) return 0;
+  return navDirection(pressedValue) || (pressedValue < 0 ? -1 : 1);
+}
+
+function stepOpenSelectWithController(route) {
+  const current = focusedEditorSelect();
+  if (!current || controllerSelectBrowse?.element !== current) return false;
+  const verticalDirection = controllerSelectStepDirection(route, 'menu.navigateY');
+  const horizontalDirection = verticalDirection ? 0 : controllerSelectStepDirection(route, 'menu.navigateX');
+  const direction = verticalDirection || horizontalDirection;
+  if (!direction) return false;
+  const action = verticalDirection ? 'menu.navigateY' : 'menu.navigateX';
+
+  stepSelectOption(current, direction);
+  route.consume(action);
+  return true;
+}
+
+function handleFocusedSelectController(route) {
+  const current = focusedEditorSelect();
+  if (!current) { clearControllerSelectBrowse(); return false; }
+  if (controllerSelectBrowse && controllerSelectBrowse.element !== current) clearControllerSelectBrowse();
+
+  if (route.wasPressed('menu.accept')) {
+    route.consume('menu.accept');
+    if (controllerSelectBrowse?.element === current) {
+      clearControllerSelectBrowse({ commit: true });
+      setStatus('Selection confirmed.', 'ok');
+    } else beginControllerSelectBrowse(current);
+    return true;
+  }
+
+  if (controllerSelectBrowse?.element === current) {
+    if (route.wasPressed('menu.back')) {
+      route.consume('menu.back');
+      clearControllerSelectBrowse({ restore: true });
+      setStatus('Selection cancelled.', '');
+      return true;
+    }
+    stepOpenSelectWithController(route);
+    return true;
+  }
+
+  return false;
 }
 
 function activateFocusedEditorControl() {
@@ -1040,6 +1132,15 @@ function processEditorControllerFrame() {
   } else {
     if (route.wasPressed('editor.previousTab')) { route.consume('editor.previousTab'); moveActiveTab(-1); }
     if (route.wasPressed('editor.nextTab')) { route.consume('editor.nextTab'); moveActiveTab(1); }
+
+    if (handleFocusedSelectController(route)) {
+      controllerNavX = xDirection;
+      controllerNavY = yDirection;
+      syncTabHints({ inputScheme: 'gamepad' });
+      inputRuntime.endFrame();
+      requestAnimationFrame(processEditorControllerFrame);
+      return;
+    }
 
     if (xDirection && xDirection !== controllerNavX) {
       if (xDirection < 0 && moveHorizontalEditorGroupFocus(-1)) route.consume('menu.navigateX');

@@ -4,31 +4,32 @@
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --color-bg: oklch(10.5% 0.018 255);
-  --color-bg-muted: oklch(14.5% 0.021 255);
-  --color-bg-elevated: oklch(18% 0.024 255);
+  /* Usable fallback colors for browsers that do not understand OKLCH/color-mix. */
+  --color-bg: #090d14;
+  --color-bg-muted: #101722;
+  --color-bg-elevated: #151d2a;
 
-  --color-surface: color-mix(in srgb, white 4%, transparent);
-  --color-surface-muted: color-mix(in srgb, white 2.5%, transparent);
-  --color-surface-strong: color-mix(in srgb, white 8%, transparent);
-  --color-surface-raised: oklch(17% 0.02 255);
-  --color-surface-glass: color-mix(in srgb, oklch(15.5% 0.02 255) 70%, transparent);
+  --color-surface: rgb(255 255 255 / .045);
+  --color-surface-muted: rgb(255 255 255 / .028);
+  --color-surface-strong: rgb(255 255 255 / .085);
+  --color-surface-raised: #151d29;
+  --color-surface-glass: rgb(18 26 38 / .72);
 
-  --color-text: oklch(96% 0.018 82);
-  --color-text-muted: color-mix(in srgb, var(--color-text) 66%, transparent);
-  --color-text-subtle: color-mix(in srgb, var(--color-text) 42%, transparent);
+  --color-text: #fff6e8;
+  --color-text-muted: rgb(255 246 232 / .72);
+  --color-text-subtle: rgb(255 246 232 / .52);
 
-  --color-border: color-mix(in srgb, var(--color-text) 14%, transparent);
-  --color-border-strong: color-mix(in srgb, var(--color-text) 28%, transparent);
+  --color-border: rgb(255 246 232 / .16);
+  --color-border-strong: rgb(255 246 232 / .32);
 
-  --color-accent: oklch(78% 0.15 78);
-  --color-accent-soft: color-mix(in srgb, var(--color-accent) 16%, transparent);
-  --color-accent-muted: oklch(89% 0.075 78);
-  --color-accent-text: oklch(13% 0.018 78);
+  --color-accent: #f4b51d;
+  --color-accent-soft: rgb(244 181 29 / .18);
+  --color-accent-muted: #ffe7a3;
+  --color-accent-text: #17120a;
 
-  --color-info: oklch(76% 0.12 210);
-  --color-success: oklch(78% 0.14 145);
-  --color-danger: oklch(68% 0.18 28);
+  --color-info: #59d9e7;
+  --color-success: #7cff8b;
+  --color-danger: #ff6b56;
 
   --radius-xs: 6px;
   --radius-sm: 10px;
@@ -55,8 +56,8 @@
 
   --shadow-panel: 0 12px 34px rgb(0 0 0 / .26);
   --shadow-popover: 0 14px 38px rgb(0 0 0 / .30);
-  --shadow-focus: 0 0 0 2px color-mix(in srgb, var(--color-accent) 46%, transparent), 0 0 0 5px color-mix(in srgb, var(--color-text) 8%, transparent);
-  --shadow-glow: 0 8px 22px color-mix(in srgb, var(--color-accent) 14%, transparent);
+  --shadow-focus: 0 0 0 2px rgb(244 181 29 / .52), 0 0 0 5px rgb(255 246 232 / .11);
+  --shadow-glow: 0 8px 22px rgb(244 181 29 / .16);
 
   --ease-standard: cubic-bezier(.2, .8, .2, 1);
   --ease-view-transition: cubic-bezier(.22, .72, .18, 1);
@@ -66,4 +67,38 @@
 
   --game-ui-scale: 1;
   --menu-ui-scale: 1;
+}
+
+@supports (color: oklch(50% 0.1 180)) and (color: color-mix(in srgb, white, black)) {
+  :root,
+  [data-theme="dark"] {
+    --color-bg: oklch(10.5% 0.018 255);
+    --color-bg-muted: oklch(14.5% 0.021 255);
+    --color-bg-elevated: oklch(18% 0.024 255);
+
+    --color-surface: color-mix(in srgb, white 4%, transparent);
+    --color-surface-muted: color-mix(in srgb, white 2.5%, transparent);
+    --color-surface-strong: color-mix(in srgb, white 8%, transparent);
+    --color-surface-raised: oklch(17% 0.02 255);
+    --color-surface-glass: color-mix(in srgb, oklch(15.5% 0.02 255) 70%, transparent);
+
+    --color-text: oklch(96% 0.018 82);
+    --color-text-muted: color-mix(in srgb, var(--color-text) 66%, transparent);
+    --color-text-subtle: color-mix(in srgb, var(--color-text) 42%, transparent);
+
+    --color-border: color-mix(in srgb, var(--color-text) 14%, transparent);
+    --color-border-strong: color-mix(in srgb, var(--color-text) 28%, transparent);
+
+    --color-accent: oklch(78% 0.15 78);
+    --color-accent-soft: color-mix(in srgb, var(--color-accent) 16%, transparent);
+    --color-accent-muted: oklch(89% 0.075 78);
+    --color-accent-text: oklch(13% 0.018 78);
+
+    --color-info: oklch(76% 0.12 210);
+    --color-success: oklch(78% 0.14 145);
+    --color-danger: oklch(68% 0.18 28);
+
+    --shadow-focus: 0 0 0 2px color-mix(in srgb, var(--color-accent) 46%, transparent), 0 0 0 5px color-mix(in srgb, var(--color-text) 8%, transparent);
+    --shadow-glow: 0 8px 22px color-mix(in srgb, var(--color-accent) 14%, transparent);
+  }
 }

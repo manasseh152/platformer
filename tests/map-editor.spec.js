@@ -628,6 +628,86 @@ test('map editor controller treats text inputs as focus-only controls', async ({
   await expect(page.locator('#idInput')).toBeFocused();
 });
 
+test('map editor controller does not change a focused select until A opens it', async ({ page }) => {
+  await page.addInitScript(() => {
+    const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));
+    const pad = { index: 0, id: 'Mock Controller', mapping: 'standard', buttons, axes: [0, 0, 0, 0] };
+    window.__setMockGamepadButton = (index, pressed) => { buttons[index] = { pressed }; };
+    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] });
+  });
+  await page.goto('/editor.html');
+  await openMapPanel(page);
+
+  const select = page.locator('#tilemapSelect');
+  await select.focus();
+  const firstValue = await select.inputValue();
+
+  await page.evaluate(() => window.__setMockGamepadButton(13, true));
+  await page.waitForTimeout(120);
+  await expect(select).toHaveValue(firstValue);
+});
+
+test('map editor controller opens a select list and confirms an option with A', async ({ page }) => {
+  await page.addInitScript(() => {
+    const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));
+    const pad = { index: 0, id: 'Mock Controller', mapping: 'standard', buttons, axes: [0, 0, 0, 0] };
+    window.__setMockGamepadButton = (index, pressed) => { buttons[index] = { pressed }; };
+    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] });
+  });
+  await page.goto('/editor.html');
+  await openMapPanel(page);
+
+  const select = page.locator('#tilemapSelect');
+  await select.focus();
+  const firstValue = await select.inputValue();
+
+  await page.evaluate(() => window.__setMockGamepadButton(0, true));
+  await expect(select).toHaveAttribute('data-controller-select-open', 'true');
+  await expect(select).toHaveJSProperty('size', 8);
+  await expect(page.locator('#status')).toContainText('D-pad or stick highlights an option');
+  await page.evaluate(() => window.__setMockGamepadButton(0, false));
+
+  await page.evaluate(() => window.__setMockGamepadButton(13, true));
+  await expect.poll(() => select.inputValue()).not.toBe(firstValue);
+  await expect(select).toBeFocused();
+  await page.evaluate(() => window.__setMockGamepadButton(13, false));
+
+  await page.evaluate(() => window.__setMockGamepadButton(0, true));
+  await expect(select).not.toHaveAttribute('data-controller-select-open', 'true');
+  await expect(select).toHaveJSProperty('size', 0);
+  await expect(page.locator('#status')).toContainText('Selection confirmed');
+});
+
+test('map editor controller can highlight select options with the left stick', async ({ page }) => {
+  await page.addInitScript(() => {
+    const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));
+    const axes = [0, 0, 0, 0];
+    const pad = { index: 0, id: 'Mock Controller', mapping: 'standard', buttons, axes };
+    window.__setMockGamepadButton = (index, pressed) => { buttons[index] = { pressed }; };
+    window.__setMockGamepadAxis = (index, value) => { axes[index] = value; };
+    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] });
+  });
+  await page.goto('/editor.html');
+  await openMapPanel(page);
+
+  const select = page.locator('#tilemapSelect');
+  await select.focus();
+  const firstValue = await select.inputValue();
+
+  await page.evaluate(() => window.__setMockGamepadButton(0, true));
+  await expect(select).toHaveAttribute('data-controller-select-open', 'true');
+  await page.evaluate(() => window.__setMockGamepadButton(0, false));
+
+  await page.evaluate(() => window.__setMockGamepadAxis(1, 1));
+  await expect.poll(() => select.inputValue()).not.toBe(firstValue);
+  await expect(select).toBeFocused();
+  await page.evaluate(() => window.__setMockGamepadAxis(1, 0));
+
+  await page.evaluate(() => window.__setMockGamepadButton(0, true));
+  await expect(select).not.toHaveAttribute('data-controller-select-open', 'true');
+  await expect(page.locator('#status')).toContainText('Selection confirmed');
+});
+
 test('map editor can disable auto-save and commit with ctrl+s', async ({ page }) => {
   await page.goto('/editor.html');
   await openMapPanel(page);

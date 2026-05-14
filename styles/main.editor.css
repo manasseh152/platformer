@@ -229,7 +229,37 @@ body[data-editor-input="gamepad"] .overlay-toggle-hint { display: inline-flex; }
   background: rgba(5, 8, 13, .56);
 }
 .field input, .field select { min-height: 40px; padding: .58rem .66rem; }
-.field select { appearance: none; background-image: linear-gradient(45deg, transparent 50%, rgba(255,246,232,.62) 50%), linear-gradient(135deg, rgba(255,246,232,.62) 50%, transparent 50%); background-position: calc(100% - 18px) 17px, calc(100% - 12px) 17px; background-size: 6px 6px; background-repeat: no-repeat; padding-right: 2.1rem; }
+.field select {
+  appearance: none;
+  background-color: rgb(5 8 13 / .86);
+  background-image: linear-gradient(45deg, transparent 50%, rgba(255,246,232,.82) 50%), linear-gradient(135deg, rgba(255,246,232,.82) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 17px, calc(100% - 12px) 17px;
+  background-size: 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 2.1rem;
+}
+.field select option { background: #101722; color: #fff6e8; }
+.field select[data-controller-select-open="true"] {
+  min-height: 0;
+  border-color: var(--color-accent) !important;
+  box-shadow: var(--shadow-focus), inset 3px 0 0 var(--color-accent);
+}
+@supports (appearance: base-select) {
+  .field select {
+    appearance: base-select;
+    background: color-mix(in srgb, var(--color-bg) 72%, black);
+    padding-right: .66rem;
+  }
+  .field select::picker-icon { color: var(--color-accent-muted); }
+  .field select::picker(select) {
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--color-bg-elevated) 94%, black);
+    color: var(--color-text);
+    box-shadow: var(--shadow-popover);
+  }
+  .field select option:checked { background: var(--color-accent); color: var(--color-accent-text); }
+}
 .field-grid, .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .layer-switcher { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .layer-switcher button {
@@ -567,9 +597,16 @@ body[data-editor-input="gamepad"]:not([data-editor-panel="open"]) .controller-vi
 /* === Minimal editor pass ==================================================
    Prefer one floating surface and quiet rows over nested bordered cards. */
 :root {
-  --editor-hairline: color-mix(in srgb, var(--color-text) 10%, transparent);
-  --editor-hairline-strong: color-mix(in srgb, var(--color-text) 18%, transparent);
+  --editor-hairline: rgb(255 246 232 / .12);
+  --editor-hairline-strong: rgb(255 246 232 / .22);
   --editor-active-layer: var(--color-accent);
+}
+
+@supports (color: color-mix(in srgb, white, black)) {
+  :root {
+    --editor-hairline: color-mix(in srgb, var(--color-text) 10%, transparent);
+    --editor-hairline-strong: color-mix(in srgb, var(--color-text) 18%, transparent);
+  }
 }
 
 body {
@@ -652,6 +689,13 @@ textarea,
   border-radius: var(--radius-sm);
   background: transparent;
   box-shadow: none;
+}
+.field select {
+  background-color: rgb(5 8 13 / .86);
+  color: var(--color-text);
+}
+@supports (appearance: base-select) {
+  .field select { background: color-mix(in srgb, var(--color-bg) 72%, black); }
 }
 .panel-section {
   padding: 0;
