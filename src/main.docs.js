@@ -17,21 +17,36 @@ const documentIdsByPath = new Map(documents.map(doc => [doc.path, doc.id]));
 const nav = document.getElementById('docsNav');
 const content = document.getElementById('docsContent');
 const filter = document.getElementById('docsFilter');
+const sortedDocumentsByIdLength = [...documents].sort((a, b) => b.id.length - a.id.length);
+let selectedDoc = findDocFromHash() || documents[0];
+let currentQuery = '';
 
-render(documents);
+render();
+
 filter?.addEventListener('input', () => {
-  const query = filter.value.trim().toLowerCase();
-  const matches = query
-    ? documents.filter(doc => `${doc.title} ${doc.path} ${doc.markdown}`.toLowerCase().includes(query))
-    : documents;
-  render(matches, query);
+  currentQuery = filter.value.trim().toLowerCase();
+  renderNav(filteredDocuments(), currentQuery);
 });
 
-function render(docs, query = '') {
-  renderNav(docs, query);
-  content.innerHTML = docs.length
-    ? docs.map(renderDocument).join('')
-    : `<article class="doc-card doc-card--empty"><h2>No docs match “${escapeHtml(query)}”.</h2><p>Try a broader pattern, system, or workflow term.</p></article>`;
+window.addEventListener('hashchange', () => {
+  const nextDoc = findDocFromHash();
+  if (nextDoc) selectedDoc = nextDoc;
+  render();
+  scrollToHashTarget();
+});
+
+function render() {
+  renderNav(filteredDocuments(), currentQuery);
+  content.innerHTML = selectedDoc
+    ? renderDocument(selectedDoc)
+    : `<article class="doc-card doc-card--empty"><h2>No docs available.</h2><p>Add markdown files under <code>docs/</code> to populate this reader.</p></article>`;
+  scrollToHashTarget();
+}
+
+function filteredDocuments() {
+  return currentQuery
+    ? documents.filter(doc => `${doc.title} ${doc.path} ${doc.markdown}`.toLowerCase().includes(currentQuery))
+    : documents;
 }
 
 function renderNav(docs, query) {
@@ -40,20 +55,46 @@ function renderNav(docs, query) {
     ? Object.entries(groups).map(([group, entries]) => `
       <section class="docs-nav-group">
         <h2>${escapeHtml(group)}</h2>
-        ${entries.map(doc => `<a href="#${doc.id}"><span>${escapeHtml(doc.title)}</span><small>${escapeHtml(doc.path)}</small></a>`).join('')}
+        ${entries.map(renderNavLink).join('')}
       </section>
     `).join('')
     : `<p class="docs-nav-empty">No docs match “${escapeHtml(query)}”.</p>`;
 }
 
+function renderNavLink(doc) {
+  const active = selectedDoc?.id === doc.id;
+  return `<a class="docs-nav-link${active ? ' is-active' : ''}" href="#${doc.id}"${active ? ' aria-current="page"' : ''}>
+    <span>${escapeHtml(doc.title)}</span>
+    <small>${escapeHtml(doc.path)}</small>
+  </a>`;
+}
+
 function renderDocument(doc) {
   return `<article id="${doc.id}" class="doc-card" data-doc-path="${escapeHtml(doc.path)}">
     <header class="doc-card__header">
-      <p>${escapeHtml(doc.path)}</p>
+      <div>
+        <p class="doc-card__eyebrow">Selected file</p>
+        <p>${escapeHtml(doc.path)}</p>
+      </div>
       <a href="#${doc.id}" aria-label="Link to ${escapeHtml(doc.title)}">#</a>
     </header>
     ${renderMarkdown(doc.markdown, doc)}
   </article>`;
+}
+
+function findDocFromHash() {
+  const hash = decodeURIComponent(window.location.hash.slice(1));
+  if (!hash) return null;
+  return sortedDocumentsByIdLength.find(doc => hash === doc.id || hash.startsWith(`${doc.id}-`)) || null;
+}
+
+function scrollToHashTarget() {
+  if (!window.location.hash) return;
+  requestAnimationFrame(() => {
+    const id = CSS.escape(decodeURIComponent(window.location.hash.slice(1)));
+    const target = document.querySelector(`#${id}`);
+    target?.scrollIntoView({ block: 'start' });
+  });
 }
 
 function renderMarkdown(markdown, doc) {
