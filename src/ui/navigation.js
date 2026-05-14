@@ -1,7 +1,7 @@
 export function visibleFocusables(root) {
-  return [...root.querySelectorAll('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled)')]
+  return [...root.querySelectorAll('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), details > summary')]
     .filter(el => el.getAttribute('role') !== 'tab')
-    .filter(el => !el.closest('details:not([open])'))
+    .filter(el => !el.closest('details:not([open])') || el.matches('details:not([open]) > summary'))
     .filter(el => {
       const style = getComputedStyle(el);
       const rect = el.getBoundingClientRect();

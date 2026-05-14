@@ -2,7 +2,7 @@
 @import url("/styles/ui-primitives.css");
 
 * { box-sizing: border-box; }
-html, body { margin: 0; width: 100%; height: 100%; }
+html, body { margin: 0; width: 100%; height: 100%; min-height: 100dvh; }
 body {
   overflow: hidden;
   color: var(--color-text);
@@ -20,8 +20,8 @@ body::after {
   background: radial-gradient(circle at 50% 48%, transparent 0 58%, rgba(0,0,0,.58) 100%);
 }
 button, input, select, textarea { font: inherit; }
-button, select, input, textarea { outline: none; }
-button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, .controller-focus { box-shadow: var(--shadow-focus); border-color: color-mix(in srgb, var(--color-accent) 55%, transparent) !important; }
+button, select, input, textarea, summary { outline: none; }
+button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible, .controller-focus { box-shadow: var(--shadow-focus); border-color: color-mix(in srgb, var(--color-accent) 55%, transparent) !important; }
 .controller-focus { outline: 0 !important; }
 button {
   min-height: 38px;
@@ -49,13 +49,25 @@ kbd {
   font-size: .8em;
 }
 
-.editor-shell { position: relative; z-index: 1; width: 100%; height: 100vh; }
+.editor-shell {
+  --editor-ui-edge: 12px;
+  --editor-ui-header-height: 52px;
+  --editor-ui-header-gap: 18px;
+  --editor-ui-footer-height: 88px;
+  --editor-ui-content-top: calc(env(safe-area-inset-top) + var(--editor-ui-edge) + var(--editor-ui-header-height) + var(--editor-ui-header-gap));
+  --editor-ui-content-bottom: calc(env(safe-area-inset-bottom) + var(--editor-ui-footer-height));
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+}
 .editor-topbar {
   position: fixed;
   z-index: 20;
-  top: 12px;
-  left: 12px;
-  right: 12px;
+  top: calc(env(safe-area-inset-top) + var(--editor-ui-edge));
+  left: calc(env(safe-area-inset-left) + var(--editor-ui-edge));
+  right: calc(env(safe-area-inset-right) + var(--editor-ui-edge));
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -160,11 +172,15 @@ body[data-editor-controller-mode="navigate"] #editorCanvas:active { cursor: grab
 .editor-overlay {
   position: absolute;
   z-index: 10;
-  top: 82px;
-  left: 16px;
-  width: min(360px, calc(100vw - 32px));
-  max-height: calc(100vh - 104px);
-  overflow: auto;
+  top: var(--editor-ui-content-top);
+  left: calc(env(safe-area-inset-left) + 16px);
+  width: min(360px, calc(100vw - 32px - env(safe-area-inset-left) - env(safe-area-inset-right)));
+  max-height: calc(100vh - var(--editor-ui-content-top) - var(--editor-ui-content-bottom));
+  max-height: calc(100dvh - var(--editor-ui-content-top) - var(--editor-ui-content-bottom));
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: 14px;
   border: 1px solid var(--color-border);
   border-radius: 22px;
@@ -209,6 +225,18 @@ body[data-editor-input="gamepad"] .overlay-toggle-hint { display: inline-flex; }
 .overlay-toggle-hint .input-hint__icon { width: 22px; height: 22px; object-fit: contain; }
 .overlay-toggle-hint .input-hint__joiner,
 .overlay-toggle-hint .input-hint__label { display: none; }
+.tab-panel {
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  scrollbar-color: rgba(255,246,232,.22) transparent;
+}
+@supports (overflow: clip) {
+  .tab-panel { overflow-x: clip; }
+}
 .tab-panel[hidden] { display: none; }
 .panel-section {
   padding: 12px;
@@ -294,8 +322,10 @@ body[data-editor-input="gamepad"] .overlay-toggle-hint { display: inline-flex; }
 }
 .panel-disclosure[open] summary { margin-bottom: 0; }
 .panel-disclosure[open] summary::after { content: "−"; }
-.layer-switcher { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.layer-switcher { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .layer-switcher button {
+  min-width: 0;
+  max-width: 100%;
   min-height: 64px;
   display: grid;
   align-content: center;
@@ -305,6 +335,9 @@ body[data-editor-input="gamepad"] .overlay-toggle-hint { display: inline-flex; }
   background: linear-gradient(135deg, rgba(255,255,255,.07), rgba(255,255,255,.025));
 }
 .layer-switcher button span { font-weight: 900; }
+.layer-switcher button span,
+.layer-switcher button small,
+.pack-chip__label { min-width: 0; overflow-wrap: anywhere; }
 .layer-switcher button small { color: var(--color-text-muted); font-size: .72rem; line-height: 1.2; }
 .layer-switcher button[aria-pressed="true"] {
   color: #101016;
@@ -316,6 +349,8 @@ body[data-editor-input="gamepad"] .overlay-toggle-hint { display: inline-flex; }
 .layer-switcher button:disabled { opacity: .38; cursor: not-allowed; }
 .brush-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
 .pack-chip {
+  min-width: 0;
+  max-width: 100%;
   min-height: 64px;
   display: grid;
   place-items: center;
@@ -363,14 +398,44 @@ body[data-editor-input="gamepad"] .overlay-toggle-hint { display: inline-flex; }
   background: rgba(5,8,13,.28);
   font-size: .9rem;
 }
-.check input { accent-color: var(--color-accent); width: 16px; height: 16px; }
+.check input[type="checkbox"] {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--color-text) 24%, transparent);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.015)),
+    color-mix(in srgb, var(--color-bg) 78%, black);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+}
+.check input[type="checkbox"]::after {
+  content: "";
+  width: 9px;
+  height: 5px;
+  border-left: 2px solid var(--color-accent-text);
+  border-bottom: 2px solid var(--color-accent-text);
+  opacity: 0;
+  transform: translateY(-1px) rotate(-45deg) scale(.72);
+  transition: opacity .12s ease, transform .12s ease;
+}
+.check input[type="checkbox"]:checked {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--color-accent), color-mix(in srgb, var(--color-accent) 76%, white));
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,.22), 0 0 18px color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+.check input[type="checkbox"]:checked::after { opacity: 1; transform: translateY(-1px) rotate(-45deg) scale(1); }
 .source-disclosure {
   border: 1px solid rgba(255,255,255,.075);
   border-radius: 16px;
   background: rgba(3, 6, 11, .22);
 }
 .source-disclosure summary { cursor: pointer; padding: 12px; color: var(--color-text-muted); font-weight: 760; }
-#exportText { min-height: 230px; resize: vertical; padding: .86rem; border-radius: 0 0 16px 16px; color: #efe8dc; line-height: 1.42; font-family: var(--font-mono); font-size: .78rem; }
+#exportText { min-height: 230px; resize: vertical; padding: .86rem; border-radius: 0 0 var(--radius-sm) var(--radius-sm); color: #efe8dc; line-height: 1.42; font-family: var(--font-mono); font-size: .78rem; }
 
 .floating-view-controls {
   position: absolute;
@@ -605,7 +670,13 @@ body[data-editor-input="gamepad"]:not([data-editor-panel="open"]) .controller-vi
 }
 @media (max-width: 760px) {
   body { overflow: hidden; }
-  .editor-topbar { grid-template-columns: auto 1fr auto; gap: 6px; left: 8px; right: 8px; top: 8px; min-height: 48px; }
+  .editor-shell {
+    --editor-ui-edge: 8px;
+    --editor-ui-header-height: 48px;
+    --editor-ui-header-gap: 16px;
+    --editor-ui-footer-height: 118px;
+  }
+  .editor-topbar { grid-template-columns: auto 1fr auto; gap: 6px; min-height: var(--editor-ui-header-height); }
   .top-button, .save-state-button { min-width: auto; padding-inline: .6rem; }
   .editor-tabs button { min-width: auto; padding-inline: .68rem; }
   .editor-overlay {
@@ -614,10 +685,18 @@ body[data-editor-input="gamepad"]:not([data-editor-panel="open"]) .controller-vi
     right: 8px;
     bottom: 8px;
     width: auto;
-    max-height: min(62vh, calc(100vh - 72px));
+    max-height: min(62vh, calc(100vh - var(--editor-ui-content-top) - 16px));
+    max-height: min(62dvh, calc(100dvh - var(--editor-ui-content-top) - 16px));
     border-radius: 20px;
   }
-  .floating-view-controls { right: 8px; bottom: calc(min(62vh, calc(100vh - 72px)) + 18px); flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 16px); }
+  .floating-view-controls {
+    right: 8px;
+    bottom: calc(min(62vh, calc(100vh - var(--editor-ui-content-top) - 16px)) + 18px);
+    bottom: calc(min(62dvh, calc(100dvh - var(--editor-ui-content-top) - 16px)) + 18px);
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: calc(100vw - 16px);
+  }
   .editor-overlay[hidden] ~ .floating-view-controls { bottom: 8px; }
   body[data-editor-input="gamepad"] .floating-view-controls { right: 8px; bottom: 8px; }
   .pack-wheel-hud { right: 8px; bottom: 8px; transform: scale(.82); }
@@ -741,6 +820,67 @@ textarea,
   padding-top: 18px;
   border-top: 1px solid var(--editor-hairline);
 }
+.panel-section.panel-disclosure,
+.source-disclosure {
+  padding: 0;
+  border: 1px solid var(--editor-hairline);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-bg-elevated) 24%, transparent);
+  overflow: visible;
+}
+.panel-disclosure summary,
+.source-disclosure summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  border-radius: calc(var(--radius-sm) - 1px);
+  color: rgba(255,246,232,.82);
+  font-family: var(--font-display);
+  font-size: .9rem;
+  font-weight: 750;
+  letter-spacing: -.01em;
+  list-style: none;
+  cursor: pointer;
+}
+.panel-disclosure summary:focus-visible,
+.panel-disclosure summary.controller-focus,
+.source-disclosure summary:focus-visible,
+.source-disclosure summary.controller-focus {
+  border-color: color-mix(in srgb, var(--color-accent) 55%, transparent) !important;
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-accent) 66%, transparent);
+}
+.panel-disclosure summary::-webkit-details-marker,
+.source-disclosure summary::-webkit-details-marker { display: none; }
+.panel-disclosure summary::after,
+.source-disclosure summary::after {
+  content: "+";
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(255,246,232,.12);
+  border-radius: 50%;
+  color: var(--color-accent-muted);
+  background: rgba(255,255,255,.045);
+  font-family: var(--font-ui);
+  font-weight: 900;
+}
+.panel-disclosure[open] summary,
+.source-disclosure[open] summary { border-radius: calc(var(--radius-sm) - 1px) calc(var(--radius-sm) - 1px) 0 0; }
+.panel-disclosure[open] summary::after,
+.source-disclosure[open] summary::after { content: "−"; }
+.panel-disclosure > :not(summary),
+.source-disclosure > :not(summary) { margin: 12px; }
+.source-disclosure > #exportText {
+  width: calc(100% - 24px);
+  margin-top: 0;
+  border-radius: var(--radius-sm);
+}
 .layer-switcher button,
 .pack-chip,
 .check {
@@ -754,6 +894,17 @@ textarea,
 .pack-chip:hover,
 .check:hover {
   background: color-mix(in srgb, var(--color-text) 5%, transparent);
+}
+.check:has(input[type="checkbox"]:checked) {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-accent) 7%, transparent);
+}
+.check:focus-within,
+.check:has(input.controller-focus),
+.check.controller-focus {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-accent) 66%, transparent);
 }
 .pack-chip__swatch,
 .pack-wheel-hud__swatch,

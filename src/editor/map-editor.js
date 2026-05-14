@@ -408,6 +408,8 @@ function focusEditorControl(element) {
   clearEditorControllerFocus();
   element.focus({ preventScroll: true });
   element.classList.add('controller-focus');
+  const checkRow = element.closest?.('.check');
+  if (checkRow?.contains(element)) checkRow.classList.add('controller-focus');
   editorPanelLastFocused = element;
   requestAnimationFrame(() => requestAnimationFrame(() => {
     if (document.activeElement === element) element.scrollIntoView({ block: 'nearest', inline: 'nearest' });

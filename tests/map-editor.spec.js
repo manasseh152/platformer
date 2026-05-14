@@ -559,10 +559,42 @@ test('map editor controller navigates and activates controls in the selected tab
   await page.evaluate(() => window.__setMockGamepadButton(13, true));
   await expect(page.locator('#gridToggle')).toBeFocused();
   await expect(page.locator('#gridToggle')).toHaveClass(/controller-focus/);
+  await expect(page.locator('label.check', { has: page.locator('#gridToggle') })).toHaveClass(/controller-focus/);
   await page.evaluate(() => window.__setMockGamepadButton(13, false));
 
   await page.evaluate(() => window.__setMockGamepadButton(0, true));
   await expect(page.locator('#gridToggle')).not.toBeChecked();
+  await expect(page.locator('label.check', { has: page.locator('#gridToggle') })).toHaveCSS('box-shadow', /inset/);
+});
+
+test('map editor controller can focus and toggle details disclosures', async ({ page }) => {
+  await page.addInitScript(() => {
+    const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));
+    const pad = { index: 0, id: 'Mock Controller', mapping: 'standard', buttons, axes: [0, 0, 0, 0] };
+    window.__setMockGamepadButton = (index, pressed) => { buttons[index] = { pressed }; };
+    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] });
+  });
+  await page.goto('/editor.html');
+
+  await page.mouse.click((await editorScreenPoint(page, 8, 8)).x, (await editorScreenPoint(page, 8, 8)).y);
+  await expect(page.locator('#undoButton')).toBeEnabled();
+  await page.locator('#undoButton').focus();
+  await page.evaluate(() => window.__setMockGamepadButton(13, true));
+  await expect(page.locator('.panel-disclosure > summary')).toBeFocused();
+  await page.evaluate(() => window.__setMockGamepadButton(13, false));
+  await page.evaluate(() => window.__setMockGamepadButton(0, true));
+  await expect(page.locator('.panel-disclosure')).toHaveAttribute('open', '');
+  await expect(page.locator('#controllerBrushSensitivityInput')).toBeVisible();
+  await page.evaluate(() => window.__setMockGamepadButton(0, false));
+
+  await openMapPanel(page);
+  await page.locator('#importMapButton').focus();
+  await page.evaluate(() => window.__setMockGamepadButton(13, true));
+  await expect(page.locator('.source-disclosure > summary')).toBeFocused();
+  await page.evaluate(() => window.__setMockGamepadButton(13, false));
+  await page.evaluate(() => window.__setMockGamepadButton(0, true));
+  await expect(page.locator('.source-disclosure')).toHaveAttribute('open', '');
+  await expect(page.locator('#exportText')).toBeVisible();
 });
 
 test('map editor keyboard and controller use two-axis navigation inside two-column groups', async ({ page }) => {
