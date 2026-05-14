@@ -79,7 +79,7 @@ Status: Implemented.
 
 ### Slice 2: Extract app-wide render primitives
 
-Status: Planned.
+Status: Implemented.
 
 - Add reusable tab rendering helpers under app-wide UI/component paths.
 - Add reusable section, row, status, action-row, and keybind-row helpers.

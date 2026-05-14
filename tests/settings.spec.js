@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { applySettingsToGame, defaultSettings, saveSettings, syncSettingsFromInput } from '#/app/settings/settings.js';
 import { createInputState } from '#/app/input/input-ui-state.js';
 import { commitBindRow, resetBindRowsToDefaults } from '#/app/input/semantic-bind-rows.js';
+import { renderInfoRow, renderSection, renderSettingRow, renderTabList, renderTabPanel } from '#/app/ui/components/primitives.js';
 
 function memoryStorage() {
   const values = new Map();
@@ -37,6 +38,26 @@ test('app settings persist structured input as source of truth', () => {
   expect(saved.input.slots.player1.devices.gamepad.enabled).toBe(false);
   expect(storage.getItem('chibi.settings')).toContain('"input"');
   expect(storage.getItem('chibi.settings')).not.toContain('keyboardBinds');
+});
+
+test('ui primitives render accessible tabs and stable design-system rows', () => {
+  const tabs = renderTabList({
+    label: 'Demo tabs',
+    tabs: [
+      { id: 'a', label: 'Alpha', attributes: { 'data-demo-tab': 'a' } },
+      { id: 'b', label: 'Beta', attributes: { 'data-demo-tab': 'b' } }
+    ],
+    activeId: 'b',
+    activeLayer: true,
+    className: 'settings-tabs',
+    variant: 'primary'
+  });
+  expect(tabs).toContain('class="ds-tabs ds-tabs--primary settings-tabs"');
+  expect(tabs).toContain('role="tablist"');
+  expect(tabs).toContain('role="tab" aria-selected="true" tabindex="0" data-demo-tab="b"');
+  expect(renderTabPanel({ body: 'Panel', className: 'settings-tab-panel' })).toContain('class="ds-tab-panel settings-tab-panel" role="tabpanel"');
+  expect(renderSection({ title: '<Section>', body: renderSettingRow({ id: 'motion', label: 'Motion', value: 'On', kind: 'toggle' }), className: 'settings-section' })).toContain('class="ds-section settings-section"');
+  expect(renderInfoRow({ label: 'Status', value: 'Ready', valueId: 'status' })).toContain('id="status"');
 });
 
 test('semantic bind rows update one move direction without legacy bind state', () => {

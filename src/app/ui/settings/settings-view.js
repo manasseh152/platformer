@@ -3,6 +3,7 @@ import { bindingLabel } from '../../input/input-hints.js';
 import { motionStatusText } from '../transitions.js';
 import { browserRuntime } from '../../runtime/browser-runtime.js';
 import { formatRunTime, getBestTime } from '../../speedrun/speedrun.js';
+import { escapeHtml, renderActionRow, renderInfoRow, renderKeybindRow, renderSection, renderSettingRow, renderTabList, renderTabPanel } from '../components/primitives.js';
 
 const categoryDescriptions = {
   controls: 'Choose profiles, remap gameplay controls, review navigation, and configure devices.',
@@ -25,10 +26,6 @@ export const settingsCategories = [
   { id: 'advanced', title: 'Advanced', description: categoryDescriptions.advanced }
 ];
 
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
-}
-
 const keycaps = text => text.split(' / ').map(part => `<span class="ds-keycap">${escapeHtml(part)}</span>`).join(' ');
 const controlGlyphs = parts => parts.map(part => part.icon
   ? `<img class="input-hint__icon bind-keycaps__icon" src="${escapeHtml(part.icon)}" alt="${escapeHtml(part.label)}">`
@@ -37,21 +34,15 @@ const controlGlyphs = parts => parts.map(part => part.icon
 const onOff = value => value ? 'On' : 'Off';
 
 function section(title, body) {
-  return `<section class="ds-section settings-section"><h3>${title}</h3>${body}</section>`;
+  return renderSection({ title, body, className: 'settings-section' });
 }
 
 function valueRow({ id, label, value, description = '', kind = 'setting' }) {
-  return `<button type="button" class="ds-setting-row ds-setting-row--${kind}" data-setting-row="${id}">
-    <span class="ds-setting-row__copy"><span class="ds-setting-row__label">${label}</span>${description ? `<span class="ds-setting-row__description">${description}</span>` : ''}</span>
-    <span class="ds-setting-row__value">${value}</span>
-  </button>`;
+  return renderSettingRow({ id, label, value, description, kind });
 }
 
 function infoRow(label, value, id) {
-  return `<div class="ds-setting-row ds-setting-row--info">
-    <span class="ds-setting-row__copy"><span class="ds-setting-row__label">${label}</span></span>
-    <span class="ds-setting-row__value"${id ? ` id="${id}"` : ''}>${value}</span>
-  </div>`;
+  return renderInfoRow({ label, value, valueId: id });
 }
 
 function controllerSelectionRow(game) {
@@ -115,11 +106,11 @@ function bindRow(game, device, action) {
   const parts = rowHintParts(game.settings, action, device, { iconPack: game.settings.input?.gamepad?.globalIconPack || 'xbox' });
   const value = listening ? escapeHtml(prompt) : (parts.length ? controlGlyphs(parts) : keycaps(text));
   const error = game.input.bindError?.device === device && game.input.bindError?.action === action;
-  return `<div class="ds-setting-row ds-setting-row--bind${listening ? ' is-listening' : ''}${error ? ' is-error' : ''}">
-    <span class="ds-setting-row__copy"><span class="ds-setting-row__label">${bindLabel(action)}</span></span>
-    <span class="ds-setting-row__value bind-keycaps">${value}</span>
-    <span class="ds-action-row"><button type="button" class="ds-button ds-button--secondary" data-bind-action="${action}" data-bind-device="${device}" data-bind-mode="replace">Replace</button><button type="button" class="ds-button ds-button--secondary" data-bind-action="${action}" data-bind-device="${device}" data-bind-mode="add">Add</button></span>
-  </div>`;
+  const actions = renderActionRow([
+    `<button type="button" class="ds-button ds-button--secondary" data-bind-action="${escapeHtml(action)}" data-bind-device="${escapeHtml(device)}" data-bind-mode="replace">Replace</button>`,
+    `<button type="button" class="ds-button ds-button--secondary" data-bind-action="${escapeHtml(action)}" data-bind-device="${escapeHtml(device)}" data-bind-mode="add">Add</button>`
+  ]);
+  return renderKeybindRow({ label: bindLabel(action), value, listening, error, actions });
 }
 
 function bindSections(game, device) {
@@ -146,10 +137,15 @@ function profileCards(game) {
 function controlsSubtabs(game) {
   const page = game.menu.controlsPage || 'profiles';
   const activeLayer = game.menu.settingsFocusLayer === 'nested-tabs';
-  return `<div class="settings-tabs settings-tabs--nested" role="tablist" aria-label="Controls pages" data-settings-nav-layer="nested-tabs">${controlsPages.map(entry => {
-    const selected = entry.id === page;
-    return `<button type="button" role="tab" aria-selected="${selected ? 'true' : 'false'}" tabindex="${activeLayer && selected ? '0' : '-1'}" data-controls-page="${entry.id}">${entry.title}</button>`;
-  }).join('')}</div>`;
+  return renderTabList({
+    label: 'Controls pages',
+    tabs: controlsPages.map(entry => ({ id: entry.id, label: entry.title, attributes: { 'data-controls-page': entry.id } })),
+    activeId: page,
+    activeLayer,
+    className: 'settings-tabs settings-tabs--nested',
+    variant: 'nested',
+    attributes: { 'data-settings-nav-layer': 'nested-tabs' }
+  });
 }
 
 function navigationOverview(game) {
@@ -255,16 +251,22 @@ export function activeSettingsCategory(game) {
 export function renderSettingsTabs(game) {
   const active = activeSettingsCategory(game).id;
   const activeLayer = (game.menu.settingsFocusLayer || 'primary-tabs') === 'primary-tabs';
-  return `<div class="settings-tabs settings-tabs--primary" role="tablist" aria-label="Settings categories" data-settings-nav-layer="primary-tabs">
-    <span class="settings-tabs__hint" data-settings-tab-hint="previous" data-input-tab-hint data-input-action="menu.previousTab" aria-hidden="true" hidden>LB</span>
-    ${settingsCategories.map(category => {
-      const selected = category.id === active;
-      return `<button type="button" role="tab" aria-selected="${selected ? 'true' : 'false'}" tabindex="${activeLayer && selected ? '0' : '-1'}" data-settings-tab="${category.id}">
-        <span class="settings-tab__label">${category.title}</span>
-      </button>`;
-    }).join('')}
-    <span class="settings-tabs__hint" data-settings-tab-hint="next" data-input-tab-hint data-input-action="menu.nextTab" aria-hidden="true" hidden>RB</span>
-  </div>`;
+  return renderTabList({
+    label: 'Settings categories',
+    tabs: settingsCategories.map(category => ({
+      id: category.id,
+      label: category.title,
+      content: `<span class="settings-tab__label">${escapeHtml(category.title)}</span>`,
+      attributes: { 'data-settings-tab': category.id }
+    })),
+    activeId: active,
+    activeLayer,
+    className: 'settings-tabs settings-tabs--primary',
+    variant: 'primary',
+    attributes: { 'data-settings-nav-layer': 'primary-tabs' },
+    before: '<span class="settings-tabs__hint" data-settings-tab-hint="previous" data-input-tab-hint data-input-action="menu.previousTab" aria-hidden="true" hidden>LB</span>',
+    after: '<span class="settings-tabs__hint" data-settings-tab-hint="next" data-input-tab-hint data-input-action="menu.nextTab" aria-hidden="true" hidden>RB</span>'
+  });
 }
 
 export function selectedCategory(game) {
@@ -304,7 +306,7 @@ export function renderSettingsCategory(game, runtime = browserRuntime) {
   const controllerPage = (category.id === 'controller' || (category.id === 'controls' && game.menu.controlsPage === 'controller')) ? controllerSubpages.find(page => page.id === game.menu.settingsSubpage) : null;
   ui.settingsCategoryDescription.textContent = controllerPage ? controllerPage.description : category.description;
   if (game.input.bindError && runtime.now() > game.input.bindError.until) game.input.bindError = null;
-  ui.settingsCategoryBody.innerHTML = `${renderSettingsTabs(game)}<div class="settings-tab-panel" role="tabpanel" data-settings-nav-layer="content">${renderers[category.id](game)}</div>`;
+  ui.settingsCategoryBody.innerHTML = `${renderSettingsTabs(game)}${renderTabPanel({ body: renderers[category.id](game), className: 'settings-tab-panel', attributes: { 'data-settings-nav-layer': 'content' } })}`;
   refreshDynamicRefs(game);
 }
 
