@@ -187,7 +187,14 @@ test('canvas2d and webgl native backends match on ADR 0009 parity render scenari
 
   test.skip(!result.supported, 'WebGL unavailable in this browser');
   for (const scenario of result.scenarios) {
-    expect(scenario.support).toMatchObject({ supported: true, issues: [] });
+    expect(scenario.support.supported).toBe(true);
+    if (scenario.id === 'lighting-primitives-lit-unlit-surfaces') {
+      expect(scenario.support.issues).toEqual(expect.arrayContaining([
+        expect.objectContaining({ packetKind: 'light2d', feature: 'lighting', severity: 'optional' })
+      ]));
+    } else {
+      expect(scenario.support.issues).toEqual([]);
+    }
     for (let point = 0; point < scenario.canvas.length; point++) {
       for (let channel = 0; channel < 4; channel++) {
         expect(Math.abs(scenario.webgl[point][channel] - scenario.canvas[point][channel]), `${scenario.id} point ${point} channel ${channel}: canvas=${scenario.canvas[point][channel]} webgl=${scenario.webgl[point][channel]}`).toBeLessThanOrEqual(scenario.tolerance);
@@ -335,6 +342,20 @@ test('webgl native backend capability check accepts real gameplay vector and lig
 
   expect(support).toMatchObject({ backendKind: 'webgl', supported: true });
   expect(support.issues).toEqual([]);
+});
+
+test('webgl native backend capability check reports authored light packets as optional forward-unlit downgrade', () => {
+  const frame = createRenderFrameBuilder({ width: 4, height: 4 })
+    .add({ kind: 'clear', fill: '#000' })
+    .add({ kind: 'light2d', lightKind: 'ambient', defaultLight: true, color: [255, 255, 255, 255], intensity: 1 })
+    .add({ kind: 'light2d', lightKind: 'point', sourceId: 'torch', color: [255, 176, 92, 255], intensity: 1, x: 2, y: 2, radius: 4 })
+    .finalize();
+  const support = analyzeWebGlNativeFrameSupport(frame, { assetRegistry: createAssetRegistry({}) });
+
+  expect(support).toMatchObject({ backendKind: 'webgl', supported: true });
+  expect(support.issues).toEqual([
+    expect.objectContaining({ packetKind: 'light2d', feature: 'lighting', reason: 'forward WebGL renders authored point light2d as unlit; use webgl2-deferred for lighting', severity: 'optional' })
+  ]);
 });
 
 test('webgl native backend capability check reports unloaded image assets', () => {

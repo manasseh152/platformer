@@ -207,7 +207,7 @@ Move capability checks toward a shared manifest/inspection shape so backend sele
 
 Initial implementation may adapt the existing WebGL support analyzer rather than performing a big-bang rewrite. Canvas2D can declare reference support for accepted gameplay packets. Specialized deferred support can report specialized pass limitations and optional-effect degrade diagnostics.
 
-Implemented in `src/render/backends/native-frame-capabilities.js`, with the WebGL analyzer returning normalized `backendKind`, `supported`, and structured `issues`; Canvas2D now declares reference support through `supportsFrame()`. The same module also exposes native-frame backend maturity metadata so diagnostics/devtools can describe whether a backend is reference, experimental, or specialized.
+Implemented in `src/render/backends/native-frame-capabilities.js`, with the WebGL analyzer returning normalized `backendKind`, `supported`, and structured `issues`; Canvas2D now declares reference support through `supportsFrame()`. WebGL `light2d` analysis is semantic: default ambient lights are accepted silently, while authored ambient/point light packets produce optional forward-unlit downgrade issues and remain routed to WebGL2 deferred when selected automatically. The same module also exposes native-frame backend maturity metadata so diagnostics/devtools can describe whether a backend is reference, experimental, specialized, or a future WebGPU spike.
 
 ### 3. Normalize render diagnostics and fallback fields — Complete
 
@@ -291,7 +291,7 @@ If the goal remains 2D renderer maintenance reduction, evaluate PixiJS before Th
 
 ### 11. Expose backend maturity in diagnostics/devtools — Complete
 
-Backend maturity tiers are now represented in `src/render/backends/native-frame-capabilities.js` as shared metadata for Canvas2D (`reference`), WebGL (`experimental`), and WebGL2 deferred (`specialized`). `renderNativeFrame(...)` records candidate and actual backend maturity in normalized diagnostics, and render devtools exposes a `Backend maturity` row so forced/requested GPU paths are visibly distinguished from reference/default-eligible rendering.
+Backend maturity tiers are now represented in `src/render/backends/native-frame-capabilities.js` as shared metadata for Canvas2D (`reference`), WebGL (`experimental`), WebGL2 deferred (`specialized`), and future WebGPU/WebGPU deferred spikes (`experimental`/`specialized`, not automatic/default eligible). `renderNativeFrame(...)` records candidate and actual backend maturity in normalized diagnostics, and render devtools exposes a `Backend maturity` row so forced/requested GPU paths are visibly distinguished from reference/default-eligible rendering.
 
 Covered by `tests/devtools-registry.spec.js` and `tests/render-pipeline.spec.js`.
 

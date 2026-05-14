@@ -1,7 +1,9 @@
 const BACKEND_KIND_BY_CONTRACT = {
   'canvas2d-native-frame-backend': 'canvas2d',
   'webgl-native-frame-backend': 'webgl',
-  'webgl2-deferred-native-frame-backend': 'webgl2-deferred'
+  'webgl2-deferred-native-frame-backend': 'webgl2-deferred',
+  'webgpu-native-frame-backend': 'webgpu',
+  'webgpu-deferred-native-frame-backend': 'webgpu-deferred'
 };
 
 export const NATIVE_FRAME_BACKEND_MATURITY = Object.freeze({
@@ -25,6 +27,20 @@ export const NATIVE_FRAME_BACKEND_MATURITY = Object.freeze({
     automaticEligible: true,
     defaultEligible: false,
     summary: 'Specialized deferred-lighting backend selected only for authored lighting frames.'
+  }),
+  webgpu: Object.freeze({
+    backendKind: 'webgpu',
+    tier: 'experimental',
+    automaticEligible: false,
+    defaultEligible: false,
+    summary: 'Future WebGPU native-frame backend spike; must pass the same capability, diagnostics, and parity gates before automatic use.'
+  }),
+  'webgpu-deferred': Object.freeze({
+    backendKind: 'webgpu-deferred',
+    tier: 'specialized',
+    automaticEligible: false,
+    defaultEligible: false,
+    summary: 'Future specialized WebGPU deferred backend; must declare pass limitations and deterministic downgrade behavior.'
   })
 });
 

@@ -61,3 +61,4 @@ For custom composition or tests, use `normalizePixelRect(rect)`. Pass `snap: fal
 - Keep color/style presets near the feature using them, not in `pixel-outline.js`.
 - Sprite/silhouette outlines need a separate algorithm based on alpha masks, offscreen canvas, or shaders. Do not force them through the rect helper.
 - GPU/WebGL/WebGPU work must stay behind backend contracts and the parity gates in ADR 0009.
+- New render features and implementation plans must reference ADR 0009's feature-entry rule: authored data/read-model extraction, explicit `RenderFrame` packet contract or metadata, Canvas2D reference unless explicitly optional GPU polish, backend capability declarations, and focused tests or documented downgrade behavior.

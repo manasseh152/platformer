@@ -67,6 +67,7 @@ test('native-frame backend maturity is exposed for diagnostics and devtools', ()
   expect(getNativeFrameBackendMaturity('canvas2d')).toMatchObject({ tier: 'reference', automaticEligible: true, defaultEligible: true });
   expect(getNativeFrameBackendMaturity('webgl-native-frame-backend')).toMatchObject({ backendKind: 'webgl', tier: 'experimental', automaticEligible: false, defaultEligible: false });
   expect(getNativeFrameBackendMaturity('webgl2-deferred')).toMatchObject({ tier: 'specialized', automaticEligible: true, defaultEligible: false });
+  expect(getNativeFrameBackendMaturity('webgpu-native-frame-backend')).toMatchObject({ backendKind: 'webgpu', tier: 'experimental', automaticEligible: false, defaultEligible: false });
 
   const game = { devTools: createDevToolsState(), renderPipeline: { diagnostics: { actualBackendKind: 'webgl', maturity: { actual: getNativeFrameBackendMaturity('webgl') } } }, appState: {}, enemies: [], dust: [], particles: [] };
   registerRenderPipelineDevTools(game);

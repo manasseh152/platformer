@@ -15,8 +15,14 @@ function isSupportedFill(fill) {
   return fill == null || typeof fill === 'string' || SUPPORTED_FILL_KINDS.has(fill.kind);
 }
 
-function issue(packet, reason, feature) {
-  return createCapabilityIssue({ packet, reason, feature, severity: 'required' });
+function issue(packet, reason, feature, severity = 'required') {
+  return createCapabilityIssue({ packet, reason, feature, severity });
+}
+
+function lightSupportIssues(packet) {
+  if (packet.kind !== 'light2d') return [];
+  if (packet.defaultLight && packet.lightKind === 'ambient') return [];
+  return [issue(packet, `forward WebGL renders authored ${packet.lightKind ?? 'unknown'} light2d as unlit; use webgl2-deferred for lighting`, 'lighting', 'optional')];
 }
 
 function assetSupportIssues(packet, assetRegistry) {
@@ -30,12 +36,13 @@ function assetSupportIssues(packet, assetRegistry) {
 }
 
 export function getWebGlNativeFramePacketSupportIssues(packet, { assetRegistry } = {}) {
-  if (!packet || typeof packet !== 'object') return [{ kind: undefined, reason: 'packet is not an object' }];
+  if (!packet || typeof packet !== 'object') return [createCapabilityIssue({ reason: 'packet is not an object', feature: 'packet' })];
   const issues = [];
   if (!SUPPORTED_PACKET_KINDS.has(packet.kind)) issues.push(issue(packet, `unsupported packet kind: ${packet.kind}`, 'packet-kind'));
   if ((packet.kind === 'clear' || packet.kind === 'rect' || packet.kind === 'roundRect' || packet.kind === 'ellipse' || packet.kind === 'path') && !isSupportedFill(packet.fill ?? packet.color)) {
     issues.push(issue(packet, `unsupported fill kind for ${packet.kind}: ${fillKind(packet.fill ?? packet.color)}`, 'fill'));
   }
+  issues.push(...lightSupportIssues(packet));
   issues.push(...assetSupportIssues(packet, assetRegistry));
   return issues;
 }
@@ -45,7 +52,7 @@ export function analyzeWebGlNativeFrameSupport(frame, { assetRegistry } = {}) {
   for (const packet of frame?.packets ?? []) issues.push(...getWebGlNativeFramePacketSupportIssues(packet, { assetRegistry }));
   return createCapabilityResult({
     backendKind: 'webgl',
-    supported: issues.length === 0,
+    supported: !issues.some(issue => issue.severity !== 'optional'),
     issues
   });
 }
