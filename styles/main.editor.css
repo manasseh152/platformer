@@ -252,7 +252,7 @@ body[data-editor-input="gamepad"] .overlay-toggle-hint { display: inline-flex; }
 .layer-switcher button[aria-pressed="true"] small { color: rgba(16,16,22,.68); }
 .layer-switcher button:disabled { opacity: .38; cursor: not-allowed; }
 .brush-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
-.palette-chip {
+.pack-chip {
   min-height: 64px;
   display: grid;
   place-items: center;
@@ -262,7 +262,7 @@ body[data-editor-input="gamepad"] .overlay-toggle-hint { display: inline-flex; }
   font-size: .68rem;
   font-weight: 900;
 }
-.palette-chip__swatch {
+.pack-chip__swatch {
   width: 28px;
   height: 24px;
   border: 2px solid rgba(255,246,232,.24);
@@ -272,13 +272,13 @@ body[data-editor-input="gamepad"] .overlay-toggle-hint { display: inline-flex; }
     var(--swatch, rgba(255,246,232,.74));
   box-shadow: inset 0 -3px 0 rgba(0,0,0,.18), 0 7px 16px rgba(0,0,0,.22);
 }
-.palette-chip.active {
+.pack-chip.active {
   color: #101016;
   background: rgba(255,246,232,.92);
   border-color: transparent;
   box-shadow: inset 0 -2px 0 rgba(0,0,0,.16), 0 10px 28px rgba(0,0,0,.22);
 }
-.palette-chip.active .palette-chip__swatch { border-color: rgba(16,16,22,.32); }
+.pack-chip.active .pack-chip__swatch { border-color: rgba(16,16,22,.32); }
 .selected-brush-title {
   margin-top: 10px;
   padding: 9px 10px;
@@ -340,7 +340,7 @@ body[data-editor-input="gamepad"] .floating-view-controls { display: none; }
 }
 #panToggleButton[aria-pressed="true"] { color: #101016; background: rgba(255,246,232,.92); border-color: transparent; }
 
-.palette-wheel-hud {
+.pack-wheel-hud {
   --wheel-size: 198px;
   --wheel-item: 28px;
   --wheel-radius: -68px;
@@ -358,10 +358,10 @@ body[data-editor-input="gamepad"] .floating-view-controls { display: none; }
   transition: opacity .18s ease, transform .18s ease;
   pointer-events: none;
 }
-body[data-editor-input="gamepad"] .palette-wheel-hud { display: block; }
-body[data-editor-input="gamepad"][data-editor-panel="open"] .palette-wheel-hud { opacity: .46; transform: scale(.72); }
-.palette-wheel-hud.is-awake { opacity: 1; transform: scale(1); }
-.palette-wheel-hud::before {
+body[data-editor-input="gamepad"] .pack-wheel-hud { display: block; }
+body[data-editor-input="gamepad"][data-editor-panel="open"] .pack-wheel-hud { opacity: .46; transform: scale(.72); }
+.pack-wheel-hud.is-awake { opacity: 1; transform: scale(1); }
+.pack-wheel-hud::before {
   content: "";
   position: absolute;
   inset: 34px;
@@ -373,8 +373,8 @@ body[data-editor-input="gamepad"][data-editor-panel="open"] .palette-wheel-hud {
   box-shadow: inset 0 0 0 1px rgba(0,0,0,.22), 0 18px 42px rgba(0,0,0,.34);
   mask: radial-gradient(circle, transparent 0 53%, #000 54% 100%);
 }
-.palette-wheel-hud__items { position: absolute; inset: 0; border-radius: 50%; overflow: visible; }
-.palette-wheel-hud__item {
+.pack-wheel-hud__items { position: absolute; inset: 0; border-radius: 50%; overflow: visible; }
+.pack-wheel-hud__item {
   --angle: 0deg;
   position: absolute;
   left: 50%;
@@ -392,7 +392,7 @@ body[data-editor-input="gamepad"][data-editor-panel="open"] .palette-wheel-hud {
   box-shadow: inset 0 -3px 0 rgba(0,0,0,.24), 0 10px 22px rgba(0,0,0,.26);
   transform: rotate(var(--angle)) translateY(var(--wheel-radius)) rotate(calc(-1 * var(--angle)));
 }
-.palette-wheel-hud__item::after {
+.pack-wheel-hud__item::after {
   content: attr(data-short-label);
   max-width: 24px;
   overflow: hidden;
@@ -402,8 +402,8 @@ body[data-editor-input="gamepad"][data-editor-panel="open"] .palette-wheel-hud {
   text-transform: uppercase;
   text-shadow: 0 1px 0 rgba(255,255,255,.24);
 }
-.palette-wheel-hud__item.is-duplicate { opacity: .56; filter: saturate(.78); }
-.palette-wheel-hud__item.is-active {
+.pack-wheel-hud__item.is-duplicate { opacity: .56; filter: saturate(.78); }
+.pack-wheel-hud__item.is-active {
   z-index: 2;
   opacity: 1;
   filter: none;
@@ -411,7 +411,7 @@ body[data-editor-input="gamepad"][data-editor-panel="open"] .palette-wheel-hud {
   transform: rotate(var(--angle)) translateY(calc(var(--wheel-radius) - 5px)) rotate(calc(-1 * var(--angle))) scale(1.12);
   box-shadow: inset 0 -3px 0 rgba(0,0,0,.22), 0 0 0 4px rgba(255,246,232,.12), 0 0 28px color-mix(in srgb, var(--swatch, #79f0c5) 58%, transparent);
 }
-.palette-wheel-hud__card {
+.pack-wheel-hud__card {
   position: absolute;
   right: 4px;
   bottom: 4px;
@@ -425,11 +425,11 @@ body[data-editor-input="gamepad"][data-editor-panel="open"] .palette-wheel-hud {
   backdrop-filter: blur(18px) saturate(135%);
   box-shadow: 0 18px 52px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.05);
 }
-.palette-wheel-hud__topline,
-.palette-wheel-hud__brush { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.palette-wheel-hud__topline { justify-content: space-between; }
-.palette-wheel-hud__pill,
-.palette-wheel-hud__zoom {
+.pack-wheel-hud__topline,
+.pack-wheel-hud__brush { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.pack-wheel-hud__topline { justify-content: space-between; }
+.pack-wheel-hud__pill,
+.pack-wheel-hud__zoom {
   min-width: 0;
   border: 1px solid rgba(255,246,232,.11);
   border-radius: 999px;
@@ -440,8 +440,8 @@ body[data-editor-input="gamepad"][data-editor-panel="open"] .palette-wheel-hud {
   letter-spacing: .06em;
   text-transform: uppercase;
 }
-.palette-wheel-hud__zoom { flex: 0 0 auto; color: #101016; background: rgba(255,246,232,.9); }
-.palette-wheel-hud__swatch {
+.pack-wheel-hud__zoom { flex: 0 0 auto; color: #101016; background: rgba(255,246,232,.9); }
+.pack-wheel-hud__swatch {
   flex: 0 0 auto;
   width: 26px;
   height: 26px;
@@ -450,13 +450,13 @@ body[data-editor-input="gamepad"][data-editor-panel="open"] .palette-wheel-hud {
   background: linear-gradient(135deg, rgba(255,255,255,.24), transparent 44%), var(--swatch, #79f0c5);
   box-shadow: inset 0 -3px 0 rgba(0,0,0,.22), 0 8px 18px rgba(0,0,0,.22);
 }
-.palette-wheel-hud__copy { min-width: 0; display: grid; gap: 2px; }
-.palette-wheel-hud__copy strong,
-.palette-wheel-hud__copy span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.palette-wheel-hud__copy strong { color: rgba(255,246,232,.94); font: 950 12px/1.05 var(--font-display); letter-spacing: .01em; }
-.palette-wheel-hud__copy span { color: rgba(255,246,232,.52); font-size: 9px; font-weight: 850; }
-.palette-wheel-hud__zoom-track { height: 5px; overflow: hidden; border-radius: 999px; background: rgba(255,246,232,.12); }
-.palette-wheel-hud__zoom-track span { display: block; width: 50%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #79f0c5, #59d9e7 58%, #ffd36a); box-shadow: 0 0 16px rgba(89,217,231,.32); }
+.pack-wheel-hud__copy { min-width: 0; display: grid; gap: 2px; }
+.pack-wheel-hud__copy strong,
+.pack-wheel-hud__copy span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.pack-wheel-hud__copy strong { color: rgba(255,246,232,.94); font: 950 12px/1.05 var(--font-display); letter-spacing: .01em; }
+.pack-wheel-hud__copy span { color: rgba(255,246,232,.52); font-size: 9px; font-weight: 850; }
+.pack-wheel-hud__zoom-track { height: 5px; overflow: hidden; border-radius: 999px; background: rgba(255,246,232,.12); }
+.pack-wheel-hud__zoom-track span { display: block; width: 50%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #79f0c5, #59d9e7 58%, #ffd36a); box-shadow: 0 0 16px rgba(89,217,231,.32); }
 .viewport-input-hints {
   position: absolute;
   z-index: 11;
@@ -557,7 +557,7 @@ body[data-editor-input="gamepad"]:not([data-editor-panel="open"]) .controller-vi
   .floating-view-controls { right: 8px; bottom: calc(min(62vh, calc(100vh - 72px)) + 18px); flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 16px); }
   .editor-overlay[hidden] ~ .floating-view-controls { bottom: 8px; }
   body[data-editor-input="gamepad"] .floating-view-controls { right: 8px; bottom: 8px; }
-  .palette-wheel-hud { right: 8px; bottom: 8px; transform: scale(.82); }
+  .pack-wheel-hud { right: 8px; bottom: 8px; transform: scale(.82); }
   .desktop-viewport-hints { left: 8px; right: 8px; bottom: 126px; max-width: calc(100vw - 16px); }
   .controller-viewport-hints { left: 8px; right: 164px; bottom: 48px; grid-template-columns: 1fr; max-width: calc(100vw - 172px); }
   .field-grid, .button-row, .layer-switcher { grid-template-columns: 1fr; }
@@ -597,7 +597,7 @@ button.active {
 .save-state-button,
 .editor-tabs,
 .floating-view-controls,
-.palette-wheel-hud__card,
+.pack-wheel-hud__card,
 .editor-overlay {
   border: 1px solid var(--editor-hairline);
   background: color-mix(in srgb, var(--color-bg) 66%, transparent);
@@ -608,7 +608,7 @@ button.active {
 .save-state-button[data-save-state="dirty"],
 .save-state-button[data-save-state="saving"],
 .layer-switcher button[aria-pressed="true"],
-.palette-chip.active,
+.pack-chip.active,
 #panToggleButton[aria-pressed="true"] {
   color: var(--color-accent-text);
   border-color: transparent;
@@ -665,7 +665,7 @@ textarea,
   border-top: 1px solid var(--editor-hairline);
 }
 .layer-switcher button,
-.palette-chip,
+.pack-chip,
 .check {
   border: 0;
   border-bottom: 1px solid var(--editor-hairline);
@@ -674,13 +674,13 @@ textarea,
   box-shadow: none;
 }
 .layer-switcher button:hover,
-.palette-chip:hover,
+.pack-chip:hover,
 .check:hover {
   background: color-mix(in srgb, var(--color-text) 5%, transparent);
 }
-.palette-chip__swatch,
-.palette-wheel-hud__swatch,
-.palette-wheel-hud__item {
+.pack-chip__swatch,
+.pack-wheel-hud__swatch,
+.pack-wheel-hud__item {
   border-color: color-mix(in srgb, var(--color-text) 16%, transparent);
   box-shadow: none;
 }
@@ -704,15 +704,15 @@ textarea,
 }
 .layer-switcher button:focus-visible,
 .layer-switcher button.controller-focus,
-.palette-chip:focus-visible,
-.palette-chip.controller-focus {
+.pack-chip:focus-visible,
+.pack-chip.controller-focus {
   background: color-mix(in srgb, var(--color-accent) 12%, transparent);
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-accent) 58%, transparent);
 }
 .layer-switcher button[aria-pressed="true"]:focus-visible,
 .layer-switcher button[aria-pressed="true"].controller-focus,
-.palette-chip.active:focus-visible,
-.palette-chip.active.controller-focus {
+.pack-chip.active:focus-visible,
+.pack-chip.active.controller-focus {
   color: var(--color-accent-text);
   background: color-mix(in srgb, var(--color-accent) 84%, white 16%);
   box-shadow:

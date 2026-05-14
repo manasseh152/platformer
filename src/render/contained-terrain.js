@@ -17,7 +17,7 @@ function has(mask, bit) { return (mask & bit) !== 0; }
 function exposed(mask, bit) { return !has(mask, bit); }
 
 export function selectTerrainVisualVariant(tile, _salt = 0) {
-  return { ...DEFAULT_VARIANT, ...(terrainKindConfig(tile?.kind)?.palette ?? {}) };
+  return { ...DEFAULT_VARIANT, ...(terrainKindConfig(tile?.kind)?.visual ?? {}) };
 }
 
 function assertContainedTerrainTile(tile) {

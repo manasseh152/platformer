@@ -4,7 +4,7 @@ import { getAllTilemaps, getDefaultTilemap } from '../content/tilemaps/registry.
 import { planContainedTerrainTileVisuals } from '../render/contained-terrain.js';
 import { terrainKindConfig } from '../core/tilemaps/terrain-layer.js';
 import { compileDraft as compileTilemapDraft, createBlankDraft, createDraftFromTilemap as draftFromTilemap, EMPTY, hasEntitySymbol, normalizeDraft, replaceChar } from './tilemap-draft.js';
-import { BRUSHES, brushesForPalette, defaultPaletteForLayer, layerById, palettesForLayer } from './edit-domain.js';
+import { BRUSHES, brushesForPack, defaultPackForLayer, layerById, packsForLayer } from './edit-domain.js';
 import { createPreviewPayload, createSharePayload, draftFromSharePayload, generatedTilemapModule, readBooleanPreference, savedLocalStatus, writeBooleanPreference } from './map-editor-commands.js';
 import {
   applyWorldTransform,
@@ -63,20 +63,20 @@ const dom = {
   zoomInButton: document.querySelector('#zoomInButton'),
   resetViewButton: document.querySelector('#resetViewButton'),
   zoomReadout: document.querySelector('#zoomReadout'),
-  paletteWheelHud: document.querySelector('#paletteWheelHud'),
-  paletteWheelItems: document.querySelector('#paletteWheelItems'),
+  packWheelHud: document.querySelector('#packWheelHud'),
+  packWheelItems: document.querySelector('#packWheelItems'),
   wheelLayerLabel: document.querySelector('#wheelLayerLabel'),
   wheelZoomReadout: document.querySelector('#wheelZoomReadout'),
   wheelZoomFill: document.querySelector('#wheelZoomFill'),
   wheelBrushSwatch: document.querySelector('#wheelBrushSwatch'),
   wheelBrushLabel: document.querySelector('#wheelBrushLabel'),
-  wheelPaletteLabel: document.querySelector('#wheelPaletteLabel'),
+  wheelPackLabel: document.querySelector('#wheelPackLabel'),
   controllerViewportHints: document.querySelector('#controllerViewportHints'),
   undoButton: document.querySelector('#undoButton'),
   redoButton: document.querySelector('#redoButton'),
   editLayerButtons: Array.from(document.querySelectorAll('[data-edit-layer]')),
-  paletteSectionTitle: document.querySelector('#paletteSectionTitle'),
-  paletteSummary: document.querySelector('#paletteSummary'),
+  packSectionTitle: document.querySelector('#packSectionTitle'),
+  packSummary: document.querySelector('#packSummary'),
   brushSectionTitle: document.querySelector('#brushSectionTitle'),
   brushLayerHint: document.querySelector('#brushLayerHint'),
   brushes: document.querySelector('#brushes'),
@@ -119,7 +119,7 @@ let editorSource = 'registered';
 let loadedLocalDraftId = null;
 let activeTab = 'edit';
 let activeEditLayerId = brush.layerId;
-let activePaletteId = defaultPaletteForLayer(activeEditLayerId)?.id ?? null;
+let activePackId = defaultPackForLayer(activeEditLayerId)?.id ?? null;
 let overlayHidden = false;
 let autoSaveEnabled = readBooleanPreference(localStorage, AUTO_SAVE_STORAGE_KEY, true);
 let floatingControlsEnabled = readBooleanPreference(localStorage, FLOATING_CONTROLS_STORAGE_KEY, true);
@@ -137,7 +137,7 @@ let controllerPaintActive = false;
 let controllerNextMoveAt = 0;
 let controllerMoveHeldSince = 0;
 let controllerMoveHoldKey = '';
-let paletteWheelWakeTimer = 0;
+let packWheelWakeTimer = 0;
 let nativeBack = null;
 
 function storageKey(id) { return localDraftStorageKey(id); }
@@ -345,7 +345,7 @@ function setEditorInputMode(mode) {
   if (editorInputMode === mode) return;
   editorInputMode = mode;
   syncPreferencesUi();
-  if (mode === 'gamepad') wakePaletteWheel();
+  if (mode === 'gamepad') wakePackWheel();
 }
 
 function syncViewportHints() {
@@ -661,7 +661,7 @@ function drawDraftTerrain(ctx, rect) {
       const kind = line[col];
       if (kind === null) continue;
       const config = terrainKindConfig(kind);
-      ctx.fillStyle = config?.visible === false ? 'rgba(167,139,250,.38)' : config?.palette?.baseColor ?? '#40504a';
+      ctx.fillStyle = config?.visible === false ? 'rgba(167,139,250,.38)' : config?.visual?.baseColor ?? '#40504a';
       ctx.fillRect(col * layer.cellSize, row * layer.cellSize, layer.cellSize, layer.cellSize);
       if (config?.visible === false) {
         ctx.strokeStyle = 'rgba(216,204,255,.72)';
@@ -795,51 +795,51 @@ function updateZoomReadout() {
   dom.canvas.dataset.zoom = viewport.camera.zoom.toFixed(3);
 }
 
-function activePaletteConfig() {
-  return palettesForLayer(activeEditLayerId).find(candidate => candidate.id === activePaletteId) ?? defaultPaletteForLayer(activeEditLayerId);
+function activePackConfig() {
+  return packsForLayer(activeEditLayerId).find(candidate => candidate.id === activePackId) ?? defaultPackForLayer(activeEditLayerId);
 }
 
-function wakePaletteWheel() {
-  if (!dom.paletteWheelHud) return;
-  dom.paletteWheelHud.classList.add('is-awake');
-  clearTimeout(paletteWheelWakeTimer);
-  paletteWheelWakeTimer = setTimeout(() => dom.paletteWheelHud?.classList.remove('is-awake'), 1300);
+function wakePackWheel() {
+  if (!dom.packWheelHud) return;
+  dom.packWheelHud.classList.add('is-awake');
+  clearTimeout(packWheelWakeTimer);
+  packWheelWakeTimer = setTimeout(() => dom.packWheelHud?.classList.remove('is-awake'), 1300);
 }
 
-function updatePaletteWheel() {
+function updatePackWheel() {
   const layer = activeLayerConfig();
-  const palette = activePaletteConfig();
+  const pack = activePackConfig();
   if (dom.wheelLayerLabel) dom.wheelLayerLabel.textContent = layer.label;
   if (dom.wheelBrushLabel) dom.wheelBrushLabel.textContent = brush.label;
-  if (dom.wheelPaletteLabel) dom.wheelPaletteLabel.textContent = palette?.label ?? layer.gridLabel;
+  if (dom.wheelPackLabel) dom.wheelPackLabel.textContent = pack?.label ?? layer.gridLabel;
   if (dom.wheelBrushSwatch) dom.wheelBrushSwatch.style.setProperty('--swatch', brush.swatch ?? brush.cursor);
   updateZoomReadout();
 }
 
-function buildPaletteWheelItems() {
-  if (!dom.paletteWheelItems) return;
-  const items = brushesForActivePalette();
-  if (!items.length) { dom.paletteWheelItems.innerHTML = ''; updatePaletteWheel(); return; }
+function buildPackWheelItems() {
+  if (!dom.packWheelItems) return;
+  const items = brushesForActivePack();
+  if (!items.length) { dom.packWheelItems.innerHTML = ''; updatePackWheel(); return; }
   const activeIndex = Math.max(0, items.findIndex(candidate => candidate.id === brush.id));
   const selectedAngle = -52;
   const step = 36;
   const visualSlots = items.length >= 9 ? items.length : 11;
   const beforeSlots = Math.floor((visualSlots - 1) / 2);
   const afterSlots = visualSlots - beforeSlots - 1;
-  dom.paletteWheelItems.innerHTML = '';
+  dom.packWheelItems.innerHTML = '';
   for (let slot = -beforeSlots; slot <= afterSlots; slot++) {
     const itemIndex = ((activeIndex + slot) % items.length + items.length) % items.length;
     const candidate = items[itemIndex];
     const visualItem = document.createElement('span');
     const duplicate = Math.abs(slot) >= items.length;
-    visualItem.className = `palette-wheel-hud__item${slot === 0 ? ' is-active' : ''}${duplicate ? ' is-duplicate' : ''}`;
+    visualItem.className = `pack-wheel-hud__item${slot === 0 ? ' is-active' : ''}${duplicate ? ' is-duplicate' : ''}`;
     visualItem.style.setProperty('--angle', `${selectedAngle + slot * step}deg`);
     visualItem.style.setProperty('--swatch', candidate.swatch ?? candidate.cursor);
     visualItem.dataset.shortLabel = candidate.shortLabel ?? candidate.label;
     visualItem.title = duplicate ? `${candidate.label} (visual repeat)` : candidate.label;
-    dom.paletteWheelItems.append(visualItem);
+    dom.packWheelItems.append(visualItem);
   }
-  updatePaletteWheel();
+  updatePackWheel();
 }
 
 function pointerCell(event) {
@@ -1126,8 +1126,8 @@ function moveControllerPointer(dx, dy) {
 function setBrush(candidate) {
   const previous = brush;
   activeEditLayerId = candidate.layerId;
-  const palette = palettesForLayer(activeEditLayerId).find(candidatePalette => candidatePalette.brushIds.includes(candidate.id)) ?? defaultPaletteForLayer(activeEditLayerId);
-  activePaletteId = palette?.id ?? activePaletteId;
+  const pack = packsForLayer(activeEditLayerId).find(candidatePack => candidatePack.brushIds.includes(candidate.id)) ?? defaultPackForLayer(activeEditLayerId);
+  activePackId = pack?.id ?? activePackId;
   const anchor = controllerGhostPointer ?? pointer;
   const worldPoint = anchor ? { x: (anchor.col + 0.5) * previous.cellSize, y: (anchor.row + 0.5) * previous.cellSize } : null;
   brush = candidate;
@@ -1138,13 +1138,13 @@ function setBrush(candidate) {
   }
   buildLayerButtons();
   buildBrushButtons();
-  wakePaletteWheel();
+  wakePackWheel();
   render();
 }
 
-function brushesForActivePalette() {
-  const paletteBrushes = brushesForPalette(activePaletteId);
-  return paletteBrushes.length ? paletteBrushes : BRUSHES.filter(candidate => candidate.layerId === activeEditLayerId);
+function brushesForActivePack() {
+  const packBrushes = brushesForPack(activePackId).filter(candidate => candidate.layerId === activeEditLayerId);
+  return packBrushes.length ? packBrushes : BRUSHES.filter(candidate => candidate.layerId === activeEditLayerId);
 }
 
 function activeLayerConfig() { return layerById(activeEditLayerId); }
@@ -1153,19 +1153,19 @@ function setActiveEditLayer(layerId) {
   const nextLayer = layerById(layerId);
   if (nextLayer.disabled) return;
   activeEditLayerId = nextLayer.id;
-  activePaletteId = defaultPaletteForLayer(activeEditLayerId)?.id ?? null;
-  const layerBrushes = brushesForActivePalette();
+  activePackId = defaultPackForLayer(activeEditLayerId)?.id ?? null;
+  const layerBrushes = brushesForActivePack();
   if (!layerBrushes.some(candidate => candidate.id === brush.id)) setBrush(layerBrushes[0]);
   else { buildLayerButtons(); buildBrushButtons(); }
   setStatus(`Layer: ${activeLayerConfig().label} · ${activeLayerConfig().gridLabel}.`, '');
 }
 
 function cycleBrush(direction) {
-  const paletteBrushes = brushesForActivePalette();
-  const index = paletteBrushes.findIndex(candidate => candidate.id === brush.id);
-  const nextIndex = ((index < 0 ? 0 : index) + direction + paletteBrushes.length) % paletteBrushes.length;
-  setBrush(paletteBrushes[nextIndex]);
-  setStatus(`Palette: ${brush.label}.`, '');
+  const packBrushes = brushesForActivePack();
+  const index = packBrushes.findIndex(candidate => candidate.id === brush.id);
+  const nextIndex = ((index < 0 ? 0 : index) + direction + packBrushes.length) % packBrushes.length;
+  setBrush(packBrushes[nextIndex]);
+  setStatus(`Pack: ${brush.label}.`, '');
 }
 
 function toggleControllerCanvasMode() {
@@ -1174,7 +1174,7 @@ function toggleControllerCanvasMode() {
   if (nextMode === 'navigate') syncControllerGhostPointer({ renderIfChanged: true });
   else adoptControllerGhostPointer({ renderIfChanged: true });
   document.body.dataset.editorControllerMode = controllerCanvasMode;
-  setStatus(controllerCanvasMode === 'draw' ? 'Controller draw mode: cursor moved to ghost target. Left stick moves cursor, A paints, LB/RB changes palette item.' : 'Controller navigate mode: left stick pans the map under the ghost target. Press X for draw mode.', '');
+  setStatus(controllerCanvasMode === 'draw' ? 'Controller draw mode: cursor moved to ghost target. Left stick moves cursor, A paints, LB/RB changes pack item.' : 'Controller navigate mode: left stick pans the map under the ghost target. Press X for draw mode.', '');
 }
 
 function toggleEditorPanel() {
@@ -1182,8 +1182,8 @@ function toggleEditorPanel() {
   if (overlayHidden) {
     if (controllerCanvasMode === 'draw') ensureControllerPointer({ renderIfChanged: true });
     else syncControllerGhostPointer({ renderIfChanged: true });
-    setStatus('Palette panel hidden. Press Y to show it.', '');
-  } else setStatus('Palette panel shown. Press B or Y to return to canvas.', '');
+    setStatus('Pack panel hidden. Press Y to show it.', '');
+  } else setStatus('Pack panel shown. Press B or Y to return to canvas.', '');
 }
 
 function buildLayerButtons() {
@@ -1200,25 +1200,25 @@ function buildLayerButtons() {
 
 function buildBrushButtons() {
   const layer = activeLayerConfig();
-  const palette = palettesForLayer(activeEditLayerId).find(candidate => candidate.id === activePaletteId) ?? defaultPaletteForLayer(activeEditLayerId);
-  if (dom.paletteSectionTitle) dom.paletteSectionTitle.textContent = layer.paletteTitle;
-  if (dom.paletteSummary) dom.paletteSummary.textContent = palette ? `${palette.label}: ${palette.description}. ${layer.gridLabel}.` : layer.gridLabel;
+  const pack = packsForLayer(activeEditLayerId).find(candidate => candidate.id === activePackId) ?? defaultPackForLayer(activeEditLayerId);
+  if (dom.packSectionTitle) dom.packSectionTitle.textContent = layer.packTitle;
+  if (dom.packSummary) dom.packSummary.textContent = pack ? `${pack.label}: ${pack.description}. ${layer.gridLabel}.` : layer.gridLabel;
   if (dom.brushSectionTitle) dom.brushSectionTitle.textContent = `Selected: ${brush.label}`;
   if (dom.brushLayerHint) dom.brushLayerHint.textContent = layer.hint;
   dom.brushes.innerHTML = '';
-  for (const candidate of brushesForActivePalette()) {
+  for (const candidate of brushesForActivePack()) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = candidate.id === brush.id ? 'active palette-chip' : 'palette-chip';
+    button.className = candidate.id === brush.id ? 'active pack-chip' : 'pack-chip';
     button.setAttribute('aria-pressed', candidate.id === brush.id ? 'true' : 'false');
     button.setAttribute('aria-label', candidate.label);
-    button.innerHTML = `<span class="palette-chip__swatch" aria-hidden="true"></span><span class="palette-chip__label"></span>`;
-    button.querySelector('.palette-chip__swatch').style.setProperty('--swatch', candidate.swatch ?? candidate.cursor);
-    button.querySelector('.palette-chip__label').textContent = candidate.shortLabel ?? candidate.label;
+    button.innerHTML = `<span class="pack-chip__swatch" aria-hidden="true"></span><span class="pack-chip__label"></span>`;
+    button.querySelector('.pack-chip__swatch').style.setProperty('--swatch', candidate.swatch ?? candidate.cursor);
+    button.querySelector('.pack-chip__label').textContent = candidate.shortLabel ?? candidate.label;
     button.addEventListener('click', () => { setBrush(candidate); });
     dom.brushes.append(button);
   }
-  buildPaletteWheelItems();
+  buildPackWheelItems();
 }
 
 function loadSelected(resetSaved = false) {
@@ -1255,14 +1255,14 @@ function loadSelected(resetSaved = false) {
 function zoomBy(factor, screenPoint = { x: viewport.width / 2, y: viewport.height / 2 }) {
   zoomAtScreenPoint(viewport, screenPoint.x, screenPoint.y, viewport.camera.zoom * factor, worldWidth(), worldHeight());
   saveView();
-  wakePaletteWheel();
+  wakePackWheel();
   render();
 }
 
 function resetCurrentView() {
   resetView(viewport, worldWidth(), worldHeight());
   saveView();
-  wakePaletteWheel();
+  wakePackWheel();
   render();
 }
 

@@ -397,7 +397,7 @@ test('map editor controller hints follow panel vs canvas focus and zoom only on 
   await page.evaluate(() => window.__setMockGamepadButton(7, true));
   await expect(page.locator('#controllerViewportHints')).toBeVisible();
   await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Select' })).toBeVisible();
-  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Palette' })).toBeHidden();
+  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Pack' })).toBeHidden();
   await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Zoom' })).toBeHidden();
   await expect.poll(() => page.locator('#editorCanvas').getAttribute('data-zoom')).toBe(before);
 
@@ -408,10 +408,10 @@ test('map editor controller hints follow panel vs canvas focus and zoom only on 
   await page.evaluate(() => window.__setMockGamepadButton(7, true));
   await expect.poll(() => page.locator('#editorCanvas').getAttribute('data-zoom')).not.toBe(before);
   await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Zoom' })).toBeVisible();
-  const paletteHint = page.locator('#controllerViewportHints [data-input-actions="editor.previousBrush editor.nextBrush"]');
-  await expect(paletteHint.locator('.input-hint__icon').nth(0)).toHaveAttribute('alt', 'LB');
-  await expect(paletteHint.locator('.input-hint__icon').nth(1)).toHaveAttribute('alt', 'RB');
-  await expect(paletteHint.locator('.input-hint__label')).toHaveText('Palette');
+  const packHint = page.locator('#controllerViewportHints [data-input-actions="editor.previousBrush editor.nextBrush"]');
+  await expect(packHint.locator('.input-hint__icon').nth(0)).toHaveAttribute('alt', 'LB');
+  await expect(packHint.locator('.input-hint__icon').nth(1)).toHaveAttribute('alt', 'RB');
+  await expect(packHint.locator('.input-hint__label')).toHaveText('Pack');
   const zoomHint = page.locator('#controllerViewportHints [data-input-actions="editor.zoomOut editor.zoomIn"]');
   await expect(zoomHint.locator('.input-hint__icon').nth(0)).toHaveAttribute('alt', 'LT');
   await expect(zoomHint.locator('.input-hint__icon').nth(1)).toHaveAttribute('alt', 'RT');
@@ -421,17 +421,17 @@ test('map editor controller hints follow panel vs canvas focus and zoom only on 
   await expect(page.locator('#zoomInButton')).toBeHidden();
 });
 
-test('map editor edit tab groups palette items by editable layer', async ({ page }) => {
+test('map editor edit tab groups pack items by editable layer', async ({ page }) => {
   await page.goto('/editor.html');
 
   await expect(page.getByRole('heading', { name: 'Layers' })).toBeVisible();
-  await expect(page.locator('#paletteSectionTitle')).toHaveText('Starter terrain palette');
+  await expect(page.locator('#packSectionTitle')).toHaveText('Starter asset pack');
   await expect(page.locator('#brushSectionTitle')).toHaveText('Selected: Grass');
   await expect(page.getByRole('button', { name: 'Grass' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Player P' })).toHaveCount(0);
 
   await page.getByRole('button', { name: /Entities/ }).click();
-  await expect(page.locator('#paletteSectionTitle')).toHaveText('Actor stamp palette');
+  await expect(page.locator('#packSectionTitle')).toHaveText('Starter asset pack');
   await expect(page.locator('#brushSectionTitle')).toHaveText('Selected: Player P');
   await expect(page.getByRole('button', { name: 'Player P' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Grass' })).toHaveCount(0);

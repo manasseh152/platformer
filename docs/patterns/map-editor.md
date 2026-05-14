@@ -26,7 +26,7 @@ Do not reintroduce a permanent sidebar, permanent generated-source pane, or canv
 Tabs are editor action groups:
 
 - **Map**: registered map selection, metadata, dimensions, new/reload, local workflow, portability, generated source disclosure.
-- **Edit**: layers, palettes, current palette item, and undo/redo.
+- **Edit**: layers, packs, current pack item, and undo/redo.
 - **View**: grid/collision toggles and viewport-control preferences.
 
 There is no separate Export tab. Export/import/preview/source belong to **Map** because they operate on the draft as a whole.
@@ -73,10 +73,10 @@ Generated JavaScript source remains live-updated but hidden behind a disclosure 
 Use the editor language consistently:
 
 - **Layer**: what kind of map content is being authored (`terrain`, `entities`, future `lights`/`decor`). Each layer owns its snap contract/grid size, which may be gridless later.
-- **Palette**: a small controller-friendly collection of placeable items for one layer. Shoulder cycling changes the selected item within the active palette while the panel is hidden.
-- **Palette item / brush**: the concrete symbol/material stamped into the active layer.
+- **Asset pack / pack**: a controller-friendly collection of placeable items. The current implementation has one `Starter` asset pack; the active layer filters which pack items are shown. Shoulder cycling changes the selected item within the active layer's active pack while the panel is hidden.
+- **Pack item / brush**: the concrete symbol/material stamped into the active layer.
 
-Keep layer/palette definitions in `src/editor/edit-domain.js`; the editor shell should render and route those concepts rather than hard-coding UI labels.
+Keep layer/pack definitions in `src/editor/edit-domain.js`; the editor shell should render and route those concepts rather than hard-coding UI labels.
 
 ## View controls
 

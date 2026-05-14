@@ -12,25 +12,25 @@ export const TERRAIN_KINDS = Object.freeze({
     solid: true,
     visible: true,
     connectsTo: Object.freeze([TERRAIN_KIND.GRASS]),
-    palette: Object.freeze({ baseColor: '#a7643b', edgeColor: '#4f9f3a', innerCornerColor: '#3f7f36', edgeThickness: 4 })
+    visual: Object.freeze({ baseColor: '#a7643b', edgeColor: '#4f9f3a', innerCornerColor: '#3f7f36', edgeThickness: 4 })
   }),
   [TERRAIN_KIND.DIRT]: Object.freeze({
     solid: true,
     visible: true,
     connectsTo: Object.freeze([TERRAIN_KIND.DIRT]),
-    palette: Object.freeze({ baseColor: '#8f5634', edgeColor: '#b86f3d', innerCornerColor: '#6f3f25', edgeThickness: 4 })
+    visual: Object.freeze({ baseColor: '#8f5634', edgeColor: '#b86f3d', innerCornerColor: '#6f3f25', edgeThickness: 4 })
   }),
   [TERRAIN_KIND.STONE]: Object.freeze({
     solid: true,
     visible: true,
     connectsTo: Object.freeze([TERRAIN_KIND.STONE]),
-    palette: Object.freeze({ baseColor: '#66717d', edgeColor: '#9aa7b2', innerCornerColor: '#4b5660', edgeThickness: 4 })
+    visual: Object.freeze({ baseColor: '#66717d', edgeColor: '#9aa7b2', innerCornerColor: '#4b5660', edgeThickness: 4 })
   }),
   [TERRAIN_KIND.INVISIBLE]: Object.freeze({
     solid: true,
     visible: false,
     connectsTo: Object.freeze([]),
-    palette: null
+    visual: null
   })
 });
 

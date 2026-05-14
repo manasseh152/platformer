@@ -100,10 +100,10 @@
               <button type="button" data-edit-layer="decor" disabled aria-disabled="true"><span>Decor</span><small>Non-colliding dressing · 8 px / gridless</small></button>
             </div>
           </div>
-          <div class="panel-section palette-section">
-            <h2 id="paletteSectionTitle">Starter terrain palette</h2>
-            <p id="paletteSummary" class="section-kicker">Starter terrain: five core terrain materials. 16 px build grid.</p>
-            <div id="brushes" class="brush-grid" role="toolbar" aria-label="Palette items"></div>
+          <div class="panel-section pack-section">
+            <h2 id="packSectionTitle">Starter asset pack</h2>
+            <p id="packSummary" class="section-kicker">Starter: core terrain materials, spawn points, and hazards. 16 px build grid.</p>
+            <div id="brushes" class="brush-grid" role="toolbar" aria-label="Asset pack items"></div>
             <h3 id="brushSectionTitle" class="selected-brush-title">Selected: Grass</h3>
             <p id="brushLayerHint" class="hint">LB/RB changes terrain while the panel is hidden. A paints the selected cell.</p>
           </div>
@@ -153,21 +153,21 @@
         <button id="panToggleButton" class="floating-view-controls__button" type="button" aria-pressed="false">Pan</button>
       </div>
 
-      <section id="paletteWheelHud" class="palette-wheel-hud" aria-label="Controller palette wheel" aria-live="polite">
-        <div id="paletteWheelItems" class="palette-wheel-hud__items" aria-hidden="true"></div>
-        <div class="palette-wheel-hud__card">
-          <div class="palette-wheel-hud__topline">
-            <span id="wheelLayerLabel" class="palette-wheel-hud__pill">Terrain</span>
-            <output id="wheelZoomReadout" class="palette-wheel-hud__zoom" aria-label="Zoom level">100%</output>
+      <section id="packWheelHud" class="pack-wheel-hud" aria-label="Controller pack wheel" aria-live="polite">
+        <div id="packWheelItems" class="pack-wheel-hud__items" aria-hidden="true"></div>
+        <div class="pack-wheel-hud__card">
+          <div class="pack-wheel-hud__topline">
+            <span id="wheelLayerLabel" class="pack-wheel-hud__pill">Terrain</span>
+            <output id="wheelZoomReadout" class="pack-wheel-hud__zoom" aria-label="Zoom level">100%</output>
           </div>
-          <div class="palette-wheel-hud__brush">
-            <span id="wheelBrushSwatch" class="palette-wheel-hud__swatch" aria-hidden="true"></span>
-            <span class="palette-wheel-hud__copy">
+          <div class="pack-wheel-hud__brush">
+            <span id="wheelBrushSwatch" class="pack-wheel-hud__swatch" aria-hidden="true"></span>
+            <span class="pack-wheel-hud__copy">
               <strong id="wheelBrushLabel">Grass</strong>
-              <span id="wheelPaletteLabel">Starter terrain</span>
+              <span id="wheelPackLabel">Starter</span>
             </span>
           </div>
-          <div class="palette-wheel-hud__zoom-track" aria-hidden="true"><span id="wheelZoomFill"></span></div>
+          <div class="pack-wheel-hud__zoom-track" aria-hidden="true"><span id="wheelZoomFill"></span></div>
         </div>
       </section>
 
@@ -184,7 +184,7 @@
       <div id="controllerViewportHints" class="viewport-input-hints controller-viewport-hints" aria-label="Controller controls">
         <span data-editor-hint-scope="canvas" data-input-hint data-input-action="menu.navigateX" data-input-label="Move cursor / pan"></span>
         <span data-editor-hint-scope="canvas" data-input-hint data-input-action="editor.paint" data-input-label="Paint"></span>
-        <span data-editor-hint-scope="canvas" data-input-hint data-input-actions="editor.previousBrush editor.nextBrush" data-input-label="Palette"></span>
+        <span data-editor-hint-scope="canvas" data-input-hint data-input-actions="editor.previousBrush editor.nextBrush" data-input-label="Pack"></span>
         <span data-editor-hint-scope="canvas" data-input-hint data-input-actions="editor.zoomOut editor.zoomIn" data-input-label="Zoom"></span>
         <span data-editor-hint-scope="canvas" data-input-hint data-input-action="editor.resetView" data-input-label="Reset view"></span>
         <span id="controllerPanelHint" data-editor-hint-scope="canvas" data-input-hint data-input-action="editor.togglePanel" data-input-label="Open panel" hidden></span>

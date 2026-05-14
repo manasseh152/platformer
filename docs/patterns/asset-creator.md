@@ -55,7 +55,7 @@ Each asset family should list, when known:
 - native size and in-game draw size
 - anchor/origin and collision relation
 - animation frame layout/timing
-- palette/style constraints that affect production
+- style constraints that affect production
 - license/source attribution requirements
 
 ## Do not include

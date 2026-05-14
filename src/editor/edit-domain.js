@@ -9,7 +9,7 @@ export const EDIT_LAYERS = Object.freeze([
     description: 'Solid authored ground',
     gridLabel: '16 px build grid',
     cellSize: CELL_SIZE.BUILD,
-    paletteTitle: 'Starter terrain palette',
+    packTitle: 'Starter asset pack',
     hint: 'LB/RB changes terrain while the panel is hidden. A paints the selected cell.'
   },
   {
@@ -18,27 +18,19 @@ export const EDIT_LAYERS = Object.freeze([
     description: 'Gameplay objects',
     gridLabel: '32 px gameplay grid',
     cellSize: CELL_SIZE.GRID,
-    paletteTitle: 'Actor stamp palette',
+    packTitle: 'Starter asset pack',
     hint: 'Entity stamps snap to the gameplay grid. Hide the panel for controller placement.'
   },
   { id: 'lights', label: 'Lights', description: 'Mood and visibility', gridLabel: 'Gridless', disabled: true },
   { id: 'decor', label: 'Decor', description: 'Non-colliding dressing', gridLabel: '8 px / gridless', disabled: true }
 ]);
 
-export const EDIT_PALETTES = Object.freeze([
+export const EDIT_PACKS = Object.freeze([
   {
-    id: 'starter-terrain',
-    layerId: 'terrain',
-    label: 'Starter terrain',
-    description: 'Five core terrain materials',
-    brushIds: ['grass', 'dirt', 'stone', 'invisibleTerrain', 'eraseTerrain']
-  },
-  {
-    id: 'actors',
-    layerId: 'entities',
-    label: 'Actors',
-    description: 'Spawn points and hazards',
-    brushIds: ['player', 'slime', 'gate', 'eraseEntity']
+    id: 'starter',
+    label: 'Starter',
+    description: 'Core terrain materials, spawn points, and hazards',
+    brushIds: ['grass', 'dirt', 'stone', 'invisibleTerrain', 'eraseTerrain', 'player', 'slime', 'gate', 'eraseEntity']
   }
 ]);
 
@@ -58,20 +50,20 @@ export function layerById(layerId) {
   return EDIT_LAYERS.find(layer => layer.id === layerId) ?? EDIT_LAYERS[0];
 }
 
-export function palettesForLayer(layerId) {
-  return EDIT_PALETTES.filter(palette => palette.layerId === layerId);
+export function packsForLayer(layerId) {
+  return EDIT_PACKS.filter(pack => pack.brushIds.map(brushById).some(brush => brush?.layerId === layerId));
 }
 
-export function defaultPaletteForLayer(layerId) {
-  return palettesForLayer(layerId)[0] ?? null;
+export function defaultPackForLayer(layerId) {
+  return packsForLayer(layerId)[0] ?? null;
 }
 
 export function brushById(brushId) {
   return BRUSHES.find(brush => brush.id === brushId) ?? null;
 }
 
-export function brushesForPalette(paletteId) {
-  const palette = EDIT_PALETTES.find(candidate => candidate.id === paletteId);
-  if (!palette) return [];
-  return palette.brushIds.map(brushById).filter(Boolean);
+export function brushesForPack(packId) {
+  const pack = EDIT_PACKS.find(candidate => candidate.id === packId);
+  if (!pack) return [];
+  return pack.brushIds.map(brushById).filter(Boolean);
 }

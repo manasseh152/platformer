@@ -135,7 +135,7 @@ The rendering gym should instantiate, as explicit authored scene objects rather 
 
 Lights are invisible scene objects in v1. Visual torch fixtures/decor are a later concern.
 
-Map-editor authoring is deferred until the planned editor/layer refactor. Do not add light grid layers, draft symbols, or editor palettes in v1. Future editor palettes should reference prefab object IDs through static metadata rather than copying runtime component definitions.
+Map-editor authoring is deferred until the planned editor/layer refactor. Do not add light grid layers, draft symbols, or editor asset packs in v1. Future editor asset packs should reference prefab object IDs through static metadata rather than copying runtime component definitions.
 
 ## Read model and packet extraction
 
