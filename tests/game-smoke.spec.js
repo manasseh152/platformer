@@ -51,14 +51,26 @@ async function installMockGamepad(page) {
   await page.reload();
 }
 
+async function waitForAnimationFrames(page, count = 1) {
+  await page.evaluate(frameCount => new Promise(resolve => {
+    let frames = 0;
+    const tick = () => {
+      frames += 1;
+      if (frames >= frameCount) resolve();
+      else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }), count);
+}
+
 async function pressPadButtonFrom(page, index, focusSelector) {
   await page.evaluate(({ buttonIndex, selector }) => {
     document.querySelector(selector).focus();
     window.__mockGamepadButton(buttonIndex, true);
   }, { buttonIndex: index, selector: focusSelector });
-  await page.waitForTimeout(200);
+  await waitForAnimationFrames(page, 6);
   await page.evaluate(buttonIndex => window.__mockGamepadButton(buttonIndex, false), index);
-  await page.waitForTimeout(120);
+  await waitForAnimationFrames(page, 3);
 }
 
 async function focusSettingsAction(page, action) {

@@ -53,8 +53,23 @@ export function moveControlsNestedTab(game, direction) {
 
 export function enterSettingsLayer(game) {
   const layer = game.menu.settingsFocusLayer || 'primary-tabs';
-  if (layer === 'primary-tabs') return setSettingsFocusLayer(game, game.menu.settingsCategory === 'controls' ? 'nested-tabs' : 'content');
-  if (layer === 'nested-tabs') return setSettingsFocusLayer(game, 'content');
+  const active = document.activeElement;
+  if (layer === 'primary-tabs') {
+    const focusedCategory = active?.matches?.('[role="tab"][data-settings-tab]') ? active.dataset.settingsTab : null;
+    if (focusedCategory && focusedCategory !== game.menu.settingsCategory) {
+      active.click?.();
+      return true;
+    }
+    return setSettingsFocusLayer(game, game.menu.settingsCategory === 'controls' ? 'nested-tabs' : 'content');
+  }
+  if (layer === 'nested-tabs') {
+    const focusedPage = active?.matches?.('[role="tab"][data-controls-page]') ? active.dataset.controlsPage : null;
+    if (focusedPage && focusedPage !== (game.menu.controlsPage || 'profiles')) {
+      active.click?.();
+      return true;
+    }
+    return setSettingsFocusLayer(game, 'content');
+  }
   document.activeElement?.click?.();
   return true;
 }
