@@ -16,12 +16,27 @@ _Avoid_: Level, map, tilemap
 An authored spatial layout made from tile layers and placed assets for a gameplay scenario.
 _Avoid_: Scene, level, map, tilemap scene, core scene
 
+**Hazard**:
+A damaging environmental placement in a tilemap, separate from actor spawns and goals.
+_Avoid_: Entity, enemy, terrain
+
+**Spike**:
+A hazard that damages the player on contact.
+_Avoid_: Enemy, decor, terrain
+
+**Multi-size Authoring Grid**:
+A tilemap authoring capability where a placement layer can support more than one cell size for different hazards or items.
+_Avoid_: Dynamic grid, variable grid
+
 ## Relationships
 
 - The **Game Context** contains the shared language used by gameplay, content authoring, validation fixtures, runtime UI, and editor workflows.
 - A **Scenario** starts one or more runtime scenes.
 - A **Scenario** may reference one **Tilemap**.
 - A **Tilemap** is consumed by gameplay but is not itself launchable.
+- A **Tilemap** may contain **Hazards**.
+- A **Hazard** is authored separately from **Entities**, on a build-grid hazard tile layer for precise placement.
+- A **Spike** is a kind of **Hazard**; the first authored spikes are floor-facing, with orientation expected later.
 
 ## Example dialogue
 

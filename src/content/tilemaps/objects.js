@@ -56,4 +56,9 @@ export const playerSpawner = defineObject({ id: 'player-spawner', components: [s
 export const slimeSpawner = defineObject({ id: 'slime-spawner', components: [spawner(slime)] });
 export const finishGateObject = defineObject({ id: 'finish-gate-object', components: [spawner(finishGate)] });
 
+export const spikeHazard = defineObject({
+  id: 'spike-hazard',
+  components: [hazard({ kind: 'spike', damage: 1, inset: { left: 2, right: 2, top: 2, bottom: 0 } })]
+});
+
 export const DEFAULT_OBJECT_SIZE = TILE_SIZE;

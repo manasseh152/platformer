@@ -204,6 +204,7 @@ function worldWidth() { return draft.cols * CELL_SIZE.GRID; }
 function worldHeight() { return draft.rows * CELL_SIZE.GRID; }
 function terrainLayer() { return draft.layers.find(layer => layer.id === 'terrain'); }
 function entityLayer() { return draft.layers.find(layer => layer.id === 'entities'); }
+function hazardLayer() { return draft.layers.find(layer => layer.id === 'hazards'); }
 function createDraftFromTilemap(tilemap) {
   const saved = localStorage.getItem(storageKey(tilemap.id));
   if (saved) {
@@ -819,6 +820,7 @@ function line(ctx, x1, y1, x2, y2) { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.li
 
 function drawEntities(ctx, rect) {
   const layer = entityLayer();
+  if (!layer) return;
   const range = visibleCellRange(layer, rect);
   ctx.save();
   ctx.textAlign = 'center';
@@ -837,6 +839,34 @@ function drawEntities(ctx, rect) {
       ctx.globalAlpha = 1;
       ctx.fillStyle = '#071018';
       ctx.fillText(ch, px + CELL_SIZE.GRID / 2, py + CELL_SIZE.GRID / 2 + 1);
+    }
+  }
+  ctx.restore();
+}
+
+function drawHazards(ctx, rect) {
+  const layer = hazardLayer();
+  if (!layer) return;
+  const range = visibleCellRange(layer, rect);
+  ctx.save();
+  ctx.globalAlpha = activeEditLayerId === 'hazards' ? .95 : .62;
+  for (let row = range.startRow; row <= range.endRow; row++) {
+    const line = layer.rows[row];
+    for (let col = range.startCol; col <= range.endCol; col++) {
+      const ch = line[col];
+      if (ch === EMPTY) continue;
+      const x = col * layer.cellSize;
+      const y = row * layer.cellSize;
+      ctx.fillStyle = '#ff4d7d';
+      ctx.strokeStyle = 'rgba(28, 4, 16, .86)';
+      ctx.lineWidth = 1.5 / viewport.camera.zoom;
+      ctx.beginPath();
+      ctx.moveTo(x + layer.cellSize / 2, y + 2);
+      ctx.lineTo(x + layer.cellSize - 2, y + layer.cellSize - 2);
+      ctx.lineTo(x + 2, y + layer.cellSize - 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
     }
   }
   ctx.restore();
@@ -902,6 +932,7 @@ function render() {
   const drewFinalTerrain = finalTerrainEnabled && drawCompiledTerrain(ctx, rect);
   dom.canvas.dataset.terrainRender = drewFinalTerrain ? 'final' : 'preview';
   if (!drewFinalTerrain) drawDraftTerrain(ctx, rect);
+  drawHazards(ctx, rect);
   drawEntities(ctx, rect);
   if (dom.collisionToggle.checked && compiled) drawCollisionDebugOverlay(ctx, compiled, { showCollisionRects: true });
   if (dom.gridToggle.checked) drawGrid(ctx, rect);

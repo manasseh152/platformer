@@ -24,7 +24,7 @@ import {
   worldToTile
 } from '#/core/tilemaps/tilemap.js';
 import { CELL_SIZE } from '#/core/constants.js';
-import { finishGateObject, playerSpawner, renderTerrain, slimeSpawner, solidTerrain } from '#/content/tilemaps/objects.js';
+import { finishGateObject, playerSpawner, renderTerrain, slimeSpawner, solidTerrain, spikeHazard } from '#/content/tilemaps/objects.js';
 import { TERRAIN_KIND, terrainLayer } from '#/core/tilemaps/terrain-layer.js';
 import { resolveInitialTilemap } from '#/app/tilemaps/tilemap-manager.js';
 import { defineContainedTestTilemap } from './helpers/contained-tilemap.js';
@@ -115,7 +115,9 @@ test('contained tilemap exposes layered tiles and query helpers derive gameplay 
   expect(parsed.artTilesPerTile).toBe(2);
   expect(parsed.renderLayers.containedTerrainTiles.length).toBe(visibleTerrainSet(parsed).size);
   expect(parsed.renderLayers.terrainPrimitives).toBeUndefined();
-  expect(spikeHazardRectsOverlapping(parsed, { x: 108, y: 108, w: 36, h: 36 })).toHaveLength(1);
+  expect(spikeHazardRectsOverlapping(parsed, { x: 108, y: 108, w: 36, h: 36 })).toEqual([
+    expect.objectContaining({ x: 98, y: 98, w: 12, h: 14, kind: 'spike' })
+  ]);
   expect(decor).toEqual([
     { type: 'bannerRed', col: 1, row: 1 },
     { type: 'torch', col: 3, row: 1 }
@@ -124,6 +126,24 @@ test('contained tilemap exposes layered tiles and query helpers derive gameplay 
   expect(solidTileRectsOverlapping(parsed, { x: 32, y: 96, w: 64, h: 32 })).toEqual(expect.arrayContaining([
     expect.objectContaining({ kind: 'terrain-solid' })
   ]));
+});
+
+test('hazards layer compiles build-grid spikes with authored inset collision', () => {
+  const parsed = defineTilemap({
+    id: 'hazards-build-grid',
+    cols: 1,
+    rows: 1,
+    layers: [
+      terrainLayer({ rows: [[null, null], [null, null]] }),
+      gridLayer({ id: 'hazards', cellSize: CELL_SIZE.BUILD, symbols: { '^': spikeHazard }, rows: ['.^', '..'] })
+    ]
+  });
+
+  const [object] = parsed.objects;
+  expect(object).toMatchObject({ layerId: 'hazards', symbol: '^', transform: { x: 16, y: 0, w: 16, h: 16, cellSize: CELL_SIZE.BUILD } });
+  expect(object.components[0]).toMatchObject({ type: 'collision:hazard', kind: 'spike', damage: 1, inset: { left: 2, right: 2, top: 2, bottom: 0 } });
+  expect(spikeHazardRectsOverlapping(parsed, { x: 16, y: 0, w: 2, h: 16 })).toHaveLength(0);
+  expect(spikeHazardRectsOverlapping(parsed, { x: 18, y: 2, w: 1, h: 1 })).toHaveLength(1);
 });
 
 test('terrain kinds drive visibility and visual connectivity without changing solid collision', () => {

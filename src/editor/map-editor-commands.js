@@ -36,13 +36,15 @@ function escapeJs(value) { return String(value).replace(/\\/g, '\\\\').replace(/
 function cloneDraft(value) { return JSON.parse(JSON.stringify(value)); }
 
 export function generatedTilemapModule(draft) {
+  draft = normalizeDraft(draft);
   const terrain = draft.layers.find(layer => layer.id === 'terrain');
   const entities = draft.layers.find(layer => layer.id === 'entities');
+  const hazards = draft.layers.find(layer => layer.id === 'hazards');
   const categories = JSON.stringify(draft.categories ?? ['drafts']);
   return `import { CELL_SIZE } from '../../../core/constants.js';
 import { defineTilemap, gridLayer } from '../../../core/tilemaps/tilemap.js';
 import { TERRAIN_KIND as K, terrainLayer } from '../../../core/tilemaps/terrain-layer.js';
-import { finishGateObject, playerSpawner, slimeSpawner } from '../objects.js';
+import { finishGateObject, playerSpawner, slimeSpawner, spikeHazard } from '../objects.js';
 
 export const ${camelIdentifier(draft.id)} = defineTilemap({
   id: '${draft.id}',
@@ -61,6 +63,9 @@ ${serialiseTerrainRows(terrain.rows, '      ')}
     ] }),
     gridLayer({ id: 'entities', cellSize: CELL_SIZE.GRID, symbols: { P: playerSpawner, E: slimeSpawner, G: finishGateObject }, rows: [
 ${serialiseRows(entities.rows, '      ')}
+    ] }),
+    gridLayer({ id: 'hazards', cellSize: CELL_SIZE.BUILD, symbols: { '^': spikeHazard }, rows: [
+${serialiseRows(hazards.rows, '      ')}
     ] })
   ]
 });
@@ -88,9 +93,11 @@ export function validateImportedDraft(candidate) {
   if (!Number.isInteger(candidate.rows) || candidate.rows < 1 || candidate.rows > 80) throw new Error('Imported map rows must be between 1 and 80.');
   const terrain = candidate.layers?.find(layer => layer.id === 'terrain');
   const entities = candidate.layers?.find(layer => layer.id === 'entities');
+  const hazards = candidate.layers?.find(layer => layer.id === 'hazards');
   if (!terrain || !entities) throw new Error('Imported map needs terrain and entities layers.');
   validateLayerRows(terrain, candidate.cols * CELL_SIZE.GRID / terrain.cellSize, candidate.rows * CELL_SIZE.GRID / terrain.cellSize, 'terrain');
   validateLayerRows(entities, candidate.cols, candidate.rows, 'entities');
+  if (hazards) validateLayerRows(hazards, candidate.cols * CELL_SIZE.GRID / hazards.cellSize, candidate.rows * CELL_SIZE.GRID / hazards.cellSize, 'hazards');
   compileTilemapDraft(candidate);
 }
 

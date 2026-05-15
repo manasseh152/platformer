@@ -34,10 +34,25 @@ export function solidTileRectsOverlapping(scene, rect) {
     .filter(hit => rectsOverlap(rect, hit));
 }
 
+function insetRect(rect, inset = {}) {
+  const left = inset.left ?? 0;
+  const right = inset.right ?? 0;
+  const top = inset.top ?? 0;
+  const bottom = inset.bottom ?? 0;
+  return {
+    ...rect,
+    x: rect.x + left,
+    y: rect.y + top,
+    w: Math.max(0, rect.w - left - right),
+    h: Math.max(0, rect.h - top - bottom)
+  };
+}
+
 export function spikeHazardRectsOverlapping(scene, rect) {
   return findObjectsWithComponent(scene, 'collision:hazard')
-    .filter(object => getComponent(object, 'collision:hazard')?.kind === 'spike')
-    .map(object => ({ ...object.transform, kind: 'spike' }))
+    .map(object => ({ object, hazard: getComponent(object, 'collision:hazard') }))
+    .filter(({ hazard }) => hazard?.kind === 'spike')
+    .map(({ object, hazard }) => ({ ...insetRect(object.transform, hazard?.inset), kind: 'spike' }))
     .filter(hit => rectsOverlap(rect, hit));
 }
 

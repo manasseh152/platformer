@@ -1,5 +1,5 @@
 import { CELL_SIZE } from '#/core/constants.js';
-import { defineObject, finishGateObject, playerSpawner, slimeSpawner, hazard } from '#/content/tilemaps/objects.js';
+import { defineObject, finishGateObject, playerSpawner, slimeSpawner, spikeHazard } from '#/content/tilemaps/objects.js';
 import { defineTilemap, gridLayer } from '#/core/tilemaps/tilemap.js';
 import { TERRAIN_KIND, terrainLayer } from '#/core/tilemaps/terrain-layer.js';
 
@@ -7,7 +7,6 @@ const EMPTY = '.';
 const solidSymbols = new Set(['#', '=', 'B']);
 
 const marker = id => defineObject({ id, components: [] });
-const spikeHazard = defineObject({ id: 'spike-hazard', components: [hazard({ kind: 'spike', damage: 1 })] });
 
 const BACKDROP_SYMBOLS = { a: marker('backdrop-a'), k: marker('backdrop-k'), c: marker('backdrop-c'), d: marker('backdrop-d') };
 const DECOR_SYMBOLS = { r: marker('decor-r'), g: marker('decor-g'), f: marker('decor-f'), t: marker('decor-t') };
@@ -30,7 +29,10 @@ function buildRowsFromTerrainRows(terrainRows) {
   });
 }
 function hazardRowsFromTerrainRows(terrainRows) {
-  return terrainRows.map(row => [...row].map(ch => ch === '^' ? '^' : EMPTY).join(''));
+  return terrainRows.flatMap(row => {
+    const buildRow = [...row].flatMap(ch => ch === '^' ? ['^', EMPTY] : [EMPTY, EMPTY]).join('');
+    return [buildRow, EMPTY.repeat(buildRow.length)];
+  });
 }
 
 export function defineContainedTestTilemap({ id = 'contained-test-tilemap', terrainRows, objectRows, decorRows, backdropRows }) {
@@ -54,7 +56,7 @@ export function defineContainedTestTilemap({ id = 'contained-test-tilemap', terr
       terrainLayer({ cellSize: CELL_SIZE.BUILD, rows: buildRowsFromTerrainRows(terrainRows) }),
       gridLayer({ id: 'entities', cellSize: CELL_SIZE.GRID, symbols: ENTITY_SYMBOLS, rows: objectRows }),
       gridLayer({ id: 'decor', cellSize: CELL_SIZE.GRID, symbols: DECOR_SYMBOLS, rows: decorRows }),
-      gridLayer({ id: 'hazards', cellSize: CELL_SIZE.GRID, symbols: { '^': spikeHazard }, rows: hazardRowsFromTerrainRows(terrainRows) })
+      gridLayer({ id: 'hazards', cellSize: CELL_SIZE.BUILD, symbols: { '^': spikeHazard }, rows: hazardRowsFromTerrainRows(terrainRows) })
     ]
   });
 }

@@ -21,6 +21,15 @@ export const EDIT_LAYERS = Object.freeze([
     packTitle: 'Starter asset pack',
     hint: 'Entity stamps snap to the gameplay grid. Hide the panel for controller placement.'
   },
+  {
+    id: 'hazards',
+    label: 'Hazards',
+    description: 'Damaging environmental tiles',
+    gridLabel: '16 px build grid',
+    cellSize: CELL_SIZE.BUILD,
+    packTitle: 'Hazards pack',
+    hint: 'Hazards are authored on the build grid and can overlap terrain.'
+  },
   { id: 'lights', label: 'Lights', description: 'Mood and visibility', gridLabel: 'Gridless', disabled: true },
   { id: 'decor', label: 'Decor', description: 'Non-colliding dressing', gridLabel: '8 px / gridless', disabled: true }
 ]);
@@ -29,8 +38,14 @@ export const EDIT_PACKS = Object.freeze([
   {
     id: 'starter',
     label: 'Starter',
-    description: 'Core terrain materials, spawn points, and hazards',
+    description: 'Core terrain materials and spawn points',
     brushIds: ['grass', 'dirt', 'stone', 'sand', 'log', 'leaves', 'invisibleTerrain', 'eraseTerrain', 'player', 'slime', 'gate', 'eraseEntity']
+  },
+  {
+    id: 'hazards',
+    label: 'Hazards',
+    description: 'Damaging environmental tiles',
+    brushIds: ['spike', 'eraseHazard']
   }
 ]);
 
@@ -46,7 +61,9 @@ export const BRUSHES = Object.freeze([
   { id: 'player', label: 'Player P', shortLabel: 'Player', layerId: 'entities', symbol: 'P', cellSize: CELL_SIZE.GRID, cursor: '#78a8ff', swatch: '#78a8ff' },
   { id: 'slime', label: 'Slime E', shortLabel: 'Slime', layerId: 'entities', symbol: 'E', cellSize: CELL_SIZE.GRID, cursor: '#ff7bd5', swatch: '#ff7bd5' },
   { id: 'gate', label: 'Gate G', shortLabel: 'Gate', layerId: 'entities', symbol: 'G', cellSize: CELL_SIZE.GRID, cursor: '#ffd36a', swatch: '#ffd36a' },
-  { id: 'eraseEntity', label: 'Erase entity', shortLabel: 'Erase', layerId: 'entities', symbol: EMPTY, cellSize: CELL_SIZE.GRID, cursor: '#ff8f8f', swatch: '#ff8f8f' }
+  { id: 'eraseEntity', label: 'Erase entity', shortLabel: 'Erase', layerId: 'entities', symbol: EMPTY, cellSize: CELL_SIZE.GRID, cursor: '#ff8f8f', swatch: '#ff8f8f' },
+  { id: 'spike', label: 'Spike ^', shortLabel: 'Spike', layerId: 'hazards', symbol: '^', cellSize: CELL_SIZE.BUILD, cursor: '#ff4d7d', swatch: '#ff4d7d' },
+  { id: 'eraseHazard', label: 'Erase hazard', shortLabel: 'Erase', layerId: 'hazards', symbol: EMPTY, cellSize: CELL_SIZE.BUILD, cursor: '#ff8f8f', swatch: '#ff8f8f' }
 ]);
 
 export function layerById(layerId) {

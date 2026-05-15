@@ -23,7 +23,8 @@ export function createBlankDraft({ id = 'new-tilemap', name = 'New Tilemap', col
     description: 'Draft tilemap authored in the browser editor.',
     layers: [
       terrainLayer({ rows: Array.from({ length: layerRows(rows, CELL_SIZE.BUILD) }, () => terrainLineOf(layerCols(cols, CELL_SIZE.BUILD))) }),
-      { id: 'entities', cellSize: CELL_SIZE.GRID, rows: Array.from({ length: rows }, () => lineOf(cols)) }
+      { id: 'entities', cellSize: CELL_SIZE.GRID, rows: Array.from({ length: rows }, () => lineOf(cols)) },
+      { id: 'hazards', cellSize: CELL_SIZE.BUILD, rows: Array.from({ length: layerRows(rows, CELL_SIZE.BUILD) }, () => lineOf(layerCols(cols, CELL_SIZE.BUILD))) }
     ]
   };
 }
@@ -53,6 +54,11 @@ export function normalizeDraft(draft) {
       continue;
     }
     layers.push({ ...layer, rows: layer.rows?.map(row => Array.isArray(row) ? [...row] : row) });
+  }
+  if (!layers.some(layer => layer.id === 'hazards')) {
+    const cols = draft.cols ?? 1;
+    const rows = draft.rows ?? 1;
+    layers.push({ id: 'hazards', cellSize: CELL_SIZE.BUILD, rows: Array.from({ length: layerRows(rows, CELL_SIZE.BUILD) }, () => lineOf(layerCols(cols, CELL_SIZE.BUILD))) });
   }
   return { ...draft, layers };
 }

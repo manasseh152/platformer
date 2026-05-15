@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { ACTOR_SIZE, CELL_SIZE } from '#/core/constants.js';
-import { createEnemiesFromScene } from '#/core/gameplay-scene-queries.js';
+import { createEnemiesFromScene, hazardCollisionRectsOverlapping } from '#/core/gameplay-scene-queries.js';
 import { defineTilemap, gridLayer } from '#/core/tilemaps/tilemap.js';
 import { TERRAIN_KIND, terrainLayer } from '#/core/tilemaps/terrain-layer.js';
-import { finishGateObject, playerSpawner, slimeSpawner } from '#/content/tilemaps/objects.js';
+import { finishGateObject, playerSpawner, slimeSpawner, spikeHazard } from '#/content/tilemaps/objects.js';
 import { enemyZooMap } from '#/content/tilemaps/definitions/enemy-zoo-map.js';
 import { defineContainedTestTilemap } from './helpers/contained-tilemap.js';
 
@@ -45,6 +45,23 @@ function containedEnemyMap() {
     ]
   });
 }
+
+test('hazard collision queries use hazard inset metadata', () => {
+  const tilemap = defineTilemap({
+    id: 'hazard-inset-query-test',
+    cols: 1,
+    rows: 1,
+    layers: [
+      terrainLayer({ rows: [[null, null], [null, null]] }),
+      gridLayer({ id: 'hazards', cellSize: CELL_SIZE.BUILD, symbols: { '^': spikeHazard }, rows: ['^.', '..'] })
+    ]
+  });
+
+  expect(hazardCollisionRectsOverlapping(tilemap, { x: 0, y: 0, w: 2, h: 16 })).toHaveLength(0);
+  expect(hazardCollisionRectsOverlapping(tilemap, { x: 2, y: 2, w: 1, h: 1 })).toEqual([
+    expect.objectContaining({ x: 2, y: 2, w: 12, h: 14, kind: 'spike', damage: 1 })
+  ]);
+});
 
 test('contained terrain enemy patrols use AABB collision support instead of matching terrain grid cells', () => {
   const [enemy] = createEnemiesFromScene(containedEnemyMap());

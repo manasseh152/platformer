@@ -54,7 +54,21 @@ function normalizeOverscan(value = 0) {
 }
 
 export const solid = () => ({ type: 'collision:solid' });
-export const hazard = (props = {}) => ({ type: 'collision:hazard', kind: props.kind ?? 'spike', damage: props.damage ?? 1 });
+function normalizeInset(inset = 0) {
+  if (typeof inset === 'number') {
+    const size = nonNegativeNumber(inset, 'hazard.inset');
+    return { left: size, right: size, top: size, bottom: size };
+  }
+  if (!inset || typeof inset !== 'object' || Array.isArray(inset)) throw new Error('hazard.inset must be a number or object');
+  return {
+    left: nonNegativeNumber(inset.left ?? 0, 'hazard.inset.left'),
+    right: nonNegativeNumber(inset.right ?? 0, 'hazard.inset.right'),
+    top: nonNegativeNumber(inset.top ?? 0, 'hazard.inset.top'),
+    bottom: nonNegativeNumber(inset.bottom ?? 0, 'hazard.inset.bottom')
+  };
+}
+
+export const hazard = (props = {}) => ({ type: 'collision:hazard', kind: props.kind ?? 'spike', damage: props.damage ?? 1, inset: normalizeInset(props.inset ?? 0) });
 export const terrain = (props = {}) => ({ type: 'terrain', material: props.material ?? 'grass' });
 export const renderTerrain = () => ({ type: 'render:terrain' });
 export const spawner = object => ({ type: 'spawner', object });

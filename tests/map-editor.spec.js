@@ -94,6 +94,7 @@ test('map editor loads registered tilemaps and exports new terrainLayer format',
   await expect(page.locator('#status')).toContainText('Valid');
   await expect(page.locator('#exportText')).toHaveValue(/terrainLayer\(\{ cellSize: CELL_SIZE\.BUILD/);
   await expect(page.locator('#exportText')).toHaveValue(/gridLayer\(\{ id: 'entities', cellSize: CELL_SIZE\.GRID/);
+  await expect(page.locator('#exportText')).toHaveValue(/gridLayer\(\{ id: 'hazards', cellSize: CELL_SIZE\.BUILD/);
 });
 
 test('map editor migrates legacy buildTerrain drafts from local storage', async ({ page }) => {
@@ -121,6 +122,22 @@ test('map editor migrates legacy buildTerrain drafts from local storage', async 
   await expect(page.locator('#status')).toContainText('Valid 4×3 tilemap.');
   await expect(page.locator('#exportText')).toHaveValue(/terrainLayer\(\{ cellSize: CELL_SIZE\.BUILD/);
   await expect(page.locator('#exportText')).toHaveValue(/\[K\.GRASS, K\.GRASS, null, null, null, null, null, null\]/);
+});
+
+test('map editor auto-adds hazards layer and paints build-grid spikes', async ({ page }) => {
+  await page.goto('/editor.html');
+  await createBlankMap(page);
+
+  await expect(page.locator('#exportText')).toHaveValue(/gridLayer\(\{ id: 'hazards', cellSize: CELL_SIZE\.BUILD/);
+  await page.getByRole('button', { name: /Hazards/ }).click();
+  await expect(page.locator('#packSectionTitle')).toHaveText('Hazards pack');
+  await expect(page.locator('#brushSectionTitle')).toHaveText('Selected: Spike ^');
+
+  const point = await editorScreenPoint(page, 24, 8);
+  await page.mouse.click(point.x, point.y);
+
+  await expect(page.locator('#exportText')).toHaveValue(/'\.\^\.\.\.\.\.\.'/);
+  await expect(page.locator('#status')).toHaveClass(/ok/);
 });
 
 test('map editor paints terrain into exported rows', async ({ page }) => {
@@ -536,6 +553,9 @@ test('map editor edit tab groups pack items by editable layer', async ({ page })
   await expect(page.locator('#brushSectionTitle')).toHaveText('Selected: Player P');
   await expect(page.getByRole('button', { name: 'Player P' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Grass' })).toHaveCount(0);
+  await page.getByRole('button', { name: /Hazards/ }).click();
+  await expect(page.locator('#packSectionTitle')).toHaveText('Hazards pack');
+  await expect(page.getByRole('button', { name: 'Spike ^' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Lights/ })).toBeDisabled();
 });
 

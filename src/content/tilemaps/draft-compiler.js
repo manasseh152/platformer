@@ -1,10 +1,11 @@
 import { defineTilemap, gridLayer } from '../../core/tilemaps/tilemap.js';
 import { terrainLayer } from '../../core/tilemaps/terrain-layer.js';
 import { normalizeDraft } from '../../core/tilemaps/draft.js';
-import { finishGateObject, playerSpawner, slimeSpawner } from './objects.js';
+import { finishGateObject, playerSpawner, slimeSpawner, spikeHazard } from './objects.js';
 
 export const SYMBOLS = {
-  entities: { P: playerSpawner, E: slimeSpawner, G: finishGateObject }
+  entities: { P: playerSpawner, E: slimeSpawner, G: finishGateObject },
+  hazards: { '^': spikeHazard }
 };
 
 export function toDefinition(draft) {
