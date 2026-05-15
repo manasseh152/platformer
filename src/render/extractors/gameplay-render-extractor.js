@@ -32,10 +32,15 @@ function addPhysicsDebugPackets(builder, readModel, view) {
   for (const actor of readModel.debug.physicsBodies) addDebugRect(builder, view, actor.transform, DEBUG_STYLES.physicsBody, L.DebugPhysics);
 }
 
+function addScenarioBackgroundPackets(builder, background, renderView) {
+  if (!background) return;
+  if (background.kind === 'dungeon') addDungeonBackdropPackets(builder, renderView, L.Backdrop);
+}
+
 function addAuthoredSceneRenderablePackets(builder, readModel, renderView, assetRegistry) {
-  const { tilemap, devToolsFlags } = readModel.authoredScene;
-  addDungeonBackdropPackets(builder, renderView, L.Backdrop);
-  addTilemapVisualPackets(builder, tilemap, renderView, { assetRegistry, includeBackdrop: true, layers: L, devToolsFlags });
+  const { tilemap, background, devToolsFlags } = readModel.authoredScene;
+  addScenarioBackgroundPackets(builder, background, renderView);
+  addTilemapVisualPackets(builder, tilemap, renderView, { assetRegistry, includeBackdrop: false, layers: L, devToolsFlags });
   addLightPackets(builder, readModel.authoredScene.lights, renderView, L.LightPrimitive);
 }
 

@@ -35,6 +35,8 @@ function snapshotCamera(camera) {
 }
 
 export function createGameplayScene(game, props = {}) {
+  game.scenarioPresentation = { background: props.background ?? null };
+
   function resetSceneSession() {
     if (props.tilemap) {
       resetGameplaySession(game.gameplaySession, props.tilemap, { view: game.view, scenarioId: props.scenarioId ?? props.tilemap.id, goal: props.goal });

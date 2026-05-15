@@ -13,6 +13,7 @@ import { renderLight2d } from '#/engine/scene/components.js';
 import { defineScene } from '#/engine/scene/scene.js';
 import { getTilemapById } from '#/content/tilemaps/registry.js';
 import { addLightPackets, lightWorldPosition, pointLightIntersectsView } from '#/render/extractors/light-packets.js';
+import { GameplayRenderLayer } from '#/render/extractors/gameplay-render-layers.js';
 import { createRenderParityScenarios } from '#/render/parity-render-scenarios.js';
 
 test('presentation viewport integer-scales and centers native frame', () => {
@@ -44,6 +45,20 @@ test('render view snaps camera and converts world rects to native coordinates', 
   expect(view.cameraX).toBe(10);
   expect(view.cameraY).toBe(20);
   expect(worldToNativeRect(view, { x: 20, y: 30, w: 32, h: 32 })).toEqual({ x: 5, y: 5, w: 16, h: 16 });
+});
+
+test('gameplay render has no background unless the scenario authors one', () => {
+  const view = { width: 640, height: 360, bufferWidth: 320, bufferHeight: 180 };
+  const session = createGameplaySession(getTilemapById('act-01-level-1'), { view, scenarioId: 'act-01-level-1' });
+  const game = { view, devTools: { flags: {} } };
+  syncGameplaySessionToGame(game, session);
+
+  const withoutBackground = extractGameplayRenderFrame({ game, runtime: { now: () => 0, random: () => 0.5 }, assetRegistry: createAssetRegistry({}) }).frame;
+  expect(withoutBackground.packets.filter(packet => packet.layer === GameplayRenderLayer.Backdrop)).toEqual([]);
+
+  game.scenarioPresentation = { background: { kind: 'dungeon' } };
+  const withBackground = extractGameplayRenderFrame({ game, runtime: { now: () => 0, random: () => 0.5 }, assetRegistry: createAssetRegistry({}) }).frame;
+  expect(withBackground.packets.some(packet => packet.layer === GameplayRenderLayer.Backdrop)).toBe(true);
 });
 
 test('asset registry maps namespaced IDs to current image handles', () => {

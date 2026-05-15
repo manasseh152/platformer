@@ -81,6 +81,7 @@ export function createGameplayRenderReadModel(game = {}) {
   return {
     authoredScene: {
       tilemap: game.tilemap,
+      background: game.scenarioPresentation?.background ?? null,
       devToolsFlags: game.devTools?.flags,
       lights: lightRenderables(game.tilemap)
     },
