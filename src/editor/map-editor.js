@@ -32,6 +32,7 @@ import { currentFocusElement, ensureMenuFocus, moveLinearFocus, visibleFocusable
 import { createNativeBackAdapter } from '../app/navigation/native-back.js';
 const AUTO_SAVE_STORAGE_KEY = 'chibi.tilemap-editor.auto-save';
 const FLOATING_CONTROLS_STORAGE_KEY = 'chibi.tilemap-editor.floating-controls';
+const FINAL_TERRAIN_STORAGE_KEY = 'chibi.tilemap-editor.final-terrain';
 const CONTROLLER_BRUSH_SETTINGS_STORAGE_KEY = 'chibi.tilemap-editor.controller-brush';
 const CONTROLLER_PALETTE_POSITIONS = new Set(['bottom-right', 'near-cursor']);
 const CONTROLLER_PALETTE_SIZES = new Set(['compact', 'normal', 'large']);
@@ -99,6 +100,7 @@ const dom = {
   controllerCursorPaletteSizeSelect: document.querySelector('#controllerCursorPaletteSizeSelect'),
   controllerBottomRightPaletteSizeSelect: document.querySelector('#controllerBottomRightPaletteSizeSelect'),
   gridToggle: document.querySelector('#gridToggle'),
+  finalTerrainToggle: document.querySelector('#finalTerrainToggle'),
   collisionToggle: document.querySelector('#collisionToggle'),
   previewButton: document.querySelector('#previewButton'),
   copyButton: document.querySelector('#copyButton'),
@@ -136,6 +138,7 @@ let activePackId = defaultPackForLayer(activeEditLayerId)?.id ?? null;
 let overlayHidden = false;
 let autoSaveEnabled = readBooleanPreference(localStorage, AUTO_SAVE_STORAGE_KEY, true);
 let floatingControlsEnabled = readBooleanPreference(localStorage, FLOATING_CONTROLS_STORAGE_KEY, true);
+let finalTerrainEnabled = readBooleanPreference(localStorage, FINAL_TERRAIN_STORAGE_KEY, true);
 let controllerBrushSettings = readControllerBrushSettings();
 let dirty = false;
 let saving = false;
@@ -359,6 +362,7 @@ function syncControllerBrushSettingsUi() {
 function syncPreferencesUi() {
   if (dom.autoSaveToggle) dom.autoSaveToggle.checked = autoSaveEnabled;
   if (dom.floatingControlsToggle) dom.floatingControlsToggle.checked = floatingControlsEnabled;
+  if (dom.finalTerrainToggle) dom.finalTerrainToggle.checked = finalTerrainEnabled;
   syncControllerBrushSettingsUi();
   if (dom.floatingViewControls) dom.floatingViewControls.hidden = !floatingControlsEnabled && editorInputMode !== 'gamepad';
   document.body.classList.toggle('pan-mode', panMode);
@@ -895,7 +899,9 @@ function render() {
   const rect = visibleWorldRect(viewport);
   ctx.fillStyle = '#090d15';
   ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-  if (!drawCompiledTerrain(ctx, rect)) drawDraftTerrain(ctx, rect);
+  const drewFinalTerrain = finalTerrainEnabled && drawCompiledTerrain(ctx, rect);
+  dom.canvas.dataset.terrainRender = drewFinalTerrain ? 'final' : 'preview';
+  if (!drewFinalTerrain) drawDraftTerrain(ctx, rect);
   drawEntities(ctx, rect);
   if (dom.collisionToggle.checked && compiled) drawCollisionDebugOverlay(ctx, compiled, { showCollisionRects: true });
   if (dom.gridToggle.checked) drawGrid(ctx, rect);
@@ -1733,6 +1739,12 @@ function setup() {
     syncInputs(); render();
   });
   dom.gridToggle.addEventListener('change', render);
+  dom.finalTerrainToggle?.addEventListener('change', () => {
+    finalTerrainEnabled = dom.finalTerrainToggle.checked;
+    writeBooleanPreference(localStorage, FINAL_TERRAIN_STORAGE_KEY, finalTerrainEnabled);
+    render();
+    setStatus(finalTerrainEnabled ? 'Final terrain tiles enabled.' : 'Preview-only terrain tiles enabled.', '');
+  });
   dom.collisionToggle.addEventListener('change', () => { if (dom.collisionToggle.checked) ensureCompiled(); render(); });
   dom.nameInput?.addEventListener('input', () => { syncDraftMetadataFromInputs(); scheduleAfterEdit(); });
   dom.idInput?.addEventListener('input', () => { syncDraftMetadataFromInputs(); compiledFresh = false; markDirty(); syncInputs(); if (!isKebabCaseId(draft.id)) setStatus('Draft id must be kebab-case. Fix ID to save locally or copy JS.', 'error'); else scheduleAfterEdit(); });

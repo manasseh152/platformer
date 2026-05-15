@@ -161,6 +161,22 @@ test('map editor zoom controls change viewport zoom without resizing to world si
   await expect(page.locator('#zoomReadout')).toContainText('%');
 });
 
+test('map editor can force preview-only terrain tiles', async ({ page }) => {
+  await page.goto('/editor.html');
+  await createBlankMap(page);
+
+  const point = await editorScreenPoint(page, 8, 8);
+  await page.mouse.click(point.x, point.y);
+  await expect(page.locator('#status')).toHaveClass(/ok/);
+  await expect(page.locator('#editorCanvas')).toHaveAttribute('data-terrain-render', 'final');
+
+  await page.getByRole('tab', { name: 'View' }).click();
+  await page.getByLabel('Final terrain tiles').uncheck();
+
+  await expect(page.locator('#editorCanvas')).toHaveAttribute('data-terrain-render', 'preview');
+  await expect(page.locator('#status')).toHaveText('Preview-only terrain tiles enabled.');
+});
+
 test('map editor defers compile/export/persist during drag and flushes after painting', async ({ page }) => {
   await page.goto('/editor.html');
   await createBlankMap(page, '20', '10');

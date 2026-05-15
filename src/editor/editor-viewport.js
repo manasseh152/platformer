@@ -1,4 +1,4 @@
-export const DEFAULT_VIEWPORT = Object.freeze({ minZoom: 0.25, maxZoom: 4, fitPadding: 0.95, cameraPadding: 220 });
+export const DEFAULT_VIEWPORT = Object.freeze({ minZoom: 0.25, maxZoom: 4, fitPadding: 0.95, cameraPadding: null });
 
 export function createViewport(canvas, { minZoom = DEFAULT_VIEWPORT.minZoom, maxZoom = DEFAULT_VIEWPORT.maxZoom, cameraPadding = DEFAULT_VIEWPORT.cameraPadding } = {}) {
   return {
@@ -48,9 +48,10 @@ export function clampZoom(viewport, zoom) {
 export function clampCamera(viewport, worldWidth, worldHeight) {
   const visibleWidth = viewport.width / viewport.camera.zoom;
   const visibleHeight = viewport.height / viewport.camera.zoom;
-  const padding = Math.max(0, viewport.cameraPadding ?? DEFAULT_VIEWPORT.cameraPadding) / viewport.camera.zoom;
-  const xRange = cameraAxisRange(worldWidth, visibleWidth, padding);
-  const yRange = cameraAxisRange(worldHeight, visibleHeight, padding);
+  const xPadding = cameraAxisPadding(viewport, visibleWidth);
+  const yPadding = cameraAxisPadding(viewport, visibleHeight);
+  const xRange = cameraAxisRange(worldWidth, visibleWidth, xPadding);
+  const yRange = cameraAxisRange(worldHeight, visibleHeight, yPadding);
   viewport.camera.x = clamp(viewport.camera.x, xRange.min, xRange.max);
   viewport.camera.y = clamp(viewport.camera.y, yRange.min, yRange.max);
 }
@@ -104,6 +105,12 @@ export function clearViewport(ctx, viewport, color = '#090d15') {
   ctx.setTransform(viewport.dpr, 0, 0, viewport.dpr, 0, 0);
   ctx.fillStyle = color;
   ctx.fillRect(0, 0, viewport.width, viewport.height);
+}
+
+function cameraAxisPadding(viewport, visibleSize) {
+  const configuredPadding = viewport.cameraPadding ?? DEFAULT_VIEWPORT.cameraPadding;
+  if (Number.isFinite(configuredPadding)) return Math.max(0, configuredPadding) / viewport.camera.zoom;
+  return visibleSize / 2;
 }
 
 function cameraAxisRange(worldSize, visibleSize, padding = 0) {
