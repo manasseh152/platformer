@@ -23,7 +23,7 @@ export function createBlankDraft({ id = 'new-tilemap', name = 'New Tilemap', col
     description: 'Draft tilemap authored in the browser editor.',
     layers: [
       terrainLayer({ rows: Array.from({ length: layerRows(rows, CELL_SIZE.BUILD) }, () => terrainLineOf(layerCols(cols, CELL_SIZE.BUILD))) }),
-      { id: 'entities', cellSize: CELL_SIZE.GRID, rows: Array.from({ length: rows }, () => lineOf(cols)) },
+      { id: 'entities', cellSize: CELL_SIZE.BUILD, objectSize: CELL_SIZE.GRID, rows: Array.from({ length: layerRows(rows, CELL_SIZE.BUILD) }, () => lineOf(layerCols(cols, CELL_SIZE.BUILD))) },
       { id: 'hazards', cellSize: CELL_SIZE.BUILD, rows: Array.from({ length: layerRows(rows, CELL_SIZE.BUILD) }, () => lineOf(layerCols(cols, CELL_SIZE.BUILD))) }
     ]
   };
@@ -33,6 +33,22 @@ function legacyTerrainRows(rows) {
   return rows.map(row => Array.isArray(row)
     ? row.map(cell => cell === '#' ? TERRAIN_KIND.GRASS : (cell === '.' ? null : cell))
     : [...row].map(symbol => symbol === '#' ? TERRAIN_KIND.GRASS : null));
+}
+
+function resnapEntityLayerToBuildGrid(layer) {
+  const cellSize = layer.cellSize ?? CELL_SIZE.GRID;
+  const rows = layer.rows ?? [];
+  if (cellSize === CELL_SIZE.BUILD) return { ...layer, cellSize, objectSize: layer.objectSize ?? CELL_SIZE.GRID, rows: rows.map(row => Array.isArray(row) ? row.join('') : row) };
+  const scale = cellSize / CELL_SIZE.BUILD;
+  if (!Number.isInteger(scale) || scale < 1) return { ...layer, objectSize: layer.objectSize ?? CELL_SIZE.GRID, rows: rows.map(row => Array.isArray(row) ? row.join('') : row) };
+  const sourceWidth = rows[0]?.length ?? 0;
+  const outputRows = Array.from({ length: rows.length * scale }, () => lineOf(sourceWidth * scale));
+  rows.forEach((row, rowIndex) => {
+    [...row].forEach((symbol, colIndex) => {
+      if (symbol !== EMPTY) outputRows[rowIndex * scale + scale - 1] = replaceChar(outputRows[rowIndex * scale + scale - 1], colIndex * scale, symbol);
+    });
+  });
+  return { ...layer, cellSize: CELL_SIZE.BUILD, objectSize: layer.objectSize ?? cellSize, rows: outputRows };
 }
 
 export function normalizeDraft(draft) {
@@ -51,6 +67,10 @@ export function normalizeDraft(draft) {
     if (layer.id === 'terrain' && layer.type !== 'terrain' && layer.rows?.every(row => typeof row === 'string' || Array.isArray(row))) {
       layers.push({ id: 'terrain', type: 'terrain', cellSize: CELL_SIZE.BUILD, rows: legacyTerrainRows(layer.rows) });
       migratedTerrain = true;
+      continue;
+    }
+    if (layer.id === 'entities') {
+      layers.push(resnapEntityLayerToBuildGrid(layer));
       continue;
     }
     layers.push({ ...layer, rows: layer.rows?.map(row => Array.isArray(row) ? [...row] : row) });

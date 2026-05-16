@@ -128,6 +128,26 @@ test('contained tilemap exposes layered tiles and query helpers derive gameplay 
   ]));
 });
 
+test('entities can snap to the build grid while keeping gameplay-sized footprints', () => {
+  const parsed = defineTilemap({
+    id: 'entities-build-grid',
+    cols: 1,
+    rows: 1,
+    layers: [
+      terrainLayer({ rows: [[null, null], [null, null]] }),
+      gridLayer({ id: 'entities', cellSize: CELL_SIZE.BUILD, symbols: { P: playerSpawner, G: finishGateObject }, rows: ['..', 'GP'] })
+    ]
+  });
+
+  const player = parsed.objects.find(object => object.symbol === 'P');
+  const gate = parsed.objects.find(object => object.symbol === 'G');
+  expect(parsed.layers.find(layer => layer.id === 'entities')).toMatchObject({ cellSize: CELL_SIZE.BUILD, objectSize: CELL_SIZE.GRID });
+  expect(player).toMatchObject({ layerId: 'entities', symbol: 'P', transform: { x: 16, y: 0, w: 32, h: 32, cellSize: CELL_SIZE.BUILD, objectSize: CELL_SIZE.GRID } });
+  expect(getSpawnPoint(parsed)).toEqual({ x: 32, y: -8 });
+  expect(gate).toMatchObject({ transform: { x: 0, y: 0, w: 32, h: 32 } });
+  expect(getGoalRect(parsed)).toMatchObject({ x: 0, y: 0, w: 32, h: 32, kind: 'gate' });
+});
+
 test('hazards layer compiles build-grid spikes with authored inset collision', () => {
   const parsed = defineTilemap({
     id: 'hazards-build-grid',

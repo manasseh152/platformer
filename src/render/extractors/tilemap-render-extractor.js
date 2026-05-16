@@ -85,11 +85,13 @@ function renderGoalObjects(tilemap) {
 function getRenderGoalRects(tilemap) {
   const goals = renderGoalObjects(tilemap);
   if (!goals.length) return [];
-  const minCol = Math.min(...goals.map(o => o.transform.col));
-  const maxCol = Math.max(...goals.map(o => o.transform.col));
-  const minRow = Math.min(...goals.map(o => o.transform.row));
-  const maxRow = Math.max(...goals.map(o => o.transform.row));
-  return [{ x: minCol * tilemap.tileSize, y: minRow * tilemap.tileSize, w: (maxCol - minCol + 1) * tilemap.tileSize, h: (maxRow - minRow + 1) * tilemap.tileSize, col: minCol, row: minRow, cols: maxCol - minCol + 1, rows: maxRow - minRow + 1, tileSize: tilemap.tileSize }];
+  const minX = Math.min(...goals.map(o => o.transform.x));
+  const minY = Math.min(...goals.map(o => o.transform.y));
+  const maxX = Math.max(...goals.map(o => o.transform.x + o.transform.w));
+  const maxY = Math.max(...goals.map(o => o.transform.y + o.transform.h));
+  const w = maxX - minX;
+  const h = maxY - minY;
+  return [{ x: minX, y: minY, w, h, col: Math.floor(minX / tilemap.tileSize), row: Math.floor(minY / tilemap.tileSize), cols: Math.ceil(w / tilemap.tileSize), rows: Math.ceil(h / tilemap.tileSize), tileSize: tilemap.tileSize }];
 }
 
 export function addGoalPackets(builder, tilemap, view, { assetRegistry = emptyAssetRegistry, layer = L.Goal } = {}) {

@@ -59,17 +59,19 @@ export function spikeHazardRectsOverlapping(scene, rect) {
 export function getGoalRect(scene) {
   const goals = instantiatedObjects(scene, 'finish-gate');
   if (!goals.length) return { x: 0, y: 0, w: 0, h: 0, cols: 0, rows: 0, kind: 'gate' };
-  const minCol = Math.min(...goals.map(o => o.transform.col));
-  const maxCol = Math.max(...goals.map(o => o.transform.col));
-  const minRow = Math.min(...goals.map(o => o.transform.row));
-  const maxRow = Math.max(...goals.map(o => o.transform.row));
-  return tileRect(minCol, minRow, maxCol - minCol + 1, maxRow - minRow + 1, 'gate', scene.tileSize);
+  const minX = Math.min(...goals.map(o => o.transform.x));
+  const minY = Math.min(...goals.map(o => o.transform.y));
+  const maxX = Math.max(...goals.map(o => o.transform.x + o.transform.w));
+  const maxY = Math.max(...goals.map(o => o.transform.y + o.transform.h));
+  const w = maxX - minX;
+  const h = maxY - minY;
+  return { x: minX, y: minY, w, h, col: Math.floor(minX / scene.tileSize), row: Math.floor(minY / scene.tileSize), cols: Math.ceil(w / scene.tileSize), rows: Math.ceil(h / scene.tileSize), kind: 'gate' };
 }
 
 export function getGoalTriggerRect(scene) { const goal = getGoalRect(scene); const pad = scene.tileSize / 2; return { ...goal, x: goal.x - pad, w: goal.w + pad * 2, h: goal.h + scene.tileSize, kind: 'gate-trigger' }; }
 
-function spawnAtObject(object, tileSize) { return { x: object.transform.x + tileSize / 2, y: object.transform.y + tileSize - ACTOR_SIZE.PLAYER.h }; }
-export function getSpawnPoint(scene) { const [spawn] = instantiatedObjects(scene, 'player'); return spawn ? spawnAtObject(spawn, scene.tileSize) : null; }
+function spawnAtObject(object) { return { x: object.transform.x + object.transform.w / 2, y: object.transform.y + object.transform.h - ACTOR_SIZE.PLAYER.h }; }
+export function getSpawnPoint(scene) { const [spawn] = instantiatedObjects(scene, 'player'); return spawn ? spawnAtObject(spawn) : null; }
 
 function instantiatedObjects(scene, definitionId) {
   return findObjectsWithComponent(scene, 'spawner').filter(object => getComponent(object, 'spawner')?.object?.id === definitionId);

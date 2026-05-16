@@ -16,10 +16,10 @@ export const EDIT_LAYERS = Object.freeze([
     id: 'entities',
     label: 'Entities',
     description: 'Gameplay objects',
-    gridLabel: '32 px gameplay grid',
-    cellSize: CELL_SIZE.GRID,
+    gridLabel: '16 px placement grid / 32 px objects',
+    cellSize: CELL_SIZE.BUILD,
     packTitle: 'Starter asset pack',
-    hint: 'Entity stamps snap to the gameplay grid. Hide the panel for controller placement.'
+    hint: 'Entity stamps snap to the build grid while keeping gameplay-sized footprints. Hide the panel for controller placement.'
   },
   {
     id: 'hazards',
@@ -58,10 +58,10 @@ export const BRUSHES = Object.freeze([
   { id: 'leaves', label: 'Leaves', shortLabel: 'Leaves', layerId: 'terrain', symbol: TERRAIN_KIND.LEAVES, cellSize: CELL_SIZE.BUILD, cursor: '#62bd63', swatch: '#62bd63' },
   { id: 'invisibleTerrain', label: 'Invisible', shortLabel: 'Ghost', layerId: 'terrain', symbol: TERRAIN_KIND.INVISIBLE, cellSize: CELL_SIZE.BUILD, cursor: '#a78bfa', swatch: '#a78bfa' },
   { id: 'eraseTerrain', label: 'Erase terrain', shortLabel: 'Erase', layerId: 'terrain', symbol: null, cellSize: CELL_SIZE.BUILD, cursor: '#ff8f8f', swatch: '#ff8f8f' },
-  { id: 'player', label: 'Player P', shortLabel: 'Player', layerId: 'entities', symbol: 'P', cellSize: CELL_SIZE.GRID, cursor: '#78a8ff', swatch: '#78a8ff' },
-  { id: 'slime', label: 'Slime E', shortLabel: 'Slime', layerId: 'entities', symbol: 'E', cellSize: CELL_SIZE.GRID, cursor: '#ff7bd5', swatch: '#ff7bd5' },
-  { id: 'gate', label: 'Gate G', shortLabel: 'Gate', layerId: 'entities', symbol: 'G', cellSize: CELL_SIZE.GRID, cursor: '#ffd36a', swatch: '#ffd36a' },
-  { id: 'eraseEntity', label: 'Erase entity', shortLabel: 'Erase', layerId: 'entities', symbol: EMPTY, cellSize: CELL_SIZE.GRID, cursor: '#ff8f8f', swatch: '#ff8f8f' },
+  { id: 'player', label: 'Player P', shortLabel: 'Player', layerId: 'entities', symbol: 'P', cellSize: CELL_SIZE.BUILD, cursor: '#78a8ff', swatch: '#78a8ff' },
+  { id: 'slime', label: 'Slime E', shortLabel: 'Slime', layerId: 'entities', symbol: 'E', cellSize: CELL_SIZE.BUILD, cursor: '#ff7bd5', swatch: '#ff7bd5' },
+  { id: 'gate', label: 'Gate G', shortLabel: 'Gate', layerId: 'entities', symbol: 'G', cellSize: CELL_SIZE.BUILD, cursor: '#ffd36a', swatch: '#ffd36a' },
+  { id: 'eraseEntity', label: 'Erase entity', shortLabel: 'Erase', layerId: 'entities', symbol: EMPTY, cellSize: CELL_SIZE.BUILD, cursor: '#ff8f8f', swatch: '#ff8f8f' },
   { id: 'spike', label: 'Spike ^', shortLabel: 'Spike', layerId: 'hazards', symbol: '^', cellSize: CELL_SIZE.BUILD, cursor: '#ff4d7d', swatch: '#ff4d7d' },
   { id: 'eraseHazard', label: 'Erase hazard', shortLabel: 'Erase', layerId: 'hazards', symbol: EMPTY, cellSize: CELL_SIZE.BUILD, cursor: '#ff8f8f', swatch: '#ff8f8f' }
 ]);

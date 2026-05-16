@@ -1,7 +1,7 @@
 import { CELL_SIZE, GRID_SIZE } from '../constants.js';
 import { defineScene } from '../../engine/scene/scene.js';
 import { sceneObject } from '../../engine/scene/objects.js';
-import { isAllowedCellSize, layerCellSize, EMPTY } from './layers.js';
+import { isAllowedCellSize, layerCellSize, layerObjectSize, EMPTY } from './layers.js';
 import { normalizeTerrain } from './terrain-model.js';
 import { buildContainedTerrainCollisionLayers } from './collision.js';
 import { buildContainedTerrainTiles } from './render-artifacts.js';
@@ -12,12 +12,13 @@ const DEFAULT_THEME = 'contained-terrain:grass';
 
 function objectFromCell(scene, layer, symbol, definition, col, row) {
   const cellSize = layerCellSize(scene, layer);
+  const objectSize = layerObjectSize(scene, layer);
   return sceneObject({
     id: `${layer.id}:${col},${row}`,
     layerId: layer.id,
     symbol,
     definitionId: definition.id,
-    transform: { col, row, cellSize, x: col * cellSize, y: row * cellSize, w: cellSize, h: cellSize },
+    transform: { col, row, cellSize, objectSize, x: col * cellSize, y: (row + 1) * cellSize - objectSize, w: objectSize, h: objectSize },
     components: definition.components
   });
 }
@@ -54,7 +55,9 @@ export function defineTilemap(definition) {
   const rows = definition.rows;
   for (const layer of definition.layers) {
     const cellSize = layer.cellSize ?? CELL_SIZE.GRID;
+    const objectSize = layer.objectSize ?? (layer.id === 'entities' ? tileSize : cellSize);
     if (!isAllowedCellSize(cellSize)) throw new Error(`${layer.id} layer has unsupported cellSize ${cellSize}`);
+    if (!isAllowedCellSize(objectSize)) throw new Error(`${layer.id} layer has unsupported objectSize ${objectSize}`);
     if (!Number.isInteger(tileSize / cellSize)) throw new Error(`${layer.id} layer cellSize ${cellSize} must divide gridSize ${tileSize}`);
     const cellsPerGrid = tileSize / cellSize;
     const expectedRows = rows * cellsPerGrid;
@@ -77,7 +80,13 @@ export function defineTilemap(definition) {
     rows,
     worldWidth: cols * tileSize,
     worldHeight: rows * tileSize,
-    layers: definition.layers.map(layer => ({ ...layer, cellSize: layer.cellSize ?? CELL_SIZE.GRID, rows: [...layer.rows], symbols: { ...layer.symbols } }))
+    layers: definition.layers.map(layer => ({
+      ...layer,
+      cellSize: layer.cellSize ?? CELL_SIZE.GRID,
+      ...(layer.objectSize === undefined && layer.id !== 'entities' ? {} : { objectSize: layer.objectSize ?? tileSize }),
+      rows: [...layer.rows],
+      symbols: { ...layer.symbols }
+    }))
   };
 
   const objects = [];

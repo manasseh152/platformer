@@ -823,6 +823,8 @@ function drawEntities(ctx, rect) {
   const layer = entityLayer();
   if (!layer) return;
   const range = visibleCellRange(layer, rect);
+  const rowPad = Math.ceil(((layer.objectSize ?? CELL_SIZE.GRID) - layer.cellSize) / layer.cellSize);
+  range.startRow = Math.max(0, range.startRow - rowPad);
   ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -832,14 +834,15 @@ function drawEntities(ctx, rect) {
     for (let col = range.startCol; col <= range.endCol; col++) {
       const ch = line[col];
       if (ch === EMPTY) continue;
-      const px = col * CELL_SIZE.GRID;
-      const py = row * CELL_SIZE.GRID;
+      const objectSize = layer.objectSize ?? CELL_SIZE.GRID;
+      const px = col * layer.cellSize;
+      const py = (row + 1) * layer.cellSize - objectSize;
       ctx.fillStyle = ch === 'P' ? '#78a8ff' : ch === 'E' ? '#ff7bd5' : '#ffd36a';
       ctx.globalAlpha = .88;
-      ctx.fillRect(px + 4, py + 4, CELL_SIZE.GRID - 8, CELL_SIZE.GRID - 8);
+      ctx.fillRect(px + 4, py + 4, objectSize - 8, objectSize - 8);
       ctx.globalAlpha = 1;
       ctx.fillStyle = '#071018';
-      ctx.fillText(ch, px + CELL_SIZE.GRID / 2, py + CELL_SIZE.GRID / 2 + 1);
+      ctx.fillText(ch, px + objectSize / 2, py + objectSize / 2 + 1);
     }
   }
   ctx.restore();
@@ -918,29 +921,30 @@ function drawCursor(ctx, cursor, { ghost = false } = {}) {
     debug.cursor = debugCursor;
   }
   const x = cursor.col * brush.cellSize;
-  const y = cursor.row * brush.cellSize;
+  const cursorSize = layer.objectSize ?? brush.cellSize;
+  const y = (cursor.row + 1) * brush.cellSize - cursorSize;
   const inset = 1 / viewport.camera.zoom;
   const haloWidth = (ghost ? 4 : 6) / viewport.camera.zoom;
   const lineWidth = (ghost ? 2 : 3) / viewport.camera.zoom;
-  const corner = Math.max(4, brush.cellSize * 0.32);
+  const corner = Math.max(4, cursorSize * 0.32);
   ctx.save();
   ctx.fillStyle = ghost ? 'rgba(255, 255, 255, .08)' : 'rgba(8, 12, 22, .22)';
-  ctx.fillRect(x + inset, y + inset, brush.cellSize - inset * 2, brush.cellSize - inset * 2);
+  ctx.fillRect(x + inset, y + inset, cursorSize - inset * 2, cursorSize - inset * 2);
   ctx.lineJoin = 'round';
   ctx.setLineDash(ghost ? [6 / viewport.camera.zoom, 5 / viewport.camera.zoom] : []);
   ctx.strokeStyle = ghost ? 'rgba(0, 0, 0, .55)' : 'rgba(0, 0, 0, .82)';
   ctx.lineWidth = haloWidth;
-  ctx.strokeRect(x + inset, y + inset, brush.cellSize - inset * 2, brush.cellSize - inset * 2);
+  ctx.strokeRect(x + inset, y + inset, cursorSize - inset * 2, cursorSize - inset * 2);
   ctx.strokeStyle = brush.cursor;
   ctx.globalAlpha = ghost ? .62 : 1;
   ctx.lineWidth = lineWidth;
-  ctx.strokeRect(x + inset, y + inset, brush.cellSize - inset * 2, brush.cellSize - inset * 2);
+  ctx.strokeRect(x + inset, y + inset, cursorSize - inset * 2, cursorSize - inset * 2);
   ctx.setLineDash([]);
   ctx.globalAlpha = ghost ? .7 : 1;
   ctx.strokeStyle = 'rgba(255, 255, 255, .95)';
   ctx.lineWidth = 1.5 / viewport.camera.zoom;
-  const right = x + brush.cellSize - inset;
-  const bottom = y + brush.cellSize - inset;
+  const right = x + cursorSize - inset;
+  const bottom = y + cursorSize - inset;
   const left = x + inset;
   const top = y + inset;
   line(ctx, left, top, left + corner, top);

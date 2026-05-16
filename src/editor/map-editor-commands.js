@@ -24,6 +24,7 @@ export function previewStorageKey(id) {
 }
 
 function serialiseRows(rows, indent = '    ') { return rows.map(row => `${indent}'${row}'`).join(',\n'); }
+function cellSizeExpr(size) { return size === CELL_SIZE.BUILD ? 'CELL_SIZE.BUILD' : (size === CELL_SIZE.GRID ? 'CELL_SIZE.GRID' : String(size)); }
 function serialiseTerrainRows(rows, indent = '    ') {
   const kindExpr = value => value === null ? 'null' : `K.${Object.entries(TERRAIN_KIND).find(([, kind]) => kind === value)?.[0] ?? 'GRASS'}`;
   return rows.map(row => `${indent}[${row.map(kindExpr).join(', ')}]`).join(',\n');
@@ -61,7 +62,7 @@ export const ${camelIdentifier(draft.id)} = defineTilemap({
     terrainLayer({ cellSize: CELL_SIZE.BUILD, rows: [
 ${serialiseTerrainRows(terrain.rows, '      ')}
     ] }),
-    gridLayer({ id: 'entities', cellSize: CELL_SIZE.GRID, symbols: { P: playerSpawner, E: slimeSpawner, G: finishGateObject }, rows: [
+    gridLayer({ id: 'entities', cellSize: ${cellSizeExpr(entities.cellSize ?? CELL_SIZE.BUILD)}, objectSize: CELL_SIZE.GRID, symbols: { P: playerSpawner, E: slimeSpawner, G: finishGateObject }, rows: [
 ${serialiseRows(entities.rows, '      ')}
     ] }),
     gridLayer({ id: 'hazards', cellSize: CELL_SIZE.BUILD, symbols: { '^': spikeHazard }, rows: [
@@ -96,7 +97,7 @@ export function validateImportedDraft(candidate) {
   const hazards = candidate.layers?.find(layer => layer.id === 'hazards');
   if (!terrain || !entities) throw new Error('Imported map needs terrain and entities layers.');
   validateLayerRows(terrain, candidate.cols * CELL_SIZE.GRID / terrain.cellSize, candidate.rows * CELL_SIZE.GRID / terrain.cellSize, 'terrain');
-  validateLayerRows(entities, candidate.cols, candidate.rows, 'entities');
+  validateLayerRows(entities, candidate.cols * CELL_SIZE.GRID / entities.cellSize, candidate.rows * CELL_SIZE.GRID / entities.cellSize, 'entities');
   if (hazards) validateLayerRows(hazards, candidate.cols * CELL_SIZE.GRID / hazards.cellSize, candidate.rows * CELL_SIZE.GRID / hazards.cellSize, 'hazards');
   compileTilemapDraft(candidate);
 }

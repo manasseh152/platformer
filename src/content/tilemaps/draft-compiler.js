@@ -17,6 +17,7 @@ export function toDefinition(draft) {
       : gridLayer({
         id: layer.id,
         cellSize: layer.cellSize,
+        objectSize: layer.objectSize,
         symbols: SYMBOLS[layer.id] ?? {},
         rows: layer.rows
       }))

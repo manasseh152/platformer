@@ -3,7 +3,7 @@ import { getComponent, findObjectsWithComponent } from '../engine/scene/queries.
 
 export const rectsOverlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
-function spawnAtObject(object, tileSize) { return { x: object.transform.x + tileSize / 2, y: object.transform.y + tileSize - ACTOR_SIZE.PLAYER.h }; }
+function spawnAtObject(object) { return { x: object.transform.x + object.transform.w / 2, y: object.transform.y + object.transform.h - ACTOR_SIZE.PLAYER.h }; }
 
 export function findSpawnerObjects(scene, definitionId) {
   return findObjectsWithComponent(scene, 'spawner').filter(object => getComponent(object, 'spawner')?.object?.id === definitionId);
@@ -11,7 +11,7 @@ export function findSpawnerObjects(scene, definitionId) {
 
 export function getPlayerSpawnPoint(scene) {
   const [spawn] = findSpawnerObjects(scene, 'player');
-  return spawn ? spawnAtObject(spawn, scene.tileSize) : null;
+  return spawn ? spawnAtObject(spawn) : null;
 }
 
 export function createPlayerFromScene(scene) {
@@ -117,11 +117,13 @@ function transitionObjects(scene, kind = 'finish') {
 export function getTransitionRect(scene, kind = 'finish') {
   const goals = transitionObjects(scene, kind);
   if (!goals.length) return { x: 0, y: 0, w: 0, h: 0, cols: 0, rows: 0, kind };
-  const minCol = Math.min(...goals.map(o => o.transform.col));
-  const maxCol = Math.max(...goals.map(o => o.transform.col));
-  const minRow = Math.min(...goals.map(o => o.transform.row));
-  const maxRow = Math.max(...goals.map(o => o.transform.row));
-  return { x: minCol * scene.tileSize, y: minRow * scene.tileSize, w: (maxCol - minCol + 1) * scene.tileSize, h: (maxRow - minRow + 1) * scene.tileSize, col: minCol, row: minRow, cols: maxCol - minCol + 1, rows: maxRow - minRow + 1, kind };
+  const minX = Math.min(...goals.map(o => o.transform.x));
+  const minY = Math.min(...goals.map(o => o.transform.y));
+  const maxX = Math.max(...goals.map(o => o.transform.x + o.transform.w));
+  const maxY = Math.max(...goals.map(o => o.transform.y + o.transform.h));
+  const w = maxX - minX;
+  const h = maxY - minY;
+  return { x: minX, y: minY, w, h, col: Math.floor(minX / scene.tileSize), row: Math.floor(minY / scene.tileSize), cols: Math.ceil(w / scene.tileSize), rows: Math.ceil(h / scene.tileSize), kind };
 }
 
 export function getTransitionTriggerRect(scene, kind = 'finish') {

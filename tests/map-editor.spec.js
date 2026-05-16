@@ -93,7 +93,7 @@ test('map editor loads registered tilemaps and exports new terrainLayer format',
   await expect(page.locator('#tilemapSelect')).toContainText('Act 01 Level 1');
   await expect(page.locator('#status')).toContainText('Valid');
   await expect(page.locator('#exportText')).toHaveValue(/terrainLayer\(\{ cellSize: CELL_SIZE\.BUILD/);
-  await expect(page.locator('#exportText')).toHaveValue(/gridLayer\(\{ id: 'entities', cellSize: CELL_SIZE\.GRID/);
+  await expect(page.locator('#exportText')).toHaveValue(/gridLayer\(\{ id: 'entities', cellSize: CELL_SIZE\.BUILD, objectSize: CELL_SIZE\.GRID/);
   await expect(page.locator('#exportText')).toHaveValue(/gridLayer\(\{ id: 'hazards', cellSize: CELL_SIZE\.BUILD/);
 });
 
