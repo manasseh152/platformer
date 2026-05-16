@@ -4,7 +4,7 @@ import { findObjectsWithComponent, getComponent } from '../../engine/scene/queri
 import { planContainedTerrainTileVisuals } from '../contained-terrain.js';
 import { ASSET_IDS, emptyAssetRegistry } from '../asset-registry.js';
 import { GameplayRenderLayer as L } from './gameplay-render-layers.js';
-import { addSpikeFallback, addWorldImage, addWorldRect, tileRect } from './primitive-builders.js';
+import { addSpikeFallback, addSpikeFieldFallback, addWorldImage, addWorldRect, tileRect } from './primitive-builders.js';
 
 export function identityRenderView(width, height) {
   return { cameraX: 0, cameraY: 0, worldToNativeX: 1, worldToNativeY: 1, bufferWidth: width, bufferHeight: height, worldWidth: width, worldHeight: height };
@@ -108,12 +108,63 @@ export function addGoalPackets(builder, tilemap, view, { assetRegistry = emptyAs
   }
 }
 
+function spikeObjects(tilemap) {
+  return findObjectsWithComponent(tilemap, 'collision:hazard')
+    .filter(object => getComponent(object, 'collision:hazard')?.kind === 'spike')
+    .map(object => ({ ...object.transform, w: object.transform.w ?? tilemap.tileSize, h: object.transform.h ?? tilemap.tileSize }))
+    .sort((a, b) => a.y - b.y || a.x - b.x);
+}
+
+function spikeRuns(tilemap) {
+  const spikes = spikeObjects(tilemap);
+  const consumed = new Set();
+  const key = spike => `${spike.x},${spike.y}`;
+  const runs = [];
+
+  for (const spike of spikes) {
+    if (consumed.has(key(spike))) continue;
+    const run = { ...spike, count: 1, toothWidth: spike.w, direction: 'up', offset: Math.floor(spike.x / Math.max(1, spike.w)) };
+    for (const next of spikes) {
+      if (next === spike || consumed.has(key(next))) continue;
+      const sameRow = next.y === run.y && next.h === run.h;
+      const touches = sameRow && Math.abs((run.x + run.w) - next.x) < 0.001;
+      const sameCellSize = (run.cellSize ?? run.h) === (next.cellSize ?? next.h);
+      if (!touches || !sameCellSize) continue;
+      run.w += next.w;
+      run.count += 1;
+      consumed.add(key(next));
+    }
+    if (run.count > 1) {
+      consumed.add(key(spike));
+      runs.push(run);
+    }
+  }
+
+  for (const spike of spikes) {
+    if (consumed.has(key(spike))) continue;
+    const run = { ...spike, count: 1, toothWidth: spike.h, direction: 'right', offset: Math.floor(spike.y / Math.max(1, spike.h)) };
+    for (const next of spikes) {
+      if (next === spike || consumed.has(key(next))) continue;
+      const sameCol = next.x === run.x && next.w === run.w;
+      const touches = sameCol && Math.abs((run.y + run.h) - next.y) < 0.001;
+      const sameCellSize = (run.cellSize ?? run.w) === (next.cellSize ?? next.w);
+      if (!touches || !sameCellSize) continue;
+      run.h += next.h;
+      run.count += 1;
+      consumed.add(key(next));
+    }
+    consumed.add(key(spike));
+    runs.push(run);
+  }
+
+  return runs;
+}
+
 export function addSpikePackets(builder, tilemap, view, { assetRegistry = emptyAssetRegistry, layer = L.Hazard } = {}) {
-  for (const object of findObjectsWithComponent(tilemap, 'collision:hazard')) {
-    const hazard = getComponent(object, 'collision:hazard');
-    if (hazard?.kind !== 'spike') continue;
-    const { x, y, w = tilemap.tileSize, h = tilemap.tileSize } = object.transform;
-    if (assetRegistry.isLoaded(ASSET_IDS.HAZARD_SPIKES)) addWorldImage(builder, view, { x, y, w, h }, ASSET_IDS.HAZARD_SPIKES, { layer, lighting: 'unlit', flipY: true });
+  for (const run of spikeRuns(tilemap)) {
+    const { x, y, w, h } = run;
+    if (run.count > 1) addSpikeFieldFallback(builder, view, { x, y, w, h }, layer, { toothWidth: run.toothWidth, offset: run.offset, direction: run.direction });
+    else if (assetRegistry.isLoaded(ASSET_IDS.HAZARD_SPIKES)) addWorldImage(builder, view, { x, y, w, h }, ASSET_IDS.HAZARD_SPIKES, { layer, lighting: 'unlit', flipY: true });
     else addSpikeFallback(builder, view, { x, y, w, h }, layer);
   }
 }

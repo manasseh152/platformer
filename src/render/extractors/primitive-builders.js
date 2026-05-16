@@ -123,11 +123,52 @@ export function addEnemyPackets(builder, view, enemyRenderable, layer) {
   addActorPath(builder, view, actor, layer, [{ op: 'moveTo', x: 33, y: 12 }, { op: 'quadraticCurveTo', cpx: 42, cpy: 0, x: 25, y: 8 }], { stroke: '#8e497b', lineWidth: 3 * view.worldToNativeX });
 }
 
+const SPIKE_HEIGHTS = [0.96, 0.38, 0.72, 0.42, 0.58, 0.36];
+
+export function spikeFieldCommands(rect, toothWidth = rect.w, offset = 0, direction = 'up') {
+  const vertical = direction === 'left' || direction === 'right';
+  const runLength = vertical ? rect.h : rect.w;
+  const depth = vertical ? rect.w : rect.h;
+  const count = Math.max(1, Math.round(runLength / Math.max(1, toothWidth)));
+  const actualToothWidth = runLength / count;
+  const commands = [];
+
+  if (direction === 'right') commands.push({ op: 'moveTo', x: rect.x, y: rect.y });
+  else if (direction === 'left') commands.push({ op: 'moveTo', x: rect.x + rect.w, y: rect.y });
+  else if (direction === 'down') commands.push({ op: 'moveTo', x: rect.x, y: rect.y });
+  else commands.push({ op: 'moveTo', x: rect.x, y: rect.y + rect.h });
+
+  for (let i = 0; i < count; i++) {
+    const start = i * actualToothWidth;
+    const center = start + actualToothWidth / 2;
+    const end = i === count - 1 ? runLength : start + actualToothWidth;
+    const height = depth * SPIKE_HEIGHTS[(i + offset) % SPIKE_HEIGHTS.length];
+    if (direction === 'right') {
+      commands.push({ op: 'lineTo', x: rect.x + height, y: rect.y + center });
+      commands.push({ op: 'lineTo', x: rect.x, y: rect.y + end });
+    } else if (direction === 'left') {
+      commands.push({ op: 'lineTo', x: rect.x + rect.w - height, y: rect.y + center });
+      commands.push({ op: 'lineTo', x: rect.x + rect.w, y: rect.y + end });
+    } else if (direction === 'down') {
+      commands.push({ op: 'lineTo', x: rect.x + center, y: rect.y + height });
+      commands.push({ op: 'lineTo', x: rect.x + end, y: rect.y });
+    } else {
+      commands.push({ op: 'lineTo', x: rect.x + center, y: rect.y + rect.h - height });
+      commands.push({ op: 'lineTo', x: rect.x + end, y: rect.y + rect.h });
+    }
+  }
+  commands.push({ op: 'closePath' });
+  return commands;
+}
+
 export function addSpikeFallback(builder, view, rect, layer) {
-  const a = worldToNativePoint(view, rect.x, rect.y + rect.h);
-  const b = worldToNativePoint(view, rect.x + rect.w / 2, rect.y + rect.h / 3);
-  const c = worldToNativePoint(view, rect.x + rect.w, rect.y + rect.h);
-  builder.add({ kind: 'path', layer, lighting: 'unlit', fill: '#6c7472', commands: [{ op: 'moveTo', ...a }, { op: 'lineTo', ...b }, { op: 'lineTo', ...c }, { op: 'closePath' }] });
+  const commands = spikeFieldCommands(rect).map(command => command.op === 'closePath' ? command : ({ op: command.op, ...worldToNativePoint(view, command.x, command.y) }));
+  builder.add({ kind: 'path', layer, lighting: 'unlit', fill: '#6c7472', commands });
+}
+
+export function addSpikeFieldFallback(builder, view, rect, layer, { toothWidth = rect.w, offset = 0, fill = '#6c7472', direction = 'up' } = {}) {
+  const commands = spikeFieldCommands(rect, toothWidth, offset, direction).map(command => command.op === 'closePath' ? command : ({ op: command.op, ...worldToNativePoint(view, command.x, command.y) }));
+  builder.add({ kind: 'path', layer, lighting: 'unlit', fill, commands });
 }
 
 export function tileRect(col, row, tileSize = TILE_SIZE) {

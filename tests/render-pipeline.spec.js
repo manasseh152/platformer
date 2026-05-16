@@ -13,8 +13,13 @@ import { renderLight2d } from '#/engine/scene/components.js';
 import { defineScene } from '#/engine/scene/scene.js';
 import { getTilemapById } from '#/content/tilemaps/registry.js';
 import { addLightPackets, lightWorldPosition, pointLightIntersectsView } from '#/render/extractors/light-packets.js';
+import { addSpikePackets } from '#/render/extractors/tilemap-render-extractor.js';
 import { GameplayRenderLayer } from '#/render/extractors/gameplay-render-layers.js';
 import { createRenderParityScenarios } from '#/render/parity-render-scenarios.js';
+import { defineTilemap, gridLayer } from '#/core/tilemaps/tilemap.js';
+import { CELL_SIZE } from '#/core/constants.js';
+import { spikeHazard } from '#/content/tilemaps/objects.js';
+import { terrainLayer } from '#/core/tilemaps/terrain-layer.js';
 
 test('presentation viewport integer-scales and centers native frame', () => {
   expect(computePresentationViewport(800, 600, 320, 180)).toEqual({ scale: 2, width: 640, height: 360, offsetX: 80, offsetY: 120 });
@@ -35,6 +40,58 @@ test('render frame builder sorts by layer order then insertion sequence', () => 
     .finalize();
 
   expect(frame.packets.map(packet => packet.id)).toEqual(['a', 'a2', 'b', 'c']);
+});
+
+test('contiguous spikes render as one dynamic spike field', () => {
+  const tilemap = defineTilemap({
+    id: 'dynamic-spike-render-test',
+    name: 'Dynamic Spike Render Test',
+    cols: 2,
+    rows: 1,
+    layers: [
+      terrainLayer({ rows: [[null, null, null, null], [null, null, null, null]] }),
+      gridLayer({ id: 'hazards', cellSize: CELL_SIZE.BUILD, symbols: { '^': spikeHazard }, rows: ['^^..', '....'] })
+    ]
+  });
+  const builder = createRenderFrameBuilder({ width: 64, height: 16 });
+
+  addSpikePackets(builder, tilemap, { cameraX: 0, cameraY: 0, worldToNativeX: 1, worldToNativeY: 1 }, { assetRegistry: createAssetRegistry({}) });
+
+  const frame = builder.finalize();
+  expect(frame.packets).toHaveLength(1);
+  expect(frame.packets[0]).toMatchObject({ kind: 'path', fill: '#6c7472' });
+  expect(frame.packets[0].commands.filter(command => command.op === 'lineTo')).toEqual([
+    expect.objectContaining({ x: 8, y: expect.closeTo(0.64, 5) }),
+    expect.objectContaining({ x: 16, y: 16 }),
+    expect.objectContaining({ x: 24, y: expect.closeTo(9.92, 5) }),
+    expect.objectContaining({ x: 32, y: 16 })
+  ]);
+});
+
+test('vertical spikes render as one sideways dynamic spike field', () => {
+  const tilemap = defineTilemap({
+    id: 'vertical-dynamic-spike-render-test',
+    name: 'Vertical Dynamic Spike Render Test',
+    cols: 1,
+    rows: 2,
+    layers: [
+      terrainLayer({ rows: [[null, null], [null, null], [null, null], [null, null]] }),
+      gridLayer({ id: 'hazards', cellSize: CELL_SIZE.BUILD, symbols: { '^': spikeHazard }, rows: ['^.', '^.', '..', '..'] })
+    ]
+  });
+  const builder = createRenderFrameBuilder({ width: 16, height: 64 });
+
+  addSpikePackets(builder, tilemap, { cameraX: 0, cameraY: 0, worldToNativeX: 1, worldToNativeY: 1 }, { assetRegistry: createAssetRegistry({}) });
+
+  const frame = builder.finalize();
+  expect(frame.packets).toHaveLength(1);
+  expect(frame.packets[0]).toMatchObject({ kind: 'path', fill: '#6c7472' });
+  expect(frame.packets[0].commands.filter(command => command.op === 'lineTo')).toEqual([
+    expect.objectContaining({ x: expect.closeTo(15.36, 5), y: 8 }),
+    expect.objectContaining({ x: 0, y: 16 }),
+    expect.objectContaining({ x: expect.closeTo(6.08, 5), y: 24 }),
+    expect.objectContaining({ x: 0, y: 32 })
+  ]);
 });
 
 test('render view snaps camera and converts world rects to native coordinates', () => {

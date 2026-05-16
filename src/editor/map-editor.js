@@ -2,6 +2,7 @@ import { CELL_SIZE } from '../core/constants.js';
 import { drawCollisionDebugOverlay } from '../devtools/debug-render.js';
 import { getAllTilemaps, getDefaultTilemap } from '../content/tilemaps/registry.js';
 import { planContainedTerrainTileVisuals } from '../render/contained-terrain.js';
+import { spikeFieldCommands } from '../render/extractors/primitive-builders.js';
 import { terrainKindConfig } from '../core/tilemaps/terrain-layer.js';
 import { compileDraft as compileTilemapDraft, createBlankDraft, createDraftFromTilemap as draftFromTilemap, EMPTY, hasEntitySymbol, normalizeDraft, replaceChar } from './tilemap-draft.js';
 import { BRUSHES, brushesForPack, defaultPackForLayer, layerById, packsForLayer } from './edit-domain.js';
@@ -844,29 +845,62 @@ function drawEntities(ctx, rect) {
   ctx.restore();
 }
 
+function drawSpikeFieldPath(ctx, rect, toothWidth, offset = 0, direction = 'up') {
+  const commands = spikeFieldCommands(rect, toothWidth, offset, direction);
+  ctx.beginPath();
+  for (const command of commands) {
+    if (command.op === 'moveTo') ctx.moveTo(command.x, command.y);
+    else if (command.op === 'lineTo') ctx.lineTo(command.x, command.y);
+    else if (command.op === 'closePath') ctx.closePath();
+  }
+  ctx.fill();
+  ctx.stroke();
+}
+
 function drawHazards(ctx, rect) {
   const layer = hazardLayer();
   if (!layer) return;
   const range = visibleCellRange(layer, rect);
   ctx.save();
   ctx.globalAlpha = activeEditLayerId === 'hazards' ? .95 : .62;
+  ctx.fillStyle = '#ff4d7d';
+  ctx.strokeStyle = 'rgba(28, 4, 16, .86)';
+  ctx.lineWidth = 1.5 / viewport.camera.zoom;
+  const consumed = new Set();
+  const key = (col, row) => `${col},${row}`;
   for (let row = range.startRow; row <= range.endRow; row++) {
     const line = layer.rows[row];
-    for (let col = range.startCol; col <= range.endCol; col++) {
-      const ch = line[col];
-      if (ch === EMPTY) continue;
-      const x = col * layer.cellSize;
-      const y = row * layer.cellSize;
-      ctx.fillStyle = '#ff4d7d';
-      ctx.strokeStyle = 'rgba(28, 4, 16, .86)';
-      ctx.lineWidth = 1.5 / viewport.camera.zoom;
-      ctx.beginPath();
-      ctx.moveTo(x + layer.cellSize / 2, y + 2);
-      ctx.lineTo(x + layer.cellSize - 2, y + layer.cellSize - 2);
-      ctx.lineTo(x + 2, y + layer.cellSize - 2);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+    let runStart = null;
+    for (let col = range.startCol; col <= range.endCol + 1; col++) {
+      const filled = col <= range.endCol && line[col] !== EMPTY;
+      if (filled && runStart === null) runStart = col;
+      if ((!filled || col === range.endCol + 1) && runStart !== null) {
+        const runEnd = col;
+        if (runEnd - runStart > 1) {
+          const x = runStart * layer.cellSize;
+          const y = row * layer.cellSize;
+          drawSpikeFieldPath(ctx, { x, y, w: (runEnd - runStart) * layer.cellSize, h: layer.cellSize }, layer.cellSize, runStart, 'up');
+          for (let usedCol = runStart; usedCol < runEnd; usedCol++) consumed.add(key(usedCol, row));
+        }
+        runStart = null;
+      }
+    }
+  }
+
+  for (let col = range.startCol; col <= range.endCol; col++) {
+    let runStart = null;
+    for (let row = range.startRow; row <= range.endRow + 1; row++) {
+      const line = layer.rows[row];
+      const filled = row <= range.endRow && line?.[col] !== EMPTY && !consumed.has(key(col, row));
+      if (filled && runStart === null) runStart = row;
+      if ((!filled || row === range.endRow + 1) && runStart !== null) {
+        const runEnd = row;
+        const x = col * layer.cellSize;
+        const y = runStart * layer.cellSize;
+        const direction = runEnd - runStart > 1 ? 'right' : 'up';
+        drawSpikeFieldPath(ctx, { x, y, w: layer.cellSize, h: (runEnd - runStart) * layer.cellSize }, layer.cellSize, runStart, direction);
+        runStart = null;
+      }
     }
   }
   ctx.restore();
