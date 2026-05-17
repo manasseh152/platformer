@@ -8,10 +8,11 @@ import { getLaunchAssets } from './launch-assets.manifest.js';
 import { generateIcons } from './generate-icons.js';
 
 function parseArgs(argv) {
-  const args = { complete: false, built: false };
+  const args = { complete: false, built: false, reviewArtifacts: false };
   for (const arg of argv) {
     if (arg === '--complete') args.complete = true;
     else if (arg === '--built') args.built = true;
+    else if (arg === '--review-artifacts') args.reviewArtifacts = true;
     else throw new Error(`Unknown argument: ${arg}`);
   }
   return args;
@@ -97,7 +98,9 @@ async function validateAssetFile(asset, path, sourceLabel = path) {
 }
 
 async function validateAsset(asset) {
-  const errors = await validateAssetFile(asset, resolve(asset.path), asset.path);
+  const errors = [];
+  const shouldValidateFile = asset.ownership !== 'review' || asset.requirePersistentValidation;
+  if (shouldValidateFile) errors.push(...await validateAssetFile(asset, resolve(asset.path), asset.path));
 
   for (const reference of asset.htmlReferences ?? []) {
     const sourcePath = resolve(reference.file);
@@ -225,7 +228,7 @@ async function validateBuiltManifest(manifest, distDir, assets) {
 async function validateBuiltHtmlReferences(distDir, assets) {
   const errors = [];
 
-  for (const asset of assets) {
+  for (const asset of assets.filter(asset => asset.ownership !== 'review')) {
     const copiedPath = builtAssetPath(asset, distDir);
     errors.push(...await validateAssetFile(asset, copiedPath, relative(process.cwd(), copiedPath)));
 
@@ -278,7 +281,10 @@ export async function validateBuiltLaunchAssets(options = {}) {
 }
 
 export async function validateLaunchAssets(options = {}) {
-  const assets = getLaunchAssets(options);
+  const assets = getLaunchAssets(options).map(asset => ({
+    ...asset,
+    requirePersistentValidation: options.reviewArtifacts && asset.ownership === 'review'
+  }));
   const nestedErrors = await Promise.all(assets.map(validateAsset));
   const errors = nestedErrors.flat();
   errors.push(...await validateGeneratedBytes(assets));
@@ -302,7 +308,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
       return;
     }
     const scope = options.complete ? 'active + planned' : 'active only';
-    console.log(`✓ Launch assets valid (${scope}${options.built ? ', built dist' : ''})`);
+    console.log(`✓ Launch assets valid (${scope}${options.built ? ', built dist' : ''}${options.reviewArtifacts ? ', review artifacts' : ''})`);
   }).catch(error => {
     console.error(error.stack || error.message);
     process.exitCode = 1;

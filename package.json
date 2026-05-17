@@ -7,7 +7,7 @@
     "test:e2e": "playwright test",
     "render:map": "node tools/render-map.js",
     "generate:icons": "node tools/generate-icons.js",
-    "generate:launch-assets": "node tools/generate-icons.js",
+    "generate:launch-assets": "node tools/generate-launch-assets.js",
     "validate:launch-assets": "node tools/validate-launch-assets.js",
     "validate:launch-assets:built": "bun run build && node tools/validate-launch-assets.js --built",
     "validate:map-render": "node tools/render-map.js .temp/full-map.png",

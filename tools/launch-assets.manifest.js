@@ -69,9 +69,11 @@ export const launchAssetsManifest = {
     mapReviews: {
       id: 'mapReviews',
       label: 'Full-map review renders',
-      status: 'planned',
+      status: 'active',
+      generator: 'mapRender',
+      ownership: 'review',
       assets: [
-        { id: 'act-01-level-3-full-map-review', path: 'public/reviews/act-01-level-3-full-map-review.png', mediaType: 'image/png', source: { kind: 'tilemap', tilemapId: 'act-01-level-3' } }
+        { id: 'act-01-level-3-full-map-review', path: '.temp/launch-assets/review/act-01-level-3-full-map.png', mediaType: 'image/png', dimensions: { width: 1280, height: 768 }, source: { kind: 'tilemap', tilemapId: 'act-01-level-3' } }
       ]
     }
   }
@@ -123,6 +125,7 @@ export function getLaunchAssets(options = {}) {
   return getLaunchAssetGroups(options).flatMap(group => group.assets.map(asset => ({
     status: asset.status ?? group.status,
     generator: asset.generator ?? group.generator,
+    ownership: asset.ownership ?? group.ownership ?? 'release',
     group: group.id,
     ...asset
   })));

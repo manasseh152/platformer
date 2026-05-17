@@ -8,7 +8,7 @@ import { validateBuiltLaunchAssets } from '../tools/validate-launch-assets.js';
 const publicPath = /^public\//;
 
 async function copyActiveAssetsToDist(distDir) {
-  for (const asset of getLaunchAssets()) {
+  for (const asset of getLaunchAssets().filter(asset => asset.ownership !== 'review')) {
     const relativePublicPath = asset.path.replace(/^public\//, '');
     const targetPath = resolve(distDir, relativePublicPath);
     await mkdir(dirname(targetPath), { recursive: true });
@@ -16,7 +16,7 @@ async function copyActiveAssetsToDist(distDir) {
   }
 }
 
-test('launch asset manifest has grouped schema with active and planned groups', () => {
+test('launch asset manifest has grouped schema with status labels', () => {
   expect(launchAssetsManifest.version).toBe(1);
   expect(Object.keys(launchAssetsManifest.groups)).toEqual(expect.arrayContaining([
     'icons',
@@ -37,13 +37,13 @@ test('launch asset manifest has grouped schema with active and planned groups', 
   }
 });
 
-test('active filtering is default and complete includes planned assets', () => {
+test('active filtering is default and complete includes review assets', () => {
   const activeGroups = getLaunchAssetGroups();
   expect(activeGroups.every(group => group.status === 'active')).toBe(true);
   expect(activeGroups.map(group => group.id)).toContain('screenshots');
+  expect(activeGroups.map(group => group.id)).toContain('mapReviews');
 
   const complete = getLaunchAssets({ complete: true });
-  expect(complete.some(asset => asset.status === 'planned')).toBe(true);
   expect(complete.map(asset => asset.id)).toContain('act-01-level-3-full-map-review');
 });
 
@@ -63,9 +63,10 @@ test('screenshot matrix expands all subject viewport format combinations', () =>
   }));
 });
 
-test('launch asset output path conventions stay under public with expected filenames', () => {
+test('launch asset output path conventions use public for release assets and .temp for review assets', () => {
   const assets = getLaunchAssets({ complete: true });
-  expect(assets.every(asset => publicPath.test(asset.path))).toBe(true);
+  expect(assets.filter(asset => asset.ownership !== 'review').every(asset => publicPath.test(asset.path))).toBe(true);
+  expect(assets.filter(asset => asset.ownership === 'review').map(asset => asset.path)).toContain('.temp/launch-assets/review/act-01-level-3-full-map.png');
   expect(assets.filter(asset => asset.generator === 'icons').map(asset => asset.path)).toEqual(expect.arrayContaining([
     'public/icons/chibi-hollow-icon.svg',
     'public/icons/favicon.svg',
