@@ -48,7 +48,7 @@ export const launchAssetsManifest = {
     screenshots: {
       id: 'screenshots',
       label: 'Store and social screenshots',
-      status: 'planned',
+      status: 'active',
       generator: 'screenshots',
       matrix: {
         subjects: [
@@ -98,8 +98,7 @@ export function expandScreenshotMatrix(matrix, { subjects = matrix.subjects, vie
           subject: subject.id,
           route: subject.route,
           waitFor: subject.waitFor,
-          viewport: viewport.id,
-          status: 'planned'
+          viewport: viewport.id
         });
       }
     }

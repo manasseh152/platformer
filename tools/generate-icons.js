@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { spawn } from 'node:child_process';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -175,6 +176,17 @@ async function writeIco(entries, outputPath) {
   await writeText(outputPath, Buffer.concat([header, ...images.map(image => image.data)]));
 }
 
+function run(commandLine, options = {}) {
+  return new Promise((resolvePromise, reject) => {
+    const child = spawn(commandLine, { stdio: 'inherit', shell: true, ...options });
+    child.on('error', reject);
+    child.on('exit', code => {
+      if (code === 0) resolvePromise();
+      else reject(new Error(`${commandLine} exited with code ${code}`));
+    });
+  });
+}
+
 export async function generateIcons({ outDir = 'public' } = {}) {
   const outputs = resolveOutputPaths(outDir);
   const pngTargets = resolvePngTargets(outDir);
@@ -222,8 +234,15 @@ function parseArgs(argv) {
   return args;
 }
 
+export async function generateLaunchAssets(options = {}) {
+  await generateIcons(options);
+  if ((options.outDir ?? 'public') === 'public') {
+    await run('bunx playwright test -c playwright.launch-assets.config.js');
+  }
+}
+
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
-  generateIcons(parseArgs(process.argv.slice(2))).catch(error => {
+  generateLaunchAssets(parseArgs(process.argv.slice(2))).catch(error => {
     console.error(error.message);
     process.exitCode = 1;
   });

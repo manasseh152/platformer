@@ -1,7 +1,8 @@
-import { openScenarioBrowser } from './ui/menu/menu-shell.js';
+import { centerCameraOnPlayer } from '#/core/camera.js';
+import { openScenarioBrowser, startGame } from './ui/menu/menu-shell.js';
 
 const ENABLED = import.meta.env?.VITE_ENABLE_CAPTURE_MODE === 'true';
-const SUPPORTED_CAPTURES = new Set(['start-screen', 'scenario-browser']);
+const SUPPORTED_CAPTURES = new Set(['start-screen', 'scenario-browser', 'campaign-gameplay']);
 
 export function readCaptureTarget(locationRef = window.location) {
   if (!ENABLED) return null;
@@ -26,6 +27,18 @@ export function applyCaptureMode(game, runtime) {
 
   if (target === 'scenario-browser') {
     openScenarioBrowser(game, 'start');
+  }
+
+  if (target === 'campaign-gameplay') {
+    game.scenarios.select('act-01-level-3');
+    game.scenarios.launch('act-01-level-3', { origin: 'capture-mode' });
+    startGame(game, runtime);
+    Object.assign(game.player, { x: 96, y: 592, vx: 0, vy: 0, dir: 1, dead: false });
+    if (game.camera) {
+      game.camera.mode = 'follow';
+      centerCameraOnPlayer(game.camera, game.player, game.view, game.tilemap?.worldWidth, game.tilemap?.worldHeight);
+    }
+    document.body.dataset.tilemapId = 'act-01-level-3';
   }
 
   requestAnimationFrame(() => requestAnimationFrame(() => {

@@ -2,7 +2,9 @@ import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { getScreenshotCaptureAssets } from '../../tools/launch-assets.manifest.js';
 
-export const activeScreenshotSubjects = ['start-screen', 'scenario-browser'];
+export const activeScreenshotSubjects = getScreenshotCaptureAssets()
+  .map(asset => asset.subject)
+  .filter((subject, index, subjects) => subjects.indexOf(subject) === index);
 
 export function screenshotAssetsForProject(projectName) {
   return getScreenshotCaptureAssets({

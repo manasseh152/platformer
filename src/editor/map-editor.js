@@ -3,7 +3,7 @@ import { drawCollisionDebugOverlay } from '../devtools/debug-render.js';
 import { getAllTilemaps, getDefaultTilemap } from '../content/tilemaps/registry.js';
 import { planContainedTerrainTileVisuals } from '../render/contained-terrain.js';
 import { spikeFieldCommands } from '../render/extractors/primitive-builders.js';
-import { terrainKindConfig } from '../core/tilemaps/terrain-layer.js';
+import { TERRAIN_KIND as K, terrainKindConfig } from '../core/tilemaps/terrain-layer.js';
 import { compileDraft as compileTilemapDraft, createBlankDraft, createDraftFromTilemap as draftFromTilemap, EMPTY, hasEntitySymbol, normalizeDraft, replaceChar } from './tilemap-draft.js';
 import { BRUSHES, brushesForPack, defaultPackForLayer, layerById, packsForLayer } from './edit-domain.js';
 import { createPreviewPayload, createSharePayload, draftFromSharePayload, generatedTilemapModule, readBooleanPreference, savedLocalStatus, writeBooleanPreference } from './map-editor-commands.js';
@@ -46,6 +46,8 @@ const DEFAULT_CONTROLLER_BRUSH_SETTINGS = Object.freeze({
   cursorPaletteSize: 'compact',
   bottomRightPaletteSize: 'normal'
 });
+const CAPTURE_MODE_ENABLED = import.meta.env?.VITE_ENABLE_CAPTURE_MODE === 'true';
+const CAPTURE_TARGET = CAPTURE_MODE_ENABLED ? new URLSearchParams(location.search).get('capture') : null;
 
 const dom = {
   canvas: document.querySelector('#editorCanvas'),
@@ -1687,7 +1689,61 @@ function updateTouchPinch() {
   scheduleRender();
 }
 
+function setStringCell(rows, x, y, symbol) {
+  if (!rows[y] || x < 0 || x >= rows[y].length) return;
+  rows[y] = replaceChar(rows[y], x, symbol);
+}
+
+function paintTerrainBlock(rows, x, y, w, h, kind) {
+  for (let row = y; row < y + h; row += 1) {
+    if (!rows[row]) continue;
+    for (let col = x; col < x + w && col < rows[row].length; col += 1) rows[row][col] = kind;
+  }
+}
+
+function createCaptureShowcaseDraft() {
+  const showcase = createBlankDraft({ id: 'capture-showcase-draft', name: 'Capture Showcase Draft', cols: 30, rows: 16 });
+  showcase.description = 'Generated capture-only editor showcase. Not persisted as a Local Draft.';
+  const terrain = showcase.layers.find(layer => layer.id === 'terrain');
+  const entities = showcase.layers.find(layer => layer.id === 'entities');
+  const hazards = showcase.layers.find(layer => layer.id === 'hazards');
+
+  paintTerrainBlock(terrain.rows, 0, 26, 60, 6, K.DIRT);
+  paintTerrainBlock(terrain.rows, 0, 24, 14, 2, K.GRASS);
+  paintTerrainBlock(terrain.rows, 20, 22, 10, 2, K.GRASS);
+  paintTerrainBlock(terrain.rows, 38, 18, 8, 2, K.STONE);
+  paintTerrainBlock(terrain.rows, 50, 14, 8, 2, K.GRASS);
+  paintTerrainBlock(terrain.rows, 7, 16, 6, 2, K.LOG);
+  paintTerrainBlock(terrain.rows, 8, 13, 4, 3, K.LEAVES);
+  paintTerrainBlock(terrain.rows, 31, 10, 5, 2, K.SAND);
+  paintTerrainBlock(terrain.rows, 54, 10, 3, 4, K.INVISIBLE);
+
+  setStringCell(entities.rows, 5, 23, 'P');
+  setStringCell(entities.rows, 23, 21, 'E');
+  setStringCell(entities.rows, 53, 13, 'G');
+  setStringCell(entities.rows, 54, 13, 'G');
+  setStringCell(entities.rows, 55, 13, 'G');
+  setStringCell(hazards.rows, 17, 25, '^');
+  setStringCell(hazards.rows, 18, 25, '^');
+  setStringCell(hazards.rows, 40, 17, '^');
+  return showcase;
+}
+
+function markCaptureReady() {
+  if (CAPTURE_TARGET !== 'map-editor') return;
+  document.documentElement.dataset.captureReady = 'map-editor';
+  document.body.dataset.captureReady = 'map-editor';
+}
+
 function loadInitialDraftFromUrl() {
+  if (CAPTURE_TARGET === 'map-editor') {
+    editorSource = 'capture';
+    loadedLocalDraftId = null;
+    autoSaveEnabled = false;
+    draft = createCaptureShowcaseDraft();
+    compiledFresh = false;
+    return;
+  }
   const draftId = new URLSearchParams(location.search).get('draft');
   if (!draftId) return;
   const read = readLocalDraft(localStorage, draftId);
@@ -1883,6 +1939,16 @@ function setup() {
   addEventListener('pagehide', () => { if (autoSaveEnabled) flushPending(); });
   document.addEventListener('visibilitychange', () => { if (autoSaveEnabled && document.visibilityState === 'hidden') flushPending(); });
   render();
+  if (CAPTURE_TARGET === 'map-editor') {
+    resetView(viewport, worldWidth(), worldHeight());
+    viewport.camera.zoom = Math.max(viewport.minZoom, Math.min(1.75, viewport.camera.zoom * 1.18));
+    viewport.camera.x = Math.max(0, Math.min(180, worldWidth() - viewport.width / viewport.camera.zoom));
+    viewport.camera.y = Math.max(0, Math.min(80, worldHeight() - viewport.height / viewport.camera.zoom));
+    clampCamera(viewport, worldWidth(), worldHeight());
+    setActiveTab('edit', { show: true });
+    render();
+    requestAnimationFrame(() => requestAnimationFrame(markCaptureReady));
+  }
   setStatus(`Valid ${draft.cols}×${draft.rows} tilemap.`, 'ok');
 }
 

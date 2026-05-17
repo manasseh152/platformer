@@ -40,7 +40,7 @@ test('launch asset manifest has grouped schema with active and planned groups', 
 test('active filtering is default and complete includes planned assets', () => {
   const activeGroups = getLaunchAssetGroups();
   expect(activeGroups.every(group => group.status === 'active')).toBe(true);
-  expect(activeGroups.map(group => group.id)).not.toContain('screenshots');
+  expect(activeGroups.map(group => group.id)).toContain('screenshots');
 
   const complete = getLaunchAssets({ complete: true });
   expect(complete.some(asset => asset.status === 'planned')).toBe(true);
@@ -59,8 +59,7 @@ test('screenshot matrix expands all subject viewport format combinations', () =>
     path: 'public/store/screenshots/scenario-browser/desktop-1920x1080.png',
     route: '/?capture=scenario-browser',
     waitFor: 'html[data-capture-ready="scenario-browser"]',
-    dimensions: { width: 1920, height: 1080 },
-    status: 'planned'
+    dimensions: { width: 1920, height: 1080 }
   }));
 });
 
