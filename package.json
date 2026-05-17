@@ -9,6 +9,7 @@
     "generate:icons": "node tools/generate-icons.js",
     "generate:launch-assets": "node tools/generate-icons.js",
     "validate:launch-assets": "node tools/validate-launch-assets.js",
+    "validate:launch-assets:built": "bun run build && node tools/validate-launch-assets.js --built",
     "validate:map-render": "node tools/render-map.js .temp/full-map.png",
     "validate:foundation": "bun run build && bunx playwright test --project=chromium && bun run validate:map-render"
   },

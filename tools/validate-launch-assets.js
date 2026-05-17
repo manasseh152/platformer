@@ -1,16 +1,17 @@
 #!/usr/bin/env node
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { relative, resolve } from 'node:path';
+import { basename, dirname, extname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getLaunchAssets } from './launch-assets.manifest.js';
 import { generateIcons } from './generate-icons.js';
 
 function parseArgs(argv) {
-  const args = { complete: false };
+  const args = { complete: false, built: false };
   for (const arg of argv) {
     if (arg === '--complete') args.complete = true;
+    else if (arg === '--built') args.built = true;
     else throw new Error(`Unknown argument: ${arg}`);
   }
   return args;
@@ -58,13 +59,12 @@ function expectDimensions(actual, expected) {
   return actual.width === expected.width && actual.height === expected.height;
 }
 
-async function validateAsset(asset) {
+async function validateAssetFile(asset, path, sourceLabel = path) {
   const errors = [];
-  const path = resolve(asset.path);
   if (!existsSync(path)) {
-    errors.push(fail(asset, `${asset.path} is missing`, asset.status === 'planned'
-      ? `Capture or generate planned asset ${asset.id} at ${asset.path}, or keep validation in active-only mode.`
-      : `Run bun run generate:launch-assets to recreate ${asset.path}.`));
+    errors.push(fail(asset, `${sourceLabel} is missing`, asset.status === 'planned'
+      ? `Capture or generate planned asset ${asset.id} at ${sourceLabel}, or keep validation in active-only mode.`
+      : `Run bun run generate:launch-assets to recreate ${sourceLabel}.`));
     return errors;
   }
 
@@ -73,25 +73,31 @@ async function validateAsset(asset) {
     if (asset.mediaType === 'image/png' && asset.dimensions) {
       const actual = parsePngDimensions(buffer);
       if (!expectDimensions(actual, asset.dimensions)) {
-        errors.push(fail(asset, `${asset.path} is ${actual.width}x${actual.height}; expected ${asset.dimensions.width}x${asset.dimensions.height}`, `Regenerate or recapture ${asset.path} at the manifest dimensions.`));
+        errors.push(fail(asset, `${sourceLabel} is ${actual.width}x${actual.height}; expected ${asset.dimensions.width}x${asset.dimensions.height}`, `Regenerate or recapture ${sourceLabel} at the manifest dimensions.`));
       }
     }
     if (asset.mediaType === 'image/svg+xml' && asset.dimensions) {
       const actual = parseSvgDimensions(buffer.toString('utf8'));
       if (!expectDimensions(actual, asset.dimensions)) {
-        errors.push(fail(asset, `${asset.path} is ${actual.width}x${actual.height}; expected ${asset.dimensions.width}x${asset.dimensions.height}`, `Update the SVG root dimensions or the manifest entry for ${asset.id}.`));
+        errors.push(fail(asset, `${sourceLabel} is ${actual.width}x${actual.height}; expected ${asset.dimensions.width}x${asset.dimensions.height}`, `Update the SVG root dimensions or the manifest entry for ${asset.id}.`));
       }
     }
     if (asset.mediaType === 'image/x-icon') {
       const actual = parseIcoDirectory(buffer).map(entry => ({ width: entry.width, height: entry.height }));
       const expected = asset.icoEntries ?? [];
       if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-        errors.push(fail(asset, `${asset.path} ICO entries are ${JSON.stringify(actual)}; expected ${JSON.stringify(expected)}`, `Run bun run generate:launch-assets to rebuild favicon.ico.`));
+        errors.push(fail(asset, `${sourceLabel} ICO entries are ${JSON.stringify(actual)}; expected ${JSON.stringify(expected)}`, `Run bun run generate:launch-assets to rebuild favicon.ico.`));
       }
     }
   } catch (error) {
-    errors.push(fail(asset, `${asset.path} could not be parsed: ${error.message}`, `Regenerate ${asset.path} or fix its manifest mediaType.`));
+    errors.push(fail(asset, `${sourceLabel} could not be parsed: ${error.message}`, `Regenerate ${sourceLabel} or fix its manifest mediaType.`));
   }
+
+  return errors;
+}
+
+async function validateAsset(asset) {
+  const errors = await validateAssetFile(asset, resolve(asset.path), asset.path);
 
   for (const reference of asset.htmlReferences ?? []) {
     const sourcePath = resolve(reference.file);
@@ -131,11 +137,152 @@ async function validateGeneratedBytes(assets) {
   }
 }
 
+function builtAssetPath(asset, distDir) {
+  if (!asset.path.startsWith('public/')) throw new Error(`Expected public/ asset path for ${asset.id}: ${asset.path}`);
+  return resolve(distDir, asset.path.slice('public/'.length));
+}
+
+function sourceHtmlToBuiltPath(sourceFile, distDir) {
+  return resolve(distDir, sourceFile === 'index.html' ? 'index.html' : sourceFile);
+}
+
+function normalizeLocalUrl(value) {
+  if (!value || value.startsWith('#') || value.startsWith('data:') || /^[a-z][a-z0-9+.-]*:/i.test(value)) return null;
+  return value.split(/[?#]/, 1)[0];
+}
+
+function htmlReferenceToPath(value, htmlPath, distDir) {
+  const url = normalizeLocalUrl(value);
+  if (!url || /\s/.test(url) || !extname(url)) return null;
+  if (url.startsWith('/')) return resolve(distDir, `.${url}`);
+  if (!url.startsWith('./') && !url.startsWith('../')) return null;
+  return resolve(dirname(htmlPath), url);
+}
+
+async function listHtmlFiles(root) {
+  const entries = await readdir(root, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    const path = join(root, entry.name);
+    if (entry.isDirectory()) files.push(...await listHtmlFiles(path));
+    else if (entry.isFile() && entry.name.endsWith('.html')) files.push(path);
+  }
+  return files;
+}
+
+function mediaTypeForPath(path) {
+  const extension = extname(path).toLowerCase();
+  if (extension === '.png') return 'image/png';
+  if (extension === '.svg') return 'image/svg+xml';
+  if (extension === '.ico') return 'image/x-icon';
+  return undefined;
+}
+
+async function validateBuiltManifest(manifest, distDir, assets) {
+  const errors = [];
+  const manifestAsset = { id: 'pwa-manifest', path: 'dist/manifest.webmanifest' };
+  for (const field of ['id', 'name', 'short_name', 'start_url', 'scope', 'display', 'orientation']) {
+    if (!manifest[field]) errors.push(fail(manifestAsset, `dist/manifest.webmanifest is missing ${field}`, `Restore the PWA ${field} value in vite.config.js.`));
+  }
+  if (!Array.isArray(manifest.icons) || manifest.icons.length === 0) {
+    errors.push(fail(manifestAsset, 'dist/manifest.webmanifest has no icons', 'Restore the PWA manifest icons in vite.config.js.'));
+    return errors;
+  }
+
+  const expectedIconAssets = assets.filter(asset => asset.group === 'icons' && asset.mediaType === 'image/png');
+  for (const asset of expectedIconAssets) {
+    const src = `/${asset.path.slice('public/'.length)}`;
+    const icon = manifest.icons.find(candidate => candidate.src === src);
+    if (!icon) {
+      errors.push(fail(asset, `dist/manifest.webmanifest does not include ${src}`, `Add ${src} to the PWA manifest icons in vite.config.js.`));
+      continue;
+    }
+    const expectedSizes = `${asset.dimensions.width}x${asset.dimensions.height}`;
+    const expectedPurpose = asset.purpose ?? 'any';
+    if (icon.sizes !== expectedSizes) errors.push(fail(asset, `${src} declares sizes ${icon.sizes}; expected ${expectedSizes}`, `Set ${src} manifest sizes to ${expectedSizes}.`));
+    if (icon.type !== asset.mediaType) errors.push(fail(asset, `${src} declares type ${icon.type}; expected ${asset.mediaType}`, `Set ${src} manifest type to ${asset.mediaType}.`));
+    if (icon.purpose !== expectedPurpose) errors.push(fail(asset, `${src} declares purpose ${icon.purpose}; expected ${expectedPurpose}`, `Set ${src} manifest purpose to ${expectedPurpose}.`));
+  }
+
+  const manifestIconEntries = [...manifest.icons, ...((manifest.shortcuts ?? []).flatMap(shortcut => shortcut.icons ?? []))];
+  for (const icon of manifestIconEntries) {
+    const iconPath = htmlReferenceToPath(icon.src, resolve(distDir, 'manifest.webmanifest'), distDir);
+    if (!iconPath) continue;
+    if (!existsSync(iconPath)) {
+      errors.push(fail(manifestAsset, `PWA icon ${icon.src} is missing from dist/`, `Ensure Vite copies ${icon.src} by keeping it under public/ or includeAssets.`));
+      continue;
+    }
+    const dimensions = icon.sizes?.match(/^(\d+)x(\d+)$/);
+    const mediaType = icon.type ?? mediaTypeForPath(iconPath);
+    if (dimensions && mediaType) {
+      const iconAsset = { id: `pwa-icon:${icon.src}`, path: icon.src, mediaType, dimensions: { width: Number(dimensions[1]), height: Number(dimensions[2]) } };
+      errors.push(...await validateAssetFile(iconAsset, iconPath, `dist${icon.src}`));
+    }
+  }
+  return errors;
+}
+
+async function validateBuiltHtmlReferences(distDir, assets) {
+  const errors = [];
+
+  for (const asset of assets) {
+    const copiedPath = builtAssetPath(asset, distDir);
+    errors.push(...await validateAssetFile(asset, copiedPath, relative(process.cwd(), copiedPath)));
+
+    for (const reference of asset.htmlReferences ?? []) {
+      const htmlPath = sourceHtmlToBuiltPath(reference.file, distDir);
+      const html = existsSync(htmlPath) ? await readFile(htmlPath, 'utf8') : '';
+      if (!html.includes(reference.text)) {
+        errors.push(fail(asset, `${relative(process.cwd(), htmlPath)} does not reference ${asset.id}`, `Ensure the built HTML keeps: ${reference.text}`));
+      }
+    }
+  }
+
+  const htmlFiles = await listHtmlFiles(distDir);
+  for (const htmlPath of htmlFiles) {
+    const html = await readFile(htmlPath, 'utf8');
+    const references = html.matchAll(/\b(?:href|src|content)="([^"]+)"/gi);
+    for (const [, value] of references) {
+      const path = htmlReferenceToPath(value, htmlPath, distDir);
+      if (path && !existsSync(path)) {
+        errors.push(fail({ id: basename(htmlPath), path: htmlPath }, `${relative(process.cwd(), htmlPath)} references missing ${value}`, `Run bun run build and ensure ${value} is emitted or copied into dist/.`));
+      }
+    }
+  }
+
+  return errors;
+}
+
+export async function validateBuiltLaunchAssets(options = {}) {
+  const distDir = resolve(options.distDir ?? 'dist');
+  const distLabel = relative(process.cwd(), distDir) || basename(distDir);
+  const errors = [];
+  if (!existsSync(distDir)) {
+    return [fail({ id: 'dist', path: distLabel }, `${distLabel}/ does not exist`, 'Run bun run build before validating built launch assets.')];
+  }
+
+  const manifestPath = resolve(distDir, 'manifest.webmanifest');
+  if (!existsSync(manifestPath)) {
+    errors.push(fail({ id: 'pwa-manifest', path: manifestPath }, `${distLabel}/manifest.webmanifest is missing`, 'Run bun run build and check the VitePWA configuration.'));
+  } else {
+    try {
+      const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+      errors.push(...await validateBuiltManifest(manifest, distDir, getLaunchAssets(options)));
+    } catch (error) {
+      errors.push(fail({ id: 'pwa-manifest', path: manifestPath }, `${distLabel}/manifest.webmanifest could not be parsed: ${error.message}`, 'Regenerate the production build.'));
+    }
+  }
+
+  errors.push(...await validateBuiltHtmlReferences(distDir, getLaunchAssets(options)));
+  return errors;
+}
+
 export async function validateLaunchAssets(options = {}) {
   const assets = getLaunchAssets(options);
   const nestedErrors = await Promise.all(assets.map(validateAsset));
   const errors = nestedErrors.flat();
   errors.push(...await validateGeneratedBytes(assets));
+  if (options.built) errors.push(...await validateBuiltLaunchAssets(options));
   return errors;
 }
 
@@ -154,7 +301,8 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
       process.exitCode = 1;
       return;
     }
-    console.log(`✓ Launch assets valid (${options.complete ? 'active + planned' : 'active only'})`);
+    const scope = options.complete ? 'active + planned' : 'active only';
+    console.log(`✓ Launch assets valid (${scope}${options.built ? ', built dist' : ''})`);
   }).catch(error => {
     console.error(error.stack || error.message);
     process.exitCode = 1;

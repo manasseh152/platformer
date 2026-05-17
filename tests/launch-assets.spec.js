@@ -1,7 +1,20 @@
 import { expect, test } from '@playwright/test';
+import { copyFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { dirname, resolve } from 'node:path';
 import { getLaunchAssetGroups, getLaunchAssets, launchAssetsManifest, expandScreenshotMatrix } from '../tools/launch-assets.manifest.js';
+import { validateBuiltLaunchAssets } from '../tools/validate-launch-assets.js';
 
 const publicPath = /^public\//;
+
+async function copyActiveAssetsToDist(distDir) {
+  for (const asset of getLaunchAssets()) {
+    const relativePublicPath = asset.path.replace(/^public\//, '');
+    const targetPath = resolve(distDir, relativePublicPath);
+    await mkdir(dirname(targetPath), { recursive: true });
+    await copyFile(resolve(asset.path), targetPath);
+  }
+}
 
 test('launch asset manifest has grouped schema with active and planned groups', () => {
   expect(launchAssetsManifest.version).toBe(1);
@@ -66,4 +79,32 @@ test('launch asset output path conventions stay under public with expected filen
     'public/og-image.png',
     'public/favicon.ico'
   ]));
+});
+
+test('built validation rejects missing dist fixture', async () => {
+  const root = await mkdtemp(resolve(tmpdir(), 'chibi-built-assets-missing-'));
+  try {
+    const errors = await validateBuiltLaunchAssets({ distDir: resolve(root, 'dist') });
+    expect(errors).toContainEqual(expect.objectContaining({
+      message: expect.stringContaining('does not exist')
+    }));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('built validation accepts fixture manifest and HTML with copied public assets', async () => {
+  const root = await mkdtemp(resolve(tmpdir(), 'chibi-built-assets-valid-'));
+  const distDir = resolve(root, 'dist');
+  try {
+    await mkdir(distDir, { recursive: true });
+    await copyFile('tests/fixtures/launch-assets-built/valid/built-output/index.html', resolve(distDir, 'index.html'));
+    await copyFile('tests/fixtures/launch-assets-built/valid/built-output/manifest.webmanifest', resolve(distDir, 'manifest.webmanifest'));
+    await copyActiveAssetsToDist(distDir);
+
+    const errors = await validateBuiltLaunchAssets({ distDir });
+    expect(errors).toEqual([]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
