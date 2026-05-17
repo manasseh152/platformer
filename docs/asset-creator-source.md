@@ -31,7 +31,7 @@ When this brief and code disagree, code is the source of truth and this file sho
 | Authored tilemap examples | `src/content/tilemaps/**`, `src/content/gyms/**` |
 | Tilemap API | `docs/patterns/tilemaps.md` |
 | Terrain containment/collision | `docs/patterns/terrain.md` |
-| Render packet/asset backend decisions | `docs/adr/0005-render-pipeline-packets-and-backends.md` |
+| Render packet/asset backend decisions | `docs/adr/0006-render-pipeline-packets-and-backends.md` |
 
 Minimal terrain authoring shape creators may see in implementation notes:
 

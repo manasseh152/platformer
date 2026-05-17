@@ -4,7 +4,7 @@ title: Gyms and machines
 
 # Gyms and machines
 
-Gyms are developer-only, in-engine system validation scenarios. A gym must open as a gameplay world/tilemap that can be inspected with developer tools and validated by runtime machines. Browser shell/navigation smoke tests are not gyms.
+Shared domain language lives in [`../../CONTEXT.md`](../../CONTEXT.md). **Gyms** are developer-only, in-engine system validation scenarios. A Gym must open as a gameplay tilemap fixture that can be inspected with developer tools and validated by **Machines**. Browser shell/navigation smoke tests are not Gyms.
 
 ## Gym content rules
 
@@ -16,7 +16,7 @@ Gyms are developer-only, in-engine system validation scenarios. A gym must open 
 
 ## Machines
 
-A machine is a runtime validation controller owned by the active gym session. It can set up fixtures, drive or observe systems, and report pass/fail state. Failures are reported as gym state, not thrown during normal execution.
+A **Machine** is a runtime validation controller owned by the active Gym session. It can set up fixtures, drive, pin, or observe systems, and report pass/fail state. Failures are reported as gym state, not thrown during normal execution.
 
 Machine definitions live next to gym content, e.g. `src/content/gyms/movement-machines.js`. Generic runner/input infrastructure lives in core.
 

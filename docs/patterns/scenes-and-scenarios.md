@@ -2,21 +2,20 @@
 title: Scenes and scenarios
 ---
 
-# Scenes and scenarios
+# Runtime scenes and scenario launching
 
-## Terms
+Shared domain language lives in [`../../CONTEXT.md`](../../CONTEXT.md). This pattern doc covers the implementation seam between launchable scenarios and runtime scenes.
+
+## Runtime implementation terms
 
 - **App**: composition root. Owns runtime, input, settings, scene host, scenario service, and shell UI wiring.
 - **Runtime**: infrastructure boundary for events, storage, time, randomness, and test hooks.
 - **Scene**: reusable runtime component with lifecycle methods. Examples: gameplay, start screen, pause overlay, settings overlay, scenario browser.
 - **Scene stack**: ordered runtime scene composition. Base scene first, overlays after it.
-- **Scenario**: launchable catalog entry. Campaigns, gyms, and zoos are scenarios.
-- **Tilemap definition**: parsed tilemap data asset used by gameplay scenarios.
-- **Gameplay session**: mutable runtime state for one gameplay run: tilemap, player, enemies, camera, particles, dust, and outcome.
 
 ## Core rule
 
-Scenes are runtime components. Scenarios are catalog entries. Tilemaps are data assets.
+Scenes are runtime components. Scenarios are launchable domain entries. Tilemaps are authored spatial layouts.
 
 Do not infer one from another by ID. A scenario may reference a tilemap, but the scenario remains the launchable thing.
 

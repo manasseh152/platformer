@@ -16,6 +16,98 @@ _Avoid_: Level, map, tilemap
 An authored spatial layout made from tile layers and placed assets for a gameplay scenario.
 _Avoid_: Scene, level, map, tilemap scene, core scene
 
+**Placed Asset**:
+A tilemap-authored decoration, marker, or gameplay-relevant placement interpreted during a gameplay session.
+_Avoid_: Runtime entity, scene object
+
+**Terrain**:
+Tilemap-authored solid world shape that defines the ground, walls, and other static surfaces.
+_Avoid_: Collision rects, build terrain, terrain primitives, autotile artifacts
+
+**Hazard**:
+A tilemap-authored or runtime gameplay element that harms or defeats the player on contact.
+_Avoid_: Enemy
+
+**Enemy**:
+A non-player gameplay character that can oppose, obstruct, or harm the player during a gameplay session.
+_Avoid_: NPC, mob, hazard
+
+**Player**:
+The controllable hero character in a gameplay session.
+_Avoid_: Actor, character, avatar, hero
+
+**Goal**:
+The condition that completes a scenario.
+_Avoid_: Win condition, objective
+
+**Finish Gate**:
+A placed asset that completes the scenario when reached by the player.
+_Avoid_: Exit, portal, goal tile
+
+**Speed Run Mode**:
+A play mode that times scenario completion and records local best results.
+_Avoid_: Timer mode, time trial
+
+**Attempt**:
+One timed try at completing a scenario in Speed Run Mode.
+_Avoid_: Run, gameplay session
+
+**Local Record**:
+The best completed speedrun result saved on the current device for a scenario.
+_Avoid_: High score, leaderboard entry, save data
+
+**Developer Mode**:
+A mode that exposes developer-only scenarios, tools, and diagnostics.
+_Avoid_: Debug mode, admin mode, devtools
+
+**Map Editor**:
+The browser tool for authoring tilemaps and saving local drafts.
+_Avoid_: Level editor
+
+**Layer**:
+A tilemap authoring plane for one kind of content, such as terrain, entities, decor, or lights.
+_Avoid_: Canvas layer, render layer
+
+**Brush**:
+The selected tile, marker, or asset stamped into a tilemap layer.
+_Avoid_: Pack item, tool
+
+**Brush Palette**:
+The Map Editor picker for browsing, previewing, and selecting brushes.
+_Avoid_: Pack wheel, brush HUD
+
+**Gameplay Session**:
+One active playthrough of a scenario from start until completion, failure, restart, or exit.
+_Avoid_: Run, attempt, level instance
+
+**Scenario Source**:
+A category of scenarios grouped by purpose and origin.
+_Avoid_: Level type, map type
+
+**Campaign**:
+A player-facing progression scenario set.
+_Avoid_: Act source, story level group
+
+**Act**:
+A player-facing campaign chapter that groups progression scenarios.
+_Avoid_: Category, tab, world
+
+**Gym**:
+A developer validation scenario for a specific mechanic or system.
+_Avoid_: Test level, fixture map
+
+**Machine**:
+A gym-owned validation controller that drives, pins, or observes gameplay systems and reports pass/fail state.
+_Avoid_: Bot, test script, smoke test
+
+**Zoo**:
+A developer demonstration scenario showing examples or variants without necessarily being CI-gated.
+_Avoid_: Gallery level, sample map
+
+**Local Draft**:
+A same-device editor-authored tilemap draft that can be exposed as a local scenario.
+_Avoid_: Local level, saved map
+
 **Hazard**:
 A damaging environmental placement in a tilemap, separate from actor spawns and goals.
 _Avoid_: Entity, enemy, terrain
@@ -34,6 +126,35 @@ _Avoid_: Dynamic grid, variable grid
 - A **Scenario** starts one or more runtime scenes.
 - A **Scenario** may reference one **Tilemap**.
 - A **Tilemap** is consumed by gameplay but is not itself launchable.
+- A **Tilemap** contains **Terrain** and **Placed Assets** but does not own runtime behavior.
+- A **Tilemap** may contain hazard **Placed Assets**.
+- An enemy is not a **Hazard**, but it may cause hazardous contact during a **Gameplay Session**.
+- A **Tilemap** may contain enemy spawn **Placed Assets**.
+- A **Gameplay Session** owns active **Enemies** and their runtime behavior.
+- A **Gameplay Session** has exactly one **Player** for now.
+- A **Tilemap** must provide a player start **Placed Asset**.
+- A **Scenario** has one **Goal**.
+- A **Finish Gate** is a **Placed Asset**.
+- A **Gameplay Session** evaluates **Goal** completion.
+- An **Attempt** occurs within one **Gameplay Session**.
+- A completed **Attempt** may produce or update a **Local Record**.
+- A **Local Record** belongs to the timed **Scenario** identity; current implementation may key records by tilemap while scenarios are one-to-one with tilemaps.
+- **Gyms** and **Zoos** are visible in **Developer Mode**.
+- **Developer Mode** does not change player-facing campaign rules.
+- The **Map Editor** authors **Tilemaps**.
+- A **Tilemap** contains one or more **Layers**.
+- A **Brush** is applied to a **Layer**.
+- A **Brush Palette** selects the active **Brush** for the **Map Editor**.
+- Saving in the **Map Editor** creates or updates a **Local Draft**.
+- Play Preview starts a temporary **Gameplay Session** without creating a durable **Scenario**.
+- Saving local exposes the **Local Draft** as a local **Scenario**.
+- A **Scenario** creates a new **Gameplay Session** each time it is started or restarted.
+- **Campaigns**, **Gyms**, **Zoos**, and **Local Drafts** are **Scenario Sources**.
+- A **Gym** defines one or more **Machines**.
+- A **Machine** validates behavior during a **Gameplay Session**.
+- A **Campaign** contains one or more **Acts**.
+- An **Act** contains one or more campaign **Scenarios**.
+- A **Local Draft** may be exposed as a local **Scenario**.
 - A **Tilemap** may contain **Hazards**.
 - A **Hazard** is authored separately from **Entities**, on a build-grid hazard tile layer for precise placement.
 - A **Spike** is a kind of **Hazard**; the first authored spikes are floor-facing, with orientation expected later.
@@ -46,6 +167,48 @@ _Avoid_: Dynamic grid, variable grid
 > **Dev:** "Should we call the authored grid a core scene?"
 > **Domain expert:** "No — it is a **Tilemap**: tile layers and placed assets, similar to a Godot tilemap. Runtime scene terminology belongs elsewhere."
 
+> **Dev:** "Does a slime in a tilemap include AI state?"
+> **Domain expert:** "No — the tilemap contains a **Placed Asset** such as an enemy spawn marker. Runtime behavior belongs to the **Gameplay Session**."
+
+> **Dev:** "Is an 8px collision primitive terrain?"
+> **Domain expert:** "No — **Terrain** is the authored solid world shape. Collision primitives are implementation artifacts derived from terrain."
+
+> **Dev:** "Is a slime a hazard?"
+> **Domain expert:** "No — a slime is an **Enemy**. It may cause hazardous contact, but **Hazard** is reserved for harmful elements such as spikes, lava, or fail zones."
+
+> **Dev:** "Is the player start marker the player?"
+> **Domain expert:** "No — the marker is a **Placed Asset** in the **Tilemap**. The **Player** exists during the **Gameplay Session**."
+
+> **Dev:** "Is every goal a finish gate?"
+> **Domain expert:** "No — a **Goal** is the scenario completion condition. A **Finish Gate** is the current placed-asset form of that goal."
+
+> **Dev:** "Is every gameplay session an attempt?"
+> **Domain expert:** "No — an **Attempt** is specifically a timed try in **Speed Run Mode**. Normal play still creates a **Gameplay Session**."
+
+> **Dev:** "Is a failed speedrun attempt a local record?"
+> **Domain expert:** "No — only a completed **Attempt** can produce or update a **Local Record**."
+
+> **Dev:** "Does CI running gyms mean CI is in Developer Mode?"
+> **Domain expert:** "No — **Developer Mode** is an interactive product mode. CI may run gym scenarios without enabling developer UI."
+
+> **Dev:** "Does Play Preview create a local scenario?"
+> **Domain expert:** "No — Play Preview starts a temporary **Gameplay Session**. Saving local creates a **Local Draft** that can be exposed as a local **Scenario**."
+
+> **Dev:** "Is the Starter pack part of the game domain?"
+> **Domain expert:** "No — asset packs are editor UI organization. Creators talk about **Layers**, **Brushes**, and the **Brush Palette** when authoring a **Tilemap**."
+
+> **Dev:** "Does pausing and unpausing create a new gameplay session?"
+> **Domain expert:** "No — a **Gameplay Session** lasts from scenario start until completion, failure, restart, or exit."
+
+> **Dev:** "Is Movement Gym a source or a scenario?"
+> **Domain expert:** "Movement Gym is a **Scenario** from the **Gym** scenario source."
+
+> **Dev:** "Is a browser navigation smoke test a gym machine?"
+> **Domain expert:** "No — a **Machine** validates in-engine behavior inside a **Gym**. Browser shell checks are ordinary smoke tests."
+
+> **Dev:** "Is Act 1 just a UI tab?"
+> **Domain expert:** "No — an **Act** is a campaign chapter. The UI may show acts as tabs, but the term is about campaign structure."
+
 > **Dev:** "Should `src/content` and `src/core` each get their own bounded context?"
 > **Domain expert:** "No — those are implementation packages inside the same **Game Context**. Use package docs for ownership, and use `CONTEXT.md` for shared game language."
 
@@ -55,3 +218,10 @@ _Avoid_: Dynamic grid, variable grid
 - "level", "map", and "tilemap" were used for launchable entries — resolved: **Scenario** is the canonical launchable entry; user-facing UI may still say “Level Select”.
 - "tilemap" was mixed with scene terminology — resolved: **Tilemap** means authored tile layers and placed assets, not a runtime scene or core scene.
 - "scene" is runtime implementation language, not domain language — resolved: keep **Scene** definitions in pattern docs, not as canonical domain terms in this context.
+- "collision" is a technical mechanism, not domain language — resolved: describe player-facing authored behavior as **Terrain**, solid surfaces, or hazards; keep collision primitives/rects/AABBs in pattern docs.
+- "entity" is overloaded across DDD, ECS, gameplay, and editor layers — resolved: avoid **Entity** as domain language; prefer **Player**, **Enemy**, **Placed Asset**, **Hazard**, or **Finish Gate**.
+- "object" is overloaded between JavaScript objects, scene objects, and authored placements — resolved: avoid **Object** as domain language; prefer **Placed Asset** in creator-facing prose and reserve `defineObject()`/scene object for implementation docs.
+- "catalog" is application/registry implementation language, not domain language — resolved: use **Scenario**, **Scenario Source**, **Campaign**, **Gym**, **Zoo**, and **Local Draft** for domain discussion.
+- "runtime", "app", "render", "input", and "settings" name implementation or UI areas, not domain language for this context — resolved: keep them in pattern docs unless a product-specific term emerges.
+- "mode" is too broad as a generic domain term — resolved: define named product modes such as **Developer Mode** and **Speed Run Mode**, but avoid a generic **Mode** abstraction.
+- "light" is currently rendering/content implementation language, not domain language — resolved: keep light primitives in rendering patterns until lights become creator-facing tilemap authoring concepts.

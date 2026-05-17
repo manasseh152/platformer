@@ -1,0 +1,3 @@
+# Deferred 2D lighting primitives
+
+The project needed a path toward 2D deferred lighting without letting lighting bypass the existing scene/component, read-model, packet, and backend boundaries. We chose to model lighting as explicit primitives across those layers: authored light prefab/component, gameplay render read-model light renderable, `light2d` render packet, and WebGL2 deferred native-frame backend. V1 supports ambient lights, point lights, default ambient injection, and deferred handling for supported opaque lit surfaces; shadows, material channels, advanced light types, HDR/bloom, and arbitrary Map Editor light authoring remain out of scope. Current lighting guidance lives in [`../patterns/rendering.md`](../patterns/rendering.md).

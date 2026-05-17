@@ -4,7 +4,7 @@ title: Tilemaps
 
 # Tilemaps
 
-Tilemaps are one authoring format for core scenes.
+Shared domain language lives in [`../../CONTEXT.md`](../../CONTEXT.md). A tilemap is an authored spatial layout made from tile layers and placed assets for a gameplay scenario.
 
 Related:
 
@@ -12,7 +12,7 @@ Related:
 - [Scene components](./scene-components.md)
 - [Terrain pipeline](./terrain.md)
 
-`defineTilemap()` compiles explicit layers into core scene objects, terrain/collision artifacts, and then delegates generic object/index work to the core scene model.
+`defineTilemap()` compiles explicit layers into the runtime data needed by gameplay, terrain/collision artifacts, and generic object/component indexes.
 
 ## Authoring API
 
@@ -69,7 +69,7 @@ Canonical cell sizes live in `src/core/constants.js`:
 
 | Constant | Size | Meaning |
 | --- | ---: | --- |
-| `CELL_SIZE.GRID` | 32px | gameplay/entity grid |
+| `CELL_SIZE.GRID` | 32px | gameplay placement grid |
 | `CELL_SIZE.BUILD` | 16px | terrain authoring and visual autotile grid |
 | `CELL_SIZE.TERRAIN_PRIMITIVE` | 8px | derived terrain collision primitive grid |
 
@@ -94,22 +94,22 @@ Every tilemap must have exactly one terrain layer created with `terrainLayer()`.
 
 Contained terrain reads `terrain`, derives 8px collision primitives, greedy-merges physics rects, and draws visible 16px terrain tiles inside their cells.
 
-## Entity/object grid layers
+## Placed asset grid layers
 
-Entity layers use symbols mapped to reusable object definitions.
+Placed asset layers use symbols mapped to reusable placement definitions.
 
 | Symbol | Meaning |
 | --- | --- |
 | `.` | empty |
-| `P` | spawns player object |
-| `E` | spawns slime object |
+| `P` | player start marker |
+| `E` | enemy spawn marker |
 | `G` | finish-gate footprint cell |
 
 Use `GGG` for a three-cell finish gate. One character represents one occupied cell at that layer's cell size.
 
-## Object definitions
+## Reusable placement definitions
 
-Layer symbols point to reusable object definitions. Avoid inline component lists in map files.
+Layer symbols point to reusable placement definitions. Avoid inline component lists in map files.
 
 ```js
 import { defineObject } from '../../../engine/scene/objects.js';
@@ -121,9 +121,9 @@ export const playerSpawner = defineObject({
 });
 ```
 
-Terrain is not authored as a symbol/object grid anymore; use `terrainLayer()` for terrain cells.
+Terrain is not authored as a symbol grid anymore; use `terrainLayer()` for terrain cells.
 
-One concept is used for both static objects and spawnable runtime objects: `defineObject()`.
+`defineObject()` is the implementation API that turns reusable placement definitions into runtime scene objects; it is not domain language.
 
 ## Parser output
 
@@ -131,7 +131,7 @@ One concept is used for both static objects and spawnable runtime objects: `defi
 
 - `layers`: authoring grids, including the required `terrain` layer
 - `terrain`: normalized terrain cells and lookup map
-- `objects`: one scene object per non-empty object-grid cell, plus authored scene objects
+- `objects`: one runtime scene object per non-empty placed-asset grid cell, plus authored scene objects
 - `componentIndex`: cached lookup by component type
 - `worldWidth/worldHeight`, `cols/rows`, `tileSize`/`gridSize`
 - per-layer `cellSize` and per-object cell-sized transforms
@@ -153,7 +153,7 @@ Terrain cell shape:
 }
 ```
 
-Object scene shape:
+Runtime scene object shape:
 
 ```js
 {
@@ -200,7 +200,7 @@ Generic tilemap parsing validates structure only:
 - `cols` and `rows` are explicit positive integers
 - layer dimensions match `cols * CELL_SIZE.GRID / cellSize` and `rows * CELL_SIZE.GRID / cellSize`
 - `cellSize` is one of the supported `CELL_SIZE` values
-- non-empty object-grid symbols are defined
+- non-empty placed-asset grid symbols are defined
 - terrain kinds are known
 - archived `buildTerrain` layers are rejected
 

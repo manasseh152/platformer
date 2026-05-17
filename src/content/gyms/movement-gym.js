@@ -7,7 +7,7 @@ export const movementGymScenario = {
   categories: ['movement'],
   visibility: 'developer',
   description: 'Validates focused movement systems through in-engine gym machines.',
-  docs: ['docs/patterns/gyms.md', 'docs/adr/0006-machine-based-gyms.md'],
+  docs: ['docs/patterns/gyms.md', 'docs/adr/0007-machine-based-gyms.md'],
   tests: ['tests/gyms/movement.gym.spec.js'],
   covers: [
     'movement.run-max-speed',

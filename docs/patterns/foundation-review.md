@@ -6,7 +6,7 @@ title: Foundation review pattern
 
 This document is the living foundation review for the project. Keep it current when architecture, ownership, tests, or priorities change.
 
-Related decision: [ADR 0004](../adr/0004-foundation-review-before-new-systems.md).
+Related decision: [ADR 0005](../adr/0005-foundation-review-before-new-systems.md).
 
 ## Goal
 
@@ -175,7 +175,7 @@ Evidence:
 - `src/core/tilemaps/tilemap.js` rejects `buildTerrain` and requires modern `terrainLayer()` with id `terrain`.
 - `docs/patterns/terrain.md` and `docs/patterns/tilemaps.md` now describe `terrainLayer()`, terrain kinds, `null` empty cells, and archived `buildTerrain` compatibility only at draft/storage boundaries.
 - `docs/adr/0003-contained-terrain-scale.md` is marked as historical where it references the old `buildTerrain` authoring API.
-- Duplicate ADR `0003` numbering is documented as historical in both affected ADRs.
+- ADR numbering has been cleaned up so each decision has a unique sequential number.
 
 Follow-up:
 
@@ -307,7 +307,7 @@ Changed files:
 - `src/app/ui/scenario-browser.js`
 - `src/app/ui/menu/**`
 - `src/scenes/menu-dom.js`
-- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/adr/0005-foundation-review-before-new-systems.md`
 - `docs/patterns/foundation-review.md`
 
 Implemented:
@@ -337,7 +337,7 @@ Changed files:
 
 - `src/app/ui/settings/settings-navigation.js`
 - `src/app/ui/menu/**`
-- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/adr/0005-foundation-review-before-new-systems.md`
 - `docs/patterns/foundation-review.md`
 
 Implemented:
@@ -360,7 +360,7 @@ Changed files:
 
 - `src/app/ui/settings/settings-actions.js`
 - `src/app/ui/menu/**`
-- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/adr/0005-foundation-review-before-new-systems.md`
 - `docs/patterns/foundation-review.md`
 
 Implemented:
@@ -385,7 +385,7 @@ Changed files:
 
 - `src/app/ui/menu/menu-shell.js`
 - `src/app/ui/menu/**`
-- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/adr/0005-foundation-review-before-new-systems.md`
 - `docs/patterns/foundation-review.md`
 
 Implemented:
@@ -411,7 +411,7 @@ Changed files at the time:
 - `src/app/ui/gameplay-hud.js`
 - `src/render.js`
 - `tests/core-boundary.spec.js`
-- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/adr/0005-foundation-review-before-new-systems.md`
 - `docs/patterns/foundation-review.md`
 
 Implemented at the time:
@@ -446,7 +446,7 @@ Changed files:
 - `src/core/tilemaps/collision.js`
 - `src/core/tilemaps/render-artifacts.js`
 - `src/core/tilemaps/queries.js`
-- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/adr/0005-foundation-review-before-new-systems.md`
 - `docs/patterns/foundation-review.md`
 
 Implemented:
@@ -473,7 +473,7 @@ Changed files:
 - `src/editor/map-editor-commands.js`
 - `src/editor/map-editor.js`
 - `tests/core-boundary.spec.js`
-- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/adr/0005-foundation-review-before-new-systems.md`
 - `docs/patterns/foundation-review.md`
 - `docs/patterns/map-editor.md`
 
@@ -501,15 +501,15 @@ Changed files:
 - `docs/patterns/devtools.md`
 - `docs/patterns/rendering.md`
 - `docs/adr/0003-contained-terrain-scale.md`
-- `docs/adr/0003-core-input-system.md`
-- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/adr/0004-core-input-system.md`
+- `docs/adr/0005-foundation-review-before-new-systems.md`
 - `docs/patterns/foundation-review.md`
 
 Implemented:
 
 - Current pattern docs now describe `terrainLayer()` with `id: 'terrain'`, terrain kind arrays, `null` empty cells, and archived `buildTerrain` support only as boundary migration behavior.
 - Contained-terrain ADR conflicts are marked historical without rewriting the original decision record.
-- Duplicate `0003` ADR numbering is explicitly documented as historical.
+- ADR numbering is unique and sequential.
 
 Validation:
 
@@ -529,7 +529,7 @@ Changed files:
 - `tests/devtools-toolbox.spec.js`
 - `tests/gyms/ui-navigation.gym.spec.js`
 - `docs/patterns/settings-and-ui.md`
-- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/adr/0005-foundation-review-before-new-systems.md`
 - `docs/patterns/foundation-review.md`
 
 Implemented:
@@ -554,7 +554,7 @@ Changed files:
 
 - `src/app/input/input-hints.js`
 - `tests/core-input.spec.js`
-- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/adr/0005-foundation-review-before-new-systems.md`
 - `docs/patterns/foundation-review.md`
 
 Implemented:
@@ -578,7 +578,7 @@ Changed files:
 
 - `tests/physics.spec.js`
 - `tests/update-gameplay.spec.js`
-- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/adr/0005-foundation-review-before-new-systems.md`
 - `docs/patterns/foundation-review.md`
 
 Implemented:
@@ -600,7 +600,7 @@ Completed on 2026-05-10.
 Changed files:
 
 - `package.json`
-- `docs/adr/0004-foundation-review-before-new-systems.md`
+- `docs/adr/0005-foundation-review-before-new-systems.md`
 - `docs/patterns/foundation-review.md`
 
 Implemented:
@@ -619,7 +619,7 @@ Known validation note: map-render validation rendered `.temp/full-map.png`; Vite
 
 ## Required next implementation slices
 
-No required foundation-review slices remain from ADR 0004's initial implementation list. Keep this section updated if new evidence adds required handoff work.
+No required foundation-review slices remain from ADR 0005's initial implementation list. Keep this section updated if new evidence adds required handoff work.
 
 ## Candidate later slices
 

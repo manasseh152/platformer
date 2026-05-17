@@ -155,7 +155,7 @@ test('asset registry exposes atlas sprite metadata without changing asset IDs', 
   expect(registry.isLoaded(ASSET_IDS.HAZARD_SPIKES)).toBe(true);
 });
 
-test('render parity scenarios cover ADR 0009 representative packet families', () => {
+test('render parity scenarios cover ADR 0010 representative packet families', () => {
   const scenarios = createRenderParityScenarios();
   expect(scenarios.map(scenario => scenario.id)).toEqual([
     'clear-rect-vector-primitives',
@@ -187,7 +187,7 @@ test('render parity scenarios cover ADR 0009 representative packet families', ()
   ]));
 });
 
-test('canvas2d and webgl native backends match on ADR 0009 parity render scenarios', async ({ page }) => {
+test('canvas2d and webgl native backends match on ADR 0010 parity render scenarios', async ({ page }) => {
   await page.goto('/');
   const result = await page.evaluate(async () => {
     const [{ createRenderParityScenarios, PARITY_ASSET_IDS }, { createAssetRegistry, createAtlasSpriteMetadata }, { createCanvas2DNativeFrameBackend }, { createWebGlNativeFrameBackend }] = await Promise.all([

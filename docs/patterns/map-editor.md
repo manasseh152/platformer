@@ -4,7 +4,9 @@ title: Map editor patterns
 
 # Map editor patterns
 
-The browser map editor is a same-device content tool, not a gameplay scene. Keep it optimized for fast local iteration while preserving clear save semantics.
+Shared domain language lives in [`../../CONTEXT.md`](../../CONTEXT.md). The **Map Editor** is a same-device browser content tool for authoring **Tilemaps** and saving **Local Drafts**; it is not a gameplay scene.
+
+Keep it optimized for fast local iteration while preserving clear save semantics.
 
 `src/editor/map-editor.js` is the browser shell: DOM wiring, canvas interactions, viewport/history orchestration, localStorage side effects, downloads, and popup opening. Reusable draft commands/status/payload decisions belong in focused editor modules such as `src/editor/map-editor-commands.js`.
 
@@ -33,7 +35,7 @@ There is no separate Export tab. Export/import/preview/source belong to **Map** 
 
 ## Save model
 
-Local drafts are persisted under `chibi.tilemap-editor.*` and are the durable source for Level Select local maps.
+**Local Drafts** are persisted under `chibi.tilemap-editor.*` and are the durable source for local scenarios shown in Level Select.
 
 Auto-save is an editor-local preference:
 
@@ -62,21 +64,47 @@ Draft ids must be kebab-case before durable local save/export flows.
 
 ## Preview and portability
 
-**Play preview** is temporary. It writes a short-lived payload under `chibi.tilemap-preview.*` and opens `/index.html?previewTilemapKey=...&autorun=1&mode=developer`.
+**Play Preview** is temporary. It writes a short-lived payload under `chibi.tilemap-preview.*` and opens `/index.html?previewTilemapKey=...&autorun=1&mode=developer`.
 
-Preview is separate from durable Local drafts. Use **Save local** for maps that should appear in Level Select.
+Play Preview starts a temporary gameplay session without creating a durable scenario. Use **Save local** to create or update a **Local Draft** that should appear as a local scenario in Level Select.
 
 Generated JavaScript source remains live-updated but hidden behind a disclosure in the Map panel. Avoid dedicating permanent screen space to source output.
 
 ## Edit domain
 
-Use the editor language consistently:
+Use the editor language consistently and avoid “level editor” terminology:
 
 - **Layer**: what kind of map content is being authored (`terrain`, `entities`, future `lights`/`decor`). Each layer owns its snap contract/grid size, which may be gridless later.
 - **Asset pack / pack**: a controller-friendly collection of placeable items. The current implementation has one `Starter` asset pack; the active layer filters which pack items are shown. Shoulder cycling changes the selected item within the active layer's active pack while the panel is hidden.
-- **Pack item / brush**: the concrete symbol/material stamped into the active layer.
+- **Brush**: the selected tile, marker, or asset stamped into the active layer.
+- **Brush Palette**: the picker for browsing, previewing, and selecting brushes.
 
 Keep layer/pack definitions in `src/editor/edit-domain.js`; the editor shell should render and route those concepts rather than hard-coding UI labels.
+
+## Brush Palette
+
+The Brush Palette is the Map Editor picker for browsing, previewing, and selecting brushes. It is a general editor concept with controller-first interaction, not a controller-only domain term.
+
+Controller behavior:
+
+- Full editor panel open + `B` closes the panel.
+- Canvas + palette closed + `B` opens the Brush Palette.
+- Palette open + `B` cancels/closes without changing the committed brush.
+- Palette open + `A` commits the highlighted brush and closes the palette.
+- Palette open + `Y` cancels/closes the palette and opens or shows the full editor panel.
+- Palette open owns controller input; canvas cursor movement, painting, zoom/reset, and draw/pan toggling are paused.
+- `LB/RB` quick-cycle brushes when the palette is closed and move previous/next while it is open.
+- D-pad/stick navigation wraps through the visible brush list.
+
+The highlighted brush is preview-only until confirmed. Keep cancel semantics true: closing with `B` must preserve the previously committed brush.
+
+Presentation:
+
+- Reuse the existing pack wheel visual language for both passive HUD and interactive palette states.
+- When closed, the passive HUD may wake after brush or zoom changes and fade by timeout.
+- When open, the interactive palette stays visible until committed or cancelled.
+- Palette settings live with controller cursor/editor preferences; there is no enable/disable setting.
+- Future multi-pack support should add a pack-picking layer above brush selection rather than changing the Brush Palette confirmation contract.
 
 ## View controls
 

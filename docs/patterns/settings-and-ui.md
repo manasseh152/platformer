@@ -4,6 +4,8 @@ title: Settings and UI patterns
 
 # Settings and UI patterns
 
+Shared domain language lives in [`../../CONTEXT.md`](../../CONTEXT.md).
+
 ## Goals
 
 Settings and menu UI should be simple, state-driven, and scene-owned.
@@ -172,6 +174,47 @@ Recommended category order:
 5. Advanced
 
 The Controls category owns profile selection plus sub-tabs for Profiles, Gameplay, Navigation & System, Controller, and Touch. Category tab panels use the same row/section primitives. Add new settings by adding category metadata and renderers, not by inventing new page mechanics.
+
+## Layered semantic navigation
+
+Settings navigation uses explicit transient menu state rather than inferring intent only from `document.activeElement`:
+
+```js
+game.menu.settingsFocusLayer = 'primary-tabs' | 'nested-tabs' | 'content';
+```
+
+Layer behavior:
+
+- Opening Settings starts in `primary-tabs`.
+- Categories without nested tabs use `primary-tabs -> content`.
+- Controls uses `primary-tabs -> nested-tabs -> content`.
+- `menu.back` climbs one layer at a time before closing Settings.
+- Bind-listening remains a special case where `menu.back` cancels listening first.
+- `menu.previousTab` / `menu.nextTab` switch primary Settings categories from any layer.
+- Switching primary category resets `settingsFocusLayer` to `primary-tabs`.
+- Controls nested tab selection is preserved during the current Settings session, but reset to Profiles when Settings opens fresh.
+- Mouse/touch click behavior remains supported.
+- Controller/keyboard behavior uses semantic actions, not raw keys/buttons.
+
+Browser `Tab` remains native and must not be hijacked. Programmatic focus is allowed for controller/semantic navigation.
+
+Visual focus should distinguish selected state, focused element, and active layer:
+
+- `aria-selected="true"` marks selected tab/page.
+- `.controller-focus` / `:focus-visible` marks the focused control.
+- Parent data attributes, such as `data-settings-focus-layer`, mark the active navigation layer for styling.
+
+Native browser/mobile back integration is app-wide. Game native back routes through semantic menu back behavior, including Settings layer climbs; editor native back closes editor-owned backable UI such as panels or the Brush Palette.
+
+## Shared UI primitives
+
+Use shared design-system primitives for reusable UI pieces and accessibility semantics:
+
+- tabs: `.ds-tabs`, `.ds-tabs--primary`, `.ds-tabs--nested`, `.ds-tab`, `.ds-tab-panel`
+- settings/content primitives: `.ds-section`, `.ds-setting-row`, `.ds-action-row`, status rows, keybind rows
+- tab semantics: `role="tablist"`, `role="tab"`, `aria-selected`, `role="tabpanel"`, roving `tabindex`
+
+Settings-specific code should adapt these primitives with Settings data attributes and handlers. Other pages, such as Scenario Browser and Map Editor panels, may reuse primitives while keeping page-owned state, grouping, copy, and actions.
 
 ## Advanced tools
 

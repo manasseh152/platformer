@@ -13,6 +13,8 @@ Do not add root compatibility shims or broad facade files. Place new code in the
 
 ## Source packages
 
+Shared domain language lives in [`../../CONTEXT.md`](../../CONTEXT.md). Source packages are implementation ownership boundaries inside the single Game Context; do not treat each package as its own DDD bounded context.
+
 | Package | Owns | Notes |
 | --- | --- | --- |
 | `src/app/**` | Browser game composition, mutable app state, runtime adapters, settings persistence, gameplay shell UI, scenario launch glue, testing hooks. | May compose all layers, but pass smaller contexts where practical. |

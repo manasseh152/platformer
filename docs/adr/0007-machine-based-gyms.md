@@ -1,0 +1,3 @@
+# Machine-based gyms
+
+Developer-only gym entries were previously a mix of tilemaps, browser/navigation smoke checks, and claimed CI fixtures without consistent executable validation. We chose to make **Gyms** in-engine validation scenarios: each registered gym launches a minimal gameplay fixture and defines at least one runtime machine that drives, pins, or observes real systems and reports pass/fail through runner state instead of crashing normal execution. Browser shell/navigation coverage remains ordinary smoke tests, not gyms. Current gym and machine guidance lives in [`../patterns/gyms.md`](../patterns/gyms.md).

@@ -7,7 +7,7 @@ export const renderingGymScenario = {
   categories: ['rendering'],
   visibility: 'developer',
   description: 'Showcases and validates gameplay render read models through gym machines.',
-  docs: ['docs/patterns/gyms.md', 'docs/adr/0006-machine-based-gyms.md'],
+  docs: ['docs/patterns/gyms.md', 'docs/adr/0007-machine-based-gyms.md'],
   tests: ['tests/gyms/rendering.gym.spec.js'],
   covers: [
     'rendering.actor-states',

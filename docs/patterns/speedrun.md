@@ -4,19 +4,21 @@ title: Speed run patterns
 
 # Speed run patterns
 
+Shared domain language lives in [`../../CONTEXT.md`](../../CONTEXT.md). This pattern doc covers the implementation rules for **Speed Run Mode**, **Attempts**, and **Local Records**.
+
 ## Goals
 
-Speed Run Mode is an optional gameplay setting for local per-level timing.
+Speed Run Mode is optional product behavior for timing scenario completion and saving current-device best results.
 
-It should stay small and app-layer owned until campaigns/categories need a deeper domain model.
+It should stay small and app-layer owned until campaigns/categories need a deeper implementation model.
 
 ## Scope
 
 Current scope:
 
-- Per-level Any% timing.
+- Per-scenario Any% timing.
 - Timer UI only when Speed Run Mode is enabled.
-- Best times stored locally per tilemap id.
+- Local Records stored on the current device.
 - Pause time does not count for Any%.
 
 Out of scope for the current pattern:
@@ -31,7 +33,7 @@ Out of scope for the current pattern:
 Settings and records use separate localStorage keys.
 
 - `chibi.settings`: user preferences, including `speedRunMode`.
-- `chibi.speedrun.records`: player best times.
+- `chibi.speedrun.records`: Local Records.
 
 Records are not part of raw app settings export/import.
 
@@ -55,15 +57,15 @@ Store integer milliseconds. Format display values from stored numbers.
 
 ## Identity and categories
 
-Best times are keyed by `tilemap.id`, not scenario id.
+Local Records are currently keyed by `tilemap.id`, not scenario id.
 
-Reason: the player-facing unit is the level. Scenario wrappers can launch the same tilemap and should not split records until they introduce meaningful modifiers.
+Reason: current campaign scenarios map one-to-one to player-facing tilemaps. Scenario wrappers can launch the same tilemap and should not split records until they introduce meaningful modifiers. If scenarios gain distinct modifiers for the same tilemap, revisit this keying rule.
 
 Current category:
 
 - `anyPercent`: reach the finish gate.
 
-Future category metadata can use the same attempt fields:
+Future category metadata can use the same Attempt fields:
 
 - `pausedDuringRun` for No Pause.
 - `enemyTotal` and `enemyKills` for All Enemies.
@@ -74,8 +76,8 @@ Attempt state lives in `game.speedRun.attempt` and is transient.
 
 Statuses:
 
-- `idle`: no active timing because mode is off or no run is prepared.
-- `ready`: level is reset and will start advancing once active gameplay updates.
+- `idle`: no active timing because mode is off or no Attempt is prepared.
+- `ready`: gameplay is reset and will start advancing once active gameplay updates.
 - `running`: timer advances during active gameplay.
 - `invalid`: attempt ended without a valid completion.
 - `completed`: finish gate reached and Any% result was evaluated.
@@ -83,11 +85,11 @@ Statuses:
 Prepare a fresh attempt when:
 
 - gameplay starts from the start screen;
-- the level restarts;
+- the scenario restarts;
 - the current tilemap switches while already playing;
-- next level loads.
+- the next scenario loads.
 
-Do not start partial runs by merely enabling Speed Run Mode mid-level. Prepare from the next gameplay reset/start boundary.
+Do not start partial Attempts by merely enabling Speed Run Mode mid-session. Prepare from the next gameplay reset/start boundary.
 
 ## Timer advancement
 
@@ -99,16 +101,16 @@ started && !paused && !player.dead && gameplaySession.outcome === 'active'
 
 Pause time does not count. Opening pause marks `pausedDuringRun = true` for future categories but does not invalidate Any%.
 
-Death invalidates the current attempt and never writes a best time.
+Death invalidates the current Attempt and never writes a Local Record.
 
-Level switch or restart invalidates the previous attempt silently and prepares the next one.
+Scenario switch or restart invalidates the previous Attempt silently and prepares the next one.
 
 ## Completion
 
 When the finish gate completes the gameplay session:
 
 1. Stop the attempt.
-2. Compare elapsed milliseconds against `anyPercent.bestMs` for the current tilemap.
+2. Compare elapsed milliseconds against `anyPercent.bestMs` for the current Local Record key.
 3. Save only if the time is faster or no best exists.
 4. Keep the result in `game.speedRun.lastResult` for the victory toast.
 
@@ -130,8 +132,8 @@ Settings:
 HUD:
 
 - Visible only when Speed Run Mode is enabled.
-- Show current attempt time.
-- Show current level Best Any% or `Best --:--.---`.
+- Show current Attempt time.
+- Show current scenario Best Any% or `Best --:--.---`.
 
 Display format:
 

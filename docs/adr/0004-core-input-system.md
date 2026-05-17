@@ -1,0 +1,3 @@
+# Core input system
+
+Keyboard and controller handling was duplicated across browser adapters, menus, settings UI, gameplay, and editor code, and legacy string binds were hard to test or extend to analog values, controller assignment, and future multiplayer. We chose a pure `src/core/input/**` semantic input system with structured bindings, prioritized contexts, source-edge consumption, slots, and controller runtime/fingerprint identity, while browser/game/editor adapters own DOM events, Gamepad API polling, persistence, presentation, and product-specific behavior. Current implementation guidance lives in [`../patterns/input.md`](../patterns/input.md).
