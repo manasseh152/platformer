@@ -139,7 +139,8 @@ function frame(now = runtime.now()) {
   if (!menuUsedGamepad && isStarted(game) && !game.player.dead && !isWon(game) && pausePressed) {
     setPaused(game, !isPaused(game), runtime);
   }
-  if (isStarted(game) && !isPaused(game)) {
+  const captureUpdatesFrozen = document.documentElement.dataset.captureFreeze === 'gameplay';
+  if (isStarted(game) && !isPaused(game) && !captureUpdatesFrozen) {
     scenes.update(dt);
     game.inputRuntime?.endFrame?.();
     updateSpeedRun(game, dt, runtime);

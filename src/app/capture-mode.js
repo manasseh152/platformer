@@ -30,6 +30,8 @@ export function applyCaptureMode(game, runtime) {
   }
 
   if (target === 'campaign-gameplay') {
+    document.documentElement.dataset.captureFreeze = 'gameplay';
+    document.body.dataset.captureFreeze = 'gameplay';
     game.scenarios.select('act-01-level-3');
     game.scenarios.launch('act-01-level-3', { origin: 'capture-mode' });
     startGame(game, runtime);
