@@ -110,7 +110,7 @@ Validation policy:
 - Support incremental rollout with validation phases: normal validation checks active/implemented asset classes, while `validate:launch-assets --complete` enforces active and planned outputs.
 - Manifest entries may use `status: 'planned' | 'active'` during rollout; normal validation should not fail missing planned assets.
 - `status` defaults to `active`; use `status: 'planned'` only for outputs declared ahead of implementation.
-- Keep `screenshotMatrix.status = 'planned'` until screenshot generation exists; flip the matrix active as a unit before introducing per-subject exceptions.
+- Keep `screenshotMatrix.status = 'planned'` only until screenshot generation exists; once screenshot capture is wired, flip the matrix active as a unit before introducing per-subject exceptions.
 - Review artifacts need only prove successful generation unless a specific review workflow defines stricter checks.
 - Validation failures should print remediation commands, such as `bun run generate:icons` or `bun run generate:launch-assets`, so developers know how to update or inspect stale artifacts.
 
@@ -120,7 +120,7 @@ Keep focused commands for local workflows:
 - Icon generation should support an alternate output root, such as `node tools/generate-icons.js --out-dir .temp/launch-assets/generated-public`, preserving public-relative paths below that root for validation byte-compare.
 - `render:map` and `validate:map-render` remain useful for tilemap/rendering review outside release preparation.
 - The Launch Asset manifest should include `.temp/launch-assets/review/act-01-level-3-full-map.png` as an `act-01-level-3` full-map review artifact because it is also the initial Campaign Gameplay screenshot target.
-- Mark `act-01-level-3-full-map-review` as `planned` until Launch Asset orchestration wires map rendering, even though the standalone `render:map` command already supports the underlying capability.
+- `act-01-level-3-full-map-review` is active now that Launch Asset orchestration wires map rendering, while the standalone `render:map` command remains available for focused map-review work.
 - `generate:launch-assets` is the release-preparation umbrella that reuses icon generation, map rendering, and screenshot capture instead of replacing their standalone workflows.
 
 ## Source of truth
@@ -141,7 +141,7 @@ export const launchAssetManifest = {
     { id: 'start-screen', route: '/', waitFor: '#game' }
   ],
   screenshotMatrix: {
-    status: 'planned',
+    status: 'active',
     outputPattern: 'public/store/screenshots/{subject}/{viewport}.png',
     subjects: ['start-screen', 'campaign-gameplay', 'map-editor', 'scenario-browser'],
     viewports: ['desktop-1920x1080', 'mobile-landscape-2340x1080', 'tablet-landscape-2732x2048']
@@ -214,10 +214,12 @@ The manifest should distinguish release artifacts from review artifacts and shou
 
 ## Implementation slices
 
-1. Add the Launch Asset manifest, structural validator, and icon alternate-output support for deterministic byte compare. Do not add capture-mode code plumbing in this slice.
-2. Add route-based screenshot capture for Start Screen and Scenario Browser, including capture-mode flag plumbing.
-3. Add gameplay and editor capture hooks for Campaign Gameplay and Map Editor screenshots.
-4. Add map review artifact orchestration for `act-01-level-3`.
+Implemented slices:
+
+1. Launch Asset manifest, structural validator, and icon alternate-output support for deterministic byte compare.
+2. Route-based screenshot capture with capture-mode flag plumbing.
+3. Gameplay and editor capture hooks for Campaign Gameplay and Map Editor screenshots.
+4. Map review artifact orchestration for `act-01-level-3`.
 
 ## Existing reusable pieces
 
