@@ -47,17 +47,19 @@ test('active filtering is default and complete includes planned assets', () => {
   expect(complete.map(asset => asset.id)).toContain('act-01-level-3-full-map-review');
 });
 
-test('screenshot matrix expands all scenario viewport moment format combinations', () => {
+test('screenshot matrix expands all subject viewport format combinations', () => {
   const matrix = launchAssetsManifest.groups.screenshots.matrix;
   const screenshots = expandScreenshotMatrix(matrix);
 
   expect(screenshots).toHaveLength(
-    matrix.scenarios.length * matrix.viewports.length * matrix.moments.length * matrix.formats.length
+    matrix.subjects.length * matrix.viewports.length * matrix.formats.length
   );
   expect(screenshots).toContainEqual(expect.objectContaining({
-    id: 'act-01-level-3-action-desktop',
-    path: 'public/screenshots/act-01-level-3-action-desktop.png',
-    dimensions: { width: 1280, height: 720 },
+    id: 'scenario-browser-desktop-1920x1080',
+    path: 'public/store/screenshots/scenario-browser/desktop-1920x1080.png',
+    route: '/?capture=scenario-browser',
+    waitFor: 'html[data-capture-ready="scenario-browser"]',
+    dimensions: { width: 1920, height: 1080 },
     status: 'planned'
   }));
 });

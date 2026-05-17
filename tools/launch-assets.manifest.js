@@ -49,15 +49,21 @@ export const launchAssetsManifest = {
       id: 'screenshots',
       label: 'Store and social screenshots',
       status: 'planned',
+      generator: 'screenshots',
       matrix: {
-        scenarios: ['act-01-level-1', 'act-01-level-3'],
-        viewports: [
-          { id: 'desktop', width: 1280, height: 720 },
-          { id: 'mobile-landscape', width: 844, height: 390 }
+        subjects: [
+          { id: 'start-screen', route: '/?capture=start-screen', waitFor: 'html[data-capture-ready="start-screen"]' },
+          { id: 'campaign-gameplay', route: '/?capture=campaign-gameplay', waitFor: 'html[data-capture-ready="campaign-gameplay"]' },
+          { id: 'map-editor', route: '/editor?capture=map-editor', waitFor: 'html[data-capture-ready="map-editor"]' },
+          { id: 'scenario-browser', route: '/?capture=scenario-browser', waitFor: 'html[data-capture-ready="scenario-browser"]' }
         ],
-        moments: ['start', 'action'],
+        viewports: [
+          { id: 'desktop-1920x1080', width: 1920, height: 1080 },
+          { id: 'mobile-landscape-2340x1080', width: 2340, height: 1080 },
+          { id: 'tablet-landscape-2732x2048', width: 2732, height: 2048 }
+        ],
         formats: ['png'],
-        pathTemplate: 'public/screenshots/{scenario}-{moment}-{viewport}.{format}'
+        pathTemplate: 'public/store/screenshots/{subject}/{viewport}.{format}'
       }
     },
     mapReviews: {
@@ -71,32 +77,38 @@ export const launchAssetsManifest = {
   }
 };
 
-export function expandScreenshotMatrix(matrix) {
+export function expandScreenshotMatrix(matrix, { subjects = matrix.subjects, viewports = matrix.viewports } = {}) {
+  const subjectDefs = new Map(matrix.subjects.map(subject => [typeof subject === 'string' ? subject : subject.id, subject]));
+  const viewportDefs = new Map(matrix.viewports.map(viewport => [viewport.id, viewport]));
+  const selectedSubjects = subjects.map(subject => typeof subject === 'string' ? subjectDefs.get(subject) : subject).filter(Boolean);
+  const selectedViewports = viewports.map(viewport => typeof viewport === 'string' ? viewportDefs.get(viewport) : viewport).filter(Boolean);
   const assets = [];
-  for (const scenario of matrix.scenarios) {
-    for (const viewport of matrix.viewports) {
-      for (const moment of matrix.moments) {
-        for (const format of matrix.formats) {
-          const path = matrix.pathTemplate
-            .replace('{scenario}', scenario)
-            .replace('{moment}', moment)
-            .replace('{viewport}', viewport.id)
-            .replace('{format}', format);
-          assets.push({
-            id: `${scenario}-${moment}-${viewport.id}`,
-            path,
-            mediaType: `image/${format}`,
-            dimensions: { width: viewport.width, height: viewport.height },
-            scenario,
-            moment,
-            viewport: viewport.id,
-            status: 'planned'
-          });
-        }
+  for (const subject of selectedSubjects) {
+    for (const viewport of selectedViewports) {
+      for (const format of matrix.formats) {
+        const path = matrix.pathTemplate
+          .replace('{subject}', subject.id)
+          .replace('{viewport}', viewport.id)
+          .replace('{format}', format);
+        assets.push({
+          id: `${subject.id}-${viewport.id}`,
+          path,
+          mediaType: `image/${format}`,
+          dimensions: { width: viewport.width, height: viewport.height },
+          subject: subject.id,
+          route: subject.route,
+          waitFor: subject.waitFor,
+          viewport: viewport.id,
+          status: 'planned'
+        });
       }
     }
   }
   return assets;
+}
+
+export function getScreenshotCaptureAssets({ subjects, viewports } = {}) {
+  return expandScreenshotMatrix(launchAssetsManifest.groups.screenshots.matrix, { subjects, viewports });
 }
 
 export function getLaunchAssetGroups({ complete = false } = {}) {

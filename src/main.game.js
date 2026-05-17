@@ -21,6 +21,7 @@ import { isPaused, isStarted, isWon } from '#/app/app-state.js';
 import { applyTilemapPreviewFromUrl } from '#/app/tilemaps/tilemap-preview.js';
 import { handleDevToolsInput, handleDevToolsKeydown, setupDevTools, syncDevTools } from '#/devtools/toolbox-dom.js';
 import { updateSpeedRun } from '#/app/speedrun/speedrun.js';
+import { applyCaptureMode } from '#/app/capture-mode.js';
 
 if (window.location.pathname === '/editor') window.location.replace('/editor.html');
 
@@ -51,6 +52,7 @@ const urlLaunch = previewLaunch.handled ? previewLaunch : applyScenarioLaunchPar
 if (urlLaunch.ok && launchParams.autorun) startGame(game, runtime);
 syncGymApi(game, runtime);
 setupPresentationResize(game);
+applyCaptureMode(game, runtime);
 
 addEventListener('keydown', e => {
   const { input } = game;
