@@ -3,3 +3,6 @@ dist/
 
 test-results/
 .temp/
+
+# Vite PWA dev service worker output
+dev-dist/
