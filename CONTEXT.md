@@ -68,6 +68,10 @@ _Avoid_: Level editor
 The browser-installed form of Chibi Hollow that prioritizes playing scenarios and authoring tilemaps.
 _Avoid_: Website shortcut, native app
 
+**Launch Assets**:
+Generated screenshots, install assets, and review images used to prepare Chibi Hollow for distribution and release validation.
+_Avoid_: PWA assets, marketing assets, CI screenshots
+
 **Layer**:
 A tilemap authoring plane for one kind of content, such as terrain, entities, decor, or lights.
 _Avoid_: Canvas layer, render layer
@@ -151,6 +155,8 @@ _Avoid_: Dynamic grid, variable grid
 - The **Installed App** does not own **Local Draft** persistence; drafts remain owned by the **Map Editor** workflow.
 - The **Installed App** should apply updates on next launch rather than interrupting an active **Gameplay Session** or **Map Editor** workflow.
 - The **Installed App** should prioritize an immersive landscape presentation while preserving in-app navigation for authoring workflows.
+- **Launch Assets** include **Installed App** icons, store screenshots, link-preview images, and visual review artifacts.
+- **Launch Assets** are generated for release preparation and validated for required coverage and freshness.
 - A **Tilemap** contains one or more **Layers**.
 - A **Brush** is applied to a **Layer**.
 - A **Brush Palette** selects the active **Brush** for the **Map Editor**.
@@ -217,6 +223,9 @@ _Avoid_: Dynamic grid, variable grid
 
 > **Dev:** "Is Act 1 just a UI tab?"
 > **Domain expert:** "No — an **Act** is a campaign chapter. The UI may show acts as tabs, but the term is about campaign structure."
+
+> **Dev:** "Are PWA icons and store screenshots just CI screenshots?"
+> **Domain expert:** "No — they are **Launch Assets**: generated release-preparation outputs for presentation, installation, and review."
 
 > **Dev:** "Should `src/content` and `src/core` each get their own bounded context?"
 > **Domain expert:** "No — those are implementation packages inside the same **Game Context**. Use package docs for ownership, and use `CONTEXT.md` for shared game language."

@@ -12,7 +12,7 @@ This directory is the project handbook. It documents **current working patterns*
 | --- | --- |
 | Create or replace art | [`asset-creator-source.md`](./asset-creator-source.md) |
 | Add gameplay/content maps | [`patterns/tilemaps.md`](./patterns/tilemaps.md), [`patterns/terrain.md`](./patterns/terrain.md), [`patterns/scenes-and-scenarios.md`](./patterns/scenes-and-scenarios.md) |
-| Change rendering/assets | [`patterns/rendering.md`](./patterns/rendering.md), [`adr/0006-render-pipeline-packets-and-backends.md`](./adr/0006-render-pipeline-packets-and-backends.md), [`adr/0010-render-backend-maturity-and-parity-gates.md`](./adr/0010-render-backend-maturity-and-parity-gates.md) |
+| Change rendering/assets | [`patterns/rendering.md`](./patterns/rendering.md), [`patterns/launch-assets.md`](./patterns/launch-assets.md), [`adr/0006-render-pipeline-packets-and-backends.md`](./adr/0006-render-pipeline-packets-and-backends.md), [`adr/0010-render-backend-maturity-and-parity-gates.md`](./adr/0010-render-backend-maturity-and-parity-gates.md) |
 | Change UI/settings/menus/input | [`patterns/settings-and-ui.md`](./patterns/settings-and-ui.md), [`patterns/input.md`](./patterns/input.md), [`patterns/map-editor.md`](./patterns/map-editor.md) |
 | Add developer validation content | [`patterns/gyms.md`](./patterns/gyms.md), [`patterns/devtools.md`](./patterns/devtools.md) |
 | Move files or add modules | [`patterns/source-layout.md`](./patterns/source-layout.md) |
@@ -41,6 +41,7 @@ This directory is the project handbook. It documents **current working patterns*
 | Runtime asset IDs/loaders | `src/render/assets/**`, `src/assets/**`, `public/assets/**` | Yes, in asset source |
 | Scenario/catalog behavior | `src/catalog/**`, `src/content/**` | No, developer docs only unless it changes asset use |
 | Historical architecture decisions | `docs/adr/**` | No; ADRs are references, not artist handoff docs |
+| Launch Asset generation/validation coverage | `tools/launch-assets.manifest.js` once introduced; current guidance in [`patterns/launch-assets.md`](./patterns/launch-assets.md) | Yes, when store screenshots or release-facing art are involved |
 
 ## Pattern docs
 
@@ -58,6 +59,7 @@ Pattern docs describe the current intended shape:
 - [`patterns/gyms.md`](./patterns/gyms.md) — machine-based in-engine validation scenarios.
 - [`patterns/speedrun.md`](./patterns/speedrun.md) — Speed Run Mode timing, local records, attempt lifecycle, and UI rules.
 - [`patterns/asset-creator.md`](./patterns/asset-creator.md) — how to maintain the artist/designer handoff source.
+- [`patterns/launch-assets.md`](./patterns/launch-assets.md) — generation and validation rules for Launch Assets.
 - [`patterns/foundation-review.md`](./patterns/foundation-review.md) — living foundation audit before major systems.
 
 ## ADRs
@@ -78,6 +80,8 @@ Read ADRs when changing the decision area:
 - [`0010`](./adr/0010-render-backend-maturity-and-parity-gates.md) render backend maturity and parity gates.
 - [`0011`](./adr/0011-brush-palette.md) brush palette.
 - [`0012`](./adr/0012-key-speedrun-records-by-tilemap-during-one-to-one-scenario-phase.md) speedrun records keyed by tilemap during the one-to-one scenario phase.
+- [`0014`](./adr/0014-manifest-driven-launch-assets.md) manifest-driven Launch Asset pipeline.
+- [`0015`](./adr/0015-gate-capture-mode-for-launch-assets.md) gated capture mode for Launch Assets.
 
 ## Doc front matter
 
