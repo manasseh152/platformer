@@ -1,3 +1,4 @@
+import '#/app/pwa.js';
 import { getUI } from '#/app/dom.js';
 import { pollGamepads } from '#/app/input/controller-diagnostics.js';
 import { controlsText, setInputScheme } from '#/app/input/input-presentation.js';
@@ -20,6 +21,8 @@ import { isPaused, isStarted, isWon } from '#/app/app-state.js';
 import { applyTilemapPreviewFromUrl } from '#/app/tilemaps/tilemap-preview.js';
 import { handleDevToolsInput, handleDevToolsKeydown, setupDevTools, syncDevTools } from '#/devtools/toolbox-dom.js';
 import { updateSpeedRun } from '#/app/speedrun/speedrun.js';
+
+if (window.location.pathname === '/editor') window.location.replace('/editor.html');
 
 const runtime = createRuntime();
 const ui = getUI();

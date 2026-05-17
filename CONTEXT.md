@@ -64,6 +64,10 @@ _Avoid_: Debug mode, admin mode, devtools
 The browser tool for authoring tilemaps and saving local drafts.
 _Avoid_: Level editor
 
+**Installed App**:
+The browser-installed form of Chibi Hollow that prioritizes playing scenarios and authoring tilemaps.
+_Avoid_: Website shortcut, native app
+
 **Layer**:
 A tilemap authoring plane for one kind of content, such as terrain, entities, decor, or lights.
 _Avoid_: Canvas layer, render layer
@@ -142,6 +146,11 @@ _Avoid_: Dynamic grid, variable grid
 - **Gyms** and **Zoos** are visible in **Developer Mode**.
 - **Developer Mode** does not change player-facing campaign rules.
 - The **Map Editor** authors **Tilemaps**.
+- The **Installed App** launches the player-facing game by default and includes the **Map Editor** for local authoring.
+- The **Installed App** should be usable offline for core gameplay and local tilemap authoring.
+- The **Installed App** does not own **Local Draft** persistence; drafts remain owned by the **Map Editor** workflow.
+- The **Installed App** should apply updates on next launch rather than interrupting an active **Gameplay Session** or **Map Editor** workflow.
+- The **Installed App** should prioritize an immersive landscape presentation while preserving in-app navigation for authoring workflows.
 - A **Tilemap** contains one or more **Layers**.
 - A **Brush** is applied to a **Layer**.
 - A **Brush Palette** selects the active **Brush** for the **Map Editor**.
@@ -212,6 +221,10 @@ _Avoid_: Dynamic grid, variable grid
 > **Dev:** "Should `src/content` and `src/core` each get their own bounded context?"
 > **Domain expert:** "No — those are implementation packages inside the same **Game Context**. Use package docs for ownership, and use `CONTEXT.md` for shared game language."
 
+## Future language candidates
+
+- An explicit installed-app update prompt may become a player-facing concept later, but is not part of the current product language.
+
 ## Flagged ambiguities
 
 - "context" can mean a DDD bounded context or an implementation/runtime context object — resolved: **Game Context** means the single DDD bounded context; implementation contexts should be named more specifically.
@@ -223,5 +236,6 @@ _Avoid_: Dynamic grid, variable grid
 - "object" is overloaded between JavaScript objects, scene objects, and authored placements — resolved: avoid **Object** as domain language; prefer **Placed Asset** in creator-facing prose and reserve `defineObject()`/scene object for implementation docs.
 - "catalog" is application/registry implementation language, not domain language — resolved: use **Scenario**, **Scenario Source**, **Campaign**, **Gym**, **Zoo**, and **Local Draft** for domain discussion.
 - "runtime", "app", "render", "input", and "settings" name implementation or UI areas, not domain language for this context — resolved: keep them in pattern docs unless a product-specific term emerges.
+- "PWA" is implementation/platform language — resolved: use **Installed App** for the player-facing installed product capability.
 - "mode" is too broad as a generic domain term — resolved: define named product modes such as **Developer Mode** and **Speed Run Mode**, but avoid a generic **Mode** abstraction.
 - "light" is currently rendering/content implementation language, not domain language — resolved: keep light primitives in rendering patterns until lights become creator-facing tilemap authoring concepts.

@@ -12,6 +12,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
-    "vite": "latest"
+    "vite": "latest",
+    "vite-plugin-pwa": "^1.3.0"
   }
 }
