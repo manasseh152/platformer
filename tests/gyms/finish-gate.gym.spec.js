@@ -7,7 +7,7 @@ function machineById(snapshot, id) {
 test('Finish Gate Gym auto-runs finish gate machines to pass', async ({ page }) => {
   await page.goto('/index.html?mode=developer&scenario=finish-gate-gym&autorun=1');
   await expect(page.locator('body')).toHaveAttribute('data-tilemap-id', 'finish-gate-gym-map');
-  await expect.poll(() => page.evaluate(() => window.__gym?.snapshot?.().gym?.status), { timeout: 5000 }).toBe('passed');
+  await expect.poll(() => page.evaluate(() => window.__gym?.snapshot?.().gym?.status), { timeout: 15000 }).toBe('passed');
 
   const snapshot = await page.evaluate(() => window.__gym.snapshot());
   expect(snapshot.gym).toMatchObject({

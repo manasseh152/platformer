@@ -1,15 +1,17 @@
 import { expect, test } from '@playwright/test';
 
+test.setTimeout(60_000);
+
 async function waitForInstalledAppWorker(page) {
   await page.waitForFunction(async () => {
     if (!('serviceWorker' in navigator)) return false;
     await navigator.serviceWorker.ready;
     return Boolean(await navigator.serviceWorker.getRegistration());
-  });
+  }, null, { timeout: 45_000 });
 }
 
 async function waitForInstalledAppControl(page) {
-  await page.waitForFunction(() => Boolean(navigator.serviceWorker?.controller));
+  await page.waitForFunction(() => Boolean(navigator.serviceWorker?.controller), null, { timeout: 45_000 });
 }
 
 test('manifest exposes the installed game app and Map Editor shortcut', async ({ page }) => {

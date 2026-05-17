@@ -1,25 +1,33 @@
 #!/usr/bin/env node
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
-const outputs = {
-  iconSvg: resolve('public/icons/chibi-hollow-icon.svg'),
-  faviconSvg: resolve('public/icons/favicon.svg'),
-  faviconIco: resolve('public/favicon.ico'),
-  wordmarkSvg: resolve('public/logos/chibi-hollow-wordmark.svg'),
-  ogSvg: resolve('public/og-image.svg'),
-  ogPng: resolve('public/og-image.png')
-};
+function resolveOutputPaths(outDir = 'public') {
+  const root = resolve(outDir);
+  return {
+    root,
+    iconSvg: resolve(root, 'icons/chibi-hollow-icon.svg'),
+    faviconSvg: resolve(root, 'icons/favicon.svg'),
+    faviconIco: resolve(root, 'favicon.ico'),
+    wordmarkSvg: resolve(root, 'logos/chibi-hollow-wordmark.svg'),
+    ogSvg: resolve(root, 'og-image.svg'),
+    ogPng: resolve(root, 'og-image.png')
+  };
+}
 
-const pngTargets = [
-  { path: 'public/icons/favicon-16.png', size: 16, source: 'icon' },
-  { path: 'public/icons/favicon-32.png', size: 32, source: 'icon' },
-  { path: 'public/icons/apple-touch-icon.png', size: 180, source: 'icon' },
-  { path: 'public/icons/icon-192.png', size: 192, source: 'icon' },
-  { path: 'public/icons/icon-512.png', size: 512, source: 'icon' },
-  { path: 'public/icons/icon-maskable-512.png', size: 512, source: 'maskable' }
-];
+function resolvePngTargets(outDir = 'public') {
+  const root = resolve(outDir);
+  return [
+    { path: resolve(root, 'icons/favicon-16.png'), size: 16, source: 'icon' },
+    { path: resolve(root, 'icons/favicon-32.png'), size: 32, source: 'icon' },
+    { path: resolve(root, 'icons/apple-touch-icon.png'), size: 180, source: 'icon' },
+    { path: resolve(root, 'icons/icon-192.png'), size: 192, source: 'icon' },
+    { path: resolve(root, 'icons/icon-512.png'), size: 512, source: 'icon' },
+    { path: resolve(root, 'icons/icon-maskable-512.png'), size: 512, source: 'maskable' }
+  ];
+}
 
 function appIconSvg({ maskable = false } = {}) {
   const inset = maskable ? 48 : 20;
@@ -167,29 +175,56 @@ async function writeIco(entries, outputPath) {
   await writeText(outputPath, Buffer.concat([header, ...images.map(image => image.data)]));
 }
 
-const icon = appIconSvg();
-const maskableIcon = appIconSvg({ maskable: true });
-const wordmark = wordmarkSvg();
-const ogImage = ogImageSvg();
+export async function generateIcons({ outDir = 'public' } = {}) {
+  const outputs = resolveOutputPaths(outDir);
+  const pngTargets = resolvePngTargets(outDir);
+  const icon = appIconSvg();
+  const maskableIcon = appIconSvg({ maskable: true });
+  const wordmark = wordmarkSvg();
+  const ogImage = ogImageSvg();
 
-await writeText(outputs.iconSvg, icon);
-await writeText(outputs.faviconSvg, icon);
-await writeText(outputs.wordmarkSvg, wordmark);
-await writeText(outputs.ogSvg, ogImage);
+  await writeText(outputs.iconSvg, icon);
+  await writeText(outputs.faviconSvg, icon);
+  await writeText(outputs.wordmarkSvg, wordmark);
+  await writeText(outputs.ogSvg, ogImage);
 
-const browser = await chromium.launch();
-try {
-  const page = await browser.newPage({ deviceScaleFactor: 1 });
-  for (const target of pngTargets) {
-    const outputPath = resolve(target.path);
-    await mkdir(dirname(outputPath), { recursive: true });
-    await renderPng(page, target.source === 'maskable' ? maskableIcon : icon, target.size, outputPath);
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage({ deviceScaleFactor: 1 });
+    for (const target of pngTargets) {
+      await mkdir(dirname(target.path), { recursive: true });
+      await renderPng(page, target.source === 'maskable' ? maskableIcon : icon, target.size, target.path);
+    }
+    await renderSvgToPng(page, ogImage, 1200, 630, outputs.ogPng);
+    await writeIco([
+      { path: resolve(outputs.root, 'icons/favicon-16.png'), size: 16 },
+      { path: resolve(outputs.root, 'icons/favicon-32.png'), size: 32 }
+    ], outputs.faviconIco);
+  } finally {
+    await browser.close();
   }
-  await renderSvgToPng(page, ogImage, 1200, 630, outputs.ogPng);
-  await writeIco([
-    { path: 'public/icons/favicon-16.png', size: 16 },
-    { path: 'public/icons/favicon-32.png', size: 32 }
-  ], outputs.faviconIco);
-} finally {
-  await browser.close();
+}
+
+function parseArgs(argv) {
+  const args = { outDir: 'public' };
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === '--out-dir') {
+      args.outDir = argv[index + 1];
+      index += 1;
+    } else if (arg.startsWith('--out-dir=')) {
+      args.outDir = arg.slice('--out-dir='.length);
+    } else {
+      throw new Error(`Unknown argument: ${arg}`);
+    }
+  }
+  if (!args.outDir) throw new Error('--out-dir requires a value');
+  return args;
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+  generateIcons(parseArgs(process.argv.slice(2))).catch(error => {
+    console.error(error.message);
+    process.exitCode = 1;
+  });
 }

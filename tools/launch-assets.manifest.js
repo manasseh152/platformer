@@ -1,0 +1,118 @@
+export const launchAssetsManifest = {
+  version: 1,
+  groups: {
+    icons: {
+      id: 'icons',
+      label: 'App icons',
+      status: 'active',
+      generator: 'icons',
+      assets: [
+        { id: 'app-icon-svg', path: 'public/icons/chibi-hollow-icon.svg', mediaType: 'image/svg+xml', dimensions: { width: 512, height: 512 } },
+        { id: 'app-icon-192', path: 'public/icons/icon-192.png', mediaType: 'image/png', dimensions: { width: 192, height: 192 } },
+        { id: 'app-icon-512', path: 'public/icons/icon-512.png', mediaType: 'image/png', dimensions: { width: 512, height: 512 } },
+        { id: 'app-icon-maskable-512', path: 'public/icons/icon-maskable-512.png', mediaType: 'image/png', dimensions: { width: 512, height: 512 }, purpose: 'maskable' }
+      ]
+    },
+    favicons: {
+      id: 'favicons',
+      label: 'Browser favicons',
+      status: 'active',
+      generator: 'icons',
+      assets: [
+        { id: 'favicon-svg', path: 'public/icons/favicon.svg', mediaType: 'image/svg+xml', dimensions: { width: 512, height: 512 }, htmlReferences: [{ file: 'index.html', text: '<link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />' }] },
+        { id: 'favicon-16', path: 'public/icons/favicon-16.png', mediaType: 'image/png', dimensions: { width: 16, height: 16 } },
+        { id: 'favicon-32', path: 'public/icons/favicon-32.png', mediaType: 'image/png', dimensions: { width: 32, height: 32 }, htmlReferences: [{ file: 'index.html', text: '<link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png" />' }] },
+        { id: 'apple-touch-icon', path: 'public/icons/apple-touch-icon.png', mediaType: 'image/png', dimensions: { width: 180, height: 180 }, htmlReferences: [{ file: 'index.html', text: '<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />' }] },
+        { id: 'favicon-ico', path: 'public/favicon.ico', mediaType: 'image/x-icon', icoEntries: [{ width: 16, height: 16 }, { width: 32, height: 32 }] }
+      ]
+    },
+    wordmarks: {
+      id: 'wordmarks',
+      label: 'Brand wordmarks',
+      status: 'active',
+      generator: 'icons',
+      assets: [
+        { id: 'chibi-hollow-wordmark', path: 'public/logos/chibi-hollow-wordmark.svg', mediaType: 'image/svg+xml', dimensions: { width: 960, height: 320 } }
+      ]
+    },
+    openGraph: {
+      id: 'openGraph',
+      label: 'Open Graph previews',
+      status: 'active',
+      generator: 'icons',
+      assets: [
+        { id: 'og-image-svg', path: 'public/og-image.svg', mediaType: 'image/svg+xml', dimensions: { width: 1200, height: 630 } },
+        { id: 'og-image-png', path: 'public/og-image.png', mediaType: 'image/png', dimensions: { width: 1200, height: 630 }, htmlReferences: [{ file: 'index.html', text: '<meta property="og:image" content="/og-image.png" />' }, { file: 'index.html', text: '<meta name="twitter:image" content="/og-image.png" />' }] }
+      ]
+    },
+    screenshots: {
+      id: 'screenshots',
+      label: 'Store and social screenshots',
+      status: 'planned',
+      matrix: {
+        scenarios: ['act-01-level-1', 'act-01-level-3'],
+        viewports: [
+          { id: 'desktop', width: 1280, height: 720 },
+          { id: 'mobile-landscape', width: 844, height: 390 }
+        ],
+        moments: ['start', 'action'],
+        formats: ['png'],
+        pathTemplate: 'public/screenshots/{scenario}-{moment}-{viewport}.{format}'
+      }
+    },
+    mapReviews: {
+      id: 'mapReviews',
+      label: 'Full-map review renders',
+      status: 'planned',
+      assets: [
+        { id: 'act-01-level-3-full-map-review', path: 'public/reviews/act-01-level-3-full-map-review.png', mediaType: 'image/png', source: { kind: 'tilemap', tilemapId: 'act-01-level-3' } }
+      ]
+    }
+  }
+};
+
+export function expandScreenshotMatrix(matrix) {
+  const assets = [];
+  for (const scenario of matrix.scenarios) {
+    for (const viewport of matrix.viewports) {
+      for (const moment of matrix.moments) {
+        for (const format of matrix.formats) {
+          const path = matrix.pathTemplate
+            .replace('{scenario}', scenario)
+            .replace('{moment}', moment)
+            .replace('{viewport}', viewport.id)
+            .replace('{format}', format);
+          assets.push({
+            id: `${scenario}-${moment}-${viewport.id}`,
+            path,
+            mediaType: `image/${format}`,
+            dimensions: { width: viewport.width, height: viewport.height },
+            scenario,
+            moment,
+            viewport: viewport.id,
+            status: 'planned'
+          });
+        }
+      }
+    }
+  }
+  return assets;
+}
+
+export function getLaunchAssetGroups({ complete = false } = {}) {
+  return Object.values(launchAssetsManifest.groups)
+    .filter(group => complete || group.status === 'active')
+    .map(group => ({
+      ...group,
+      assets: group.assets ?? (group.matrix ? expandScreenshotMatrix(group.matrix) : [])
+    }));
+}
+
+export function getLaunchAssets(options = {}) {
+  return getLaunchAssetGroups(options).flatMap(group => group.assets.map(asset => ({
+    status: asset.status ?? group.status,
+    generator: asset.generator ?? group.generator,
+    group: group.id,
+    ...asset
+  })));
+}

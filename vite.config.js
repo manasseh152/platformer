@@ -4,7 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 const sameOriginAssetCache = {
   urlPattern: ({ request, url }) =>
-    url.origin === self.location.origin && ['font', 'image', 'style', 'script'].includes(request.destination),
+    url.origin === self.location.origin && ['document', 'font', 'image', 'style', 'script'].includes(request.destination),
   handler: 'CacheFirst',
   options: {
     cacheName: 'chibi-hollow-static-assets',
@@ -63,7 +63,7 @@ export default defineConfig({
         runtimeCaching: [sameOriginAssetCache]
       },
       devOptions: {
-        enabled: false
+        enabled: true
       }
     })
   ],
