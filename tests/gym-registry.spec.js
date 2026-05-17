@@ -48,7 +48,7 @@ test('registered gyms are in-engine machine-based tilemap scenarios', () => {
   });
   expect(getGymById('finish-gate-gym').machines).toEqual(expect.arrayContaining([
     expect.objectContaining({
-      id: 'finish-gate.trigger-geometry',
+      id: 'finish-gate.collider-coverage',
       authority: 'observer',
       validates: expect.arrayContaining(['finish-gate.geometry', 'scene.transition'])
     }),

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { updateGameplay } from '#/core/physics.js';
 import { createGameplaySession } from '#/core/gameplay-session.js';
 import { getTilemapById } from '#/content/tilemaps/registry.js';
-import { getGoalTriggerRect } from '#/core/tilemaps/tilemap.js';
+import { getGoalRect } from '#/core/tilemaps/tilemap.js';
 import { createInputRuntime } from '#/core/input/index.js';
 import { gameInputProfile } from '#/app/input/game-input-profile.js';
 import { createBrowserInputAdapter, createGameInputRuntime } from '#/app/input/browser-input-adapter.js';
@@ -11,9 +11,9 @@ test('updateGameplay completes session outcome through finish gate goal', () => 
   const level = getTilemapById('finish-gate-gym-map');
   const session = createGameplaySession(level, { scenarioId: 'finish-gate-gym' });
   const input = createInputRuntime(gameInputProfile);
-  const trigger = getGoalTriggerRect(level);
-  session.player.x = trigger.x + 1;
-  session.player.y = trigger.y + 1;
+  const goal = getGoalRect(level);
+  session.player.x = goal.x;
+  session.player.y = goal.y;
   session.player.vx = 0;
   session.player.vy = 0;
 

@@ -3,6 +3,19 @@ import { getComponent, findObjectsWithComponent } from '../engine/scene/queries.
 
 export const rectsOverlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
+export function rectOverlapArea(a, b) {
+  if (!rectsOverlap(a, b)) return 0;
+  const x = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
+  const y = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+  return x * y;
+}
+
+export function rectInsideRatio(rect, container) {
+  const area = Math.max(0, rect.w) * Math.max(0, rect.h);
+  if (area <= 0) return 0;
+  return rectOverlapArea(rect, container) / area;
+}
+
 function spawnAtObject(object) { return { x: object.transform.x + object.transform.w / 2, y: object.transform.y + object.transform.h - ACTOR_SIZE.PLAYER.h }; }
 
 export function findSpawnerObjects(scene, definitionId) {
@@ -130,4 +143,12 @@ export function getTransitionTriggerRect(scene, kind = 'finish') {
   const goal = getTransitionRect(scene, kind);
   const pad = scene.tileSize / 2;
   return { ...goal, x: goal.x - pad, w: goal.w + pad * 2, h: goal.h + scene.tileSize, kind: `${kind}-trigger` };
+}
+
+export function getTransitionCompletionRatio(scene, rect, kind = 'finish') {
+  return rectInsideRatio(rect, getTransitionRect(scene, kind));
+}
+
+export function isRectInsideTransition(scene, rect, kind = 'finish', minimumRatio = 0.5) {
+  return getTransitionCompletionRatio(scene, rect, kind) >= minimumRatio;
 }

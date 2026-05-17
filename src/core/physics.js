@@ -1,6 +1,24 @@
 import { getSlashHitbox } from './combat.js';
-import { getTransitionTriggerRect, hazardCollisionRectsOverlapping, rectsOverlap, solidCollisionRectsOverlapping } from './gameplay-scene-queries.js';
+import { hazardCollisionRectsOverlapping, isRectInsideTransition, rectsOverlap, solidCollisionRectsOverlapping } from './gameplay-scene-queries.js';
 export { rectsOverlap } from './gameplay-scene-queries.js';
+
+export const DEFAULT_FINISH_GATE_MIN_COLLIDER_INSIDE_RATIO = 0.5;
+
+export function finishGateMinimumInsideRatio(goal) {
+  const raw = goal?.minColliderInsideRatio ?? goal?.minColliderInsidePercent;
+  if (raw == null) return DEFAULT_FINISH_GATE_MIN_COLLIDER_INSIDE_RATIO;
+  const ratio = raw > 1 ? raw / 100 : raw;
+  return Math.max(0, Math.min(1, ratio));
+}
+
+function playerMeetsFinishGoal(gameplaySession) {
+  return isRectInsideTransition(
+    gameplaySession.tilemap,
+    gameplaySession.player,
+    'finish',
+    finishGateMinimumInsideRatio(gameplaySession.goal)
+  );
+}
 
 export function collideWithTilemap(entity, tilemap, dt) {
   entity.wallDir = 0;
@@ -113,7 +131,7 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
   const inputActions = gameplayInput(input);
   if (inputActions.restartPressed) controls.resetGame?.();
   if (player.dead || gameplaySession.outcome === 'completed') { clearFrameInput(input); return; }
-  if (rectsOverlap(player, getTransitionTriggerRect(tilemap, 'finish'))) gameplaySession.outcome = 'completed';
+  if (playerMeetsFinishGoal(gameplaySession)) gameplaySession.outcome = 'completed';
   if (gameplaySession.outcome === 'completed') { clearFrameInput(input); return; }
 
   const { left, right, jumpPressed, jumpHeld, attackPressed, dashPressed } = inputActions;
@@ -169,7 +187,7 @@ export function updateGameplay(runtime, gameplaySession, input, dt, controls = {
 
   for (const e of enemies) if (e.hp > 0) updateEnemy(runtime, game, e, dt);
 
-  if (rectsOverlap(player, getTransitionTriggerRect(tilemap, 'finish'))) {
+  if (playerMeetsFinishGoal(gameplaySession)) {
     gameplaySession.outcome = 'completed';
   }
 

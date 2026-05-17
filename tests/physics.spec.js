@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { createGameplaySession } from '#/core/gameplay-session.js';
 import { createInputRuntime } from '#/core/input/index.js';
 import { updateEnemy, updateGameplay } from '#/core/physics.js';
+import { getTransitionRect } from '#/core/gameplay-scene-queries.js';
 import { gameInputProfile } from '#/app/input/game-input-profile.js';
 import { defineContainedTestTilemap } from './helpers/contained-tilemap.js';
 
@@ -277,7 +278,7 @@ test('player slash damages enemies in front without requiring body contact', () 
   expect(session.player.hp).toBe(5);
 });
 
-test('finish gate trigger completes the gameplay session and freezes later gameplay updates', () => {
+test('finish gate requires enough of the player collider inside the goal before completing', () => {
   const level = makeGameplayTilemap({
     terrainRows: [
       '............',
@@ -297,9 +298,15 @@ test('finish gate trigger completes the gameplay session and freezes later gamep
     ]
   });
   const session = createGameplaySession(level);
-  session.player.x = 10 * level.tileSize;
-  session.player.y = 1 * level.tileSize;
+  const gate = getTransitionRect(level, 'finish');
+  session.player.x = gate.x - session.player.w + 1;
+  session.player.y = gate.y;
 
+  step(session);
+  expect(session.outcome).toBe('active');
+
+  session.player.x = gate.x;
+  session.player.y = gate.y;
   step(session);
   expect(session.outcome).toBe('completed');
 

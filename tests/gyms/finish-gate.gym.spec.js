@@ -16,15 +16,14 @@ test('Finish Gate Gym auto-runs finish gate machines to pass', async ({ page }) 
     autoStart: true
   });
 
-  const geometry = machineById(snapshot, 'finish-gate.trigger-geometry');
+  const geometry = machineById(snapshot, 'finish-gate.collider-coverage');
   expect(geometry).toMatchObject({
     authority: 'observer',
     status: 'passed'
   });
   expect(geometry.validates).toEqual(expect.arrayContaining(['finish-gate.geometry', 'scene.transition']));
   expect(geometry.observations.gate).toMatchObject({ cols: 3, rows: 1, kind: 'finish' });
-  expect(geometry.observations.trigger.w).toBe(128);
-  expect(geometry.observations.trigger.h).toBe(64);
+  expect(geometry.observations.minimumColliderInsideRatio).toBe(0.5);
 
   const completion = machineById(snapshot, 'finish-gate.complete-session');
   expect(completion).toMatchObject({
@@ -33,5 +32,6 @@ test('Finish Gate Gym auto-runs finish gate machines to pass', async ({ page }) 
   });
   expect(completion.validates).toEqual(expect.arrayContaining(['finish-gate.transition', 'gameplay.outcome']));
   expect(completion.observations.outcome).toBe('completed');
+  expect(completion.observations.colliderInsideRatio).toBeGreaterThanOrEqual(0.5);
   expect(completion.observations.distance).toBeGreaterThan(300);
 });

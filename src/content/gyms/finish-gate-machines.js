@@ -1,4 +1,5 @@
-import { getTransitionRect, getTransitionTriggerRect } from '../../core/gameplay-scene-queries.js';
+import { getTransitionCompletionRatio, getTransitionRect } from '../../core/gameplay-scene-queries.js';
+import { finishGateMinimumInsideRatio } from '../../core/physics.js';
 
 function round(value) {
   return Number.isFinite(value) ? Math.round(value * 1000) / 1000 : value;
@@ -41,26 +42,24 @@ function placePlayerOnRunway(player, tileSize) {
 
 export const finishGateMachines = [
   {
-    id: 'finish-gate.trigger-geometry',
-    label: 'Finish trigger geometry',
+    id: 'finish-gate.collider-coverage',
+    label: 'Finish collider coverage',
     authority: 'observer',
     execution: 'parallel',
     validates: ['finish-gate.geometry', 'scene.transition', 'tilemap.entities'],
     afterUpdate({ session }) {
       const gate = getTransitionRect(session.tilemap, 'finish');
-      const trigger = getTransitionTriggerRect(session.tilemap, 'finish');
+      const minimumRatio = finishGateMinimumInsideRatio(session.goal);
       const observations = {
         goal: session.goal?.type ?? null,
         gate: rectObservation(gate),
-        trigger: rectObservation(trigger)
+        minimumColliderInsideRatio: round(minimumRatio)
       };
 
       if (session.goal?.type !== 'finish-gate') return { status: 'failed', message: 'Finish Gate Gym must launch with a finish-gate goal.', observations };
       if (gate.cols !== 3 || gate.rows !== 1) return { status: 'failed', message: 'Expected a three-tile finish gate fixture.', observations };
-      if (trigger.x !== gate.x - session.tilemap.tileSize / 2) return { status: 'failed', message: 'Finish trigger should pad the gate horizontally by half a tile.', observations };
-      if (trigger.w !== gate.w + session.tilemap.tileSize) return { status: 'failed', message: 'Finish trigger width should include half-tile padding on both sides.', observations };
-      if (trigger.h !== gate.h + session.tilemap.tileSize) return { status: 'failed', message: 'Finish trigger should extend one tile downward.', observations };
-      return { status: 'passed', message: 'Finish gate trigger geometry matches the expected runtime bounds.', observations };
+      if (minimumRatio <= 0 || minimumRatio > 1) return { status: 'failed', message: 'Finish gate collider coverage threshold must be a 0-1 ratio.', observations };
+      return { status: 'passed', message: 'Finish gate completes only after enough of the player collider is inside the gate.', observations };
     }
   },
   {
@@ -74,7 +73,7 @@ export const finishGateMachines = [
       record.observations = {
         startX: round(session.player.x),
         gate: rectObservation(getTransitionRect(session.tilemap, 'finish')),
-        trigger: rectObservation(getTransitionTriggerRect(session.tilemap, 'finish'))
+        minimumColliderInsideRatio: round(finishGateMinimumInsideRatio(session.goal))
       };
     },
     beforeUpdate() {
@@ -83,7 +82,7 @@ export const finishGateMachines = [
     afterUpdate({ session, record }) {
       const { player } = session;
       const startX = record.observations.startX ?? player.x;
-      const trigger = getTransitionTriggerRect(session.tilemap, 'finish');
+      const coverage = getTransitionCompletionRatio(session.tilemap, player, 'finish');
       const observations = {
         startX: round(startX),
         x: round(player.x),
@@ -92,7 +91,8 @@ export const finishGateMachines = [
         grounded: Boolean(player.grounded),
         distance: round(player.x - startX),
         outcome: session.outcome,
-        trigger: rectObservation(trigger)
+        colliderInsideRatio: round(coverage),
+        minimumColliderInsideRatio: round(finishGateMinimumInsideRatio(session.goal))
       };
 
       if (player.dead) return { status: 'failed', message: 'Player died before reaching the finish gate.', observations };
