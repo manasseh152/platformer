@@ -1,17 +1,26 @@
-import { terrainKindConfig } from './terrain-layer.js';
+import { BRUSH_TRAIT, brushTrait } from './brushes.js';
 import { TERRAIN_MASK, normalizeTerrainMask } from './terrain-mask.js';
-import { terrainCellAt } from './terrain-model.js';
+import { solidCellsAt, solidCellMaterial } from './terrain-model.js';
 
-function terrainVisuallyConnects(scene, source, col, row) {
-  const neighbor = terrainCellAt(scene, col, row);
-  if (!neighbor) return false;
-  const config = terrainKindConfig(source.kind);
-  return Boolean(config?.connectsTo?.includes(neighbor.kind));
+function containedVisual(cell) {
+  const visual = brushTrait(cell.brush, BRUSH_TRAIT.VISUAL);
+  return visual?.renderer === 'contained-autotile' ? visual : null;
+}
+
+function materialConfig(scene, materialId) {
+  return scene.materialsById?.get(materialId)?.containedAutotile ?? null;
+}
+
+function visuallyConnects(scene, source, col, row) {
+  const sourceMaterial = solidCellMaterial(source);
+  const config = materialConfig(scene, sourceMaterial);
+  if (!config) return false;
+  return solidCellsAt(scene, col, row).some(neighbor => neighbor.layerId === source.layerId && containedVisual(neighbor) && config.connectsTo?.includes(solidCellMaterial(neighbor)));
 }
 
 function buildVisualNeighborMask(scene, cell) {
   let mask = 0;
-  const bit = (dx, dy, value) => terrainVisuallyConnects(scene, cell, cell.col + dx, cell.row + dy) ? value : 0;
+  const bit = (dx, dy, value) => visuallyConnects(scene, cell, cell.col + dx, cell.row + dy) ? value : 0;
   mask |= bit(0, -1, TERRAIN_MASK.N);
   mask |= bit(1, -1, TERRAIN_MASK.NE);
   mask |= bit(1, 0, TERRAIN_MASK.E);
@@ -24,10 +33,11 @@ function buildVisualNeighborMask(scene, cell) {
 }
 
 export function buildContainedTerrainTiles(scene) {
-  return (scene.terrain?.cells ?? [])
-    .filter(cell => terrainKindConfig(cell.kind)?.visible)
+  return (scene.solid?.cells ?? [])
+    .filter(cell => containedVisual(cell))
     .map(cell => {
       const rawMask = buildVisualNeighborMask(scene, cell);
-      return { layer: 'terrain', x: cell.x, y: cell.y, w: cell.w, h: cell.h, col: cell.col, row: cell.row, kind: cell.kind, rawMask, mask: normalizeTerrainMask(rawMask) };
+      const material = solidCellMaterial(cell);
+      return { tileId: cell.id, layer: cell.layerId === 'solid' ? 'terrain' : cell.layerId, layerId: cell.layerId, x: cell.x, y: cell.y, w: cell.w, h: cell.h, col: cell.col, row: cell.row, kind: material, material, brushId: cell.brushId, rawMask, mask: normalizeTerrainMask(rawMask) };
     });
 }

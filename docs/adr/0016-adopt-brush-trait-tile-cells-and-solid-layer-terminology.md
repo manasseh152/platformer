@@ -1,0 +1,3 @@
+# Adopt brush-trait tile cells and Solid Layer terminology
+
+We chose to replace the terrain-specific authored tile model with brush-grid layers made of tile cells that store stable brush identities, while compiled tilemap artifacts remain free to use compact runtime representations. Brush definitions declare pure-data traits such as visual, solid, and hazard so the same layer pipeline can support current solid ground and spikes now, and future liquids, lights, and visual-only layers later. New authored data uses the canonical `solid`, `hazards`, and `placedAssets` layers; legacy `terrain` and `entities` aliases are supported for one migration slice to preserve existing content and local drafts while docs, editor language, and systems converge on the generalized model.

@@ -1,21 +1,24 @@
-import { defineTilemap, gridLayer } from '../../core/tilemaps/tilemap.js';
-import { terrainLayer } from '../../core/tilemaps/terrain-layer.js';
+import { brushGridLayer, defineTilemap, placedAssetsLayer } from '../../core/tilemaps/tilemap.js';
 import { normalizeDraft } from '../../core/tilemaps/draft.js';
-import { finishGateObject, playerSpawner, slimeSpawner, spikeHazard } from './objects.js';
+import { finishGateObject, playerSpawner, slimeSpawner } from './objects.js';
+import { BUILTIN_BRUSHES } from './brushes.js';
+import { BUILTIN_MATERIALS } from './materials.js';
 
 export const SYMBOLS = {
-  entities: { P: playerSpawner, E: slimeSpawner, G: finishGateObject },
-  hazards: { '^': spikeHazard }
+  placedAssets: { P: playerSpawner, E: slimeSpawner, G: finishGateObject },
+  entities: { P: playerSpawner, E: slimeSpawner, G: finishGateObject }
 };
 
 export function toDefinition(draft) {
   const normalized = normalizeDraft(draft);
   return {
     ...normalized,
-    layers: normalized.layers.map(layer => layer.type === 'terrain' || layer.id === 'terrain'
-      ? terrainLayer({ id: 'terrain', cellSize: layer.cellSize, rows: layer.rows })
-      : gridLayer({
-        id: layer.id,
+    brushes: BUILTIN_BRUSHES,
+    materials: BUILTIN_MATERIALS,
+    layers: normalized.layers.map(layer => layer.type === 'brush-grid'
+      ? brushGridLayer({ id: layer.id, cellSize: layer.cellSize, accepts: layer.accepts, z: layer.z, rows: layer.rows })
+      : placedAssetsLayer({
+        id: layer.id === 'entities' ? 'placedAssets' : layer.id,
         cellSize: layer.cellSize,
         objectSize: layer.objectSize,
         symbols: SYMBOLS[layer.id] ?? {},
@@ -24,6 +27,4 @@ export function toDefinition(draft) {
   };
 }
 
-export function compileDraft(draft) {
-  return defineTilemap(toDefinition(draft));
-}
+export function compileDraft(draft) { return defineTilemap(toDefinition(draft)); }

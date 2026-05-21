@@ -1,4 +1,5 @@
 import { CELL_SIZE } from '../constants.js';
+import { solidLayer } from './layers.js';
 
 export const TERRAIN_KIND = Object.freeze({
   GRASS: 'grass',
@@ -77,3 +78,7 @@ export function terrainLayer({ id = 'terrain', cellSize = CELL_SIZE.BUILD, rows 
   });
   return { id, type: 'terrain', cellSize, rows: rows.map(row => [...row]) };
 }
+
+export function terrainKindToBrushId(kind) { return kind === TERRAIN_KIND.INVISIBLE ? 'invisible-solid' : kind; }
+export function brushIdToTerrainKind(brushId) { return brushId === 'invisible-solid' ? TERRAIN_KIND.INVISIBLE : brushId; }
+export function legacyTerrainLayerToSolid(layer) { return solidLayer({ rows: layer.rows.map(row => row.map(terrainKindToBrushId)), cellSize: layer.cellSize ?? CELL_SIZE.BUILD }); }

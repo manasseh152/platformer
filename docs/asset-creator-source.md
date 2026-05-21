@@ -6,7 +6,7 @@ title: Asset creator source
 
 Living brief for artists/designers creating or replacing game assets. It mirrors the code-owned facts a creator needs without requiring them to read the whole codebase.
 
-Related technical docs: [asset handoff pattern](./patterns/asset-creator.md), [terrain](./patterns/terrain.md), [tilemaps](./patterns/tilemaps.md), [rendering](./patterns/rendering.md).
+Related technical docs: [asset handoff pattern](./patterns/asset-creator.md), [solid layers](./patterns/terrain.md), [tilemaps](./patterns/tilemaps.md), [rendering](./patterns/rendering.md).
 
 ## Quick brief
 
@@ -15,8 +15,8 @@ Related technical docs: [asset handoff pattern](./patterns/asset-creator.md), [t
 - Default world view: `640×360` world pixels because camera zoom is `0.5`.
 - Gameplay grid: `32×32` world pixels.
 - Terrain art grid: `16×16` world pixels, contained inside each cell.
-- Collision primitive grid: `8×8` world pixels, derived from terrain.
-- Current terrain kinds: `grass`, `dirt`, `stone`, `invisible`.
+- Collision primitive grid: `8×8` world pixels, derived from the Solid Layer.
+- Current solid/material brush IDs: `grass`, `dirt`, `stone`, `sand`, `log`, `leaves`, `invisible-solid`.
 - Every imported pack needs source/license files beside the copied assets.
 
 ## Code references for developers
@@ -30,7 +30,7 @@ When this brief and code disagree, code is the source of truth and this file sho
 | Kenney Pixel Platformer manifest | `src/assets/kenney-pixel-platformer-manifest.js` |
 | Authored tilemap examples | `src/content/tilemaps/**`, `src/content/gyms/**` |
 | Tilemap API | `docs/patterns/tilemaps.md` |
-| Terrain containment/collision | `docs/patterns/terrain.md` |
+| Solid Layer containment/collision | `docs/patterns/terrain.md` |
 | Render packet/asset backend decisions | `docs/adr/0006-render-pipeline-packets-and-backends.md` |
 
 Minimal terrain authoring shape creators may see in implementation notes:
@@ -111,7 +111,7 @@ These IDs are referenced by code. Rename only when updating the asset registry a
 - Overhanging details such as grass blades, foliage, chains, ropes, trees, particles, and animated props belong in separate render/object layers.
 - Terrain variants must preserve the same collision semantics as the cell they represent.
 - Cosmetic variation must be deterministic from tile identity, never runtime randomness.
-- `invisible` terrain is solid but not visible; do not make art for it unless debugging.
+- `invisible-solid` is solid but not visible; do not make art for it unless debugging.
 
 ## Object and character rules
 

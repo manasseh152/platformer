@@ -12,7 +12,19 @@ Related:
 - [Scene components](./scene-components.md)
 - [Terrain pipeline](./terrain.md)
 
-`defineTilemap()` compiles explicit layers into the runtime data needed by gameplay, terrain/collision artifacts, and generic object/component indexes.
+`defineTilemap()` compiles explicit layers into the runtime data needed by gameplay, solid/collision artifacts, hazard tiles, visual artifacts, and generic object/component indexes.
+
+## Brush-grid layers
+
+Canonical v2 authored tile-cell layers use `type: 'brush-grid'` rows containing `BrushId | null`. A **Brush Definition** declares pure-data traits such as `solidTrait()`, `visualTrait(...)`, or `hazardTrait(...)`; the compiler expands those stable brush identities into runtime artifacts.
+
+Current canonical layer IDs are:
+
+- `solid` — the default **Solid Layer**, accepts `visual` and `solid` traits.
+- `hazards` — accepts `visual` and `hazard` traits.
+- `placedAssets` — placed asset symbols for player starts, enemies, and finish gates; this remains distinct from brush-grid tile cells.
+
+Legacy `terrain` and `entities` inputs are accepted as compatibility aliases for one migration slice. New drafts and generated content should write `solid`, `hazards`, and `placedAssets`.
 
 ## Authoring API
 

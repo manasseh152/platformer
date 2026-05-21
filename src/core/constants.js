@@ -5,6 +5,7 @@ export const CELL_SIZE = Object.freeze({
 });
 export const GRID_SIZE = CELL_SIZE.GRID;
 export const BUILD_TILE_SIZE = CELL_SIZE.BUILD;
+export const SOLID_PRIMITIVE_SIZE = CELL_SIZE.TERRAIN_PRIMITIVE;
 export const TERRAIN_PRIMITIVE_SIZE = CELL_SIZE.TERRAIN_PRIMITIVE;
 export const ACTOR_SIZE = Object.freeze({
   PLAYER: Object.freeze({ w: 28, h: 40 }),

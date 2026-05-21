@@ -1,10 +1,12 @@
 ---
-title: Terrain pipeline
+title: Solid layers
 ---
 
-# Terrain pipeline
+# Solid layers
 
-Terrain uses explicit cell sizes and separates authored terrain, visual terrain, and collision terrain.
+The **Solid Layer** replaces legacy Terrain language for authored ground, walls, and other static solid surfaces. The current file path remains `terrain.md` temporarily for link stability.
+
+Solid layers use explicit cell sizes and separate authored brush-grid cells, visual contained-autotile output, and merged solid collision artifacts.
 
 ## Cell sizes
 
@@ -14,9 +16,9 @@ Terrain uses explicit cell sizes and separates authored terrain, visual terrain,
 | `CELL_SIZE.BUILD` | 16px | terrain authoring and visual autotile grid |
 | `CELL_SIZE.TERRAIN_PRIMITIVE` | 8px | derived collision primitive grid |
 
-## Authoring terrain
+## Authoring solid layers
 
-Solid terrain is authored with `terrainLayer()` at `CELL_SIZE.BUILD`:
+Canonical v2 solid surfaces are authored with `solidLayer()` / `brushGridLayer()` at `CELL_SIZE.BUILD` using `BrushId | null` rows. Legacy `terrainLayer()` is still accepted as a compatibility alias for one migration slice:
 
 ```js
 import { CELL_SIZE } from '../../core/constants.js';
@@ -31,7 +33,7 @@ terrainLayer({
 })
 ```
 
-`terrainLayer()` always creates a layer with `id: 'terrain'` and `type: 'terrain'`. Use `null` for empty cells and `TERRAIN_KIND` values for terrain cells.
+`solidLayer()` creates a brush-grid layer with `id: 'solid'`, `type: 'brush-grid'`, `accepts: ['visual', 'solid']`, and `BrushId | null` cells. Use `null` for empty cells and stable brush IDs such as `grass`, `stone`, or `invisible-solid` for authored solid cells. `terrainLayer()` still creates legacy `terrain` inputs, which the compiler normalizes to the Solid Layer model.
 
 Current terrain kinds:
 
@@ -93,16 +95,20 @@ one 16px terrain cell => four 8px terrain primitives
 The compiled tilemap exposes:
 
 ```js
-scene.terrain = {
-  layerId: 'terrain',
+scene.solid = {
+  layerIds: ['solid'],
   cellSize: CELL_SIZE.BUILD,
   cells,
   cellMap
 };
 
 scene.collisionLayers = {
-  terrainPrimitives, // 8px cells for debug/inspection
-  terrainRects       // greedy-merged physics rects
+  solidPrimitives, // 8px cells for debug/inspection
+  solidRects,      // greedy-merged physics rects
+
+  // temporary compatibility aliases
+  terrainPrimitives,
+  terrainRects
 };
 ```
 

@@ -74,9 +74,9 @@ Generated JavaScript source remains live-updated but hidden behind a disclosure 
 
 Use the editor language consistently and avoid “level editor” terminology:
 
-- **Layer**: what kind of map content is being authored (`terrain`, `entities`, future `lights`/`decor`). Each layer owns its snap contract/grid size, which may be gridless later.
+- **Layer**: what kind of map content is being authored (`solid`, `hazards`, `placedAssets`, future `lights`/`decor`). Each layer owns its snap contract/grid size and visual order where relevant, which may be gridless later.
 - **Asset pack / pack**: a controller-friendly collection of placeable items. The current implementation has one `Starter` asset pack; the active layer filters which pack items are shown. Shoulder cycling changes the selected item within the active layer's active pack while the panel is hidden.
-- **Brush**: the selected tile, marker, or asset stamped into the active layer.
+- **Brush**: the selected tile, marker, or asset stamped into the active layer. Brush-grid tile cells store stable brush IDs; compiled tilemap data expands them into solid, visual, and hazard artifacts.
 - **Brush Palette**: the picker for browsing, previewing, and selecting brushes.
 
 Keep layer/pack definitions in `src/editor/edit-domain.js`; the editor shell should render and route those concepts rather than hard-coding UI labels.

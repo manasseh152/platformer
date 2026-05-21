@@ -12,8 +12,10 @@ const T = GRID_SIZE;
 export function tileToWorld(col, row, tileSize = T) { return { x: col * tileSize, y: row * tileSize }; }
 export function worldToTile(x, y, tileSize = T) { return { col: Math.floor(x / tileSize), row: Math.floor(y / tileSize) }; }
 export function tileRect(col, row, cols = 1, rows = 1, kind = 'solid', tileSize = T) { const { x, y } = tileToWorld(col, row, tileSize); return { x, y, w: cols * tileSize, h: rows * tileSize, kind, col, row, cols, rows }; }
-export function getTile(scene, layerId, col, row) { return scene.layers?.find(layer => layer.id === layerId)?.rows[row]?.[col] ?? EMPTY; }
-export function forEachLayerTile(scene, layerId, callback) { scene.layers?.find(layer => layer.id === layerId)?.rows.forEach((line, row) => [...line].forEach((tile, col) => callback(tile, col, row))); }
+function rowCells(row) { return typeof row === 'string' ? [...row] : row; }
+function findLayer(scene, layerId) { return scene.layers?.find(layer => layer.id === layerId || (layerId === 'terrain' && layer.id === 'solid') || (layerId === 'entities' && layer.id === 'placedAssets')) ?? null; }
+export function getTile(scene, layerId, col, row) { return findLayer(scene, layerId)?.rows[row]?.[col] ?? EMPTY; }
+export function forEachLayerTile(scene, layerId, callback) { findLayer(scene, layerId)?.rows.forEach((line, row) => rowCells(line).forEach((tile, col) => callback(tile, col, row))); }
 export function isSolidTileAt(scene, col, row) {
   const cell = terrainCellSize(scene);
   const cellsPerTile = scene.tileSize / cell;
@@ -26,11 +28,11 @@ export function isSolidTile(tile) { return tile === '#'; }
 export function getDecorType(tile) { return DECOR_TYPES[tile] ?? null; }
 
 export function solidTileRectsOverlapping(scene, rect) {
-  const collisionRects = scene.collisionLayers?.terrainRects ?? [];
+  const collisionRects = scene.collisionLayers?.terrainRects ?? scene.collisionLayers?.solidRects ?? [];
   if (collisionRects.length) return collisionRects.filter(hit => rectsOverlap(rect, hit));
-  return (scene.terrain?.cells ?? [])
-    .filter(cell => terrainKindConfig(cell.kind)?.solid)
-    .map(cell => ({ x: cell.x, y: cell.y, w: cell.w, h: cell.h, col: cell.col, row: cell.row, kind: 'solid', terrainKind: cell.kind }))
+  return (scene.solid?.cells ?? scene.terrain?.cells ?? [])
+    .filter(cell => cell.traits || terrainKindConfig(cell.kind)?.solid)
+    .map(cell => ({ x: cell.x, y: cell.y, w: cell.w, h: cell.h, col: cell.col, row: cell.row, kind: 'solid', brushId: cell.brushId, terrainKind: cell.kind }))
     .filter(hit => rectsOverlap(rect, hit));
 }
 
@@ -48,13 +50,24 @@ function insetRect(rect, inset = {}) {
   };
 }
 
-export function spikeHazardRectsOverlapping(scene, rect) {
-  return findObjectsWithComponent(scene, 'collision:hazard')
-    .map(object => ({ object, hazard: getComponent(object, 'collision:hazard') }))
-    .filter(({ hazard }) => hazard?.kind === 'spike')
-    .map(({ object, hazard }) => ({ ...insetRect(object.transform, hazard?.inset), kind: 'spike' }))
-    .filter(hit => rectsOverlap(rect, hit));
+export function hazardTilesOverlapping(scene, rect, { kind } = {}) {
+  return (scene.hazardTiles ?? [])
+    .filter(tile => !kind || tile.hazard?.kind === kind)
+    .filter(tile => rectsOverlap(rect, insetRect(tile, tile.hazard?.inset)));
 }
+
+export function hazardRectsOverlapping(scene, rect, { kind } = {}) {
+  const tileRects = hazardTilesOverlapping(scene, rect, { kind })
+    .map(tile => ({ ...insetRect(tile, tile.hazard?.inset), kind: tile.hazard.kind, contact: tile.hazard.contact, tileId: tile.id, brushId: tile.brushId }));
+  const objectRects = findObjectsWithComponent(scene, 'collision:hazard')
+    .map(object => ({ object, hazard: getComponent(object, 'collision:hazard') }))
+    .filter(({ hazard }) => !kind || hazard?.kind === kind)
+    .map(({ object, hazard }) => ({ ...insetRect(object.transform, hazard?.inset), kind: hazard.kind }))
+    .filter(hit => rectsOverlap(rect, hit));
+  return [...tileRects, ...objectRects];
+}
+
+export function spikeHazardRectsOverlapping(scene, rect) { return hazardRectsOverlapping(scene, rect, { kind: 'spike' }); }
 
 export function getGoalRect(scene) {
   const goals = instantiatedObjects(scene, 'finish-gate');

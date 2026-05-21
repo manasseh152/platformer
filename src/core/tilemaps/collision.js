@@ -1,6 +1,6 @@
-import { TERRAIN_PRIMITIVE_SIZE } from '../constants.js';
-import { terrainKindConfig } from './terrain-layer.js';
+import { SOLID_PRIMITIVE_SIZE, TERRAIN_PRIMITIVE_SIZE } from '../constants.js';
 import { terrainKey } from './terrain-model.js';
+import { brushIdToTerrainKind } from './terrain-layer.js';
 
 export function rectsOverlap(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
 
@@ -34,30 +34,34 @@ function greedyMergeAabbs2D(width, height, isSolid) {
   return boxes;
 }
 
-function buildContainedTerrainCollisionPrimitives(scene) {
+function buildSolidPrimitives(scene) {
+  const primitiveSize = SOLID_PRIMITIVE_SIZE ?? TERRAIN_PRIMITIVE_SIZE;
   const primitives = [];
-  for (const cell of scene.terrain?.cells ?? []) {
-    if (!terrainKindConfig(cell.kind)?.solid) continue;
-    const startCol = Math.floor(cell.x / TERRAIN_PRIMITIVE_SIZE);
-    const startRow = Math.floor(cell.y / TERRAIN_PRIMITIVE_SIZE);
-    const primitiveCols = cell.w / TERRAIN_PRIMITIVE_SIZE;
-    const primitiveRows = cell.h / TERRAIN_PRIMITIVE_SIZE;
+  for (const cell of scene.solid?.cells ?? []) {
+    const startCol = Math.floor(cell.x / primitiveSize);
+    const startRow = Math.floor(cell.y / primitiveSize);
+    const primitiveCols = cell.w / primitiveSize;
+    const primitiveRows = cell.h / primitiveSize;
     for (let row = 0; row < primitiveRows; row++) for (let col = 0; col < primitiveCols; col++) {
-      primitives.push({ x: (startCol + col) * TERRAIN_PRIMITIVE_SIZE, y: (startRow + row) * TERRAIN_PRIMITIVE_SIZE, w: TERRAIN_PRIMITIVE_SIZE, h: TERRAIN_PRIMITIVE_SIZE, col: startCol + col, row: startRow + row, kind: 'terrain-primitive', terrainKind: cell.kind });
+      primitives.push({ tileId: cell.id, x: (startCol + col) * primitiveSize, y: (startRow + row) * primitiveSize, w: primitiveSize, h: primitiveSize, col: startCol + col, row: startRow + row, kind: 'solid-primitive', brushId: cell.brushId, terrainKind: cell.terrainKind ?? brushIdToTerrainKind(cell.brushId) });
     }
   }
   return primitives;
 }
 
 export function buildContainedTerrainCollisionLayers(scene) {
-  const terrainPrimitives = buildContainedTerrainCollisionPrimitives(scene);
-  const solids = new Set(terrainPrimitives.map(cell => terrainKey(cell.col, cell.row)));
-  const cols = Math.floor(scene.worldWidth / TERRAIN_PRIMITIVE_SIZE);
-  const rows = Math.floor(scene.worldHeight / TERRAIN_PRIMITIVE_SIZE);
+  const primitiveSize = SOLID_PRIMITIVE_SIZE ?? TERRAIN_PRIMITIVE_SIZE;
+  const solidPrimitives = buildSolidPrimitives(scene);
+  const solids = new Set(solidPrimitives.map(cell => terrainKey(cell.col, cell.row)));
+  const cols = Math.floor(scene.worldWidth / primitiveSize);
+  const rows = Math.floor(scene.worldHeight / primitiveSize);
+  const solidRects = greedyMergeAabbs2D(cols, rows, (col, row) => solids.has(terrainKey(col, row)))
+    .map(box => clippedWorldRect({ x: box.x * primitiveSize, y: box.y * primitiveSize, w: box.w * primitiveSize, h: box.h * primitiveSize, col: box.x, row: box.y, cols: box.w, rows: box.h, kind: 'solid' }, scene))
+    .filter(Boolean);
   return {
-    terrainPrimitives,
-    terrainRects: greedyMergeAabbs2D(cols, rows, (col, row) => solids.has(terrainKey(col, row)))
-      .map(box => clippedWorldRect({ x: box.x * TERRAIN_PRIMITIVE_SIZE, y: box.y * TERRAIN_PRIMITIVE_SIZE, w: box.w * TERRAIN_PRIMITIVE_SIZE, h: box.h * TERRAIN_PRIMITIVE_SIZE, col: box.x, row: box.y, cols: box.w, rows: box.h, kind: 'terrain-solid' }, scene))
-      .filter(Boolean)
+    solidPrimitives,
+    solidRects,
+    terrainPrimitives: solidPrimitives.map(cell => ({ ...cell, kind: 'terrain-primitive' })),
+    terrainRects: solidRects.map(rect => ({ ...rect, kind: 'terrain-solid' }))
   };
 }

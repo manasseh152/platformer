@@ -1,11 +1,10 @@
 import { CELL_SIZE } from '../core/constants.js';
-import { TERRAIN_KIND } from '../core/tilemaps/terrain-layer.js';
 import { EMPTY } from './tilemap-draft.js';
 
 export const EDIT_LAYERS = Object.freeze([
   {
-    id: 'terrain',
-    label: 'Terrain',
+    id: 'solid',
+    label: 'Solid',
     description: 'Solid authored ground',
     gridLabel: '16 px build grid',
     cellSize: CELL_SIZE.BUILD,
@@ -13,9 +12,9 @@ export const EDIT_LAYERS = Object.freeze([
     hint: 'LB/RB changes terrain while the panel is hidden. A paints the selected cell.'
   },
   {
-    id: 'entities',
-    label: 'Entities',
-    description: 'Gameplay objects',
+    id: 'placedAssets',
+    label: 'Placed Assets',
+    description: 'Gameplay placements',
     gridLabel: '16 px placement grid / 32 px objects',
     cellSize: CELL_SIZE.BUILD,
     packTitle: 'Starter asset pack',
@@ -39,7 +38,7 @@ export const EDIT_PACKS = Object.freeze([
     id: 'starter',
     label: 'Starter',
     description: 'Core terrain materials and spawn points',
-    brushIds: ['grass', 'dirt', 'stone', 'sand', 'log', 'leaves', 'invisibleTerrain', 'eraseTerrain', 'player', 'slime', 'gate', 'eraseEntity']
+    brushIds: ['grass', 'dirt', 'stone', 'sand', 'log', 'leaves', 'invisibleSolid', 'eraseSolid', 'player', 'slime', 'gate', 'erasePlacedAsset']
   },
   {
     id: 'hazards',
@@ -50,20 +49,20 @@ export const EDIT_PACKS = Object.freeze([
 ]);
 
 export const BRUSHES = Object.freeze([
-  { id: 'grass', label: 'Grass', shortLabel: 'Grass', layerId: 'terrain', symbol: TERRAIN_KIND.GRASS, cellSize: CELL_SIZE.BUILD, cursor: '#79f0c5', swatch: '#79f0c5' },
-  { id: 'dirt', label: 'Dirt', shortLabel: 'Dirt', layerId: 'terrain', symbol: TERRAIN_KIND.DIRT, cellSize: CELL_SIZE.BUILD, cursor: '#b86f3d', swatch: '#b86f3d' },
-  { id: 'stone', label: 'Stone', shortLabel: 'Stone', layerId: 'terrain', symbol: TERRAIN_KIND.STONE, cellSize: CELL_SIZE.BUILD, cursor: '#9aa7b2', swatch: '#9aa7b2' },
-  { id: 'sand', label: 'Sand', shortLabel: 'Sand', layerId: 'terrain', symbol: TERRAIN_KIND.SAND, cellSize: CELL_SIZE.BUILD, cursor: '#f0d58a', swatch: '#f0d58a' },
-  { id: 'log', label: 'Log', shortLabel: 'Log', layerId: 'terrain', symbol: TERRAIN_KIND.LOG, cellSize: CELL_SIZE.BUILD, cursor: '#a66a3f', swatch: '#a66a3f' },
-  { id: 'leaves', label: 'Leaves', shortLabel: 'Leaves', layerId: 'terrain', symbol: TERRAIN_KIND.LEAVES, cellSize: CELL_SIZE.BUILD, cursor: '#62bd63', swatch: '#62bd63' },
-  { id: 'invisibleTerrain', label: 'Invisible', shortLabel: 'Ghost', layerId: 'terrain', symbol: TERRAIN_KIND.INVISIBLE, cellSize: CELL_SIZE.BUILD, cursor: '#a78bfa', swatch: '#a78bfa' },
-  { id: 'eraseTerrain', label: 'Erase terrain', shortLabel: 'Erase', layerId: 'terrain', symbol: null, cellSize: CELL_SIZE.BUILD, cursor: '#ff8f8f', swatch: '#ff8f8f' },
-  { id: 'player', label: 'Player P', shortLabel: 'Player', layerId: 'entities', symbol: 'P', cellSize: CELL_SIZE.BUILD, cursor: '#78a8ff', swatch: '#78a8ff' },
-  { id: 'slime', label: 'Slime E', shortLabel: 'Slime', layerId: 'entities', symbol: 'E', cellSize: CELL_SIZE.BUILD, cursor: '#ff7bd5', swatch: '#ff7bd5' },
-  { id: 'gate', label: 'Gate G', shortLabel: 'Gate', layerId: 'entities', symbol: 'G', cellSize: CELL_SIZE.BUILD, cursor: '#ffd36a', swatch: '#ffd36a' },
-  { id: 'eraseEntity', label: 'Erase entity', shortLabel: 'Erase', layerId: 'entities', symbol: EMPTY, cellSize: CELL_SIZE.BUILD, cursor: '#ff8f8f', swatch: '#ff8f8f' },
-  { id: 'spike', label: 'Spike ^', shortLabel: 'Spike', layerId: 'hazards', symbol: '^', cellSize: CELL_SIZE.BUILD, cursor: '#ff4d7d', swatch: '#ff4d7d' },
-  { id: 'eraseHazard', label: 'Erase hazard', shortLabel: 'Erase', layerId: 'hazards', symbol: EMPTY, cellSize: CELL_SIZE.BUILD, cursor: '#ff8f8f', swatch: '#ff8f8f' }
+  { id: 'grass', label: 'Grass', shortLabel: 'Grass', layerId: 'solid', symbol: 'grass', cellSize: CELL_SIZE.BUILD, cursor: '#79f0c5', swatch: '#79f0c5' },
+  { id: 'dirt', label: 'Dirt', shortLabel: 'Dirt', layerId: 'solid', symbol: 'dirt', cellSize: CELL_SIZE.BUILD, cursor: '#b86f3d', swatch: '#b86f3d' },
+  { id: 'stone', label: 'Stone', shortLabel: 'Stone', layerId: 'solid', symbol: 'stone', cellSize: CELL_SIZE.BUILD, cursor: '#9aa7b2', swatch: '#9aa7b2' },
+  { id: 'sand', label: 'Sand', shortLabel: 'Sand', layerId: 'solid', symbol: 'sand', cellSize: CELL_SIZE.BUILD, cursor: '#f0d58a', swatch: '#f0d58a' },
+  { id: 'log', label: 'Log', shortLabel: 'Log', layerId: 'solid', symbol: 'log', cellSize: CELL_SIZE.BUILD, cursor: '#a66a3f', swatch: '#a66a3f' },
+  { id: 'leaves', label: 'Leaves', shortLabel: 'Leaves', layerId: 'solid', symbol: 'leaves', cellSize: CELL_SIZE.BUILD, cursor: '#62bd63', swatch: '#62bd63' },
+  { id: 'invisibleSolid', label: 'Invisible Solid', shortLabel: 'Ghost', layerId: 'solid', symbol: 'invisible-solid', cellSize: CELL_SIZE.BUILD, cursor: '#a78bfa', swatch: '#a78bfa' },
+  { id: 'eraseSolid', label: 'Erase solid', shortLabel: 'Erase', layerId: 'solid', symbol: null, cellSize: CELL_SIZE.BUILD, cursor: '#ff8f8f', swatch: '#ff8f8f' },
+  { id: 'player', label: 'Player P', shortLabel: 'Player', layerId: 'placedAssets', symbol: 'P', cellSize: CELL_SIZE.BUILD, cursor: '#78a8ff', swatch: '#78a8ff' },
+  { id: 'slime', label: 'Slime E', shortLabel: 'Slime', layerId: 'placedAssets', symbol: 'E', cellSize: CELL_SIZE.BUILD, cursor: '#ff7bd5', swatch: '#ff7bd5' },
+  { id: 'gate', label: 'Gate G', shortLabel: 'Gate', layerId: 'placedAssets', symbol: 'G', cellSize: CELL_SIZE.BUILD, cursor: '#ffd36a', swatch: '#ffd36a' },
+  { id: 'erasePlacedAsset', label: 'Erase placed asset', shortLabel: 'Erase', layerId: 'placedAssets', symbol: EMPTY, cellSize: CELL_SIZE.BUILD, cursor: '#ff8f8f', swatch: '#ff8f8f' },
+  { id: 'spike', label: 'Spike', shortLabel: 'Spike', layerId: 'hazards', symbol: 'spike-floor', cellSize: CELL_SIZE.BUILD, cursor: '#ff4d7d', swatch: '#ff4d7d' },
+  { id: 'eraseHazard', label: 'Erase hazard', shortLabel: 'Erase', layerId: 'hazards', symbol: null, cellSize: CELL_SIZE.BUILD, cursor: '#ff8f8f', swatch: '#ff8f8f' }
 ]);
 
 export function layerById(layerId) {

@@ -205,8 +205,8 @@ function controllerBrushMomentumMultiplier(now) {
 }
 function worldWidth() { return draft.cols * CELL_SIZE.GRID; }
 function worldHeight() { return draft.rows * CELL_SIZE.GRID; }
-function terrainLayer() { return draft.layers.find(layer => layer.id === 'terrain'); }
-function entityLayer() { return draft.layers.find(layer => layer.id === 'entities'); }
+function terrainLayer() { return draft.layers.find(layer => layer.id === 'solid' || layer.id === 'terrain'); }
+function entityLayer() { return draft.layers.find(layer => layer.id === 'placedAssets' || layer.id === 'entities'); }
 function hazardLayer() { return draft.layers.find(layer => layer.id === 'hazards'); }
 function createDraftFromTilemap(tilemap) {
   const saved = localStorage.getItem(storageKey(tilemap.id));
@@ -782,7 +782,9 @@ function visibleCellRange(layer, rect) {
 
 function drawDraftTerrain(ctx, rect) {
   const layer = terrainLayer();
+  if (!layer) return;
   const range = visibleCellRange(layer, rect);
+  const colors = { grass: '#a7643b', dirt: '#8f5634', stone: '#66717d', sand: '#d9b86f', log: '#7a4a2a', leaves: '#3f8f4c' };
   ctx.fillStyle = '#40504a';
   for (let row = range.startRow; row <= range.endRow; row++) {
     const line = layer.rows[row];
@@ -790,9 +792,10 @@ function drawDraftTerrain(ctx, rect) {
       const kind = line[col];
       if (kind === null) continue;
       const config = terrainKindConfig(kind);
-      ctx.fillStyle = config?.visible === false ? 'rgba(167,139,250,.38)' : config?.visual?.baseColor ?? '#40504a';
+      const invisible = kind === 'invisible-solid' || config?.visible === false;
+      ctx.fillStyle = invisible ? 'rgba(167,139,250,.38)' : config?.visual?.baseColor ?? colors[kind] ?? '#40504a';
       ctx.fillRect(col * layer.cellSize, row * layer.cellSize, layer.cellSize, layer.cellSize);
-      if (config?.visible === false) {
+      if (invisible) {
         ctx.strokeStyle = 'rgba(216,204,255,.72)';
         ctx.lineWidth = 1 / viewport.camera.zoom;
         ctx.strokeRect(col * layer.cellSize + 2, row * layer.cellSize + 2, layer.cellSize - 4, layer.cellSize - 4);
@@ -877,7 +880,7 @@ function drawHazards(ctx, rect) {
     const line = layer.rows[row];
     let runStart = null;
     for (let col = range.startCol; col <= range.endCol + 1; col++) {
-      const filled = col <= range.endCol && line[col] !== EMPTY;
+      const filled = col <= range.endCol && line[col] !== EMPTY && line[col] !== null;
       if (filled && runStart === null) runStart = col;
       if ((!filled || col === range.endCol + 1) && runStart !== null) {
         const runEnd = col;
@@ -896,7 +899,7 @@ function drawHazards(ctx, rect) {
     let runStart = null;
     for (let row = range.startRow; row <= range.endRow + 1; row++) {
       const line = layer.rows[row];
-      const filled = row <= range.endRow && line?.[col] !== EMPTY && !consumed.has(key(col, row));
+      const filled = row <= range.endRow && line?.[col] !== EMPTY && line?.[col] !== null && !consumed.has(key(col, row));
       if (filled && runStart === null) runStart = row;
       if ((!filled || row === range.endRow + 1) && runStart !== null) {
         const runEnd = row;
@@ -1132,7 +1135,7 @@ function applyBrushToCell(cell) {
   const before = layer.rows[cell.row][cell.col];
   if (before !== brush.symbol) {
     if (Array.isArray(layer.rows[cell.row])) layer.rows[cell.row][cell.col] = brush.symbol;
-    else layer.rows[cell.row] = replaceChar(layer.rows[cell.row], cell.col, brush.symbol);
+    else layer.rows[cell.row] = replaceChar(layer.rows[cell.row], cell.col, brush.symbol ?? EMPTY);
     history.recordCellChange({ layerId: brush.layerId, col: cell.col, row: cell.row, before, after: brush.symbol });
     updateHistoryControls();
     scheduleAfterEdit();
@@ -1176,7 +1179,7 @@ function applyHistoryCellChange(change) {
   const layer = draft.layers.find(layer => layer.id === change.layerId);
   if (!layer || change.row < 0 || change.row >= layer.rows.length || change.col < 0 || change.col >= layer.rows[0].length) return;
   if (Array.isArray(layer.rows[change.row])) layer.rows[change.row][change.col] = change.value;
-  else layer.rows[change.row] = replaceChar(layer.rows[change.row], change.col, change.value);
+  else layer.rows[change.row] = replaceChar(layer.rows[change.row], change.col, change.value ?? EMPTY);
 }
 
 function applyHistoryAction(kind) {
