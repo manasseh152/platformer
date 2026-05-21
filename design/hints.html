@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chibi Hollow Hint System Design Board</title>
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+  <style>
+    :root {
+      --page-bg: #f4f4f1;
+      --page-text: #202124;
+      --page-muted: #666;
+      --page-line: #d9d9d2;
+      --hint-bg: #080b11;
+      --hint-text: #fff6e8;
+      --hint-text-alpha: .58;
+      --key-bg: #eeeae1;
+      --key-bg-alpha: .62;
+      --key-text: #151518;
+      --key-text-alpha: .82;
+      --font-ui: ui-rounded, "Avenir Next Rounded", "Nunito", "Trebuchet MS", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--page-text);
+      font: 16px/1.5 var(--font-ui);
+      background: var(--page-bg);
+    }
+
+    header, main, footer {
+      width: min(1120px, calc(100vw - 32px));
+      margin: 0 auto;
+    }
+    header { padding: 32px 0 16px; border-bottom: 1px solid var(--page-line); }
+    .eyebrow { color: var(--page-muted); text-transform: uppercase; letter-spacing: .12em; font-size: .78rem; font-weight: 800; }
+    h1 { margin: 6px 0 8px; font-size: clamp(2rem, 5vw, 3.8rem); line-height: 1; letter-spacing: -.04em; }
+    .lede { max-width: 70ch; margin: 0; color: var(--page-muted); }
+    .hero-card { margin-top: 18px; padding: 0; border: 1px solid var(--page-line); background: white; }
+
+    .stage {
+      min-height: 180px;
+      position: relative;
+      overflow: hidden;
+      background: var(--hint-bg);
+    }
+    .character { display: none; }
+    .hint-layer-demo {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      gap: 18px 28px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 18px 18px;
+      background: linear-gradient(to top, rgba(2, 3, 8, .58), rgba(2, 3, 8, .24) 54%, transparent);
+    }
+
+    section { margin: 22px 0; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .panel { border: 1px solid var(--page-line); padding: 18px; background: white; }
+    .panel.wide { grid-column: 1 / -1; }
+    h2 { margin: 0 0 14px; font-size: 1.25rem; }
+    h3 { margin: 18px 0 8px; color: var(--page-muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .1em; }
+    p, li, dd { color: var(--page-muted); }
+
+    .hint-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px 28px;
+      align-items: center;
+      padding: 18px;
+      background: var(--hint-bg);
+    }
+    .input-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      color: color-mix(in srgb, var(--hint-text) calc(var(--hint-text-alpha) * 100%), transparent);
+      font: 950 .88rem/1 var(--font-ui);
+      letter-spacing: .055em;
+      text-transform: uppercase;
+      text-shadow: 0 2px 8px rgba(0,0,0,.72), 0 0 18px rgba(0,0,0,.55);
+    }
+    .input-hint--chip,
+    .input-hint--active {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    .input-hint__icon {
+      width: 30px;
+      height: 30px;
+      object-fit: contain;
+      opacity: .62;
+      filter: grayscale(1) saturate(.08) brightness(1.65) contrast(.72);
+    }
+    .input-hint__label { color: inherit; }
+    .input-hint__joiner { display: none; }
+    .ds-keycap {
+      display: inline-grid;
+      place-items: center;
+      min-width: 38px;
+      min-height: 29px;
+      padding: 0 9px;
+      border: 0;
+      border-radius: 999px;
+      color: color-mix(in srgb, var(--key-text) calc(var(--key-text-alpha) * 100%), transparent);
+      background: color-mix(in srgb, var(--key-bg) calc(var(--key-bg-alpha) * 100%), transparent);
+      box-shadow: inset 0 -1px 0 rgba(0,0,0,.16), 0 1px 8px rgba(0,0,0,.22);
+      font: 950 .82rem/1 var(--font-ui);
+      letter-spacing: .015em;
+      text-shadow: none;
+    }
+
+    .asset-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 10px; }
+    .asset { border: 1px solid var(--page-line); padding: 12px 8px; text-align: center; background: #fafaf8; }
+    .asset img { width: 42px; height: 42px; object-fit: contain; filter: grayscale(1) saturate(.08) brightness(1.65) contrast(.72); background: var(--hint-bg); padding: 6px; }
+    .asset span { display: block; margin-top: 8px; color: var(--page-muted); font-size: .74rem; font-weight: 700; }
+    .color-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+    .color-field { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; padding: 10px; border: 1px solid var(--page-line); background: #fafaf8; }
+    .color-field label { grid-column: 1 / -1; font-weight: 800; }
+    .color-field input[type="color"] { width: 42px; height: 32px; padding: 0; border: 1px solid var(--page-line); background: white; }
+    .color-field input[type="range"] { width: 100%; }
+    .color-field code { grid-column: 1 / -1; color: var(--page-muted); }
+    .spec { display: grid; grid-template-columns: 130px 1fr; gap: 8px 16px; margin: 0; }
+    .spec dt { font-weight: 800; }
+    .spec dd { margin: 0; }
+    code { background: #ecece7; padding: .12em .32em; border-radius: 4px; }
+    footer { margin: 28px auto 48px; color: var(--page-muted); }
+    @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } .panel.wide { grid-column: auto; } .spec { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="eyebrow">Hint System / Asset Board</div>
+      <h1>Hint system reference</h1>
+      <p class="lede">A focused HTML reference for how Chibi Hollow input hints should look: keyboard pills, controller glyphs, bottom-layer composition, menu actions, and asset usage rules.</p>
+    </div>
+    <div class="hero-card">
+      <div class="stage" aria-label="In-game hint layer preview">
+        <div class="character" aria-hidden="true"></div>
+        <div class="hint-layer-demo">
+          <span class="input-hint"><kbd class="ds-keycap">A</kbd><span class="input-hint__label">Move</span></span>
+          <span class="input-hint"><kbd class="ds-keycap">Space</kbd><span class="input-hint__label">Jump</span></span>
+          <span class="input-hint"><img class="input-hint__icon" src="/assets/kenney-input-prompts/xbox/xbox_button_x.svg" alt="X"><span class="input-hint__label">Attack</span></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="grid">
+      <article class="panel wide">
+        <h2>Primitive colors</h2>
+        <p>These inputs are bound directly to the page CSS variables so hint previews update live.</p>
+        <div class="color-controls" id="colorControls" aria-label="Primitive color controls">
+          <div class="color-field">
+            <label for="colorPageBg">Page background</label>
+            <input id="colorPageBg" type="color" data-css-var="--page-bg" value="#f4f4f1">
+            <code>--page-bg</code>
+          </div>
+          <div class="color-field">
+            <label for="colorPageText">Page text</label>
+            <input id="colorPageText" type="color" data-css-var="--page-text" value="#202124">
+            <code>--page-text</code>
+          </div>
+          <div class="color-field">
+            <label for="colorPageMuted">Page muted</label>
+            <input id="colorPageMuted" type="color" data-css-var="--page-muted" value="#666666">
+            <code>--page-muted</code>
+          </div>
+          <div class="color-field">
+            <label for="colorPageLine">Page line</label>
+            <input id="colorPageLine" type="color" data-css-var="--page-line" value="#d9d9d2">
+            <code>--page-line</code>
+          </div>
+          <div class="color-field">
+            <label for="colorHintBg">Hint background</label>
+            <input id="colorHintBg" type="color" data-css-var="--hint-bg" value="#080b11">
+            <code>--hint-bg</code>
+          </div>
+          <div class="color-field">
+            <label for="colorHintText">Hint text</label>
+            <input id="colorHintText" type="color" data-css-var="--hint-text" value="#fff6e8">
+            <input type="range" min="0" max="1" step="0.01" data-css-var="--hint-text-alpha" value="0.58" aria-label="Hint text alpha">
+            <code>--hint-text / --hint-text-alpha</code>
+          </div>
+          <div class="color-field">
+            <label for="colorKeyBg">Keycap background</label>
+            <input id="colorKeyBg" type="color" data-css-var="--key-bg" value="#eeeae1">
+            <input type="range" min="0" max="1" step="0.01" data-css-var="--key-bg-alpha" value="0.62" aria-label="Keycap background alpha">
+            <code>--key-bg / --key-bg-alpha</code>
+          </div>
+          <div class="color-field">
+            <label for="colorKeyText">Keycap text</label>
+            <input id="colorKeyText" type="color" data-css-var="--key-text" value="#151518">
+            <input type="range" min="0" max="1" step="0.01" data-css-var="--key-text-alpha" value="0.82" aria-label="Keycap text alpha">
+            <code>--key-text / --key-text-alpha</code>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <h2>Core hint anatomy</h2>
+        <div class="hint-row">
+          <span class="input-hint input-hint--chip"><kbd class="ds-keycap">Esc</kbd><span class="input-hint__label">Pause</span></span>
+          <span class="input-hint input-hint--chip"><kbd class="ds-keycap">R</kbd><span class="input-hint__label">Restart</span></span>
+          <span class="input-hint input-hint--chip input-hint--active"><img class="input-hint__icon" src="/assets/kenney-input-prompts/xbox/xbox_button_a.svg" alt="A"><span class="input-hint__label">Select</span></span>
+        </div>
+        <h3>Markup contract</h3>
+        <p>Use <code>.input-hint</code> as the wrapper, <code>.ds-keycap</code> for text controls, <code>.input-hint__icon</code> for prompt assets, and <code>.input-hint__label</code> for the action.</p>
+      </article>
+
+      <article class="panel">
+        <h2>Layer behavior</h2>
+        <dl class="spec">
+          <dt>Position</dt><dd>Bottom safe-area, centered, flexible wrap.</dd>
+          <dt>Tone</dt><dd>Low-contrast parchment over a dark gradient scrim.</dd>
+          <dt>Joiners</dt><dd>Hidden in the game layer; use spacing instead of slashes.</dd>
+          <dt>Clickable</dt><dd>Only menu/start/end hints become buttons.</dd>
+        </dl>
+      </article>
+
+      <article class="panel wide">
+        <h2>Gameplay set</h2>
+        <div class="hint-row">
+          <span class="input-hint"><kbd class="ds-keycap">A</kbd><kbd class="ds-keycap">D</kbd><span class="input-hint__label">Move</span></span>
+          <span class="input-hint"><kbd class="ds-keycap">Space</kbd><span class="input-hint__label">Jump</span></span>
+          <span class="input-hint"><kbd class="ds-keycap">Shift</kbd><span class="input-hint__label">Dash</span></span>
+          <span class="input-hint"><kbd class="ds-keycap">J</kbd><span class="input-hint__label">Attack</span></span>
+          <span class="input-hint"><kbd class="ds-keycap">Esc</kbd><span class="input-hint__label">Pause</span></span>
+          <span class="input-hint"><kbd class="ds-keycap">R</kbd><span class="input-hint__label">Restart</span></span>
+        </div>
+      </article>
+
+      <article class="panel">
+        <h2>Controller assets</h2>
+        <div class="asset-grid">
+          <div class="asset"><img src="/assets/kenney-input-prompts/xbox/xbox_button_a.svg" alt=""><span>xbox_button_a</span></div>
+          <div class="asset"><img src="/assets/kenney-input-prompts/xbox/xbox_button_b.svg" alt=""><span>xbox_button_b</span></div>
+          <div class="asset"><img src="/assets/kenney-input-prompts/xbox/xbox_button_x.svg" alt=""><span>xbox_button_x</span></div>
+          <div class="asset"><img src="/assets/kenney-input-prompts/xbox/xbox_button_y.svg" alt=""><span>xbox_button_y</span></div>
+          <div class="asset"><img src="/assets/kenney-input-prompts/xbox/xbox_lb.svg" alt=""><span>xbox_lb</span></div>
+          <div class="asset"><img src="/assets/kenney-input-prompts/xbox/xbox_rb.svg" alt=""><span>xbox_rb</span></div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <h2>Keyboard assets</h2>
+        <div class="asset-grid">
+          <div class="asset"><img src="/assets/kenney-input-prompts/keyboard/keyboard_space.svg" alt=""><span>keyboard_space</span></div>
+          <div class="asset"><img src="/assets/kenney-input-prompts/keyboard/keyboard_enter.svg" alt=""><span>keyboard_enter</span></div>
+          <div class="asset"><img src="/assets/kenney-input-prompts/keyboard/keyboard_escape.svg" alt=""><span>keyboard_escape</span></div>
+          <div class="asset"><img src="/assets/kenney-input-prompts/keyboard/keyboard_shift.svg" alt=""><span>keyboard_shift</span></div>
+          <div class="asset"><img src="/assets/kenney-input-prompts/keyboard/keyboard_arrow_left.svg" alt=""><span>arrow_left</span></div>
+          <div class="asset"><img src="/assets/kenney-input-prompts/keyboard/keyboard_arrow_right.svg" alt=""><span>arrow_right</span></div>
+        </div>
+      </article>
+
+      <article class="panel wide">
+        <h2>Implementation notes</h2>
+        <ul>
+          <li>Runtime actions are defined by <code>src/app/ui/hint-layer.js</code>; binding labels and asset paths come from <code>src/app/input/input-hints.js</code>.</li>
+          <li>Current production game style intentionally desaturates prompt SVGs for a moonlit parchment look.</li>
+          <li>Keep labels action-first: <code>Jump</code>, <code>Dash</code>, <code>Level Select</code>. Avoid instructional sentences in the bottom layer.</li>
+        </ul>
+      </article>
+    </section>
+  </main>
+  <footer>Open at <code>/design/hints.html</code> while running Vite.</footer>
+  <script>
+    const rootStyle = document.documentElement.style;
+    document.querySelectorAll('[data-css-var]').forEach(input => {
+      const apply = () => rootStyle.setProperty(input.dataset.cssVar, input.value);
+      input.addEventListener('input', apply);
+      apply();
+    });
+  </script>
+</body>
+</html>

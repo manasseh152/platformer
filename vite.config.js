@@ -78,7 +78,12 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         editor: resolve(__dirname, 'editor/index.html'),
         editorLegacy: resolve(__dirname, 'editor.html'),
-        docs: resolve(__dirname, 'docs.html')
+        docs: resolve(__dirname, 'docs.html'),
+        design: resolve(__dirname, 'design/index.html'),
+        designEditor: resolve(__dirname, 'design/editor.html'),
+        designHints: resolve(__dirname, 'design/hints.html'),
+        designHud: resolve(__dirname, 'design/hud.html'),
+        designMenus: resolve(__dirname, 'design/menus.html')
       }
     }
   }

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chibi Hollow Design Pages</title>
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+  <style>
+    :root {
+      --page-bg: #f4f4f1;
+      --page-text: #202124;
+      --page-muted: #666;
+      --page-line: #d9d9d2;
+      --font-ui: ui-rounded, "Avenir Next Rounded", "Nunito", "Trebuchet MS", sans-serif;
+      --font-mono: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--page-text); font: 16px/1.5 var(--font-ui); background: var(--page-bg); }
+    header, main, footer { width: min(1120px, calc(100vw - 32px)); margin: 0 auto; }
+    header { padding: 32px 0 16px; border-bottom: 1px solid var(--page-line); }
+    .eyebrow { color: var(--page-muted); text-transform: uppercase; letter-spacing: .12em; font-size: .78rem; font-weight: 800; }
+    h1 { margin: 6px 0 8px; font-size: clamp(2rem, 5vw, 3.8rem); line-height: 1; letter-spacing: -.04em; }
+    .lede { max-width: 72ch; margin: 0; color: var(--page-muted); }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 24px 0; }
+    .card {
+      display: grid;
+      min-height: 168px;
+      padding: 20px;
+      color: inherit;
+      text-decoration: none;
+      border: 1px solid var(--page-line);
+      background: white;
+    }
+    .card:hover, .card:focus-visible {
+      border-color: var(--page-text);
+      outline: none;
+    }
+    .card h2 { margin: 0 0 8px; font-size: 1.35rem; line-height: 1.05; letter-spacing: -.02em; }
+    .card p { margin: 0; color: var(--page-muted); }
+    .tag { align-self: end; width: fit-content; margin-top: 18px; color: var(--page-muted); font-size: .78rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    footer { margin: 12px auto 44px; color: var(--page-muted); }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="eyebrow">Chibi Hollow / Design Index</div>
+    <h1>Design pages</h1>
+    <p class="lede">Quick navigation for the standalone HTML reference boards used to review gameplay UI, editor UI, and interaction patterns.</p>
+  </header>
+
+  <main>
+    <nav class="grid" aria-label="Design pages">
+      <a class="card" href="editor.html">
+        <div>
+          <h2>Editor system reference</h2>
+          <p>Design notes and UI reference for the level editor workflow.</p>
+        </div>
+        <span class="tag">Editor</span>
+      </a>
+
+      <a class="card" href="hints.html">
+        <div>
+          <h2>Hint system reference</h2>
+          <p>Reference board for in-game instructional hints and prompts.</p>
+        </div>
+        <span class="tag">Hints</span>
+      </a>
+
+      <a class="card" href="hud.html">
+        <div>
+          <h2>Gameplay HUD reference</h2>
+          <p>Visual contract for level identity, vigor, objectives, dash state, and timers.</p>
+        </div>
+        <span class="tag">HUD</span>
+      </a>
+
+      <a class="card" href="menus.html">
+        <div>
+          <h2>Menu system reference</h2>
+          <p>Menu layouts, states, typography, controls, and panel styling.</p>
+        </div>
+        <span class="tag">Menus</span>
+      </a>
+    </nav>
+  </main>
+
+  <footer>Open this page at <code>/design/</code> or <code>/design/index.html</code>.</footer>
+</body>
+</html>
