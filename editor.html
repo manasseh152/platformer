@@ -20,11 +20,11 @@
       <button id="mainMenuButton" type="button" class="top-button hint-button input-hint" data-input-hint data-input-action="editor.mainMenu" data-input-label="Main menu">Main menu</button>
 
       <div class="editor-tabs ds-tabs ds-tabs--primary" role="tablist" aria-label="Editor action groups">
-        <span class="editor-tabs__hint" data-editor-tab-hint="previous" data-input-tab-hint data-input-action="editor.previousTab" aria-hidden="true" hidden>LB</span>
+        <span class="editor-tabs--hint" data-editor-tab-hint="previous" data-input-tab-hint data-input-action="editor.previousTab" aria-hidden="true" hidden>LB</span>
         <button id="editTab" class="ds-tab" type="button" role="tab" aria-label="Edit" aria-selected="true" aria-controls="editPanel" data-editor-tab="edit" tabindex="0"><span>Edit</span></button>
         <button id="mapTab" class="ds-tab" type="button" role="tab" aria-label="Map" aria-selected="false" aria-controls="mapPanel" data-editor-tab="map" tabindex="-1"><span>Map</span></button>
         <button id="viewTab" class="ds-tab" type="button" role="tab" aria-label="View" aria-selected="false" aria-controls="viewPanel" data-editor-tab="view" tabindex="-1"><span>View</span></button>
-        <span class="editor-tabs__hint" data-editor-tab-hint="next" data-input-tab-hint data-input-action="editor.nextTab" aria-hidden="true" hidden>RB</span>
+        <span class="editor-tabs--hint" data-editor-tab-hint="next" data-input-tab-hint data-input-action="editor.nextTab" aria-hidden="true" hidden>RB</span>
       </div>
 
       <div class="top-actions">
@@ -172,37 +172,37 @@
       </aside>
 
       <div id="floatingViewControls" class="floating-view-controls" aria-label="Floating viewport controls">
-        <button id="zoomOutButton" class="floating-view-controls__button" type="button" aria-label="Zoom out">−</button>
+        <button id="zoomOutButton" class="floating-view-controls--button" type="button" aria-label="Zoom out">−</button>
         <output id="zoomReadout" aria-label="Zoom level">100%</output>
-        <button id="zoomInButton" class="floating-view-controls__button" type="button" aria-label="Zoom in">+</button>
-        <button id="resetViewButton" class="floating-view-controls__button" type="button">Reset</button>
-        <button id="panToggleButton" class="floating-view-controls__button" type="button" aria-pressed="false">Pan</button>
-        <button id="floatingPaletteToggle" class="floating-view-controls__button floating-view-controls__palette-toggle" type="button" aria-expanded="false" aria-controls="floatingPalettePicker">Brush</button>
+        <button id="zoomInButton" class="floating-view-controls--button" type="button" aria-label="Zoom in">+</button>
+        <button id="resetViewButton" class="floating-view-controls--button" type="button">Reset</button>
+        <button id="panToggleButton" class="floating-view-controls--button" type="button" aria-pressed="false">Pan</button>
+        <button id="floatingPaletteToggle" class="floating-view-controls--button floating-view-controls--palette-toggle" type="button" aria-expanded="false" aria-controls="floatingPalettePicker">Brush</button>
         <div id="floatingPalettePicker" class="floating-palette-picker" hidden>
-          <div class="floating-palette-picker__header">
+          <div class="floating-palette-picker--header">
             <strong>Palette</strong>
             <span id="floatingPaletteLayerLabel">Terrain</span>
           </div>
           <select id="floatingPackSelect" aria-label="Palette pack"></select>
-          <div id="floatingBrushChoices" class="floating-palette-picker__brushes" role="listbox" aria-label="Brush variations"></div>
+          <div id="floatingBrushChoices" class="floating-palette-picker--brushes" role="listbox" aria-label="Brush variations"></div>
         </div>
       </div>
 
       <section id="packWheelHud" class="pack-wheel-hud" aria-label="Controller pack wheel" aria-live="polite">
-        <div id="packWheelItems" class="pack-wheel-hud__items" aria-hidden="true"></div>
-        <div class="pack-wheel-hud__card">
-          <div class="pack-wheel-hud__topline">
-            <span id="wheelLayerLabel" class="pack-wheel-hud__pill">Terrain</span>
-            <output id="wheelZoomReadout" class="pack-wheel-hud__zoom" aria-label="Zoom level">100%</output>
+        <div id="packWheelItems" class="pack-wheel-hud--items" aria-hidden="true"></div>
+        <div class="pack-wheel-hud--card">
+          <div class="pack-wheel-hud--topline">
+            <span id="wheelLayerLabel" class="pack-wheel-hud--pill">Terrain</span>
+            <output id="wheelZoomReadout" class="pack-wheel-hud--zoom" aria-label="Zoom level">100%</output>
           </div>
-          <div class="pack-wheel-hud__brush">
-            <span id="wheelBrushSwatch" class="pack-wheel-hud__swatch" aria-hidden="true"></span>
-            <span class="pack-wheel-hud__copy">
+          <div class="pack-wheel-hud--brush">
+            <span id="wheelBrushSwatch" class="pack-wheel-hud--swatch" aria-hidden="true"></span>
+            <span class="pack-wheel-hud--copy">
               <strong id="wheelBrushLabel">Grass</strong>
               <span id="wheelPackLabel">Starter</span>
             </span>
           </div>
-          <div class="pack-wheel-hud__zoom-track" aria-hidden="true"><span id="wheelZoomFill"></span></div>
+          <div class="pack-wheel-hud--zoom-track" aria-hidden="true"><span id="wheelZoomFill"></span></div>
         </div>
       </section>
 

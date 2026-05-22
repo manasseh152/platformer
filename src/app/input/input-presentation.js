@@ -17,14 +17,14 @@ function escapeHtml(value) {
 
 function controlHintHtml(parts) {
   return parts.map(part => part.icon
-    ? `<img class="input-hint__icon" src="${escapeHtml(part.icon)}" alt="${escapeHtml(part.label)}">`
+    ? `<img class="input-hint--icon" src="${escapeHtml(part.icon)}" alt="${escapeHtml(part.label)}">`
     : `<kbd class="ds-keycap">${escapeHtml(part.label)}</kbd>`
-  ).join('<span class="input-hint__joiner" aria-hidden="true">/</span>');
+  ).join('<span class="input-hint--joiner" aria-hidden="true">/</span>');
 }
 
 function hintHtml(hint) {
   const controls = hint.parts.length ? hint.parts : [{ label: 'Unbound' }];
-  return `${controlHintHtml(controls)}<span class="input-hint__label">${escapeHtml(hint.label)}</span>`;
+  return `${controlHintHtml(controls)}<span class="input-hint--label">${escapeHtml(hint.label)}</span>`;
 }
 
 function splitActionIds(value = '') {

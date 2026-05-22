@@ -69,7 +69,7 @@ body {
 
 .site-footer p { margin: 0; }
 
-.site-footer__links {
+.site-footer--links {
   display: flex;
   flex-wrap: wrap;
   gap: 10px 14px;
@@ -155,7 +155,7 @@ body {
   background: var(--color-surface);
 }
 
-.doc-card__header {
+.doc-card--header {
   display: flex;
   justify-content: space-between;
   gap: 16px;
@@ -167,9 +167,9 @@ body {
   font-size: .78rem;
 }
 
-.doc-card__header p { margin: 0; }
+.doc-card--header p { margin: 0; }
 
-.doc-card__eyebrow {
+.doc-card--eyebrow {
   margin-bottom: 6px !important;
   color: var(--color-text-muted);
   font-weight: 800;

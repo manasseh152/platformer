@@ -67,21 +67,21 @@ test('native browser back closes controller brush picker before panel behavior a
 
   const hints = page.locator('#controllerViewportHints');
   const pickerHints = hints.locator('[data-editor-hint-scope="picker"]');
-  await expect(pickerHints.locator('.input-hint__label').filter({ hasText: 'Choose item' })).toBeVisible();
-  await expect(pickerHints.locator('.input-hint__label').filter({ hasText: 'Select' })).toBeVisible();
-  await expect(pickerHints.locator('.input-hint__label').filter({ hasText: 'Cancel' })).toBeVisible();
-  await expect(pickerHints.locator('.input-hint__label').filter({ hasText: 'Previous' })).toBeVisible();
-  await expect(pickerHints.locator('.input-hint__label').filter({ hasText: 'Next' })).toBeVisible();
-  await expect(hints.locator('[data-editor-hint-scope="canvas"] .input-hint__label').filter({ hasText: 'Paint' })).toBeHidden();
-  await expect(hints.locator('[data-editor-hint-scope="canvas"] .input-hint__label').filter({ hasText: 'Zoom' })).toBeHidden();
+  await expect(pickerHints.locator('.input-hint--label').filter({ hasText: 'Choose item' })).toBeVisible();
+  await expect(pickerHints.locator('.input-hint--label').filter({ hasText: 'Select' })).toBeVisible();
+  await expect(pickerHints.locator('.input-hint--label').filter({ hasText: 'Cancel' })).toBeVisible();
+  await expect(pickerHints.locator('.input-hint--label').filter({ hasText: 'Previous' })).toBeVisible();
+  await expect(pickerHints.locator('.input-hint--label').filter({ hasText: 'Next' })).toBeVisible();
+  await expect(hints.locator('[data-editor-hint-scope="canvas"] .input-hint--label').filter({ hasText: 'Paint' })).toBeHidden();
+  await expect(hints.locator('[data-editor-hint-scope="canvas"] .input-hint--label').filter({ hasText: 'Zoom' })).toBeHidden();
 
   await page.evaluate(() => history.back());
 
   await expect(page.locator('#packWheelHud')).not.toHaveAttribute('data-picker-open', '');
   await expect(page.locator('body')).toHaveAttribute('data-editor-panel', 'closed');
   await expect(page.locator('#editorOverlay')).toBeHidden();
-  await expect(pickerHints.locator('.input-hint__label').filter({ hasText: 'Cancel' })).toBeHidden();
-  await expect(hints.locator('[data-editor-hint-scope="canvas"] .input-hint__label').filter({ hasText: 'Paint' })).toBeVisible();
+  await expect(pickerHints.locator('.input-hint--label').filter({ hasText: 'Cancel' })).toBeHidden();
+  await expect(hints.locator('[data-editor-hint-scope="canvas"] .input-hint--label').filter({ hasText: 'Paint' })).toBeVisible();
 });
 
 test('map editor loads registered tilemaps and exports brush-grid solid layer format', async ({ page }) => {
@@ -421,9 +421,9 @@ test('map editor shoulder buttons switch tabs and show controller hints', async 
   await page.evaluate(() => window.__setMockGamepadButton(5, true));
   await expect(page.locator('#mapPanel')).toBeVisible();
   await expect(page.locator('[data-editor-tab-hint="previous"]')).toBeVisible();
-  await expect(page.locator('[data-editor-tab-hint="previous"] .input-hint__icon')).toHaveAttribute('alt', 'LB');
+  await expect(page.locator('[data-editor-tab-hint="previous"] .input-hint--icon')).toHaveAttribute('alt', 'LB');
   await expect(page.locator('[data-editor-tab-hint="next"]')).toBeVisible();
-  await expect(page.locator('[data-editor-tab-hint="next"] .input-hint__icon')).toHaveAttribute('alt', 'RB');
+  await expect(page.locator('[data-editor-tab-hint="next"] .input-hint--icon')).toHaveAttribute('alt', 'RB');
   await page.getByRole('tab', { name: 'Map' }).click();
   await expect(page.locator('#editorOverlay')).toHaveAttribute('data-collapsed', 'true');
   await expect(page.locator('[data-editor-tab-hint="previous"]')).toBeHidden();
@@ -451,7 +451,7 @@ test('map editor shows desktop viewport shortcuts until a controller is active',
   await expect(desktopHints).toContainText('Pan');
   await expect(desktopHints).toContainText('Zoom');
   await expect(desktopHints).toContainText('Undo');
-  await expect(desktopHints.locator('.input-hint__icon[alt="Ctrl/⌘ + S"]')).toBeVisible();
+  await expect(desktopHints.locator('.input-hint--icon[alt="Ctrl/⌘ + S"]')).toBeVisible();
 
   await page.evaluate(() => window.__setMockGamepadButton(7, true));
   await expect(page.locator('#controllerViewportHints')).toBeVisible();
@@ -472,9 +472,9 @@ test('map editor controller hints follow panel vs canvas focus and zoom only on 
 
   await page.evaluate(() => window.__setMockGamepadButton(7, true));
   await expect(page.locator('#controllerViewportHints')).toBeVisible();
-  await expect(page.locator('#controllerViewportHints [data-editor-hint-scope="panel"] .input-hint__label').filter({ hasText: 'Select' })).toBeVisible();
-  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Pack' })).toBeHidden();
-  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Zoom' })).toBeHidden();
+  await expect(page.locator('#controllerViewportHints [data-editor-hint-scope="panel"] .input-hint--label').filter({ hasText: 'Select' })).toBeVisible();
+  await expect(page.locator('#controllerViewportHints .input-hint--label').filter({ hasText: 'Pack' })).toBeHidden();
+  await expect(page.locator('#controllerViewportHints .input-hint--label').filter({ hasText: 'Zoom' })).toBeHidden();
   await expect.poll(() => page.locator('#editorCanvas').getAttribute('data-zoom')).toBe(before);
 
   await page.evaluate(() => window.__setMockGamepadButton(7, false));
@@ -483,16 +483,16 @@ test('map editor controller hints follow panel vs canvas focus and zoom only on 
   await page.evaluate(() => window.__setMockGamepadButton(3, false));
   await page.evaluate(() => window.__setMockGamepadButton(7, true));
   await expect.poll(() => page.locator('#editorCanvas').getAttribute('data-zoom')).not.toBe(before);
-  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Zoom' })).toBeVisible();
+  await expect(page.locator('#controllerViewportHints .input-hint--label').filter({ hasText: 'Zoom' })).toBeVisible();
   const packHint = page.locator('#controllerViewportHints [data-input-actions="editor.previousBrush editor.nextBrush"]');
-  await expect(packHint.locator('.input-hint__icon').nth(0)).toHaveAttribute('alt', 'LB');
-  await expect(packHint.locator('.input-hint__icon').nth(1)).toHaveAttribute('alt', 'RB');
-  await expect(packHint.locator('.input-hint__label')).toHaveText('Pack');
+  await expect(packHint.locator('.input-hint--icon').nth(0)).toHaveAttribute('alt', 'LB');
+  await expect(packHint.locator('.input-hint--icon').nth(1)).toHaveAttribute('alt', 'RB');
+  await expect(packHint.locator('.input-hint--label')).toHaveText('Pack');
   const zoomHint = page.locator('#controllerViewportHints [data-input-actions="editor.zoomOut editor.zoomIn"]');
-  await expect(zoomHint.locator('.input-hint__icon').nth(0)).toHaveAttribute('alt', 'LT');
-  await expect(zoomHint.locator('.input-hint__icon').nth(1)).toHaveAttribute('alt', 'RT');
+  await expect(zoomHint.locator('.input-hint--icon').nth(0)).toHaveAttribute('alt', 'LT');
+  await expect(zoomHint.locator('.input-hint--icon').nth(1)).toHaveAttribute('alt', 'RT');
   await expect(page.locator('#controllerPanelHint')).toBeVisible();
-  await expect(page.locator('#hideOverlayButton .input-hint__label').filter({ hasText: 'Hide sidebar' })).toBeAttached();
+  await expect(page.locator('#hideOverlayButton .input-hint--label').filter({ hasText: 'Hide sidebar' })).toBeAttached();
   await expect(page.locator('#zoomReadout')).toContainText('%');
   await expect(page.locator('#zoomInButton')).toBeHidden();
 });
@@ -711,7 +711,7 @@ test('map editor controller paints a continuous stroke while the paint button is
   await page.evaluate(() => window.__setMockGamepadButton(3, true));
   await expect(page.locator('#editorOverlay')).toBeHidden();
   await expect(page.locator('#editorOverlay')).toHaveAttribute('data-collapsed', 'true');
-  await expect(page.locator('#controllerViewportHints .input-hint__label').filter({ hasText: 'Open panel' })).toBeVisible();
+  await expect(page.locator('#controllerViewportHints .input-hint--label').filter({ hasText: 'Open panel' })).toBeVisible();
   await page.evaluate(() => window.__setMockGamepadButton(3, false));
 
   await page.evaluate(() => window.__setMockGamepadButton(0, true));
@@ -969,10 +969,10 @@ test('map editor persists the floating zoom controls preference', async ({ page 
 test('map editor topbar actions render shortcut hints', async ({ page }) => {
   await page.goto('/editor.html');
 
-  await expect(page.locator('#mainMenuButton .input-hint__label')).toHaveText('Main menu');
-  await expect(page.locator('#quickPreviewButton .input-hint__label')).toHaveText('Preview');
-  await expect(page.locator('#mainMenuButton .input-hint__icon, #mainMenuButton .ds-keycap').first()).toBeVisible();
-  await expect(page.locator('#quickPreviewButton .input-hint__icon, #quickPreviewButton .ds-keycap').first()).toBeVisible();
+  await expect(page.locator('#mainMenuButton .input-hint--label')).toHaveText('Main menu');
+  await expect(page.locator('#quickPreviewButton .input-hint--label')).toHaveText('Preview');
+  await expect(page.locator('#mainMenuButton .input-hint--icon, #mainMenuButton .ds-keycap').first()).toBeVisible();
+  await expect(page.locator('#quickPreviewButton .input-hint--icon, #quickPreviewButton .ds-keycap').first()).toBeVisible();
 });
 
 test('map editor topbar preview opens without visiting the Map tab', async ({ page }) => {

@@ -1117,7 +1117,7 @@ function buildPackWheelItems() {
     const candidate = items[itemIndex];
     const visualItem = document.createElement('span');
     const duplicate = Math.abs(slot) >= items.length;
-    visualItem.className = `pack-wheel-hud__item${slot === 0 ? ' is-active' : ''}${controllerBrushPickerOpen && candidate.id === brush.id ? ' is-committed' : ''}${duplicate ? ' is-duplicate' : ''}`;
+    visualItem.className = `pack-wheel-hud--item${slot === 0 ? ' is-active' : ''}${controllerBrushPickerOpen && candidate.id === brush.id ? ' is-committed' : ''}${duplicate ? ' is-duplicate' : ''}`;
     visualItem.style.setProperty('--angle', `${selectedAngle + slot * step}deg`);
     visualItem.style.setProperty('--swatch', candidate.swatch ?? candidate.cursor);
     visualItem.dataset.shortLabel = candidate.shortLabel ?? candidate.label;
@@ -1655,7 +1655,7 @@ function buildFloatingPalette() {
   for (const candidate of brushesForActivePack()) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = candidate.id === brush.id ? 'active floating-palette-picker__brush' : 'floating-palette-picker__brush';
+    button.className = candidate.id === brush.id ? 'active floating-palette-picker--brush' : 'floating-palette-picker--brush';
     button.setAttribute('role', 'option');
     button.setAttribute('aria-selected', candidate.id === brush.id ? 'true' : 'false');
     button.setAttribute('aria-label', candidate.label);
@@ -1680,9 +1680,9 @@ function buildBrushButtons() {
     button.className = candidate.id === brush.id ? 'active pack-chip' : 'pack-chip';
     button.setAttribute('aria-pressed', candidate.id === brush.id ? 'true' : 'false');
     button.setAttribute('aria-label', candidate.label);
-    button.innerHTML = `<span class="pack-chip__swatch" aria-hidden="true"></span><span class="pack-chip__label"></span>`;
-    button.querySelector('.pack-chip__swatch').style.setProperty('--swatch', candidate.swatch ?? candidate.cursor);
-    button.querySelector('.pack-chip__label').textContent = candidate.shortLabel ?? candidate.label;
+    button.innerHTML = `<span class="pack-chip--swatch" aria-hidden="true"></span><span class="pack-chip--label"></span>`;
+    button.querySelector('.pack-chip--swatch').style.setProperty('--swatch', candidate.swatch ?? candidate.cursor);
+    button.querySelector('.pack-chip--label').textContent = candidate.shortLabel ?? candidate.label;
     button.addEventListener('click', () => { setBrush(candidate); });
     dom.brushes.append(button);
   }

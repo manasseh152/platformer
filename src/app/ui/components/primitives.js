@@ -33,15 +33,15 @@ export function renderSection({ title, body, className = '', attributes = {} }) 
 export function renderSettingRow({ id, label, value, description = '', kind = 'setting', tag = 'button', className = '', valueClassName = '', attributes = {} }) {
   const type = tag === 'button' ? ' type="button"' : '';
   return `<${tag}${type} class="${classes('ds-setting-row', kind && `ds-setting-row--${kind}`, className)}"${id ? ` data-setting-row="${escapeHtml(id)}"` : ''}${attrs(attributes)}>
-    <span class="ds-setting-row__copy"><span class="ds-setting-row__label">${escapeHtml(label)}</span>${description ? `<span class="ds-setting-row__description">${escapeHtml(description)}</span>` : ''}</span>
-    <span class="${classes('ds-setting-row__value', valueClassName)}">${value}</span>
+    <span class="ds-setting-row--copy"><span class="ds-setting-row--label">${escapeHtml(label)}</span>${description ? `<span class="ds-setting-row--description">${escapeHtml(description)}</span>` : ''}</span>
+    <span class="${classes('ds-setting-row--value', valueClassName)}">${value}</span>
   </${tag}>`;
 }
 
 export function renderInfoRow({ label, value, valueId, description = '', className = '', attributes = {} }) {
   return `<div class="${classes('ds-setting-row', 'ds-setting-row--info', className)}"${attrs(attributes)}>
-    <span class="ds-setting-row__copy"><span class="ds-setting-row__label">${escapeHtml(label)}</span>${description ? `<span class="ds-setting-row__description">${escapeHtml(description)}</span>` : ''}</span>
-    <span class="ds-setting-row__value"${valueId ? ` id="${escapeHtml(valueId)}"` : ''}>${value}</span>
+    <span class="ds-setting-row--copy"><span class="ds-setting-row--label">${escapeHtml(label)}</span>${description ? `<span class="ds-setting-row--description">${escapeHtml(description)}</span>` : ''}</span>
+    <span class="ds-setting-row--value"${valueId ? ` id="${escapeHtml(valueId)}"` : ''}>${value}</span>
   </div>`;
 }
 
@@ -51,8 +51,8 @@ export function renderActionRow(actions, { className = '', attributes = {}, tag 
 
 export function renderKeybindRow({ label, value, listening = false, error = false, actions = '', className = '', attributes = {} }) {
   return `<div class="${classes('ds-setting-row', 'ds-setting-row--bind', listening && 'is-listening', error && 'is-error', className)}"${attrs(attributes)}>
-    <span class="ds-setting-row__copy"><span class="ds-setting-row__label">${escapeHtml(label)}</span></span>
-    <span class="ds-setting-row__value bind-keycaps">${value}</span>
+    <span class="ds-setting-row--copy"><span class="ds-setting-row--label">${escapeHtml(label)}</span></span>
+    <span class="ds-setting-row--value bind-keycaps">${value}</span>
     ${actions}
   </div>`;
 }

@@ -11,15 +11,15 @@ function escapeHtml(value) {
 
 function controlHintHtml(parts) {
   return parts.map(part => part.icon
-    ? `<img class="input-hint__icon" src="${escapeHtml(part.icon)}" alt="${escapeHtml(part.label)}">`
+    ? `<img class="input-hint--icon" src="${escapeHtml(part.icon)}" alt="${escapeHtml(part.label)}">`
     : `<kbd class="ds-keycap">${escapeHtml(part.label)}</kbd>`
-  ).join('<span class="input-hint__joiner" aria-hidden="true">/</span>');
+  ).join('<span class="input-hint--joiner" aria-hidden="true">/</span>');
 }
 
 function hintHtml(hint, entry) {
   const controls = hint.parts.length ? controlHintHtml(hint.parts) : '';
   const label = entry.label || hint.label || entry.fallbackLabel || entry.actionId;
-  return `${controls}<span class="input-hint__label">${escapeHtml(label)}</span>`;
+  return `${controls}<span class="input-hint--label">${escapeHtml(label)}</span>`;
 }
 
 const gameplayHints = [

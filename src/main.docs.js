@@ -74,9 +74,9 @@ function renderNavLink(doc) {
 
 function renderDocument(doc) {
   return `<article id="${doc.id}" class="doc-card" data-doc-path="${escapeHtml(doc.path)}">
-    <header class="doc-card__header">
+    <header class="doc-card--header">
       <div>
-        <p class="doc-card__eyebrow">Selected file</p>
+        <p class="doc-card--eyebrow">Selected file</p>
         <p>${escapeHtml(doc.path)}</p>
       </div>
       <a href="#${doc.id}" aria-label="Link to ${escapeHtml(doc.title)}">#</a>

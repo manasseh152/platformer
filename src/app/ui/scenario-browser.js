@@ -128,7 +128,7 @@ function renderLocalTab(game, currentScenarioId) {
   const rows = records.map(record => renderLocalDraftRow(game, record, currentScenarioId)).join('');
   return `<section class="ds-section settings-section level-select-group" data-scenario-source="local">
     <div class="level-select-toolbar"><h3>Local maps</h3><button type="button" class="ds-button ds-button--secondary" data-open-map-editor>Open Map Editor</button></div>
-    ${records.length ? `<div class="settings-row-list">${rows}</div>` : `<div class="ds-setting-row ds-setting-row--info"><span class="ds-setting-row__copy"><span class="ds-setting-row__label">No local maps saved yet.</span><span class="ds-setting-row__description">Create or import a map in the editor, then save it locally.</span></span><span class="ds-setting-row__value"><button type="button" class="ds-button ds-button--primary" data-open-map-editor>Open Map Editor</button></span></div>`}
+    ${records.length ? `<div class="settings-row-list">${rows}</div>` : `<div class="ds-setting-row ds-setting-row--info"><span class="ds-setting-row--copy"><span class="ds-setting-row--label">No local maps saved yet.</span><span class="ds-setting-row--description">Create or import a map in the editor, then save it locally.</span></span><span class="ds-setting-row--value"><button type="button" class="ds-button ds-button--primary" data-open-map-editor>Open Map Editor</button></span></div>`}
   </section>`;
 }
 
@@ -143,7 +143,7 @@ function defaultLevelSelectStatus(game, tabId, localCount = countLocalDraftRecor
 export function renderSelectedTilemapSummary(game) {
   const tilemap = game.tilemaps.getCurrentTilemap();
   if (game.ui.selectedLevelSummary) game.ui.selectedLevelSummary.textContent = `Selected level: ${tilemap.name}`;
-  const heroTitle = document.querySelector('.hero-scene__title');
+  const heroTitle = document.querySelector('.hero-scene--title');
   if (heroTitle) heroTitle.textContent = tilemap.name;
   if (game.ui.hudLevelName) game.ui.hudLevelName.textContent = tilemap.name;
 }

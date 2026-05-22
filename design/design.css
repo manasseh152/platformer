@@ -30,7 +30,7 @@ footer { margin: 28px auto 48px; color: var(--color-text-muted); }
 
 .site-footer p { margin: 0; }
 
-.site-footer__links {
+.site-footer--links {
   display: flex;
   flex-wrap: wrap;
   gap: 10px 14px;

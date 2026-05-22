@@ -94,15 +94,15 @@
       background: transparent;
       box-shadow: none;
     }
-    .input-hint__icon {
+    .input-hint--icon {
       width: 30px;
       height: 30px;
       object-fit: contain;
       opacity: .62;
       filter: grayscale(1) saturate(.08) brightness(1.65) contrast(.72);
     }
-    .input-hint__label { color: inherit; }
-    .input-hint__joiner { display: none; }
+    .input-hint--label { color: inherit; }
+    .input-hint--joiner { display: none; }
     .ds-keycap {
       display: inline-grid;
       place-items: center;
@@ -150,9 +150,9 @@
       <div class="stage" aria-label="In-game hint layer preview">
         <div class="character" aria-hidden="true"></div>
         <div class="hint-layer-demo">
-          <span class="input-hint"><kbd class="ds-keycap">A</kbd><span class="input-hint__label">Move</span></span>
-          <span class="input-hint"><kbd class="ds-keycap">Space</kbd><span class="input-hint__label">Jump</span></span>
-          <span class="input-hint"><img class="input-hint__icon" src="/assets/kenney-input-prompts/xbox/xbox_button_x.svg" alt="X"><span class="input-hint__label">Attack</span></span>
+          <span class="input-hint"><kbd class="ds-keycap">A</kbd><span class="input-hint--label">Move</span></span>
+          <span class="input-hint"><kbd class="ds-keycap">Space</kbd><span class="input-hint--label">Jump</span></span>
+          <span class="input-hint"><img class="input-hint--icon" src="/assets/kenney-input-prompts/xbox/xbox_button_x.svg" alt="X"><span class="input-hint--label">Attack</span></span>
         </div>
       </div>
     </div>
@@ -213,12 +213,12 @@
       <article class="wb-panel">
         <h2>Core hint anatomy</h2>
         <div class="hint-row">
-          <span class="input-hint input-hint--chip"><kbd class="ds-keycap">Esc</kbd><span class="input-hint__label">Pause</span></span>
-          <span class="input-hint input-hint--chip"><kbd class="ds-keycap">R</kbd><span class="input-hint__label">Restart</span></span>
-          <span class="input-hint input-hint--chip input-hint--active"><img class="input-hint__icon" src="/assets/kenney-input-prompts/xbox/xbox_button_a.svg" alt="A"><span class="input-hint__label">Select</span></span>
+          <span class="input-hint input-hint--chip"><kbd class="ds-keycap">Esc</kbd><span class="input-hint--label">Pause</span></span>
+          <span class="input-hint input-hint--chip"><kbd class="ds-keycap">R</kbd><span class="input-hint--label">Restart</span></span>
+          <span class="input-hint input-hint--chip input-hint--active"><img class="input-hint--icon" src="/assets/kenney-input-prompts/xbox/xbox_button_a.svg" alt="A"><span class="input-hint--label">Select</span></span>
         </div>
         <h3>Markup contract</h3>
-        <p>Use <code>.input-hint</code> as the wrapper, <code>.ds-keycap</code> for text controls, <code>.input-hint__icon</code> for prompt assets, and <code>.input-hint__label</code> for the action.</p>
+        <p>Use <code>.input-hint</code> as the wrapper, <code>.ds-keycap</code> for text controls, <code>.input-hint--icon</code> for prompt assets, and <code>.input-hint--label</code> for the action.</p>
       </article>
 
       <article class="wb-panel">
@@ -234,12 +234,12 @@
       <article class="wb-panel wb-panel--wide">
         <h2>Gameplay set</h2>
         <div class="hint-row">
-          <span class="input-hint"><kbd class="ds-keycap">A</kbd><kbd class="ds-keycap">D</kbd><span class="input-hint__label">Move</span></span>
-          <span class="input-hint"><kbd class="ds-keycap">Space</kbd><span class="input-hint__label">Jump</span></span>
-          <span class="input-hint"><kbd class="ds-keycap">Shift</kbd><span class="input-hint__label">Dash</span></span>
-          <span class="input-hint"><kbd class="ds-keycap">J</kbd><span class="input-hint__label">Attack</span></span>
-          <span class="input-hint"><kbd class="ds-keycap">Esc</kbd><span class="input-hint__label">Pause</span></span>
-          <span class="input-hint"><kbd class="ds-keycap">R</kbd><span class="input-hint__label">Restart</span></span>
+          <span class="input-hint"><kbd class="ds-keycap">A</kbd><kbd class="ds-keycap">D</kbd><span class="input-hint--label">Move</span></span>
+          <span class="input-hint"><kbd class="ds-keycap">Space</kbd><span class="input-hint--label">Jump</span></span>
+          <span class="input-hint"><kbd class="ds-keycap">Shift</kbd><span class="input-hint--label">Dash</span></span>
+          <span class="input-hint"><kbd class="ds-keycap">J</kbd><span class="input-hint--label">Attack</span></span>
+          <span class="input-hint"><kbd class="ds-keycap">Esc</kbd><span class="input-hint--label">Pause</span></span>
+          <span class="input-hint"><kbd class="ds-keycap">R</kbd><span class="input-hint--label">Restart</span></span>
         </div>
       </article>
 
@@ -279,7 +279,7 @@
   </main>
   <footer class="site-footer">
     <p>Hint design reference — input prompts, copy, and placement rules in one place.</p>
-    <nav class="site-footer__links" aria-label="Footer links">
+    <nav class="site-footer--links" aria-label="Footer links">
       <a href="/">Game</a>
       <a href="/editor">Editor</a>
       <a href="/docs.html">Docs</a>

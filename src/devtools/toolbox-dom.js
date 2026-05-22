@@ -24,19 +24,19 @@ function renderItem(game, section, item) {
   if (item.kind === 'toggle') {
     const checked = Boolean(itemValue(game, item));
     return `<label class="devtool-row devtool-row--toggle" data-devtool-item="${escapeHtml(key)}">
-      <span class="devtool-row__copy"><span class="devtool-row__label">${escapeHtml(item.label)}</span></span>
+      <span class="devtool-row--copy"><span class="devtool-row--label">${escapeHtml(item.label)}</span></span>
       <input type="checkbox" data-devtool-toggle="${escapeHtml(key)}"${checked ? ' checked' : ''}>
     </label>`;
   }
   if (item.kind === 'button') {
     return `<button type="button" class="devtool-row devtool-row--button" data-devtool-button="${escapeHtml(key)}">
-      <span class="devtool-row__copy"><span class="devtool-row__label">${escapeHtml(item.label)}</span></span>
-      <span class="devtool-row__value">Run</span>
+      <span class="devtool-row--copy"><span class="devtool-row--label">${escapeHtml(item.label)}</span></span>
+      <span class="devtool-row--value">Run</span>
     </button>`;
   }
   return `<div class="devtool-row devtool-row--value" data-devtool-item="${escapeHtml(key)}">
-    <span class="devtool-row__copy"><span class="devtool-row__label">${escapeHtml(item.label)}</span></span>
-    <span class="devtool-row__value" data-devtool-value="${escapeHtml(key)}">${escapeHtml(itemValue(game, item))}</span>
+    <span class="devtool-row--copy"><span class="devtool-row--label">${escapeHtml(item.label)}</span></span>
+    <span class="devtool-row--value" data-devtool-value="${escapeHtml(key)}">${escapeHtml(itemValue(game, item))}</span>
   </div>`;
 }
 
@@ -45,7 +45,7 @@ function renderPanel(game) {
   if (!sections.length) return '<p class="devtool-empty">No tools registered.</p>';
   return sections.map(section => `<section class="devtool-section" data-devtool-section="${escapeHtml(section.id)}">
     <h3>${escapeHtml(section.title)}</h3>
-    <div class="devtool-section__items">${section.items.map(item => renderItem(game, section, item)).join('')}</div>
+    <div class="devtool-section--items">${section.items.map(item => renderItem(game, section, item)).join('')}</div>
   </section>`).join('');
 }
 
@@ -157,11 +157,11 @@ export function setupDevTools(game) {
   root.dataset.devtoolsOpen = 'false';
   root.innerHTML = `<button id="devtoolToggle" class="devtool-toggle" type="button" aria-controls="devtoolPanel" aria-expanded="false" hidden>Dev</button>
     <aside id="devtoolPanel" class="devtool-panel" role="region" aria-label="Developer toolbox" tabindex="-1" hidden aria-hidden="true">
-      <header class="devtool-panel__header">
+      <header class="devtool-panel--header">
         <div><span class="devtool-eyebrow">Developer</span><h2>Toolbox</h2></div>
         <button type="button" class="devtool-close" data-devtool-close aria-label="Close developer toolbox">×</button>
       </header>
-      <div class="devtool-panel__body" data-devtool-body></div>
+      <div class="devtool-panel--body" data-devtool-body></div>
     </aside>`;
   overlayRoot.appendChild(root);
 

@@ -28,7 +28,7 @@ export const settingsCategories = [
 
 const keycaps = text => text.split(' / ').map(part => `<span class="ds-keycap">${escapeHtml(part)}</span>`).join(' ');
 const controlGlyphs = parts => parts.map(part => part.icon
-  ? `<img class="input-hint__icon bind-keycaps__icon" src="${escapeHtml(part.icon)}" alt="${escapeHtml(part.label)}">`
+  ? `<img class="input-hint--icon bind-keycaps--icon" src="${escapeHtml(part.icon)}" alt="${escapeHtml(part.label)}">`
   : `<span class="ds-keycap">${escapeHtml(part.label)}</span>`
 ).join(' ');
 const onOff = value => value ? 'On' : 'Off';
@@ -51,29 +51,29 @@ function controllerSelectionRow(game) {
   if (!devices.length) return infoRow('Selected Controller', selectedRuntimeId || 'Auto / none connected', 'selectedControllerName');
   const buttons = devices.map(device => `<button type="button" class="ds-button ds-button--secondary" data-controller-select="${device.runtimeId}"${device.runtimeId === selectedRuntimeId ? ' aria-pressed="true"' : ''}>${device.runtimeId === selectedRuntimeId ? 'Selected: ' : 'Select: '}${device.id || device.runtimeId}</button>`).join(' ');
   return `<div class="ds-setting-row ds-setting-row--info">
-    <span class="ds-setting-row__copy"><span class="ds-setting-row__label">Selected Controller</span><span class="ds-setting-row__description">Selection is explicit; disconnects do not silently switch to another controller.</span></span>
-    <span class="ds-setting-row__value controller-select-list" id="selectedControllerName">${buttons}</span>
+    <span class="ds-setting-row--copy"><span class="ds-setting-row--label">Selected Controller</span><span class="ds-setting-row--description">Selection is explicit; disconnects do not silently switch to another controller.</span></span>
+    <span class="ds-setting-row--value controller-select-list" id="selectedControllerName">${buttons}</span>
   </div>`;
 }
 
 const xboxAsset = file => `/assets/kenney-input-prompts/xbox/${file}`;
-const debugPadButton = ({ code, label, className = '' }) => `<span class="controller-debugger__pad-button ${className}" data-controller-debug-code="${code}" aria-pressed="false"><span>${label}</span></span>`;
-const debugAxisReadout = ({ axis, label }) => `<span class="controller-debugger__axis-readout" data-controller-debug-axis="${axis}" style="--axis-value:0"><span>${label}</span><b data-controller-axis-value="${axis}">0.00</b></span>`;
+const debugPadButton = ({ code, label, className = '' }) => `<span class="controller-debugger--pad-button ${className}" data-controller-debug-code="${code}" aria-pressed="false"><span>${label}</span></span>`;
+const debugAxisReadout = ({ axis, label }) => `<span class="controller-debugger--axis-readout" data-controller-debug-axis="${axis}" style="--axis-value:0"><span>${label}</span><b data-controller-axis-value="${axis}">0.00</b></span>`;
 
 function controllerDebugger(game) {
   return section('Controller Debugger', `${infoRow('Controller Input Lock', game.input.controllerDebugLock ? 'On' : 'Off')}
   <p class="settings-page-note helper">Controller presses update this panel only. Hold <b>B / Circle</b> for 2 seconds to leave with the controller.</p>
   <div class="controller-debugger${game.input.controllerDebugLock ? ' is-input-locked' : ''}" data-controller-debugger-layout="fallback" aria-label="Controller-shaped live input debugger">
-    <div class="controller-debugger__title"><span>Default controller</span><b data-controller-debug-lock-label>${game.input.controllerDebugLock ? 'Hold B to exit' : 'Fallback layout'}</b></div>
-    <div class="controller-debugger__pad" aria-hidden="false">
-      <img class="controller-debugger__body" src="${xboxAsset('controller_xboxseries.svg')}" alt="" loading="lazy">
+    <div class="controller-debugger--title"><span>Default controller</span><b data-controller-debug-lock-label>${game.input.controllerDebugLock ? 'Hold B to exit' : 'Fallback layout'}</b></div>
+    <div class="controller-debugger--pad" aria-hidden="false">
+      <img class="controller-debugger--body" src="${xboxAsset('controller_xboxseries.svg')}" alt="" loading="lazy">
       ${debugPadButton({ code: 'PadButton4', label: 'LB', className: 'is-shoulder is-left' })}
       ${debugPadButton({ code: 'PadButton5', label: 'RB', className: 'is-shoulder is-right' })}
       ${debugPadButton({ code: 'PadButton6', label: 'LT', className: 'is-trigger is-left' })}
       ${debugPadButton({ code: 'PadButton7', label: 'RT', className: 'is-trigger is-right' })}
-      <span class="controller-debugger__stick is-left" data-controller-stick="left" data-controller-debug-code="PadButton10" aria-pressed="false"><i></i><b>LS</b></span>
-      <span class="controller-debugger__stick is-right" data-controller-stick="right" data-controller-debug-code="PadButton11" aria-pressed="false"><i></i><b>RS</b></span>
-      <span class="controller-debugger__dpad" aria-label="D-pad">
+      <span class="controller-debugger--stick is-left" data-controller-stick="left" data-controller-debug-code="PadButton10" aria-pressed="false"><i></i><b>LS</b></span>
+      <span class="controller-debugger--stick is-right" data-controller-stick="right" data-controller-debug-code="PadButton11" aria-pressed="false"><i></i><b>RS</b></span>
+      <span class="controller-debugger--dpad" aria-label="D-pad">
         ${debugPadButton({ code: 'PadButton12', label: '▲', className: 'is-dpad is-up' })}
         ${debugPadButton({ code: 'PadButton13', label: '▼', className: 'is-dpad is-down' })}
         ${debugPadButton({ code: 'PadButton14', label: '◀', className: 'is-dpad is-left' })}
@@ -88,7 +88,7 @@ function controllerDebugger(game) {
       ${debugPadButton({ code: 'PadButton9', label: 'Menu', className: 'is-system is-menu' })}
       ${debugPadButton({ code: 'PadButton17', label: 'Share', className: 'is-system is-share' })}
     </div>
-    <div class="controller-debugger__meters" aria-label="Analog input values">
+    <div class="controller-debugger--meters" aria-label="Analog input values">
       ${debugAxisReadout({ axis: 6, label: 'Left Trigger' })}
       ${debugAxisReadout({ axis: 7, label: 'Right Trigger' })}
       ${debugAxisReadout({ axis: 0, label: 'Left Stick X' })}
@@ -131,7 +131,7 @@ const controlsPages = [
 
 function profileCards(game) {
   const active = game.settings.input.activeProfileId;
-  return `<div class="settings-category-list">${Object.values(game.settings.input.profiles).map(profile => `<button type="button" class="settings-category-card ds-list-card" data-controls-profile="${profile.id}" aria-pressed="${profile.id === active ? 'true' : 'false'}"><span class="settings-category-card__title">${profile.label}</span><span class="settings-category-card__description">${profile.deviceTypes.join(' + ')} · ${profile.id === active ? 'Active' : 'Select profile'}</span></button>`).join('')}</div>`;
+  return `<div class="settings-category-list">${Object.values(game.settings.input.profiles).map(profile => `<button type="button" class="settings-category-card ds-list-card" data-controls-profile="${profile.id}" aria-pressed="${profile.id === active ? 'true' : 'false'}"><span class="settings-category-card--title">${profile.label}</span><span class="settings-category-card--description">${profile.deviceTypes.join(' + ')} · ${profile.id === active ? 'Active' : 'Select profile'}</span></button>`).join('')}</div>`;
 }
 
 function controlsSubtabs(game) {
@@ -151,7 +151,7 @@ function controlsSubtabs(game) {
 function navigationOverview(game) {
   const labels = { 'menu.navigateX': 'Navigate Horizontal', 'menu.navigateY': 'Navigate Vertical', 'menu.accept': 'Accept', 'menu.back': 'Back', 'menu.settings': 'Settings', 'system.pause': 'Pause', 'system.restart': 'Restart' };
   const rows = Object.keys(labels);
-  return section('Shared navigation & system binds', `<div class="settings-row-list">${rows.map(action => `<div class="ds-setting-row ds-setting-row--info"><span class="ds-setting-row__copy"><span class="ds-setting-row__label">${labels[action]}</span></span><span class="ds-setting-row__value bind-keycaps">${escapeHtml((game.settings.input.bindings[action] || []).map(bindingLabel).join(' / ') || 'Unbound')}</span></div>`).join('')}</div>`);
+  return section('Shared navigation & system binds', `<div class="settings-row-list">${rows.map(action => `<div class="ds-setting-row ds-setting-row--info"><span class="ds-setting-row--copy"><span class="ds-setting-row--label">${labels[action]}</span></span><span class="ds-setting-row--value bind-keycaps">${escapeHtml((game.settings.input.bindings[action] || []).map(bindingLabel).join(' / ') || 'Unbound')}</span></div>`).join('')}</div>`);
 }
 
 function renderControls(game) {
@@ -168,15 +168,15 @@ function renderControls(game) {
 
 function controllerSubpageCard(page) {
   return `<button type="button" class="settings-category-card ds-list-card" data-controller-settings-page="${page.id}">
-    <span class="settings-category-card__title">${page.title}</span>
-    <span class="settings-category-card__description">${page.description}</span>
+    <span class="settings-category-card--title">${page.title}</span>
+    <span class="settings-category-card--description">${page.description}</span>
   </button>`;
 }
 
 function controllerSubpageHeader(game, title, note = '') {
   return `<div class="settings-subpage-header">
     <button type="button" class="settings-back-button ds-button ds-button--secondary" data-controller-settings-back>Controller</button>
-    <span class="settings-subpage-header__crumb">Settings / Controller / ${title}</span>
+    <span class="settings-subpage-header--crumb">Settings / Controller / ${title}</span>
   </div>${note ? pageNote(note) : ''}`;
 }
 
@@ -256,7 +256,7 @@ export function renderSettingsTabs(game) {
     tabs: settingsCategories.map(category => ({
       id: category.id,
       label: category.title,
-      content: `<span class="settings-tab__label">${escapeHtml(category.title)}</span>`,
+      content: `<span class="settings-tab--label">${escapeHtml(category.title)}</span>`,
       attributes: { 'data-settings-tab': category.id }
     })),
     activeId: active,
@@ -264,8 +264,8 @@ export function renderSettingsTabs(game) {
     className: 'settings-tabs settings-tabs--primary',
     variant: 'primary',
     attributes: { 'data-settings-nav-layer': 'primary-tabs' },
-    before: '<span class="settings-tabs__hint" data-settings-tab-hint="previous" data-input-tab-hint data-input-action="menu.previousTab" aria-hidden="true" hidden>LB</span>',
-    after: '<span class="settings-tabs__hint" data-settings-tab-hint="next" data-input-tab-hint data-input-action="menu.nextTab" aria-hidden="true" hidden>RB</span>'
+    before: '<span class="settings-tabs--hint" data-settings-tab-hint="previous" data-input-tab-hint data-input-action="menu.previousTab" aria-hidden="true" hidden>LB</span>',
+    after: '<span class="settings-tabs--hint" data-settings-tab-hint="next" data-input-tab-hint data-input-action="menu.nextTab" aria-hidden="true" hidden>RB</span>'
   });
 }
 
@@ -278,8 +278,8 @@ export function renderSettingsHub(game) {
   ui.settingsRootRows.innerHTML = renderSettingsTabs(game);
   ui.settingsCategoryList.innerHTML = settingsCategories.map(category => `
     <button type="button" class="settings-category-card ds-list-card" data-settings-category="${category.id}">
-      <span class="settings-category-card__title">${category.title}</span>
-      <span class="settings-category-card__description">${category.description}</span>
+      <span class="settings-category-card--title">${category.title}</span>
+      <span class="settings-category-card--description">${category.description}</span>
     </button>`).join('');
 }
 
