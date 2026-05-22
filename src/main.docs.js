@@ -1,3 +1,5 @@
+import './ui/workbench-header.js';
+
 const modules = import.meta.glob(['../docs/**/*.md', '!../docs/adr/**'], {
   query: '?raw',
   import: 'default',

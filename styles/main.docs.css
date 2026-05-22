@@ -84,16 +84,19 @@ body {
 .site-footer a:focus-visible { color: var(--color-text); }
 
 .docs-layout {
+  --docs-sticky-header-offset: 78px;
   grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
   gap: 16px;
 }
 
 .docs-index {
-  max-height: calc(100vh - 36px);
-  max-height: calc(100dvh - 36px);
+  top: var(--docs-sticky-header-offset);
+  max-height: calc(100vh - var(--docs-sticky-header-offset) - 18px);
+  max-height: calc(100dvh - var(--docs-sticky-header-offset) - 18px);
   overflow: auto;
   padding: 18px;
   border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   background: var(--color-surface);
 }
 
@@ -145,7 +148,7 @@ body {
 .docs-content { min-width: 0; }
 
 .doc-card {
-  scroll-margin-top: 24px;
+  scroll-margin-top: calc(var(--docs-sticky-header-offset, 78px) + 16px);
   min-height: calc(100vh - 168px);
   padding: clamp(22px, 4vw, 42px);
   border: 1px solid var(--color-border);
