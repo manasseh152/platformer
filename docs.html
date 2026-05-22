@@ -11,32 +11,53 @@
   <link rel="stylesheet" href="/styles/main.docs.css" />
 </head>
 <body>
-  <div class="docs-shell wb-shell wb-shell--wide">
-    <header class="docs-hero wb-hero">
-      <div>
-        <p class="docs-kicker wb-kicker">Chibi Hollow // working notes</p>
-        <h1>Project Docs</h1>
-        <p class="docs-lede wb-lede">Current implementation guides and patterns in a focused reader: pick a file in the sidebar, read only that file. Architecture Decision Records are intentionally excluded.</p>
+  <header class="wb-site-header">
+    <div class="wb-site-header--bar">
+      <div class="wb-site-header--copy">
+        <p class="wb-site-header--kicker">Chibi Hollow / Docs</p>
+        <h1>Project docs</h1>
+        <p class="wb-site-header--lede">Implementation notes and patterns in a focused reader. ADR history is excluded.</p>
       </div>
-      <nav class="docs-links" aria-label="Page links">
+      <nav class="wb-site-nav--links" aria-label="Primary links">
         <a href="/">Game</a>
         <a href="/editor">Editor</a>
+        <a href="/design/">Design</a>
+        <a href="/docs.html" aria-current="page">Docs</a>
       </nav>
-    </header>
+      <details class="wb-site-nav--menu">
+        <summary>Menu</summary>
+        <nav class="wb-site-nav--menu-list" aria-label="Collapsed primary links">
+          <a href="/">Game</a>
+          <a href="/editor">Editor</a>
+          <a href="/design/">Design</a>
+          <a href="/docs.html" aria-current="page">Docs</a>
+        </nav>
+      </details>
+    </div>
+  </header>
 
-    <main class="docs-layout wb-layout">
+  <main class="docs-shell wb-shell wb-shell--wide">
+    <div class="docs-layout wb-layout">
       <aside class="docs-index wb-sidebar" aria-label="Documentation index">
-        <div class="docs-index__sticky">
-          <label class="docs-search wb-search">
-            <span>Filter docs</span>
-            <input id="docsFilter" type="search" placeholder="terrain, rendering, gyms…" autocomplete="off" />
-          </label>
-          <nav id="docsNav" aria-label="Documents"></nav>
-        </div>
+        <label class="docs-search wb-search">
+          <span>Filter docs</span>
+          <input id="docsFilter" type="search" placeholder="terrain, rendering, gyms…" autocomplete="off" />
+        </label>
+        <nav id="docsNav" aria-label="Documents"></nav>
       </aside>
       <section id="docsContent" class="docs-content" aria-live="polite"></section>
-    </main>
-  </div>
+    </div>
+  </main>
+
+  <footer class="docs-footer wb-footer site-footer">
+    <p>Chibi Hollow docs — concise notes for building and tuning the platformer.</p>
+    <nav class="site-footer__links" aria-label="Footer links">
+      <a href="/">Game</a>
+      <a href="/editor">Editor</a>
+      <a href="/design/">Design</a>
+      <a href="/docs.html">Docs</a>
+    </nav>
+  </footer>
 
   <script type="module" src="/src/main.docs.js"></script>
 </body>

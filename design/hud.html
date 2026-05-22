@@ -83,11 +83,15 @@
   </style>
 </head>
 <body>
-  <header>
-    <div class="wb-kicker">HUD System / Reference Board</div>
-    <h1>Gameplay HUD reference</h1>
-    <p class="wb-lede">A focused HTML reference for Chibi Hollow's in-run status layer. The HUD is split into floating primitives: run status stays top-left, speedrun telemetry docks top-right, and each state can be judged independently.</p>
-    <div class="stage" aria-label="In-game HUD preview">
+  <header class="wb-site-header">
+    <div class="wb-site-header--bar">
+      <div class="wb-site-header--copy"><p class="wb-site-header--kicker">HUD System / Reference Board</p><h1>Gameplay HUD reference</h1><p class="wb-site-header--lede">A focused HTML reference for Chibi Hollow's in-run status layer. The HUD is split into floating primitives: run status stays top-left, speedrun telemetry docks top-right, and each state can be judged independently.</p></div>
+      <nav class="wb-site-nav--links" aria-label="Primary links"><a href="/">Game</a><a href="/editor">Editor</a><a href="/design/" aria-current="page">Design</a><a href="/docs.html">Docs</a></nav>
+      <details class="wb-site-nav--menu"><summary>Menu</summary><nav class="wb-site-nav--menu-list" aria-label="Collapsed primary links"><a href="/">Game</a><a href="/editor">Editor</a><a href="/design/" aria-current="page">Design</a><a href="/docs.html">Docs</a></nav></details>
+    </div>
+  </header>
+
+  <div class="stage" aria-label="In-game HUD preview">
       <div class="safe-frame" aria-hidden="true"></div>
       <section id="hud" class="hud-card ds-hud" aria-label="Run status">
         <div class="hud-topline"><div><div class="title ds-overline">Current Level</div><div id="hudLevelName" class="hud-zone">Moon Gate</div></div><div class="hud-act">Act 01</div></div>
@@ -101,7 +105,6 @@
         <div class="speedrun-meta"><div><span>Best</span><strong id="speedRunBest">0:39.902</strong></div><div><span>Previous</span><strong>0:44.734</strong></div><div><span>Task</span><strong>3 / 5 wisps</strong></div></div>
       </aside>
     </div>
-  </header>
 
   <main>
     <section class="wb-grid">
@@ -146,7 +149,15 @@
     </section>
   </main>
 
-  <footer>Design reference page only. Keep page chrome neutral so HUD decisions are isolated.</footer>
+  <footer class="site-footer">
+    <p>HUD design reference — neutral page chrome keeps gameplay overlays easy to judge.</p>
+    <nav class="site-footer__links" aria-label="Footer links">
+      <a href="/">Game</a>
+      <a href="/editor">Editor</a>
+      <a href="/docs.html">Docs</a>
+      <a href="/design/">Design index</a>
+    </nav>
+  </footer>
 
   <script>
     document.querySelectorAll('[data-css-var]').forEach((input) => {

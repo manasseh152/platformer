@@ -80,10 +80,12 @@
   </style>
 </head>
 <body>
-  <header>
-    <div class="wb-kicker">Menu System / Reference Board</div>
-    <h1>Menu system reference</h1>
-    <p class="wb-lede">Minimal reference for Chibi Hollow start, pause, level-select, and settings menus. Typography, actions, and concise state carry the interface; decoration stays quiet.</p>
+  <header class="wb-site-header">
+    <div class="wb-site-header--bar">
+      <div class="wb-site-header--copy"><p class="wb-site-header--kicker">Menu System / Reference Board</p><h1>Menu system reference</h1><p class="wb-site-header--lede">Minimal reference for Chibi Hollow start, pause, level-select, and settings menus. Typography, actions, and concise state carry the interface; decoration stays quiet.</p></div>
+      <nav class="wb-site-nav--links" aria-label="Primary links"><a href="/">Game</a><a href="/editor">Editor</a><a href="/design/" aria-current="page">Design</a><a href="/docs.html">Docs</a></nav>
+      <details class="wb-site-nav--menu"><summary>Menu</summary><nav class="wb-site-nav--menu-list" aria-label="Collapsed primary links"><a href="/">Game</a><a href="/editor">Editor</a><a href="/design/" aria-current="page">Design</a><a href="/docs.html">Docs</a></nav></details>
+    </div>
   </header>
 
   <main>
@@ -142,7 +144,15 @@
     </section>
   </main>
 
-  <footer>Design reference only. Keep page styling neutral so menu decisions remain isolated.</footer>
+  <footer class="site-footer">
+    <p>Menu design reference — neutral framing for flow, focus, and hierarchy reviews.</p>
+    <nav class="site-footer__links" aria-label="Footer links">
+      <a href="/">Game</a>
+      <a href="/editor">Editor</a>
+      <a href="/docs.html">Docs</a>
+      <a href="/design/">Design index</a>
+    </nav>
+  </footer>
 
   <script>
     document.querySelectorAll('[data-css-var]').forEach((input) => {

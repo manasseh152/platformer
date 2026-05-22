@@ -22,6 +22,7 @@ Chibi Hollow uses two import-selected design systems plus a tiny shared foundati
 - Supports explicit overrides with `<html data-theme="light">` or `<html data-theme="dark">`.
 - Light mode follows the previous neutral design-page style.
 - Dark mode keeps the same restrained structure with dark background and light foreground.
+- Content uses the shared `--wb-content-inline` measure (`--wb-content-width`, currently `1120px`, with the standard gutter). Apply that same measure to page shells, footers, and header/nav inner bars; avoid one-off wider workbench variants.
 
 ## Shared shape
 

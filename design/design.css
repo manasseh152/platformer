@@ -8,12 +8,41 @@ body {
   touch-action: auto;
 }
 
-header,
+body > header:not(.wb-site-header),
 main,
-footer { width: min(1120px, calc(100vw - 32px)); margin: 0 auto; }
-header { padding: 32px 0 16px; border-bottom: 1px solid var(--color-border); }
+footer { width: var(--wb-content-inline); margin: 0 auto; }
+body > header:not(.wb-site-header) { padding: 32px 0 16px; border-bottom: 1px solid var(--color-border); }
+.wb-site-header { border-bottom: 0; }
+.wb-site-header .wb-site-nav--links { align-self: center; }
 footer { margin: 28px auto 48px; color: var(--color-text-muted); }
 .design-index footer { margin: 12px auto 44px; }
+
+.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-border);
+  font-size: .92rem;
+}
+
+.site-footer p { margin: 0; }
+
+.site-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}
+
+.site-footer a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.site-footer a:hover,
+.site-footer a:focus-visible { color: var(--color-text); }
 
 h1 { margin: 6px 0 8px; font-size: clamp(2rem, 5vw, 3.8rem); line-height: 1; letter-spacing: -.04em; }
 h2 { margin: 0 0 14px; font-size: 1.25rem; }
@@ -21,6 +50,9 @@ h3 { margin: 18px 0 8px; color: var(--color-text-muted); font-size: .78rem; text
 section { margin: 22px 0; }
 p, li, dd { color: var(--color-text-muted); }
 code, kbd { background: var(--color-bg-muted); padding: .12em .32em; border-radius: 4px; }
+
+body > .hero-card,
+body > .stage { width: var(--wb-content-inline); margin: 18px auto 0; }
 
 .design-index .wb-grid { margin: 24px 0; }
 .wb-card h2 { margin: 0 0 8px; font-size: 1.35rem; line-height: 1.05; letter-spacing: -.02em; }

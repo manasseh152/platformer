@@ -8,10 +8,29 @@
   <link rel="stylesheet" href="design.css" />
 </head>
 <body class="design-index">
-  <header>
-    <div class="wb-kicker">Chibi Hollow / Design Index</div>
-    <h1>Design pages</h1>
-    <p class="wb-lede">Quick navigation for the standalone HTML reference boards used to review gameplay UI, editor UI, and interaction patterns.</p>
+  <header class="wb-site-header">
+    <div class="wb-site-header--bar">
+      <div class="wb-site-header--copy">
+        <p class="wb-site-header--kicker">Chibi Hollow / Design Index</p>
+        <h1>Design pages</h1>
+        <p class="wb-site-header--lede">Quick navigation for the standalone HTML reference boards used to review gameplay UI, editor UI, and interaction patterns.</p>
+      </div>
+      <nav class="wb-site-nav--links" aria-label="Primary links">
+        <a href="/">Game</a>
+        <a href="/editor">Editor</a>
+        <a href="/design/" aria-current="page">Design</a>
+        <a href="/docs.html">Docs</a>
+      </nav>
+      <details class="wb-site-nav--menu">
+        <summary>Menu</summary>
+        <nav class="wb-site-nav--menu-list" aria-label="Collapsed primary links">
+          <a href="/">Game</a>
+          <a href="/editor">Editor</a>
+          <a href="/design/" aria-current="page">Design</a>
+          <a href="/docs.html">Docs</a>
+        </nav>
+      </details>
+    </div>
   </header>
 
   <main>
@@ -50,6 +69,14 @@
     </nav>
   </main>
 
-  <footer>Open this page at <code>/design/</code> or <code>/design/index.html</code>.</footer>
+  <footer class="site-footer">
+    <p>Chibi Hollow design boards — focused references for UI and interaction decisions.</p>
+    <nav class="site-footer__links" aria-label="Footer links">
+      <a href="/">Game</a>
+      <a href="/editor">Editor</a>
+      <a href="/docs.html">Docs</a>
+      <a href="/design/">Design index</a>
+    </nav>
+  </footer>
 </body>
 </html>

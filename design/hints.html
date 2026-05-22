@@ -138,13 +138,15 @@
   </style>
 </head>
 <body>
-  <header>
-    <div>
-      <div class="wb-kicker">Hint System / Asset Board</div>
-      <h1>Hint system reference</h1>
-      <p class="wb-lede">A focused HTML reference for how Chibi Hollow input hints should look: keyboard pills, controller glyphs, bottom-layer composition, menu actions, and asset usage rules.</p>
+  <header class="wb-site-header">
+    <div class="wb-site-header--bar">
+      <div class="wb-site-header--copy"><p class="wb-site-header--kicker">Hint System / Asset Board</p><h1>Hint system reference</h1><p class="wb-site-header--lede">A focused HTML reference for how Chibi Hollow input hints should look: keyboard pills, controller glyphs, bottom-layer composition, menu actions, and asset usage rules.</p></div>
+      <nav class="wb-site-nav--links" aria-label="Primary links"><a href="/">Game</a><a href="/editor">Editor</a><a href="/design/" aria-current="page">Design</a><a href="/docs.html">Docs</a></nav>
+      <details class="wb-site-nav--menu"><summary>Menu</summary><nav class="wb-site-nav--menu-list" aria-label="Collapsed primary links"><a href="/">Game</a><a href="/editor">Editor</a><a href="/design/" aria-current="page">Design</a><a href="/docs.html">Docs</a></nav></details>
     </div>
-    <div class="hero-card">
+  </header>
+
+  <div class="hero-card">
       <div class="stage" aria-label="In-game hint layer preview">
         <div class="character" aria-hidden="true"></div>
         <div class="hint-layer-demo">
@@ -154,7 +156,7 @@
         </div>
       </div>
     </div>
-  </header>
+  </div>
 
   <main>
     <section class="wb-grid">
@@ -275,7 +277,15 @@
       </article>
     </section>
   </main>
-  <footer>Open at <code>/design/hints.html</code> while running Vite.</footer>
+  <footer class="site-footer">
+    <p>Hint design reference — input prompts, copy, and placement rules in one place.</p>
+    <nav class="site-footer__links" aria-label="Footer links">
+      <a href="/">Game</a>
+      <a href="/editor">Editor</a>
+      <a href="/docs.html">Docs</a>
+      <a href="/design/">Design index</a>
+    </nav>
+  </footer>
   <script>
     const rootStyle = document.documentElement.style;
     document.querySelectorAll('[data-css-var]').forEach(input => {

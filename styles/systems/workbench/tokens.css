@@ -41,6 +41,10 @@
   --space-7: 44px;
   --space-8: 60px;
 
+  --wb-content-width: 1120px;
+  --wb-content-gutter: 32px;
+  --wb-content-inline: min(var(--wb-content-width), calc(100vw - var(--wb-content-gutter)));
+
   --font-sans: "Geist Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono-family: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
   --font-pixel: "Geist Pixel", "Geist Mono", ui-monospace, monospace;

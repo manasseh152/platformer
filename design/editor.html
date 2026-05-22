@@ -153,10 +153,12 @@
   </style>
 </head>
 <body>
-  <header>
-    <div class="wb-kicker">Editor System / Design Board</div>
-    <h1>Editor system reference</h1>
-    <p class="wb-lede">A focused reference for the tilemap editor UI. The header preview shows only the top half of the editor screen; detailed floating tools are documented below.</p>
+  <header class="wb-site-header">
+    <div class="wb-site-header--bar">
+      <div class="wb-site-header--copy"><p class="wb-site-header--kicker">Editor System / Design Board</p><h1>Editor system reference</h1><p class="wb-site-header--lede">A focused reference for the tilemap editor UI. The header preview shows only the top half of the editor screen; detailed floating tools are documented below.</p></div>
+      <nav class="wb-site-nav--links" aria-label="Primary links"><a href="/">Game</a><a href="/editor">Editor</a><a href="/design/" aria-current="page">Design</a><a href="/docs.html">Docs</a></nav>
+      <details class="wb-site-nav--menu"><summary>Menu</summary><nav class="wb-site-nav--menu-list" aria-label="Collapsed primary links"><a href="/">Game</a><a href="/editor">Editor</a><a href="/design/" aria-current="page">Design</a><a href="/docs.html">Docs</a></nav></details>
+    </div>
   </header>
 
   <main>
@@ -212,7 +214,15 @@
       <article class="wb-panel wb-panel--wide"><h2>Implementation notes</h2><ul><li>Production markup lives in <code>editor.html</code>; behavior in <code>src/editor/map-editor.js</code>, <code>src/editor/editor-viewport.js</code>, <code>src/editor/editor-history.js</code>, and <code>src/editor/map-editor-commands.js</code>.</li><li>Production styles live in <code>styles/main.editor.css</code>; this pass updates the design reference only.</li><li>Keep editor styling functional: authoring state, current tool, and input affordances should be clearer than atmosphere.</li></ul></article>
     </section>
   </main>
-  <footer>Open at <code>/design/editor.html</code> while running Vite.</footer>
+  <footer class="site-footer">
+    <p>Editor design reference — production notes stay in code, decisions stay visible here.</p>
+    <nav class="site-footer__links" aria-label="Footer links">
+      <a href="/">Game</a>
+      <a href="/editor">Editor</a>
+      <a href="/docs.html">Docs</a>
+      <a href="/design/">Design index</a>
+    </nav>
+  </footer>
   <script>
     const rootStyle = document.documentElement.style;
     document.querySelectorAll('[data-css-var]').forEach(input => {
