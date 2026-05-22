@@ -1,4 +1,4 @@
-.wb-site-header { position: sticky; top: 0; z-index: 20; box-sizing: border-box; width: 100%; margin: 0; padding: clamp(16px, 3vw, 24px) 16px 14px; isolation: isolate; overflow: hidden; transition: padding .18s ease; }
+.wb-site-header { position: sticky; top: 0; z-index: 20; box-sizing: border-box; width: 100%; margin: 0; padding: clamp(16px, 3vw, 24px) 16px 14px; isolation: isolate; overflow: visible; transition: padding .18s ease; }
 .wb-site-header::before { content: ""; position: absolute; inset: 0; z-index: -1; border-bottom: 1px solid var(--color-border); background: color-mix(in srgb, var(--color-bg) 88%, transparent); backdrop-filter: blur(18px); }
 .wb-site-header--bar { width: var(--wb-content-inline); margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: clamp(12px, 2vw, 18px); }
 .wb-site-header--copy { min-width: 0; }
@@ -15,7 +15,7 @@
 .wb-site-nav--menu summary::-webkit-details-marker { display: none; }
 .wb-site-nav--menu summary::before { content: "☰"; margin-right: .5rem; }
 .wb-site-nav--menu[open] summary { border-color: var(--color-border-strong); }
-.wb-site-nav--menu-list { position: absolute; top: calc(100% + 8px); right: 0; min-width: 190px; display: grid; gap: 4px; padding: 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); box-shadow: var(--shadow-panel); }
+.wb-site-nav--menu-list { position: absolute; top: calc(100% + 8px); right: 0; z-index: 1; min-width: 190px; display: grid; gap: 4px; padding: 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); box-shadow: var(--shadow-panel); }
 .wb-site-nav--menu-list a { padding: .65rem .7rem; border-radius: var(--radius-sm); color: var(--color-text-muted); font-weight: 800; }
 .wb-site-nav--menu-list a:hover, .wb-site-nav--menu-list a:focus-visible, .wb-site-nav--menu-list a[aria-current="page"] { color: var(--color-text); background: var(--color-surface-muted); outline: none; }
 .wb-site-header.is-compact { padding-top: 8px; padding-bottom: 8px; }
