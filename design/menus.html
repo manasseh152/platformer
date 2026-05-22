@@ -48,9 +48,12 @@
     .color-field input[type="range"] { width: 100%; }
     .color-field code { grid-column: 1 / -1; color: var(--page-muted); }
 
-    .preview-strip { border: 1px solid var(--page-line); background: #111720; overflow: hidden; }
-    .preview-label { padding: 8px 10px; color: var(--page-muted); background: var(--color-surface-muted); border-bottom: 1px solid var(--page-line); font-weight: 800; font-size: .8rem; }
-    .ds-screen { min-height: 520px; display: grid; place-items: center; padding: clamp(22px, 4vw, 56px); overflow: hidden; color: var(--menu-text); background: var(--menu-bg); }
+    preview-block { display: block; }
+    .preview-block { margin: 0; border: 1px solid var(--page-line); background: #111720; overflow: hidden; }
+    .preview-block__label { padding: 8px 10px; color: var(--page-muted); background: var(--color-surface-muted); border-bottom: 1px solid var(--page-line); font-weight: 800; font-size: .8rem; }
+    /* design.css imports workbench primitives where .ds-screen is a fixed app overlay.
+       These menu mockups are inline preview frames, so reset overlay positioning here. */
+    .preview-block .ds-screen { position: relative; inset: auto; width: 100%; min-height: var(--preview-min-height, 520px); display: grid; place-items: center; padding: clamp(22px, 4vw, 56px); overflow: hidden; color: var(--menu-text); background: var(--menu-bg); overscroll-behavior: auto; }
     .ds-screen--overlay { background: linear-gradient(rgba(8,11,17,.84), rgba(8,11,17,.84)), var(--menu-bg); }
     .menu-card { width: min(520px, 100%); padding: clamp(24px, 5vw, 42px); border: 1px solid color-mix(in srgb, var(--menu-text) calc(var(--menu-line-alpha) * 100%), transparent); border-radius: 18px; background: color-mix(in srgb, var(--menu-text) 4%, transparent); box-shadow: 0 18px 48px rgba(0,0,0,.32); }
     .menu-card--compact { width: min(440px, 100%); }
@@ -104,38 +107,25 @@
       </article>
     </section>
 
-    <section class="preview-strip">
-      <div class="preview-label">Start screen: single-column, no illustrated scene panel</div>
-      <div id="startScreen" class="ds-screen scene-start-screen">
-        <section class="menu-card" aria-labelledby="startTitle">
-          <div class="eyebrow ds-overline">Gate run // local build</div>
-          <h1 id="startTitle" class="ds-title">Chibi Knight</h1>
-          <p class="menu-copy">Sprint through a tiny moonlit keep, clear the hazards, and reach the gate.</p>
-          <div class="menu-meta">Keyboard · Controller · Single player</div>
-          <div class="selected-level-summary">Selected level: Act 01 · Level 1</div>
-          <div class="menu-actions ds-action-stack"><button class="ds-button ds-button--primary controller-focus">Start</button><button class="ds-button">Level Select</button><button class="ds-button">Map Editor</button><button class="ds-button">Settings</button></div>
-        </section>
-      </div>
-    </section>
+    <preview-block label="Start screen: single-column, no illustrated scene panel" screen-id="startScreen" screen-class="scene-start-screen">
+      <section class="menu-card" aria-labelledby="startTitle">
+        <div class="eyebrow ds-overline">Gate run // local build</div>
+        <h1 id="startTitle" class="ds-title">Chibi Knight</h1>
+        <p class="menu-copy">Sprint through a tiny moonlit keep, clear the hazards, and reach the gate.</p>
+        <div class="menu-meta">Keyboard · Controller · Single player</div>
+        <div class="selected-level-summary">Selected level: Act 01 · Level 1</div>
+        <div class="menu-actions ds-action-stack"><button class="ds-button ds-button--primary controller-focus">Start</button><button class="ds-button">Level Select</button><button class="ds-button">Map Editor</button><button class="ds-button">Settings</button></div>
+      </section>
+    </preview-block>
 
     <section class="wb-grid">
-      <article class="wb-panel">
-        <h2>Pause overlay</h2>
-        <div class="preview-strip"><div class="ds-screen ds-screen--overlay scene-pause-overlay" style="min-height:430px"><section class="menu-card menu-card--compact"><div class="eyebrow ds-overline">Paused</div><h2 class="ds-title">Paused</h2><p class="menu-copy">Take a break, restart the run, or change settings.</p><div class="menu-actions ds-action-stack"><button class="ds-button ds-button--primary">Continue</button><button class="ds-button controller-focus">Level Select</button><button class="ds-button">Settings</button><button class="ds-button">Restart</button><button class="ds-button">Main Menu</button></div></section></div></div>
-      </article>
-      <article class="wb-panel">
-        <h2>Button states</h2>
-        <div class="preview-strip"><div class="ds-screen ds-screen--overlay" style="min-height:360px"><section class="menu-card menu-card--compact"><div class="eyebrow ds-overline">Actions</div><div class="ds-action-stack"><button class="ds-button ds-button--primary">Primary/default</button><button class="ds-button">Secondary</button><button class="ds-button controller-focus">Controller focus</button><button class="ds-button" disabled>Disabled action</button></div></section></div></div>
-        <h3>Focus contract</h3><p>Focus uses the accent as a ring and marker, not a filled gold button.</p>
-      </article>
+      <preview-block label="Pause overlay" overlay screen-class="scene-pause-overlay" min-height="430px"><section class="menu-card menu-card--compact"><div class="eyebrow ds-overline">Paused</div><h2 class="ds-title">Paused</h2><p class="menu-copy">Take a break, restart the run, or change settings.</p><div class="menu-actions ds-action-stack"><button class="ds-button ds-button--primary">Continue</button><button class="ds-button controller-focus">Level Select</button><button class="ds-button">Settings</button><button class="ds-button">Restart</button><button class="ds-button">Main Menu</button></div></section></preview-block>
 
-      <article class="wb-panel wb-panel--wide">
-        <h2>Nested menu pages</h2>
-        <div class="wb-grid">
-          <div class="preview-strip"><div class="preview-label">Level select</div><div class="ds-screen ds-screen--overlay" style="min-height:460px"><section class="menu-card"><div class="eyebrow ds-overline">Choose level</div><h2 class="ds-title">Level Select</h2><p class="menu-copy">Developer Mode reveals gyms, zoos, and other test maps.</p><div class="menu-list"><div class="menu-row controller-focus"><span class="row-kicker">Act 01</span><span class="row-title">Level 1</span><span class="row-note">Selected campaign entry.</span></div><div class="menu-row"><span class="row-kicker">Gym</span><span class="row-title">Movement Zoo</span><span class="row-note">Developer-only traversal test.</span></div><div class="menu-row"><span class="row-kicker">Draft</span><span class="row-title">Local Map</span><span class="row-note">Loaded from editor storage.</span></div></div><div class="status-line">6 available levels</div><div class="ds-action-stack"><button class="ds-button">Back</button></div></section></div></div>
-          <div class="preview-strip"><div class="preview-label">Settings</div><div class="ds-screen ds-screen--overlay" style="min-height:460px"><section class="menu-card"><div class="eyebrow ds-overline">Settings</div><h2 class="ds-title">Tune Run</h2><p class="menu-copy">Tune how the game feels before jumping in.</p><div class="menu-list"><div class="menu-row controller-focus"><span class="row-kicker">Input</span><span class="row-title">Controls</span><span class="row-note">Keyboard and controller bindings.</span></div><div class="menu-row"><span class="row-kicker">Feel</span><span class="row-title">Gameplay</span><span class="row-note">Assist and developer toggles.</span></div><div class="menu-row"><span class="row-kicker">Video</span><span class="row-title">Display</span><span class="row-note">Scaling and motion preferences.</span></div></div></section></div></div>
-        </div>
-      </article>
+      <preview-block label="Button states" overlay min-height="360px"><section class="menu-card menu-card--compact"><div class="eyebrow ds-overline">Actions</div><div class="ds-action-stack"><button class="ds-button ds-button--primary">Primary/default</button><button class="ds-button">Secondary</button><button class="ds-button controller-focus">Controller focus</button><button class="ds-button" disabled>Disabled action</button></div></section><h3 slot="footer">Focus contract</h3><p slot="footer">Focus uses the accent as a ring and marker, not a filled gold button.</p></preview-block>
+
+      <preview-block class="wb-panel--wide" label="Level select" overlay min-height="460px"><section class="menu-card"><div class="eyebrow ds-overline">Choose level</div><h2 class="ds-title">Level Select</h2><p class="menu-copy">Developer Mode reveals gyms, zoos, and other test maps.</p><div class="menu-list"><div class="menu-row controller-focus"><span class="row-kicker">Act 01</span><span class="row-title">Level 1</span><span class="row-note">Selected campaign entry.</span></div><div class="menu-row"><span class="row-kicker">Gym</span><span class="row-title">Movement Zoo</span><span class="row-note">Developer-only traversal test.</span></div><div class="menu-row"><span class="row-kicker">Draft</span><span class="row-title">Local Map</span><span class="row-note">Loaded from editor storage.</span></div></div><div class="status-line">6 available levels</div><div class="ds-action-stack"><button class="ds-button">Back</button></div></section></preview-block>
+
+      <preview-block class="wb-panel--wide" label="Settings" overlay min-height="460px"><section class="menu-card"><div class="eyebrow ds-overline">Settings</div><h2 class="ds-title">Tune Run</h2><p class="menu-copy">Tune how the game feels before jumping in.</p><div class="menu-list"><div class="menu-row controller-focus"><span class="row-kicker">Input</span><span class="row-title">Controls</span><span class="row-note">Keyboard and controller bindings.</span></div><div class="menu-row"><span class="row-kicker">Feel</span><span class="row-title">Gameplay</span><span class="row-note">Assist and developer toggles.</span></div><div class="menu-row"><span class="row-kicker">Video</span><span class="row-title">Display</span><span class="row-note">Scaling and motion preferences.</span></div></div></section></preview-block>
 
       <article class="wb-panel wb-panel--wide">
         <h2>Implementation notes</h2>
@@ -160,6 +150,7 @@
       input.addEventListener('input', apply);
     });
   </script>
+  <script type="module" src="/src/ui/preview-block.js"></script>
   <script type="module" src="/src/ui/workbench-header.js"></script>
 </body>
 </html>
