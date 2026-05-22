@@ -28,7 +28,6 @@
       </div>
 
       <div class="top-actions">
-        <button id="quickPreviewButton" type="button" class="quick-preview-button hint-button input-hint" data-input-hint data-input-action="editor.preview" data-input-label="Preview">Preview</button>
         <button id="saveLocalButton" type="button" class="save-state-button ds-button ds-button--secondary" data-save-state="clean" disabled>Saved</button>
       </div>
     </header>
@@ -134,7 +133,7 @@
 
           <details class="panel-section panel-disclosure">
             <summary>Controller cursor</summary>
-            <p class="section-kicker">Tune gamepad cursor repeat speed and acceleration.</p>
+            <p class="section-kicker">Tune gamepad cursor repeat speed, acceleration, and controller brush palette sizing.</p>
             <label class="field">
               <span>Sensitivity <output id="controllerBrushSensitivityValue">5</output></span>
               <input id="controllerBrushSensitivityInput" type="range" min="1" max="10" step="1" value="5" />
@@ -149,7 +148,7 @@
               <label class="field"><span>Cursor palette size</span><select id="controllerCursorPaletteSizeSelect"><option value="compact">Compact</option><option value="normal">Normal</option><option value="large">Large</option></select></label>
               <label class="field"><span>Bottom-right palette size</span><select id="controllerBottomRightPaletteSizeSelect"><option value="compact">Compact</option><option value="normal">Normal</option><option value="large">Large</option></select></label>
             </div>
-            <p class="hint">Sensitivity sets base cursor repeat speed. Momentum makes held directions accelerate after the ramp delay. Palette settings affect the controller-only brush picker.</p>
+            <p class="hint">Sensitivity sets base cursor repeat speed. Momentum makes held directions accelerate after the ramp delay. Palette size settings affect both the open brush picker and the persistent bottom-right controller HUD.</p>
           </details>
         </section>
 
@@ -178,6 +177,15 @@
         <button id="zoomInButton" class="floating-view-controls__button" type="button" aria-label="Zoom in">+</button>
         <button id="resetViewButton" class="floating-view-controls__button" type="button">Reset</button>
         <button id="panToggleButton" class="floating-view-controls__button" type="button" aria-pressed="false">Pan</button>
+        <button id="floatingPaletteToggle" class="floating-view-controls__button floating-view-controls__palette-toggle" type="button" aria-expanded="false" aria-controls="floatingPalettePicker">Brush</button>
+        <div id="floatingPalettePicker" class="floating-palette-picker" hidden>
+          <div class="floating-palette-picker__header">
+            <strong>Palette</strong>
+            <span id="floatingPaletteLayerLabel">Terrain</span>
+          </div>
+          <select id="floatingPackSelect" aria-label="Palette pack"></select>
+          <div id="floatingBrushChoices" class="floating-palette-picker__brushes" role="listbox" aria-label="Brush variations"></div>
+        </div>
       </div>
 
       <section id="packWheelHud" class="pack-wheel-hud" aria-label="Controller pack wheel" aria-live="polite">

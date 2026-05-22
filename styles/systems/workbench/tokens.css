@@ -1,0 +1,111 @@
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  --color-bg: #f4f4f1;
+  --color-bg-muted: #ecece7;
+  --color-bg-elevated: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #fafaf8;
+  --color-surface-strong: #efefea;
+  --color-surface-raised: #ffffff;
+  --color-surface-glass: rgb(255 255 255 / .82);
+
+  --color-text: #202124;
+  --color-text-muted: #666a6d;
+  --color-text-subtle: #888c90;
+  --color-border: #d9d9d2;
+  --color-border-strong: #b9bbb4;
+
+  --color-accent: #2f5f9f;
+  --color-accent-soft: #e7eef8;
+  --color-accent-muted: #4f76ad;
+  --color-accent-text: #ffffff;
+  --color-info: #2f7f92;
+  --color-success: #2f7d4f;
+  --color-danger: #b44a3b;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-pill: 999px;
+
+  --space-1: 6px;
+  --space-2: 10px;
+  --space-3: 14px;
+  --space-4: 18px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 44px;
+  --space-8: 60px;
+
+  --font-sans: "Geist Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono-family: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+  --font-pixel: "Geist Pixel", "Geist Mono", ui-monospace, monospace;
+  --font-ui: var(--font-sans);
+  --font-display: var(--font-sans);
+  --font-mono: var(--font-mono-family);
+
+  --shadow-panel: 0 10px 28px rgb(32 33 36 / .08);
+  --shadow-popover: 0 12px 32px rgb(32 33 36 / .12);
+  --shadow-focus: 0 0 0 2px color-mix(in srgb, var(--color-accent) 42%, transparent), 0 0 0 5px color-mix(in srgb, var(--color-accent) 12%, transparent);
+  --shadow-glow: none;
+
+  --ease-standard: cubic-bezier(.2, .8, .2, 1);
+  --ease-view-transition: cubic-bezier(.22, .72, .18, 1);
+  --duration-fast: 140ms;
+  --duration-base: 190ms;
+  --duration-view-transition: 130ms;
+  --game-ui-scale: 1;
+  --menu-ui-scale: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --color-bg: #151618;
+    --color-bg-muted: #202225;
+    --color-bg-elevated: #24262a;
+    --color-surface: #1c1e21;
+    --color-surface-muted: #191b1e;
+    --color-surface-strong: #282b30;
+    --color-surface-raised: #1f2125;
+    --color-surface-glass: rgb(28 30 33 / .82);
+    --color-text: #f1f1ec;
+    --color-text-muted: #b8bab4;
+    --color-text-subtle: #8e918b;
+    --color-border: #34373b;
+    --color-border-strong: #53575d;
+    --color-accent: #8db4e8;
+    --color-accent-soft: #223048;
+    --color-accent-muted: #a9c7ee;
+    --color-accent-text: #101418;
+    --shadow-panel: 0 10px 28px rgb(0 0 0 / .22);
+    --shadow-popover: 0 12px 32px rgb(0 0 0 / .28);
+  }
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: #151618;
+  --color-bg-muted: #202225;
+  --color-bg-elevated: #24262a;
+  --color-surface: #1c1e21;
+  --color-surface-muted: #191b1e;
+  --color-surface-strong: #282b30;
+  --color-surface-raised: #1f2125;
+  --color-surface-glass: rgb(28 30 33 / .82);
+  --color-text: #f1f1ec;
+  --color-text-muted: #b8bab4;
+  --color-text-subtle: #8e918b;
+  --color-border: #34373b;
+  --color-border-strong: #53575d;
+  --color-accent: #8db4e8;
+  --color-accent-soft: #223048;
+  --color-accent-muted: #a9c7ee;
+  --color-accent-text: #101418;
+  --shadow-panel: 0 10px 28px rgb(0 0 0 / .22);
+  --shadow-popover: 0 12px 32px rgb(0 0 0 / .28);
+}

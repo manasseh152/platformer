@@ -5,160 +5,143 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Chibi Hollow HUD System Design Board</title>
   <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="design.css" />
   <style>
     :root {
-      --page-bg: #f4f4f1;
-      --page-text: #202124;
-      --page-muted: #666666;
-      --page-line: #d9d9d2;
-      --hud-bg: #090d14;
-      --hud-panel: #121a26;
-      --hud-text: #fff6e8;
-      --hud-muted: #fff6e8;
-      --hud-muted-alpha: .52;
-      --hud-border: #fff6e8;
-      --hud-border-alpha: .14;
-      --hud-accent: #f4b51d;
-      --hud-accent-muted: #ffe7a3;
-      --hud-success: #7cff8b;
-      --hud-danger: #ff6b56;
-      --hud-info: #59d9e7;
+      --page-bg: var(--color-bg); --page-text: var(--color-text); --page-muted: var(--color-text-muted); --page-line: var(--color-border);
+      --hud-bg: #080b11; --hud-text: #fff6e8; --hud-text-alpha: .72; --hud-muted-alpha: .52; --hud-line-alpha: .14;
+      --hud-accent: #f4b51d; --hud-success: #7cff8b; --hud-danger: #ff6b56; --hud-blue: #59d9e7;
       --font-ui: ui-rounded, "Avenir Next Rounded", "Nunito", "Trebuchet MS", sans-serif;
       --font-mono: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
     }
-
     * { box-sizing: border-box; }
     body { margin: 0; color: var(--page-text); font: 16px/1.5 var(--font-ui); background: var(--page-bg); }
     header, main, footer { width: min(1120px, calc(100vw - 32px)); margin: 0 auto; }
     header { padding: 32px 0 16px; border-bottom: 1px solid var(--page-line); }
     .eyebrow { color: var(--page-muted); text-transform: uppercase; letter-spacing: .12em; font-size: .78rem; font-weight: 800; }
     h1 { margin: 6px 0 8px; font-size: clamp(2rem, 5vw, 3.8rem); line-height: 1; letter-spacing: -.04em; }
-    .lede { max-width: 72ch; margin: 0; color: var(--page-muted); }
+    .lede { max-width: 76ch; margin: 0; color: var(--page-muted); }
     section { margin: 22px 0; }
     .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-    .panel { border: 1px solid var(--page-line); padding: 18px; background: white; }
+    .panel { border: 1px solid var(--page-line); padding: 18px; background: var(--color-surface); }
     .panel.wide { grid-column: 1 / -1; }
     h2 { margin: 0 0 14px; font-size: 1.25rem; }
     h3 { margin: 18px 0 8px; color: var(--page-muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .1em; }
     p, li, dd { color: var(--page-muted); }
-    code { background: #ecece7; padding: .12em .32em; border-radius: 4px; }
+    code { background: var(--color-bg-muted); padding: .12em .32em; border-radius: 4px; }
 
-    .stage { position: relative; min-height: 390px; margin-top: 18px; border: 1px solid var(--page-line); overflow: hidden; background: var(--hud-bg); }
-    .stage::after { content: ""; position: absolute; inset: auto 0 0; height: 45%; background: linear-gradient(to top, rgba(0,0,0,.42), transparent); pointer-events: none; }
+    .stage, .hud-sample { position: relative; overflow: hidden; color: var(--hud-text); background: var(--hud-bg); }
+    .stage { min-height: 390px; margin-top: 18px; border: 1px solid var(--page-line); }
+    .stage::before, .hud-sample::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 18% 86%, rgba(244,181,29,.18), transparent 28%), radial-gradient(circle at 76% 16%, rgba(89,217,231,.12), transparent 30%), linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: auto, auto, 32px 32px, 32px 32px; pointer-events: none; }
+    .stage::after { content: ""; position: absolute; inset: auto 0 0; height: 45%; background: linear-gradient(to top, rgba(0,0,0,.46), transparent); pointer-events: none; }
     .safe-frame { position: absolute; inset: 18px; border: 1px dashed rgba(255,246,232,.20); pointer-events: none; }
+    .safe-frame::before { content: "safe area guide"; position: absolute; top: -9px; left: 10px; padding: 0 6px; color: rgba(255,246,232,.42); background: var(--hud-bg); font: 800 10px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; }
 
-    #hud { position: absolute; z-index: 2; top: 18px; left: 18px; width: min(310px, calc(100% - 36px)); padding: 18px; color: var(--hud-text); font-family: var(--font-ui); text-shadow: 0 2px 8px #000; border: 1px solid color-mix(in srgb, var(--hud-border) calc(var(--hud-border-alpha) * 100%), transparent); border-radius: 28px; background: linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.02)), color-mix(in srgb, var(--hud-panel) 82%, transparent); box-shadow: 0 18px 48px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.08); }
-    #hud::before { content: ""; position: absolute; inset: 8px; pointer-events: none; border-radius: 22px; border-left: 3px solid var(--hud-accent); opacity: .9; }
-    .hud-topline, .hud-health-row, .hud-objective-card, .hud-dash-card, .hud-speedrun-card { position: relative; z-index: 1; }
-    .hud-topline { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 4px 5px 12px 10px; }
-    .title { margin-bottom: 7px; color: color-mix(in srgb, var(--hud-muted) calc(var(--hud-muted-alpha) * 100%), transparent); font: 900 10px/1 var(--font-mono); letter-spacing: .15em; text-transform: uppercase; }
-    .hud-zone { color: var(--hud-text); font: 900 24px/.88 var(--font-ui); letter-spacing: -.04em; text-transform: uppercase; }
-    .hud-act { flex: 0 0 auto; padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--hud-accent) 36%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--hud-accent) 12%, transparent); color: var(--hud-accent-muted); font: 900 10px/1 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; }
-    .hud-label { color: color-mix(in srgb, var(--hud-muted) calc(var(--hud-muted-alpha) * 100%), transparent); font: 900 10px/1 var(--font-mono); letter-spacing: .15em; text-transform: uppercase; }
-    .hud-health-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 9px; padding: 12px 13px; border: 1px solid color-mix(in srgb, var(--hud-border) 11%, transparent); border-radius: 20px; background: rgba(0,0,0,.22); }
-    #hearts { display: flex; gap: 8px; }
-    .heart { width: 17px; height: 17px; border: 1px solid rgba(255,255,255,.24); border-radius: 6px 6px 4px 6px; background: rgba(255,255,255,.12); transform: rotate(45deg); box-shadow: inset 0 0 0 2px rgba(0,0,0,.12); }
-    .heart.full { background: linear-gradient(135deg, #ff9b79, var(--hud-danger)); border-color: #ffd6c8; box-shadow: inset -2px -2px 0 rgba(80,32,18,.22), 0 0 18px rgba(255,94,80,.30); }
-    .hud-objective-card, .hud-dash-card, .hud-speedrun-card { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 10px; align-items: center; padding: 11px 13px; border: 1px solid color-mix(in srgb, var(--hud-border) 10%, transparent); background: rgba(255,246,232,.055); }
-    .hud-objective-card { border-radius: 20px 20px 10px 10px; }
-    .hud-dash-card { margin-top: 7px; overflow: hidden; border-radius: 10px; }
-    .hud-speedrun-card { margin-top: 7px; border-radius: 10px 10px 20px 20px; }
-    .hud-speedrun-card[hidden] { display: none; }
-    #objective, #dashStatus { color: color-mix(in srgb, var(--hud-text) 78%, transparent); font: 900 13px/1.25 var(--font-ui); letter-spacing: .02em; }
-    #dashStatus { text-transform: uppercase; }
-    #dashStatus::after { content: " charging"; color: color-mix(in srgb, var(--hud-muted) calc(var(--hud-muted-alpha) * 100%), transparent); font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; }
-    #dashStatus.ready { color: var(--hud-success); text-shadow: 0 0 18px rgba(124,255,139,.30); }
-    #dashStatus.ready::after { content: " ready"; color: var(--hud-success); }
-    .hud-dash-card::after { content: ""; position: absolute; left: 0; bottom: 0; width: 100%; height: 3px; background: linear-gradient(90deg, var(--hud-info), var(--hud-success)); opacity: .28; }
-    #speedRunTimer { display: block; color: var(--hud-text); font: 900 18px/1 var(--font-mono); letter-spacing: -.04em; }
-    #speedRunBest { display: block; margin-top: 4px; color: color-mix(in srgb, var(--hud-muted) calc(var(--hud-muted-alpha) * 100%), transparent); font: 900 10px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+    .hud-card, .speedrun-hud { position: absolute; z-index: 2; color: var(--hud-text); font-family: var(--font-ui); text-shadow: 0 2px 8px rgba(0,0,0,.72); border: 1px solid color-mix(in srgb, var(--hud-text) calc(var(--hud-line-alpha) * 100%), transparent); border-radius: 18px; background: color-mix(in srgb, var(--hud-text) 4%, transparent); box-shadow: 0 18px 42px rgba(0,0,0,.32); pointer-events: none; }
+    .hud-card { top: 18px; left: 18px; width: min(310px, calc(100% - 36px)); padding: 15px; }
+    .speedrun-hud { top: 18px; right: 18px; width: min(270px, calc(100% - 36px)); padding: 13px; }
+    .hud-topline { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 2px 1px 13px; }
+    .title, .hud-label, .speedrun-label { color: color-mix(in srgb, var(--hud-text) calc(var(--hud-muted-alpha) * 100%), transparent); font: 900 10px/1 var(--font-mono); letter-spacing: .15em; text-transform: uppercase; }
+    .title { margin-bottom: 7px; }
+    .hud-zone { color: var(--hud-text); font: 900 22px/.95 var(--font-ui); letter-spacing: -.035em; }
+    .hud-act, .speedrun-delta { flex: 0 0 auto; padding: 7px 9px; border: 1px solid color-mix(in srgb, var(--hud-accent) 44%, transparent); border-radius: 999px; color: var(--hud-accent); background: color-mix(in srgb, var(--hud-accent) 9%, transparent); font: 900 10px/1 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; }
+    .hud-row { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 10px; align-items: center; padding: 11px 0; border-top: 1px solid color-mix(in srgb, var(--hud-text) calc(var(--hud-line-alpha) * 100%), transparent); }
+    .hearts { display: flex; gap: 8px; }
+    .heart { width: 16px; height: 16px; border: 1px solid color-mix(in srgb, var(--hud-text) 20%, transparent); border-radius: 6px 6px 4px 6px; background: color-mix(in srgb, var(--hud-text) 8%, transparent); transform: rotate(45deg); }
+    .heart.full { border-color: color-mix(in srgb, var(--hud-danger) 50%, transparent); background: color-mix(in srgb, var(--hud-danger) 74%, transparent); box-shadow: inset -1px -1px 0 rgba(0,0,0,.18); }
+    .low-health .heart.full { background: var(--hud-danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--hud-danger) 13%, transparent), 0 0 22px color-mix(in srgb, var(--hud-danger) 45%, transparent); }
+    .objective, .dash-status { color: color-mix(in srgb, var(--hud-text) calc(var(--hud-text-alpha) * 100%), transparent); font: 900 13px/1.25 var(--font-ui); letter-spacing: .02em; }
+    .dash-status { text-transform: uppercase; }
+    .dash-status::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; background: color-mix(in srgb, var(--hud-text) 24%, transparent); vertical-align: 1px; }
+    .dash-status::after { content: " charging"; color: color-mix(in srgb, var(--hud-text) calc(var(--hud-muted-alpha) * 100%), transparent); font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; }
+    .dash-status.ready::before { background: var(--hud-success); }
+    .dash-status.ready::after { content: " ready"; color: color-mix(in srgb, var(--hud-success) 82%, transparent); }
+    .speedrun-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .speedrun-time { display: block; margin: 11px 0 10px; font: 950 30px/.9 var(--font-mono); letter-spacing: -.06em; }
+    .speedrun-meta { display: grid; gap: 6px; margin: 0; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--hud-text) calc(var(--hud-line-alpha) * 100%), transparent); }
+    .speedrun-meta div { display: flex; justify-content: space-between; gap: 12px; color: color-mix(in srgb, var(--hud-text) calc(var(--hud-muted-alpha) * 100%), transparent); font: 900 11px/1 var(--font-mono); text-transform: uppercase; }
+    .speedrun-meta strong { color: var(--hud-text); }
 
-    .state-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
-    .mini-stage { min-height: 250px; position: relative; overflow: hidden; background: var(--hud-bg); border: 1px solid var(--page-line); }
-    .mini-stage #hud { transform: scale(.72); transform-origin: top left; }
+    .floating-hud-grid { display: grid; grid-template-columns: repeat(3, minmax(260px, 1fr)); grid-auto-rows: minmax(340px, auto); gap: 14px; align-items: stretch; }
+    .hud-sample { min-height: 340px; border: 1px solid var(--page-line); }
+    .hud-sample-label { position: absolute; top: 18px; left: 20px; z-index: 3; margin: 0; color: color-mix(in srgb, var(--hud-text) calc(var(--hud-muted-alpha) * 100%), transparent); font: 900 11px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; }
+    .hud-sample .hud-card { top: 54px; transform: scale(.9); transform-origin: top left; }
+    .hud-sample .speedrun-hud { top: 54px; transform: scale(.92); transform-origin: top right; }
+    .hud-sample--speedrun { grid-column: span 1; }
+    .hud-sample--speedrun .speedrun-hud { width: min(300px, calc(100% - 36px)); }
     .color-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
-    .color-field { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; padding: 10px; border: 1px solid var(--page-line); background: #fafaf8; }
+    .color-field { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; padding: 10px; border: 1px solid var(--page-line); background: var(--color-surface-muted); }
     .color-field label { grid-column: 1 / -1; font-weight: 800; }
-    .color-field input[type="color"] { width: 42px; height: 32px; padding: 0; border: 1px solid var(--page-line); background: white; }
+    .color-field input[type="color"] { width: 42px; height: 32px; padding: 0; border: 1px solid var(--page-line); background: var(--color-surface); }
     .color-field input[type="range"] { width: 100%; }
     .color-field code { grid-column: 1 / -1; color: var(--page-muted); }
     .spec { display: grid; grid-template-columns: 140px 1fr; gap: 8px 16px; margin: 0; }
-    .spec dt { font-weight: 800; }
-    .spec dd { margin: 0; }
+    .spec dt { font-weight: 800; } .spec dd { margin: 0; }
     footer { margin: 28px auto 48px; color: var(--page-muted); }
+    @media (max-width: 980px) { .floating-hud-grid { grid-template-columns: 1fr; } .speedrun-hud { top: auto; bottom: 18px; left: 18px; right: auto; } .hud-sample .speedrun-hud { top: 54px; bottom: auto; left: auto; right: 18px; } }
     @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } .panel.wide { grid-column: auto; } .spec { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
   <header>
-    <div class="eyebrow">HUD System / Reference Board</div>
+    <div class="wb-kicker">HUD System / Reference Board</div>
     <h1>Gameplay HUD reference</h1>
-    <p class="lede">A focused HTML reference for Chibi Hollow's in-run status layer: level identity, vigor hearts, objective, dash state, speed-run timer, and the left safe-area stack.</p>
+    <p class="wb-lede">A focused HTML reference for Chibi Hollow's in-run status layer. The HUD is split into floating primitives: run status stays top-left, speedrun telemetry docks top-right, and each state can be judged independently.</p>
     <div class="stage" aria-label="In-game HUD preview">
       <div class="safe-frame" aria-hidden="true"></div>
-      <section id="hud" class="ds-hud" aria-label="Run status">
+      <section id="hud" class="hud-card ds-hud" aria-label="Run status">
         <div class="hud-topline"><div><div class="title ds-overline">Current Level</div><div id="hudLevelName" class="hud-zone">Moon Gate</div></div><div class="hud-act">Act 01</div></div>
-        <div class="hud-health-row"><span class="hud-label">Vigor</span><div id="hearts" aria-label="Health"><span class="heart full"></span><span class="heart full"></span><span class="heart full"></span><span class="heart"></span><span class="heart"></span></div></div>
-        <div class="hud-objective-card"><span class="hud-label">Objective</span><div id="objective">Reach the glowing gate →</div></div>
-        <div class="hud-dash-card"><span class="hud-label">Skill</span><div id="dashStatus" class="ready">Dash</div></div>
-        <div id="speedRunHud" class="hud-speedrun-card"><span class="hud-label">Speed Run</span><div><span id="speedRunTimer">0:42.318</span><span id="speedRunBest">Best 0:39.902</span></div></div>
+        <div class="hud-row"><span class="hud-label">Vigor</span><div id="hearts" class="hearts" aria-label="Health"><span class="heart full"></span><span class="heart full"></span><span class="heart full"></span><span class="heart"></span><span class="heart"></span></div></div>
+        <div class="hud-row"><span class="hud-label">Objective</span><div id="objective" class="objective">Reach the glowing gate →</div></div>
+        <div class="hud-row"><span class="hud-label">Skill</span><div id="dashStatus" class="dash-status ready">Dash</div></div>
       </section>
+      <aside id="speedRunHud" class="speedrun-hud" aria-label="Speedrun status">
+        <div class="speedrun-head"><span class="speedrun-label">Speedrun</span><span class="speedrun-delta">−02.416</span></div>
+        <span id="speedRunTimer" class="speedrun-time">0:42.318</span>
+        <div class="speedrun-meta"><div><span>Best</span><strong id="speedRunBest">0:39.902</strong></div><div><span>Previous</span><strong>0:44.734</strong></div><div><span>Task</span><strong>3 / 5 wisps</strong></div></div>
+      </aside>
     </div>
   </header>
 
   <main>
-    <section class="grid">
-      <article class="panel wide">
-        <h2>Primitive colors</h2>
-        <p>These controls are bound directly to CSS variables used by the HUD preview.</p>
-        <div class="color-controls" id="colorControls">
-          <div class="color-field"><label>HUD background</label><input type="color" data-css-var="--hud-bg" value="#090d14"><code>--hud-bg</code></div>
-          <div class="color-field"><label>HUD panel</label><input type="color" data-css-var="--hud-panel" value="#121a26"><code>--hud-panel</code></div>
-          <div class="color-field"><label>HUD text</label><input type="color" data-css-var="--hud-text" value="#fff6e8"><code>--hud-text</code></div>
-          <div class="color-field"><label>HUD muted</label><input type="color" data-css-var="--hud-muted" value="#fff6e8"><input type="range" min="0" max="1" step="0.01" data-css-var="--hud-muted-alpha" value="0.52" aria-label="HUD muted alpha"><code>--hud-muted / --hud-muted-alpha</code></div>
-          <div class="color-field"><label>HUD border</label><input type="color" data-css-var="--hud-border" value="#fff6e8"><input type="range" min="0" max="1" step="0.01" data-css-var="--hud-border-alpha" value="0.14" aria-label="HUD border alpha"><code>--hud-border / --hud-border-alpha</code></div>
-          <div class="color-field"><label>Accent</label><input type="color" data-css-var="--hud-accent" value="#f4b51d"><code>--hud-accent</code></div>
-          <div class="color-field"><label>Success</label><input type="color" data-css-var="--hud-success" value="#7cff8b"><code>--hud-success</code></div>
-          <div class="color-field"><label>Danger</label><input type="color" data-css-var="--hud-danger" value="#ff6b56"><code>--hud-danger</code></div>
+    <section class="wb-grid">
+      <article class="wb-panel wb-panel--wide">
+        <h2>Contract tokens</h2>
+        <p>Controls bind to the minimal HUD contract only.</p>
+        <div class="wb-control-grid" id="colorControls">
+          <div class="wb-field"><label>HUD background</label><input type="color" data-css-var="--hud-bg" value="#080b11"><code>--hud-bg</code></div>
+          <div class="wb-field"><label>HUD text</label><input type="color" data-css-var="--hud-text" value="#fff6e8"><input type="range" min="0" max="1" step="0.01" data-css-var="--hud-text-alpha" value="0.72" aria-label="HUD text alpha"><code>--hud-text / --hud-text-alpha</code></div>
+          <div class="wb-field"><label>Muted alpha</label><input type="range" min="0" max="1" step="0.01" data-css-var="--hud-muted-alpha" value="0.52"><code>--hud-muted-alpha</code></div>
+          <div class="wb-field"><label>Line alpha</label><input type="range" min="0" max="1" step="0.01" data-css-var="--hud-line-alpha" value="0.14"><code>--hud-line-alpha</code></div>
+          <div class="wb-field"><label>Accent</label><input type="color" data-css-var="--hud-accent" value="#f4b51d"><code>--hud-accent</code></div>
+          <div class="wb-field"><label>Success</label><input type="color" data-css-var="--hud-success" value="#7cff8b"><code>--hud-success</code></div>
+          <div class="wb-field"><label>Danger</label><input type="color" data-css-var="--hud-danger" value="#ff6b56"><code>--hud-danger</code></div>
         </div>
       </article>
 
-      <article class="panel">
+      <article class="wb-panel wb-panel--wide">
+        <h2>Floating HUD elements</h2>
+        <p>Shown separately from the hero preview so each in-game overlay can be judged as its own primitive. Speedrun is a separate top-right element with timer, deltas, previous time, and optional task/achievement rows.</p>
+        <div class="floating-hud-grid">
+          <div class="hud-sample"><p class="hud-sample-label">Normal run · top-left</p><section class="hud-card" aria-label="Normal run HUD"><div class="hud-topline"><div><div class="title">Current Level</div><div class="hud-zone">Moon Gate</div></div><div class="hud-act">Act 01</div></div><div class="hud-row"><span class="hud-label">Vigor</span><div class="hearts"><span class="heart full"></span><span class="heart full"></span><span class="heart full"></span><span class="heart full"></span><span class="heart full"></span></div></div><div class="hud-row"><span class="hud-label">Objective</span><div class="objective">Reach the glowing gate →</div></div><div class="hud-row"><span class="hud-label">Skill</span><div class="dash-status ready">Dash</div></div></section></div>
+          <div class="hud-sample"><p class="hud-sample-label">Low health / charging</p><section class="hud-card low-health" aria-label="Low health HUD"><div class="hud-topline"><div><div class="title">Current Level</div><div class="hud-zone">Ruins</div></div><div class="hud-act">Act 02</div></div><div class="hud-row"><span class="hud-label">Vigor</span><div class="hearts"><span class="heart full"></span><span class="heart"></span><span class="heart"></span><span class="heart"></span><span class="heart"></span></div></div><div class="hud-row"><span class="hud-label">Objective</span><div class="objective">Find the exit sigil →</div></div><div class="hud-row"><span class="hud-label">Skill</span><div class="dash-status">Dash</div></div></section></div>
+          <div class="hud-sample hud-sample--speedrun"><p class="hud-sample-label">Speedrun · top-right</p><aside class="speedrun-hud" aria-label="Speedrun HUD"><div class="speedrun-head"><span class="speedrun-label">Speedrun</span><span class="speedrun-delta">+00.812</span></div><span class="speedrun-time">1:08.544</span><div class="speedrun-meta"><div><span>Best</span><strong>1:03.910</strong></div><div><span>Previous</span><strong>1:07.732</strong></div><div><span>Achievement</span><strong>No hit</strong></div><div><span>Task</span><strong>Gate key found</strong></div></div></aside></div>
+        </div>
+      </article>
+
+      <article class="wb-panel">
         <h2>Markup contract</h2>
-        <dl class="spec">
-          <dt>Root</dt><dd><code>#hud.ds-hud</code> is the in-game status container.</dd>
-          <dt>Level name</dt><dd><code>#hudLevelName</code> is written by <code>syncGameplayHud</code>.</dd>
-          <dt>Health</dt><dd><code>#hearts</code> contains five <code>.heart</code> nodes; <code>.full</code> tracks HP.</dd>
-          <dt>Dash</dt><dd><code>#dashStatus.ready</code> switches copy and success color.</dd>
-          <dt>Timer</dt><dd><code>#speedRunHud</code> is hidden unless speed-run mode is enabled.</dd>
-        </dl>
+        <dl class="wb-spec"><dt>Run status</dt><dd><code>#hud.hud-card.ds-hud</code> owns level, health, objective, and dash state.</dd><dt>Level name</dt><dd><code>#hudLevelName</code> is written by <code>syncGameplayHud</code>.</dd><dt>Health</dt><dd><code>#hearts</code> contains five <code>.heart</code> nodes; <code>.low-health</code> strengthens danger.</dd><dt>Dash</dt><dd><code>#dashStatus.ready</code> uses a small success marker.</dd><dt>Speedrun</dt><dd><code>#speedRunHud.speedrun-hud</code> is a separate top-right primitive, not a row inside run status.</dd></dl>
       </article>
 
-      <article class="panel">
+      <article class="wb-panel">
         <h2>Placement rules</h2>
-        <dl class="spec">
-          <dt>Anchor</dt><dd>Top-left safe-area with <code>18px + env(safe-area-inset-*)</code>.</dd>
-          <dt>Width</dt><dd>About <code>310px</code>; collapse only by viewport, not content.</dd>
-          <dt>Pointer</dt><dd>HUD is non-interactive: <code>pointer-events: none</code>.</dd>
-          <dt>Tone</dt><dd>Translucent dark card over gameplay, not a decorative page panel.</dd>
-        </dl>
+        <dl class="wb-spec"><dt>Run anchor</dt><dd>Top-left safe-area with <code>18px + env(safe-area-inset-*)</code>.</dd><dt>Speedrun anchor</dt><dd>Top-right safe-area; may fall to bottom/left on narrow screens.</dd><dt>Width</dt><dd>Status about <code>310px</code>; speedrun about <code>270px</code>.</dd><dt>Pointer</dt><dd>HUD primitives are non-interactive: <code>pointer-events: none</code>.</dd></dl>
       </article>
 
-      <article class="panel wide">
-        <h2>State examples</h2>
-        <div class="state-row">
-          <div><h3>Normal run</h3><div class="mini-stage"><section id="hud" aria-label="Normal HUD"><div class="hud-topline"><div><div class="title">Current Level</div><div class="hud-zone">Act 01</div></div><div class="hud-act">Act 01</div></div><div class="hud-health-row"><span class="hud-label">Vigor</span><div id="hearts"><span class="heart full"></span><span class="heart full"></span><span class="heart full"></span><span class="heart full"></span><span class="heart full"></span></div></div><div class="hud-objective-card"><span class="hud-label">Objective</span><div id="objective">Reach the glowing gate →</div></div><div class="hud-dash-card"><span class="hud-label">Skill</span><div id="dashStatus" class="ready">Dash</div></div></section></div></div>
-          <div><h3>Low health / charging</h3><div class="mini-stage"><section id="hud" aria-label="Low health HUD"><div class="hud-topline"><div><div class="title">Current Level</div><div class="hud-zone">Ruins</div></div><div class="hud-act">Act 02</div></div><div class="hud-health-row"><span class="hud-label">Vigor</span><div id="hearts"><span class="heart full"></span><span class="heart"></span><span class="heart"></span><span class="heart"></span><span class="heart"></span></div></div><div class="hud-objective-card"><span class="hud-label">Objective</span><div id="objective">Find the exit sigil →</div></div><div class="hud-dash-card"><span class="hud-label">Skill</span><div id="dashStatus">Dash</div></div></section></div></div>
-        </div>
-      </article>
-
-      <article class="panel wide">
+      <article class="wb-panel wb-panel--wide">
         <h2>Implementation notes</h2>
-        <ul>
-          <li>Runtime state sync lives in <code>src/app/ui/gameplay-hud.js</code>.</li>
-          <li>DOM nodes are declared in <code>index.html</code> and collected by <code>src/app/dom.js</code>.</li>
-          <li>Canonical production styles live in <code>styles/main.game.css</code>; this page mirrors only the HUD-relevant rules.</li>
-        </ul>
+        <ul><li>Runtime state sync lives in <code>src/app/ui/gameplay-hud.js</code>.</li><li>Production styles remain untouched for this pass.</li><li>This page updates the design contract from one stacked card to separate floating HUD primitives.</li></ul>
       </article>
     </section>
   </main>
@@ -169,7 +152,6 @@
     document.querySelectorAll('[data-css-var]').forEach((input) => {
       const apply = () => document.documentElement.style.setProperty(input.dataset.cssVar, input.value);
       input.addEventListener('input', apply);
-      apply();
     });
   </script>
 </body>

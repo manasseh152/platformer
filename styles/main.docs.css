@@ -1,7 +1,4 @@
-@import url("/styles/ui-tokens.css");
-@import url("/styles/ui-primitives.css");
-
-* { box-sizing: border-box; }
+@import url("/styles/systems/workbench/index.css");
 
 html {
   scroll-behavior: smooth;
@@ -16,26 +13,9 @@ body {
   overflow-y: auto;
   overscroll-behavior: auto;
   touch-action: auto;
-  color: var(--color-text);
-  font-family: var(--font-ui);
-  background:
-    radial-gradient(circle at 10% 4%, rgba(104, 223, 240, .18), transparent 28rem),
-    radial-gradient(circle at 88% 12%, color-mix(in srgb, var(--color-accent) 22%, transparent), transparent 26rem),
-    linear-gradient(135deg, rgba(8, 11, 17, .98), rgba(15, 21, 31, .98));
+  background: var(--color-bg);
 }
 
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  opacity: .16;
-  background:
-    linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
-  background-size: 36px 36px;
-  mask-image: radial-gradient(circle at 48% 14%, #000 0 34%, transparent 76%);
-}
 
 .docs-shell {
   position: relative;

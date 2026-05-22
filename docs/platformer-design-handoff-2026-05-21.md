@@ -20,8 +20,8 @@ No code changes were made in this session. This handoff captures the agreed desi
 - `design/hud.html` — current HUD board; still has more glass/flared styling.
 - `design/menus.html` — current menu board; includes decorative scene/hero styling.
 - `styles/main.game.css` — production styles; contains runtime hint layer, HUD, and menu styling.
-- `styles/ui-tokens.css` — shared UI tokens.
-- `styles/ui-primitives.css` — shared primitives for screens, panels, buttons, focus, keycaps.
+- `styles/systems/game/tokens.css` — game design-system tokens.
+- `styles/systems/game/primitives.css` — game implementation of shared `.ds-*` primitives for screens, panels, buttons, focus, keycaps.
 
 ## Agreed decisions
 

@@ -1,19 +1,4 @@
-@import url("/styles/ui-tokens.css");
-@import url("/styles/ui-primitives.css");
-
-* { box-sizing: border-box; }
-html,
-body {
-  margin: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  overscroll-behavior: none;
-  touch-action: none;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-ui);
-}
+@import url("/styles/systems/game/index.css");
 
 body::before,
 body::after {

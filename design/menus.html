@@ -5,40 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Chibi Hollow Menu System Design Board</title>
   <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="design.css" />
   <style>
     :root {
-      --page-bg: #f4f4f1;
-      --page-text: #202124;
-      --page-muted: #666;
-      --page-line: #d9d9d2;
+      --page-bg: var(--color-bg);
+      --page-text: var(--color-text);
+      --page-muted: var(--color-text-muted);
+      --page-line: var(--color-border);
 
-      --color-bg: #090d14;
-      --color-bg-muted: #101722;
-      --color-bg-elevated: #151d2a;
-      --color-surface: rgba(255,255,255,.045);
-      --color-surface-muted: rgba(255,255,255,.028);
-      --color-surface-strong: rgba(255,255,255,.085);
-      --color-text: #fff6e8;
-      --color-text-muted: rgba(255,246,232,.72);
-      --color-text-subtle: rgba(255,246,232,.52);
-      --color-border: rgba(255,246,232,.16);
-      --color-border-strong: rgba(255,246,232,.32);
-      --color-accent: #f4b51d;
-      --color-accent-muted: #ffe7a3;
-      --color-accent-text: #17120a;
-      --color-info: #59d9e7;
-      --color-danger: #ff6b56;
+      --menu-bg: #080b11;
+      --menu-text: #fff6e8;
+      --menu-text-alpha: .72;
+      --menu-muted-alpha: .52;
+      --menu-line-alpha: .14;
+      --menu-accent: #f4b51d;
+      --menu-danger: #ff6b56;
 
-      --radius-sm: 10px;
-      --radius-md: 14px;
-      --radius-lg: 20px;
-      --radius-pill: 999px;
-      --shadow-panel: 0 12px 34px rgba(0,0,0,.26);
-      --shadow-glow: 0 8px 22px rgba(244,181,29,.16);
-      --shadow-focus: 0 0 0 2px rgba(244,181,29,.52), 0 0 0 5px rgba(255,246,232,.11);
       --font-ui: ui-rounded, "Avenir Next Rounded", "Nunito", "Trebuchet MS", sans-serif;
       --font-mono: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
-      --menu-ui-scale: 1;
     }
 
     * { box-sizing: border-box; }
@@ -50,154 +34,110 @@
     .lede { max-width: 74ch; margin: 0; color: var(--page-muted); }
     section { margin: 22px 0; }
     .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-    .panel { border: 1px solid var(--page-line); padding: 18px; background: white; }
+    .panel { border: 1px solid var(--page-line); padding: 18px; background: var(--color-surface); }
     .panel.wide { grid-column: 1 / -1; }
     h2 { margin: 0 0 14px; font-size: 1.25rem; }
     h3 { margin: 18px 0 8px; color: var(--page-muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .1em; }
     p, li, dd { color: var(--page-muted); }
-    code { background: #ecece7; padding: .12em .32em; border-radius: 4px; }
+    code { background: var(--color-bg-muted); padding: .12em .32em; border-radius: 4px; }
 
     .color-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
-    .color-field { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; padding: 10px; border: 1px solid var(--page-line); background: #fafaf8; }
+    .color-field { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; padding: 10px; border: 1px solid var(--page-line); background: var(--color-surface-muted); }
     .color-field label { grid-column: 1 / -1; font-weight: 800; }
-    .color-field input[type="color"] { width: 42px; height: 32px; padding: 0; border: 1px solid var(--page-line); background: white; }
+    .color-field input[type="color"] { width: 42px; height: 32px; padding: 0; border: 1px solid var(--page-line); background: var(--color-surface); }
+    .color-field input[type="range"] { width: 100%; }
     .color-field code { grid-column: 1 / -1; color: var(--page-muted); }
 
     .preview-strip { border: 1px solid var(--page-line); background: #111720; overflow: hidden; }
-    .preview-label { padding: 8px 10px; color: var(--page-muted); background: #fafaf8; border-bottom: 1px solid var(--page-line); font-weight: 800; font-size: .8rem; }
-    .ds-screen { position: relative; min-height: 520px; display: grid; place-items: center; padding: clamp(22px, 4vw, 56px); overflow: hidden; color: var(--color-text); background: radial-gradient(circle at 18% 12%, rgba(89,217,231,.12), transparent 30rem), radial-gradient(circle at 84% 5%, rgba(244,181,29,.12), transparent 28rem), linear-gradient(140deg, var(--color-bg), var(--color-bg-muted) 48%, #07090e); }
-    .ds-screen--overlay { background: radial-gradient(circle at 70% 18%, rgba(244,181,29,.13), transparent 30%), rgba(9,13,20,.76); }
-    .menu-card, .ds-panel { position: relative; width: min(680px, 100%); max-height: 100%; overflow: auto; padding: clamp(24px, 5vw, 50px); border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.022)), linear-gradient(135deg, rgba(21,29,42,.94), rgba(9,13,20,.92)); box-shadow: var(--shadow-panel); }
-    .menu-card::before, .ds-panel::before { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; background: linear-gradient(90deg, var(--color-accent), transparent 34%) top left / 100% 4px no-repeat; }
-    .ds-panel--hero { width: min(980px, 100%); }
-    .ds-overline { margin-bottom: 11px; color: var(--color-accent-muted); font: 900 12px/1 var(--font-mono); letter-spacing: .16em; text-transform: uppercase; }
-    .ds-title { margin: 0; color: var(--color-text); font-weight: 900; line-height: .84; letter-spacing: -.055em; text-transform: uppercase; }
-    h1.ds-title { font-size: clamp(56px, 10vw, 112px); }
-    h2.ds-title { font-size: clamp(46px, 7vw, 82px); }
-    .hero-lede, .menu-page p { color: var(--color-text-muted); }
-    .ds-chip-list { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 18px 0 0; list-style: none; }
-    .ds-chip { padding: .48rem .65rem; border: 1px solid var(--color-border); border-radius: var(--radius-pill); color: var(--color-text-muted); background: var(--color-surface-muted); font: 800 12px/1 var(--font-ui); }
-    .selected-level-summary, .status-line { margin-top: 16px; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text-muted); background: rgba(255,246,232,.045); }
-    .ds-action-stack { display: grid; gap: 11px; width: min(380px, 100%); margin-top: 22px; }
-    .ds-button { min-height: 38px; border: 1px solid var(--color-border); border-radius: 12px; padding: .55rem .75rem; color: var(--color-text); background: var(--color-surface); cursor: pointer; text-align: left; }
-    .ds-button:hover, .ds-button.active, .controller-focus { border-color: var(--color-border-strong); background: var(--color-surface-strong); box-shadow: var(--shadow-focus); }
-    .ds-button--primary { color: var(--color-accent-text); border-color: transparent; background: linear-gradient(180deg, var(--color-accent-muted), var(--color-accent)); box-shadow: var(--shadow-glow); font-weight: 900; }
-
-    .start-stage { display: grid; grid-template-columns: minmax(260px, .86fr) minmax(300px, .94fr); gap: clamp(24px, 6vw, 76px); align-items: center; }
-    .start-stage.menu-card { border: 0; border-radius: 0; background: transparent; box-shadow: none; }
-    .start-stage.menu-card::before { content: none; }
-    .hero-scene { min-height: 330px; position: relative; overflow: hidden; border: 1px solid var(--color-border); border-radius: 30px; background: linear-gradient(180deg, rgba(255,255,255,.08), transparent 26%), radial-gradient(circle at 50% 24%, rgba(89,217,231,.22), transparent 26%), linear-gradient(180deg, #18243a 0%, #0c121d 62%, #07090f 100%); }
-    .moon { position: absolute; top: 38px; right: 42px; width: 72px; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff9da, #f7c653 62%, #bb741c); }
-    .hero-scene__badge, .hero-scene__title { position: absolute; left: 24px; text-transform: uppercase; }
-    .hero-scene__badge { top: 24px; padding: 8px 11px; border: 1px solid var(--color-border); border-radius: var(--radius-pill); color: var(--color-accent-muted); font: 900 11px/1 var(--font-mono); letter-spacing: .16em; }
-    .hero-scene__title { top: 68px; font: 900 26px/.9 var(--font-ui); }
-    .hero-loadout { position: absolute; left: 18px; right: 18px; bottom: 18px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; }
-    .hero-loadout div { padding: 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: rgba(8,12,18,.58); }
-    .hero-loadout dt { color: var(--color-text-subtle); font: 800 10px/1 var(--font-mono); text-transform: uppercase; }
-    .hero-loadout dd { margin: 5px 0 0; color: var(--color-text); font-weight: 900; }
-    .hero-ground { position: absolute; left: 0; right: 0; bottom: 0; height: 58px; background: #12100d; border-top: 4px solid #6f5030; }
-    .hero-runner { position: absolute; left: 47%; bottom: 62px; width: 28px; height: 42px; background: var(--color-accent); border-radius: 10px 10px 5px 5px; box-shadow: 16px 6px 0 #d8d1bd; }
-    .hero-gate { position: absolute; right: 42px; bottom: 58px; width: 76px; height: 112px; border: 10px solid #8b6137; border-bottom: 0; border-radius: 40px 40px 0 0; box-shadow: inset 0 0 0 999px rgba(244,181,29,.14); }
-
-    .pause-layout { display: grid; grid-template-columns: minmax(230px, .9fr) minmax(300px, .72fr); gap: clamp(24px, 6vw, 84px); align-items: center; width: min(980px, 100%); border: 0; border-radius: 0; background: transparent; box-shadow: none; }
-    .pause-layout::before { content: none; }
-    .pause-main { padding: 18px; border: 1px solid rgba(255,246,232,.10); border-radius: 24px; background: rgba(255,246,232,.045); }
-    .level-select-list, .settings-category-list { display: grid; gap: 10px; }
-    .level-row, .settings-row { min-height: 70px; padding: 14px; border: 1px solid var(--color-border); border-radius: 16px; color: var(--color-text); background: rgba(255,246,232,.052); }
-    .row-kicker { display: block; color: var(--color-accent-muted); font: 900 11px/1 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; }
-    .row-title { display: block; margin-top: 6px; font-weight: 900; }
-    .row-note { display: block; margin-top: 3px; color: var(--color-text-subtle); font-size: .9rem; }
-    .split-menu { display: grid; grid-template-columns: minmax(220px, 300px) minmax(0, 1fr); gap: 18px; align-items: start; width: min(980px, 100%); }
-
+    .preview-label { padding: 8px 10px; color: var(--page-muted); background: var(--color-surface-muted); border-bottom: 1px solid var(--page-line); font-weight: 800; font-size: .8rem; }
+    .ds-screen { min-height: 520px; display: grid; place-items: center; padding: clamp(22px, 4vw, 56px); overflow: hidden; color: var(--menu-text); background: var(--menu-bg); }
+    .ds-screen--overlay { background: linear-gradient(rgba(8,11,17,.84), rgba(8,11,17,.84)), var(--menu-bg); }
+    .menu-card { width: min(520px, 100%); padding: clamp(24px, 5vw, 42px); border: 1px solid color-mix(in srgb, var(--menu-text) calc(var(--menu-line-alpha) * 100%), transparent); border-radius: 18px; background: color-mix(in srgb, var(--menu-text) 4%, transparent); box-shadow: 0 18px 48px rgba(0,0,0,.32); }
+    .menu-card--compact { width: min(440px, 100%); }
+    .ds-overline { margin-bottom: 12px; color: color-mix(in srgb, var(--menu-text) calc(var(--menu-muted-alpha) * 100%), transparent); font: 900 11px/1 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; }
+    .ds-title { margin: 0; color: var(--menu-text); font-weight: 900; line-height: 1; letter-spacing: -.035em; }
+    h1.ds-title { font-size: clamp(42px, 8vw, 68px); }
+    h2.ds-title { font-size: clamp(32px, 6vw, 48px); }
+    .menu-copy { max-width: 44ch; margin: 14px 0 0; color: color-mix(in srgb, var(--menu-text) calc(var(--menu-text-alpha) * 100%), transparent); }
+    .menu-meta { margin-top: 16px; color: color-mix(in srgb, var(--menu-text) calc(var(--menu-muted-alpha) * 100%), transparent); font: 800 12px/1.35 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+    .selected-level-summary, .status-line { margin-top: 16px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--menu-text) 12%, transparent); color: color-mix(in srgb, var(--menu-text) calc(var(--menu-text-alpha) * 100%), transparent); }
+    .ds-action-stack { display: grid; gap: 6px; margin-top: 24px; }
+    .ds-button { width: 100%; min-height: 42px; border: 1px solid transparent; border-radius: 10px; padding: .62rem .72rem; color: var(--menu-text); background: transparent; cursor: pointer; text-align: left; font: 900 15px/1 var(--font-ui); }
+    .ds-button::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 10px; border-radius: 50%; background: color-mix(in srgb, var(--menu-text) 22%, transparent); vertical-align: 2px; }
+    .ds-button:hover, .ds-button.active, .controller-focus { border-color: color-mix(in srgb, var(--menu-accent) 62%, transparent); background: color-mix(in srgb, var(--menu-text) 5%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--menu-accent) 18%, transparent); }
+    .ds-button--primary::before, .controller-focus::before { background: var(--menu-accent); }
+    .ds-button[disabled] { opacity: .42; cursor: not-allowed; }
+    .menu-list { display: grid; gap: 8px; margin-top: 22px; }
+    .menu-row { padding: 13px 12px; border: 1px solid color-mix(in srgb, var(--menu-text) 10%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--menu-text) 3%, transparent); }
+    .row-kicker { display: block; color: color-mix(in srgb, var(--menu-text) calc(var(--menu-muted-alpha) * 100%), transparent); font: 900 10px/1 var(--font-mono); letter-spacing: .13em; text-transform: uppercase; }
+    .row-title { display: block; margin-top: 6px; color: var(--menu-text); font-weight: 900; }
+    .row-note { display: block; margin-top: 3px; color: color-mix(in srgb, var(--menu-text) calc(var(--menu-muted-alpha) * 100%), transparent); font-size: .9rem; }
     .spec { display: grid; grid-template-columns: 150px 1fr; gap: 8px 16px; margin: 0; }
     .spec dt { font-weight: 800; }
     .spec dd { margin: 0; }
     footer { margin: 28px auto 48px; color: var(--page-muted); }
-    @media (max-width: 860px) { .grid, .start-stage, .pause-layout, .split-menu { grid-template-columns: 1fr; } .panel.wide { grid-column: auto; } .hero-scene { min-height: 280px; } .spec { grid-template-columns: 1fr; } }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } .panel.wide { grid-column: auto; } .spec { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
   <header>
-    <div class="eyebrow">Menu System / Reference Board</div>
+    <div class="wb-kicker">Menu System / Reference Board</div>
     <h1>Menu system reference</h1>
-    <p class="lede">Focused reference for Chibi Hollow start, pause, level-select, and settings menu primitives. Page chrome stays neutral; only menu surfaces are styled.</p>
+    <p class="wb-lede">Minimal reference for Chibi Hollow start, pause, level-select, and settings menus. Typography, actions, and concise state carry the interface; decoration stays quiet.</p>
   </header>
 
   <main>
-    <section class="grid">
-      <article class="panel wide">
-        <h2>Primitive colors</h2>
-        <p>Controls bind directly to CSS variables used by the menu previews.</p>
-        <div class="color-controls" id="colorControls">
-          <div class="color-field"><label>Menu background</label><input type="color" data-css-var="--color-bg" value="#090d14"><code>--color-bg</code></div>
-          <div class="color-field"><label>Elevated surface</label><input type="color" data-css-var="--color-bg-elevated" value="#151d2a"><code>--color-bg-elevated</code></div>
-          <div class="color-field"><label>Menu text</label><input type="color" data-css-var="--color-text" value="#fff6e8"><code>--color-text</code></div>
-          <div class="color-field"><label>Accent</label><input type="color" data-css-var="--color-accent" value="#f4b51d"><code>--color-accent</code></div>
-          <div class="color-field"><label>Accent muted</label><input type="color" data-css-var="--color-accent-muted" value="#ffe7a3"><code>--color-accent-muted</code></div>
-          <div class="color-field"><label>Info glow</label><input type="color" data-css-var="--color-info" value="#59d9e7"><code>--color-info</code></div>
+    <section class="wb-grid">
+      <article class="wb-panel wb-panel--wide">
+        <h2>Contract tokens</h2>
+        <p>Controls bind to the minimal menu contract only.</p>
+        <div class="wb-control-grid" id="colorControls">
+          <div class="wb-field"><label>Menu background</label><input type="color" data-css-var="--menu-bg" value="#080b11"><code>--menu-bg</code></div>
+          <div class="wb-field"><label>Menu text</label><input type="color" data-css-var="--menu-text" value="#fff6e8"><input type="range" min="0" max="1" step="0.01" data-css-var="--menu-text-alpha" value="0.72" aria-label="Menu text alpha"><code>--menu-text / --menu-text-alpha</code></div>
+          <div class="wb-field"><label>Muted alpha</label><input type="range" min="0" max="1" step="0.01" data-css-var="--menu-muted-alpha" value="0.52"><code>--menu-muted-alpha</code></div>
+          <div class="wb-field"><label>Line alpha</label><input type="range" min="0" max="1" step="0.01" data-css-var="--menu-line-alpha" value="0.14"><code>--menu-line-alpha</code></div>
+          <div class="wb-field"><label>Accent</label><input type="color" data-css-var="--menu-accent" value="#f4b51d"><code>--menu-accent</code></div>
+          <div class="wb-field"><label>Danger</label><input type="color" data-css-var="--menu-danger" value="#ff6b56"><code>--menu-danger</code></div>
         </div>
       </article>
     </section>
 
     <section class="preview-strip">
-      <div class="preview-label">Start screen: <code>#startScreen</code>, <code>.start-stage</code>, <code>.ds-panel--hero</code></div>
-      <div id="startScreen" class="ds-screen ds-screen--hero scene-start-screen">
-        <div class="start-stage menu-card ds-panel ds-panel--hero" aria-labelledby="startTitle">
-          <section class="hero-copy" aria-label="Game introduction">
-            <div class="eyebrow ds-overline">Gate run // local build</div>
-            <h1 id="startTitle" class="ds-title">Chibi<br>Knight</h1>
-            <p class="hero-lede">Sprint through a tiny moonlit keep, pop over spikes, and reach the glowing gate before the hollow gets brave.</p>
-            <ul class="menu-meta ds-chip-list"><li class="ds-chip">Keyboard</li><li class="ds-chip">Controller</li><li class="ds-chip">Single player</li></ul>
-            <div class="selected-level-summary">Selected level: Act 01 Level 1</div>
-            <div class="menu-actions ds-action-stack"><button class="ds-button ds-button--primary">Start</button><button class="secondary ds-button ds-button--secondary">Level Select</button><button class="secondary ds-button ds-button--secondary">Map Editor</button><button class="secondary ds-button ds-button--secondary">Settings</button></div>
-          </section>
-          <aside class="hero-scene" aria-label="Quest preview"><div class="moon"></div><div class="hero-scene__badge">Act 01</div><div class="hero-scene__title">Hollow Gate</div><div class="hero-runner"></div><div class="hero-gate"></div><div class="hero-ground"></div><dl class="hero-loadout"><div><dt>Objective</dt><dd>Reach gate</dd></div><div><dt>Threat</dt><dd>Spike floor</dd></div><div><dt>Skill</dt><dd>Dash ready</dd></div></dl></aside>
-        </div>
+      <div class="preview-label">Start screen: single-column, no illustrated scene panel</div>
+      <div id="startScreen" class="ds-screen scene-start-screen">
+        <section class="menu-card" aria-labelledby="startTitle">
+          <div class="eyebrow ds-overline">Gate run // local build</div>
+          <h1 id="startTitle" class="ds-title">Chibi Knight</h1>
+          <p class="menu-copy">Sprint through a tiny moonlit keep, clear the hazards, and reach the gate.</p>
+          <div class="menu-meta">Keyboard · Controller · Single player</div>
+          <div class="selected-level-summary">Selected level: Act 01 · Level 1</div>
+          <div class="menu-actions ds-action-stack"><button class="ds-button ds-button--primary controller-focus">Start</button><button class="ds-button">Level Select</button><button class="ds-button">Map Editor</button><button class="ds-button">Settings</button></div>
+        </section>
       </div>
     </section>
 
-    <section class="grid">
-      <article class="panel">
+    <section class="wb-grid">
+      <article class="wb-panel">
         <h2>Pause overlay</h2>
-        <div class="preview-strip">
-          <div class="ds-screen ds-screen--overlay scene-pause-overlay" data-menu-page="main">
-            <div class="menu-card ds-panel pause-layout"><div><div class="eyebrow ds-overline">Paused</div><h2 class="ds-title">Paused</h2></div><div class="pause-main menu-page"><p>Take a break, restart the run, or change settings.</p><div class="menu-actions ds-action-stack"><button class="ds-button ds-button--primary">Continue</button><button class="ds-button ds-button--secondary controller-focus">Level Select</button><button class="ds-button ds-button--secondary">Settings</button><button class="ds-button ds-button--secondary">Restart</button><button class="ds-button ds-button--secondary">Main Menu</button></div></div></div>
-          </div>
-        </div>
+        <div class="preview-strip"><div class="ds-screen ds-screen--overlay scene-pause-overlay" style="min-height:430px"><section class="menu-card menu-card--compact"><div class="eyebrow ds-overline">Paused</div><h2 class="ds-title">Paused</h2><p class="menu-copy">Take a break, restart the run, or change settings.</p><div class="menu-actions ds-action-stack"><button class="ds-button ds-button--primary">Continue</button><button class="ds-button controller-focus">Level Select</button><button class="ds-button">Settings</button><button class="ds-button">Restart</button><button class="ds-button">Main Menu</button></div></section></div></div>
       </article>
-      <article class="panel">
+      <article class="wb-panel">
         <h2>Button states</h2>
-        <div class="preview-strip"><div class="ds-screen ds-screen--overlay" style="min-height:360px"><div class="menu-card ds-panel"><div class="eyebrow ds-overline">Actions</div><div class="ds-action-stack"><button class="ds-button ds-button--primary">Primary action</button><button class="ds-button ds-button--secondary">Secondary action</button><button class="ds-button ds-button--secondary controller-focus">Controller focus</button><button class="ds-button ds-button--secondary" disabled>Disabled action</button></div></div></div></div>
-        <h3>Focus contract</h3>
-        <p>Keyboard and controller focus use <code>:focus-visible</code> / <code>.controller-focus</code> with the same focus shadow and border treatment.</p>
+        <div class="preview-strip"><div class="ds-screen ds-screen--overlay" style="min-height:360px"><section class="menu-card menu-card--compact"><div class="eyebrow ds-overline">Actions</div><div class="ds-action-stack"><button class="ds-button ds-button--primary">Primary/default</button><button class="ds-button">Secondary</button><button class="ds-button controller-focus">Controller focus</button><button class="ds-button" disabled>Disabled action</button></div></section></div></div>
+        <h3>Focus contract</h3><p>Focus uses the accent as a ring and marker, not a filled gold button.</p>
       </article>
 
-      <article class="panel wide">
+      <article class="wb-panel wb-panel--wide">
         <h2>Nested menu pages</h2>
-        <div class="grid">
-          <div class="preview-strip">
-            <div class="preview-label">Level select layout</div>
-            <div class="ds-screen ds-screen--overlay" style="min-height:430px">
-              <div class="split-menu"><div><div class="eyebrow ds-overline">Choose level</div><h2 class="ds-title">Level Select</h2><p>Developer Mode reveals gyms, zoos, and other test maps.</p><button class="ds-button ds-button--secondary">Back</button><div class="status-line">6 available levels</div></div><div class="level-select-list"><div class="level-row controller-focus"><span class="row-kicker">Act 01</span><span class="row-title">Level 1</span><span class="row-note">Selected campaign entry.</span></div><div class="level-row"><span class="row-kicker">Gym</span><span class="row-title">Movement Zoo</span><span class="row-note">Developer-only traversal test.</span></div><div class="level-row"><span class="row-kicker">Draft</span><span class="row-title">Local Map</span><span class="row-note">Loaded from editor storage.</span></div></div></div>
-            </div>
-          </div>
-          <div class="preview-strip">
-            <div class="preview-label">Settings category list</div>
-            <div class="ds-screen ds-screen--overlay" style="min-height:430px">
-              <div class="split-menu"><div><div class="eyebrow ds-overline">Settings</div><h2 class="ds-title">Tune Run</h2><p>Tune how the game feels before jumping in.</p></div><div class="settings-category-list"><div class="settings-row controller-focus"><span class="row-kicker">Input</span><span class="row-title">Controls</span><span class="row-note">Keyboard and controller bindings.</span></div><div class="settings-row"><span class="row-kicker">Feel</span><span class="row-title">Gameplay</span><span class="row-note">Assist and developer toggles.</span></div><div class="settings-row"><span class="row-kicker">Video</span><span class="row-title">Display</span><span class="row-note">Scaling and motion preferences.</span></div></div></div>
-            </div>
-          </div>
+        <div class="wb-grid">
+          <div class="preview-strip"><div class="preview-label">Level select</div><div class="ds-screen ds-screen--overlay" style="min-height:460px"><section class="menu-card"><div class="eyebrow ds-overline">Choose level</div><h2 class="ds-title">Level Select</h2><p class="menu-copy">Developer Mode reveals gyms, zoos, and other test maps.</p><div class="menu-list"><div class="menu-row controller-focus"><span class="row-kicker">Act 01</span><span class="row-title">Level 1</span><span class="row-note">Selected campaign entry.</span></div><div class="menu-row"><span class="row-kicker">Gym</span><span class="row-title">Movement Zoo</span><span class="row-note">Developer-only traversal test.</span></div><div class="menu-row"><span class="row-kicker">Draft</span><span class="row-title">Local Map</span><span class="row-note">Loaded from editor storage.</span></div></div><div class="status-line">6 available levels</div><div class="ds-action-stack"><button class="ds-button">Back</button></div></section></div></div>
+          <div class="preview-strip"><div class="preview-label">Settings</div><div class="ds-screen ds-screen--overlay" style="min-height:460px"><section class="menu-card"><div class="eyebrow ds-overline">Settings</div><h2 class="ds-title">Tune Run</h2><p class="menu-copy">Tune how the game feels before jumping in.</p><div class="menu-list"><div class="menu-row controller-focus"><span class="row-kicker">Input</span><span class="row-title">Controls</span><span class="row-note">Keyboard and controller bindings.</span></div><div class="menu-row"><span class="row-kicker">Feel</span><span class="row-title">Gameplay</span><span class="row-note">Assist and developer toggles.</span></div><div class="menu-row"><span class="row-kicker">Video</span><span class="row-title">Display</span><span class="row-note">Scaling and motion preferences.</span></div></div></section></div></div>
         </div>
       </article>
 
-      <article class="panel wide">
+      <article class="wb-panel wb-panel--wide">
         <h2>Implementation notes</h2>
-        <dl class="spec">
-          <dt>DOM source</dt><dd><code>src/scenes/menu-dom.js</code> owns start and pause shell markup.</dd>
-          <dt>Behavior</dt><dd><code>src/app/ui/menu/menu-shell.js</code>, <code>menu-input.js</code>, and <code>menu-setup.js</code> wire state, focus, and controller actions.</dd>
-          <dt>Shared primitives</dt><dd><code>styles/ui-tokens.css</code> and <code>styles/ui-primitives.css</code> define <code>.ds-screen</code>, <code>.ds-panel</code>, <code>.ds-button</code>, <code>.ds-title</code>, chips, keycaps, focus, and menu scale tokens.</dd>
-          <dt>Game styling</dt><dd><code>styles/main.game.css</code> specializes start, pause, level-select, settings, and page transition layouts.</dd>
-        </dl>
+        <dl class="wb-spec"><dt>Scope</dt><dd>Design reference only; production menu styles remain untouched.</dd><dt>Visual contract</dt><dd>Near-black screen, parchment text, alpha-muted copy, faint lines, accent only for focus/default/current state.</dd><dt>Layout</dt><dd>Single centered column by default. Side panels and illustration are intentionally excluded.</dd></dl>
       </article>
     </section>
   </main>
@@ -206,9 +146,8 @@
 
   <script>
     document.querySelectorAll('[data-css-var]').forEach((input) => {
-      input.addEventListener('input', () => {
-        document.documentElement.style.setProperty(input.dataset.cssVar, input.value);
-      });
+      const apply = () => document.documentElement.style.setProperty(input.dataset.cssVar, input.value);
+      input.addEventListener('input', apply);
     });
   </script>
 </body>

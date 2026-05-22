@@ -5,12 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Chibi Hollow Hint System Design Board</title>
   <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="design.css" />
   <style>
     :root {
-      --page-bg: #f4f4f1;
-      --page-text: #202124;
-      --page-muted: #666;
-      --page-line: #d9d9d2;
+      --page-bg: var(--color-bg);
+      --page-text: var(--color-text);
+      --page-muted: var(--color-text-muted);
+      --page-line: var(--color-border);
       --hint-bg: #080b11;
       --hint-text: #fff6e8;
       --hint-text-alpha: .58;
@@ -37,7 +38,7 @@
     .eyebrow { color: var(--page-muted); text-transform: uppercase; letter-spacing: .12em; font-size: .78rem; font-weight: 800; }
     h1 { margin: 6px 0 8px; font-size: clamp(2rem, 5vw, 3.8rem); line-height: 1; letter-spacing: -.04em; }
     .lede { max-width: 70ch; margin: 0; color: var(--page-muted); }
-    .hero-card { margin-top: 18px; padding: 0; border: 1px solid var(--page-line); background: white; }
+    .hero-card { margin-top: 18px; padding: 0; border: 1px solid var(--page-line); background: var(--color-surface); }
 
     .stage {
       min-height: 180px;
@@ -62,7 +63,7 @@
 
     section { margin: 22px 0; }
     .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-    .panel { border: 1px solid var(--page-line); padding: 18px; background: white; }
+    .panel { border: 1px solid var(--page-line); padding: 18px; background: var(--color-surface); }
     .panel.wide { grid-column: 1 / -1; }
     h2 { margin: 0 0 14px; font-size: 1.25rem; }
     h3 { margin: 18px 0 8px; color: var(--page-muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .1em; }
@@ -119,19 +120,19 @@
     }
 
     .asset-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 10px; }
-    .asset { border: 1px solid var(--page-line); padding: 12px 8px; text-align: center; background: #fafaf8; }
+    .asset { border: 1px solid var(--page-line); padding: 12px 8px; text-align: center; background: var(--color-surface-muted); }
     .asset img { width: 42px; height: 42px; object-fit: contain; filter: grayscale(1) saturate(.08) brightness(1.65) contrast(.72); background: var(--hint-bg); padding: 6px; }
     .asset span { display: block; margin-top: 8px; color: var(--page-muted); font-size: .74rem; font-weight: 700; }
     .color-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
-    .color-field { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; padding: 10px; border: 1px solid var(--page-line); background: #fafaf8; }
+    .color-field { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; padding: 10px; border: 1px solid var(--page-line); background: var(--color-surface-muted); }
     .color-field label { grid-column: 1 / -1; font-weight: 800; }
-    .color-field input[type="color"] { width: 42px; height: 32px; padding: 0; border: 1px solid var(--page-line); background: white; }
+    .color-field input[type="color"] { width: 42px; height: 32px; padding: 0; border: 1px solid var(--page-line); background: var(--color-surface); }
     .color-field input[type="range"] { width: 100%; }
     .color-field code { grid-column: 1 / -1; color: var(--page-muted); }
     .spec { display: grid; grid-template-columns: 130px 1fr; gap: 8px 16px; margin: 0; }
     .spec dt { font-weight: 800; }
     .spec dd { margin: 0; }
-    code { background: #ecece7; padding: .12em .32em; border-radius: 4px; }
+    code { background: var(--color-bg-muted); padding: .12em .32em; border-radius: 4px; }
     footer { margin: 28px auto 48px; color: var(--page-muted); }
     @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } .panel.wide { grid-column: auto; } .spec { grid-template-columns: 1fr; } }
   </style>
@@ -139,9 +140,9 @@
 <body>
   <header>
     <div>
-      <div class="eyebrow">Hint System / Asset Board</div>
+      <div class="wb-kicker">Hint System / Asset Board</div>
       <h1>Hint system reference</h1>
-      <p class="lede">A focused HTML reference for how Chibi Hollow input hints should look: keyboard pills, controller glyphs, bottom-layer composition, menu actions, and asset usage rules.</p>
+      <p class="wb-lede">A focused HTML reference for how Chibi Hollow input hints should look: keyboard pills, controller glyphs, bottom-layer composition, menu actions, and asset usage rules.</p>
     </div>
     <div class="hero-card">
       <div class="stage" aria-label="In-game hint layer preview">
@@ -156,49 +157,49 @@
   </header>
 
   <main>
-    <section class="grid">
-      <article class="panel wide">
+    <section class="wb-grid">
+      <article class="wb-panel wb-panel--wide">
         <h2>Primitive colors</h2>
         <p>These inputs are bound directly to the page CSS variables so hint previews update live.</p>
-        <div class="color-controls" id="colorControls" aria-label="Primitive color controls">
-          <div class="color-field">
+        <div class="wb-control-grid" id="colorControls" aria-label="Primitive color controls">
+          <div class="wb-field">
             <label for="colorPageBg">Page background</label>
             <input id="colorPageBg" type="color" data-css-var="--page-bg" value="#f4f4f1">
             <code>--page-bg</code>
           </div>
-          <div class="color-field">
+          <div class="wb-field">
             <label for="colorPageText">Page text</label>
             <input id="colorPageText" type="color" data-css-var="--page-text" value="#202124">
             <code>--page-text</code>
           </div>
-          <div class="color-field">
+          <div class="wb-field">
             <label for="colorPageMuted">Page muted</label>
             <input id="colorPageMuted" type="color" data-css-var="--page-muted" value="#666666">
             <code>--page-muted</code>
           </div>
-          <div class="color-field">
+          <div class="wb-field">
             <label for="colorPageLine">Page line</label>
             <input id="colorPageLine" type="color" data-css-var="--page-line" value="#d9d9d2">
             <code>--page-line</code>
           </div>
-          <div class="color-field">
+          <div class="wb-field">
             <label for="colorHintBg">Hint background</label>
             <input id="colorHintBg" type="color" data-css-var="--hint-bg" value="#080b11">
             <code>--hint-bg</code>
           </div>
-          <div class="color-field">
+          <div class="wb-field">
             <label for="colorHintText">Hint text</label>
             <input id="colorHintText" type="color" data-css-var="--hint-text" value="#fff6e8">
             <input type="range" min="0" max="1" step="0.01" data-css-var="--hint-text-alpha" value="0.58" aria-label="Hint text alpha">
             <code>--hint-text / --hint-text-alpha</code>
           </div>
-          <div class="color-field">
+          <div class="wb-field">
             <label for="colorKeyBg">Keycap background</label>
             <input id="colorKeyBg" type="color" data-css-var="--key-bg" value="#eeeae1">
             <input type="range" min="0" max="1" step="0.01" data-css-var="--key-bg-alpha" value="0.62" aria-label="Keycap background alpha">
             <code>--key-bg / --key-bg-alpha</code>
           </div>
-          <div class="color-field">
+          <div class="wb-field">
             <label for="colorKeyText">Keycap text</label>
             <input id="colorKeyText" type="color" data-css-var="--key-text" value="#151518">
             <input type="range" min="0" max="1" step="0.01" data-css-var="--key-text-alpha" value="0.82" aria-label="Keycap text alpha">
@@ -207,7 +208,7 @@
         </div>
       </article>
 
-      <article class="panel">
+      <article class="wb-panel">
         <h2>Core hint anatomy</h2>
         <div class="hint-row">
           <span class="input-hint input-hint--chip"><kbd class="ds-keycap">Esc</kbd><span class="input-hint__label">Pause</span></span>
@@ -218,9 +219,9 @@
         <p>Use <code>.input-hint</code> as the wrapper, <code>.ds-keycap</code> for text controls, <code>.input-hint__icon</code> for prompt assets, and <code>.input-hint__label</code> for the action.</p>
       </article>
 
-      <article class="panel">
+      <article class="wb-panel">
         <h2>Layer behavior</h2>
-        <dl class="spec">
+        <dl class="wb-spec">
           <dt>Position</dt><dd>Bottom safe-area, centered, flexible wrap.</dd>
           <dt>Tone</dt><dd>Low-contrast parchment over a dark gradient scrim.</dd>
           <dt>Joiners</dt><dd>Hidden in the game layer; use spacing instead of slashes.</dd>
@@ -228,7 +229,7 @@
         </dl>
       </article>
 
-      <article class="panel wide">
+      <article class="wb-panel wb-panel--wide">
         <h2>Gameplay set</h2>
         <div class="hint-row">
           <span class="input-hint"><kbd class="ds-keycap">A</kbd><kbd class="ds-keycap">D</kbd><span class="input-hint__label">Move</span></span>
@@ -240,7 +241,7 @@
         </div>
       </article>
 
-      <article class="panel">
+      <article class="wb-panel">
         <h2>Controller assets</h2>
         <div class="asset-grid">
           <div class="asset"><img src="/assets/kenney-input-prompts/xbox/xbox_button_a.svg" alt=""><span>xbox_button_a</span></div>
@@ -252,7 +253,7 @@
         </div>
       </article>
 
-      <article class="panel">
+      <article class="wb-panel">
         <h2>Keyboard assets</h2>
         <div class="asset-grid">
           <div class="asset"><img src="/assets/kenney-input-prompts/keyboard/keyboard_space.svg" alt=""><span>keyboard_space</span></div>
@@ -264,7 +265,7 @@
         </div>
       </article>
 
-      <article class="panel wide">
+      <article class="wb-panel wb-panel--wide">
         <h2>Implementation notes</h2>
         <ul>
           <li>Runtime actions are defined by <code>src/app/ui/hint-layer.js</code>; binding labels and asset paths come from <code>src/app/input/input-hints.js</code>.</li>
@@ -280,7 +281,6 @@
     document.querySelectorAll('[data-css-var]').forEach(input => {
       const apply = () => rootStyle.setProperty(input.dataset.cssVar, input.value);
       input.addEventListener('input', apply);
-      apply();
     });
   </script>
 </body>

@@ -185,8 +185,8 @@ Follow-up:
 
 Evidence:
 
-- `styles/ui-tokens.css` defines shared semantic dark-theme tokens.
-- `styles/ui-primitives.css` defines shared `.ds-*` primitives and base focus/button behavior.
+- `styles/systems/game/tokens.css` defines game semantic dark-theme tokens.
+- `styles/systems/game/primitives.css` defines the game implementation of shared `.ds-*` primitives and base focus/button behavior.
 - `styles/main.game.css` and `styles/main.editor.css` own product-specific composition.
 
 Direction:

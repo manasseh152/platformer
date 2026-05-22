@@ -28,7 +28,6 @@
       </div>
 
       <div class="top-actions">
-        <button id="quickPreviewButton" type="button" class="quick-preview-button hint-button input-hint" data-input-hint data-input-action="editor.preview" data-input-label="Preview">Preview</button>
         <button id="saveLocalButton" type="button" class="save-state-button ds-button ds-button--secondary" data-save-state="clean" disabled>Saved</button>
       </div>
     </header>
@@ -118,9 +117,13 @@
             </div>
           </div>
           <div class="panel-section pack-section">
-            <h2 id="packSectionTitle">Starter asset pack</h2>
+            <h2>Packs</h2>
             <p id="packSummary" class="section-kicker">Starter: core terrain materials, spawn points, and hazards. 16 px build grid.</p>
-            <div id="brushes" class="brush-grid" role="toolbar" aria-label="Asset pack items"></div>
+            <div id="packChoices" class="pack-switcher" role="toolbar" aria-label="Asset packs"></div>
+          </div>
+          <div class="panel-section pack-section">
+            <h2 id="packSectionTitle">Pack assets</h2>
+            <div id="brushes" class="brush-grid" role="toolbar" aria-label="Pack assets"></div>
             <h3 id="brushSectionTitle" class="selected-brush-title">Selected: Grass</h3>
             <p id="brushLayerHint" class="hint">LB/RB changes terrain while the panel is hidden. A paints the selected cell.</p>
           </div>
@@ -178,6 +181,15 @@
         <button id="zoomInButton" class="floating-view-controls__button" type="button" aria-label="Zoom in">+</button>
         <button id="resetViewButton" class="floating-view-controls__button" type="button">Reset</button>
         <button id="panToggleButton" class="floating-view-controls__button" type="button" aria-pressed="false">Pan</button>
+        <button id="floatingPaletteToggle" class="floating-view-controls__button floating-view-controls__palette-toggle" type="button" aria-expanded="false" aria-controls="floatingPalettePicker">Brush</button>
+        <div id="floatingPalettePicker" class="floating-palette-picker" hidden>
+          <div class="floating-palette-picker__header">
+            <strong>Palette</strong>
+            <span id="floatingPaletteLayerLabel">Terrain</span>
+          </div>
+          <select id="floatingPackSelect" aria-label="Palette pack"></select>
+          <div id="floatingBrushChoices" class="floating-palette-picker__brushes" role="listbox" aria-label="Brush variations"></div>
+        </div>
       </div>
 
       <section id="packWheelHud" class="pack-wheel-hud" aria-label="Controller pack wheel" aria-live="polite">

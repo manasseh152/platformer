@@ -66,6 +66,11 @@ const dom = {
   floatingControlsToggle: document.querySelector('#floatingControlsToggle'),
   floatingViewControls: document.querySelector('#floatingViewControls'),
   panToggleButton: document.querySelector('#panToggleButton'),
+  floatingPaletteToggle: document.querySelector('#floatingPaletteToggle'),
+  floatingPalettePicker: document.querySelector('#floatingPalettePicker'),
+  floatingPaletteLayerLabel: document.querySelector('#floatingPaletteLayerLabel'),
+  floatingPackSelect: document.querySelector('#floatingPackSelect'),
+  floatingBrushChoices: document.querySelector('#floatingBrushChoices'),
   tilemapSelect: document.querySelector('#tilemapSelect'),
   nameInput: document.querySelector('#nameInput'),
   idInput: document.querySelector('#idInput'),
@@ -91,6 +96,7 @@ const dom = {
   editLayerButtons: Array.from(document.querySelectorAll('[data-edit-layer]')),
   packSectionTitle: document.querySelector('#packSectionTitle'),
   packSummary: document.querySelector('#packSummary'),
+  packChoices: document.querySelector('#packChoices'),
   brushSectionTitle: document.querySelector('#brushSectionTitle'),
   brushLayerHint: document.querySelector('#brushLayerHint'),
   brushes: document.querySelector('#brushes'),
@@ -164,6 +170,7 @@ let controllerPickerNavY = 0;
 let controllerPickerNextMoveAt = 0;
 let controllerPickerMoveHoldKey = '';
 let packWheelWakeTimer = 0;
+let floatingPaletteOpen = false;
 let nativeBack = null;
 
 function storageKey(id) { return localDraftStorageKey(id); }
@@ -1024,9 +1031,9 @@ function applyControllerPalettePresentation() {
   if (!dom.packWheelHud) return;
   const hud = dom.packWheelHud;
   const position = controllerBrushPickerOpen ? controllerBrushSettings.palettePosition : 'bottom-right';
-  const size = controllerBrushPickerOpen
-    ? (position === 'near-cursor' ? controllerBrushSettings.cursorPaletteSize : controllerBrushSettings.bottomRightPaletteSize)
-    : DEFAULT_CONTROLLER_BRUSH_SETTINGS.bottomRightPaletteSize;
+  const size = position === 'near-cursor'
+    ? controllerBrushSettings.cursorPaletteSize
+    : controllerBrushSettings.bottomRightPaletteSize;
   hud.dataset.palettePosition = position;
   hud.dataset.paletteSize = size;
   hud.style.left = '';
@@ -1437,7 +1444,9 @@ function setBrush(candidate) {
     else pointer = nextCell;
   }
   buildLayerButtons();
+  buildPackButtons();
   buildBrushButtons();
+  buildFloatingPalette();
   wakePackWheel();
   render();
 }
@@ -1456,8 +1465,18 @@ function setActiveEditLayer(layerId) {
   activePackId = defaultPackForLayer(activeEditLayerId)?.id ?? null;
   const layerBrushes = brushesForActivePack();
   if (!layerBrushes.some(candidate => candidate.id === brush.id)) setBrush(layerBrushes[0]);
-  else { buildLayerButtons(); buildBrushButtons(); }
+  else { buildLayerButtons(); buildPackButtons(); buildBrushButtons(); buildFloatingPalette(); }
   setStatus(`Layer: ${activeLayerConfig().label} · ${activeLayerConfig().gridLabel}.`, '');
+}
+
+function setActivePack(packId) {
+  const pack = packsForLayer(activeEditLayerId).find(candidate => candidate.id === packId);
+  if (!pack) return;
+  activePackId = pack.id;
+  const packBrushes = brushesForActivePack();
+  if (!packBrushes.some(candidate => candidate.id === brush.id)) setBrush(packBrushes[0]);
+  else { buildPackButtons(); buildBrushButtons(); buildFloatingPalette(); }
+  setStatus(`Pack: ${pack.label}.`, '');
 }
 
 function cycleBrush(direction) {
@@ -1599,11 +1618,59 @@ function buildLayerButtons() {
   }
 }
 
+function buildPackButtons() {
+  if (!dom.packChoices) return;
+  const layer = activeLayerConfig();
+  const packs = packsForLayer(activeEditLayerId);
+  const activePack = activePackConfig();
+  if (dom.packSummary) dom.packSummary.textContent = activePack ? `${activePack.label}: ${activePack.description}. ${layer.gridLabel}.` : layer.gridLabel;
+  dom.packChoices.innerHTML = '';
+  for (const pack of packs) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'pack-choice';
+    button.setAttribute('aria-pressed', pack.id === activePack?.id ? 'true' : 'false');
+    button.innerHTML = '<span></span><small></small>';
+    button.querySelector('span').textContent = pack.label;
+    button.querySelector('small').textContent = pack.description;
+    button.addEventListener('click', () => setActivePack(pack.id));
+    dom.packChoices.append(button);
+  }
+}
+
+function buildFloatingPalette() {
+  if (!dom.floatingPackSelect || !dom.floatingBrushChoices) return;
+  const layer = activeLayerConfig();
+  if (dom.floatingPaletteLayerLabel) dom.floatingPaletteLayerLabel.textContent = layer.label;
+  const packs = packsForLayer(activeEditLayerId);
+  dom.floatingPackSelect.innerHTML = '';
+  for (const pack of packs) {
+    const option = document.createElement('option');
+    option.value = pack.id;
+    option.textContent = pack.label;
+    option.selected = pack.id === activePackId;
+    dom.floatingPackSelect.append(option);
+  }
+  dom.floatingBrushChoices.innerHTML = '';
+  for (const candidate of brushesForActivePack()) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = candidate.id === brush.id ? 'active floating-palette-picker__brush' : 'floating-palette-picker__brush';
+    button.setAttribute('role', 'option');
+    button.setAttribute('aria-selected', candidate.id === brush.id ? 'true' : 'false');
+    button.setAttribute('aria-label', candidate.label);
+    button.innerHTML = '<span aria-hidden="true"></span><small></small>';
+    button.querySelector('span').style.setProperty('--swatch', candidate.swatch ?? candidate.cursor);
+    button.querySelector('small').textContent = candidate.shortLabel ?? candidate.label;
+    button.addEventListener('click', () => { setBrush(candidate); setStatus(`Brush: ${candidate.label}.`, ''); });
+    dom.floatingBrushChoices.append(button);
+  }
+}
+
 function buildBrushButtons() {
   const layer = activeLayerConfig();
-  const pack = packsForLayer(activeEditLayerId).find(candidate => candidate.id === activePackId) ?? defaultPackForLayer(activeEditLayerId);
-  if (dom.packSectionTitle) dom.packSectionTitle.textContent = layer.packTitle;
-  if (dom.packSummary) dom.packSummary.textContent = pack ? `${pack.label}: ${pack.description}. ${layer.gridLabel}.` : layer.gridLabel;
+  const pack = activePackConfig();
+  if (dom.packSectionTitle) dom.packSectionTitle.textContent = pack ? `${pack.label} assets` : layer.packTitle;
   if (dom.brushSectionTitle) dom.brushSectionTitle.textContent = `Selected: ${brush.label}`;
   if (dom.brushLayerHint) dom.brushLayerHint.textContent = layer.hint;
   dom.brushes.innerHTML = '';
@@ -1767,6 +1834,7 @@ function setup() {
   }
   dom.tilemapSelect.value = registeredTilemaps.some(tilemap => tilemap.id === draft.id) ? draft.id : getDefaultTilemap().id;
   buildLayerButtons();
+  buildPackButtons();
   buildBrushButtons();
   resizeViewport(viewport);
   compileDraft();
@@ -1812,6 +1880,13 @@ function setup() {
     writeBooleanPreference(localStorage, FLOATING_CONTROLS_STORAGE_KEY, floatingControlsEnabled);
     syncPreferencesUi();
   });
+  dom.floatingPaletteToggle?.addEventListener('click', () => {
+    floatingPaletteOpen = !floatingPaletteOpen;
+    dom.floatingPalettePicker.hidden = !floatingPaletteOpen;
+    dom.floatingPaletteToggle.setAttribute('aria-expanded', floatingPaletteOpen ? 'true' : 'false');
+    if (floatingPaletteOpen) buildFloatingPalette();
+  });
+  dom.floatingPackSelect?.addEventListener('change', () => setActivePack(dom.floatingPackSelect.value));
   for (const button of dom.editLayerButtons) button.addEventListener('click', () => setActiveEditLayer(button.dataset.editLayer));
   dom.controllerBrushSensitivityInput?.addEventListener('input', () => {
     controllerBrushSettings.sensitivity = Math.round(clampNumber(dom.controllerBrushSensitivityInput.value, 1, 10, DEFAULT_CONTROLLER_BRUSH_SETTINGS.sensitivity));

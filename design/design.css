@@ -1,0 +1,48 @@
+@import url("/styles/systems/workbench/index.css");
+
+body {
+  height: auto;
+  min-height: 100vh;
+  overflow-y: auto;
+  overscroll-behavior: auto;
+  touch-action: auto;
+}
+
+header,
+main,
+footer { width: min(1120px, calc(100vw - 32px)); margin: 0 auto; }
+header { padding: 32px 0 16px; border-bottom: 1px solid var(--color-border); }
+footer { margin: 28px auto 48px; color: var(--color-text-muted); }
+.design-index footer { margin: 12px auto 44px; }
+
+h1 { margin: 6px 0 8px; font-size: clamp(2rem, 5vw, 3.8rem); line-height: 1; letter-spacing: -.04em; }
+h2 { margin: 0 0 14px; font-size: 1.25rem; }
+h3 { margin: 18px 0 8px; color: var(--color-text-muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .1em; }
+section { margin: 22px 0; }
+p, li, dd { color: var(--color-text-muted); }
+code, kbd { background: var(--color-bg-muted); padding: .12em .32em; border-radius: 4px; }
+
+.design-index .wb-grid { margin: 24px 0; }
+.wb-card h2 { margin: 0 0 8px; font-size: 1.35rem; line-height: 1.05; letter-spacing: -.02em; }
+.wb-card p { margin: 0; color: var(--color-text-muted); }
+
+/* Temporary aliases for preview pages not yet fully migrated. Prefer .wb-* in new markup. */
+.eyebrow { color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .12em; font-size: .78rem; font-weight: 800; }
+.lede { max-width: var(--lede-width, 72ch); margin: 0; color: var(--color-text-muted); }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.panel { border: 1px solid var(--color-border); padding: 18px; background: var(--color-surface); }
+.panel.wide { grid-column: 1 / -1; }
+.card { display: grid; min-height: 168px; padding: 20px; color: inherit; text-decoration: none; border: 1px solid var(--color-border); background: var(--color-surface); }
+.card:hover, .card:focus-visible { border-color: var(--color-text); outline: none; }
+.tag { align-self: end; width: fit-content; margin-top: 18px; color: var(--color-text-muted); font-size: .78rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.spec { display: grid; grid-template-columns: var(--spec-term-width, 140px) 1fr; gap: 8px 16px; margin: 0; }
+.spec dt { font-weight: 800; }
+.spec dd { margin: 0; }
+.color-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.color-field { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; padding: 10px; border: 1px solid var(--color-border); background: var(--color-surface-muted); }
+.color-field label { grid-column: 1 / -1; font-weight: 800; }
+.color-field input[type="color"] { width: 42px; height: 32px; padding: 0; border: 1px solid var(--color-border); background: var(--color-surface); }
+.color-field input[type="range"] { width: 100%; }
+.color-field code { grid-column: 1 / -1; color: var(--color-text-muted); }
+
+@media (max-width: 860px) { .grid, .wb-grid { grid-template-columns: 1fr; } .panel.wide, .wb-panel--wide { grid-column: auto; } .spec, .wb-spec { grid-template-columns: 1fr; } }
