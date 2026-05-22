@@ -40,6 +40,12 @@
     p, li, dd { color: var(--page-muted); }
     code, kbd { background: var(--color-bg-muted); padding: .12em .32em; border-radius: 4px; }
 
+    preview-block { display: block; }
+    .preview-block { margin: 0; border: 1px solid var(--page-line); background: #111720; overflow: hidden; }
+    .preview-block__label { padding: 8px 10px; color: var(--page-muted); background: var(--color-surface-muted); border-bottom: 1px solid var(--page-line); font-weight: 800; font-size: .8rem; }
+    /* design.css imports workbench primitives where .ds-screen is a fixed app overlay.
+       These editor mockups are inline preview frames, so reset overlay positioning here. */
+    .preview-block .ds-screen { position: relative; inset: auto; width: 100%; min-height: var(--preview-min-height, 430px); overflow: hidden; color: var(--editor-text); background: var(--editor-bg); font-family: var(--font-ui); overscroll-behavior: auto; }
     .hero-card { margin-top: 18px; border: 1px solid var(--page-line); background: var(--color-surface); }
     .editor-stage { position: relative; min-height: clamp(220px, 28vw, 250px); overflow: hidden; color: var(--editor-text); background: var(--editor-bg); font-family: var(--font-ui); }
     .fake-canvas { position: absolute; inset: 0; background-color: #05070c; background-image: linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px), linear-gradient(#182234 0 0), linear-gradient(#293a34 0 0), linear-gradient(#53422d 0 0), linear-gradient(#8a352e 0 0); background-size: var(--editor-grid-size, 32px) var(--editor-grid-size, 32px), var(--editor-grid-size, 32px) var(--editor-grid-size, 32px), min(384px, 42vw) 64px, min(256px, 28vw) 96px, min(192px, 24vw) 128px, var(--editor-grid-size, 32px) var(--editor-grid-size, 32px); background-position: 0 0, 0 0, 8% 176px, 55% 144px, 24% 208px, 78% 208px; background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat, no-repeat; }
@@ -134,8 +140,8 @@
     .pack-wheel-hud--zoom-track { height: 5px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--editor-text) 12%, transparent); }
     .pack-wheel-hud[data-palette-position="bottom-right"] .pack-wheel-hud--zoom-track { grid-area: zoom; align-self: center; min-width: 86px; }
     .pack-wheel-hud--zoom-track span { display: block; width: 50%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #79f0c5, #59d9e7 58%, var(--editor-accent)); }
-    .floating-ui-grid { display: grid; grid-template-columns: repeat(2, minmax(360px, 1fr)); grid-auto-rows: minmax(440px, auto); gap: 14px; align-items: stretch; }
-    .floating-sample { min-height: 430px; position: relative; overflow: hidden; padding: 44px 16px 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--editor-bg); }
+    .floating-ui-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(360px, 1fr)); grid-auto-rows: minmax(440px, auto); gap: 14px; align-items: stretch; }
+    .floating-sample { min-height: 430px; position: relative; overflow: hidden; padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--editor-bg); }
     .floating-sample--panel, .floating-sample--panel-shell, .floating-sample--controls, .floating-sample--palette, .floating-sample--controller-inactive, .floating-sample--controller-active { min-height: 440px; }
     .floating-sample--palette { overflow: hidden; }
     .floating-sample--panel-shell .editor-overlay { opacity: .88; }
@@ -193,9 +199,10 @@
       <article class="wb-panel wb-panel--wide">
         <h2>Floating UI elements</h2>
         <p>Shown separately from the header preview so each overlay can be judged as its own primitive, including cursor-centered and bottom-right palette previews.</p>
-        <div class="floating-ui-grid">
-          <div class="floating-sample floating-sample--panel">
-            <p class="floating-sample-label">Action panel</p>
+      </article>
+
+      <div class="floating-ui-grid">
+          <preview-block label="Action panel" screen-class="floating-sample floating-sample--panel" min-height="440px">
             <aside class="editor-overlay" aria-label="Editor action panel preview">
               <div class="overlay-head"><h2>Tilemap Editor</h2><button class="ghost-button" type="button">Hide</button></div>
               <div class="panel-section"><h3>Layers</h3><p class="section-kicker">Choose what kind of thing the cursor is editing.</p><div class="layer-switcher"><button type="button" aria-pressed="true"><span>Solid</span><small>Solid authored ground · current grid</small></button><button type="button" aria-pressed="false"><span>Placed Assets</span><small>Gameplay placements · current grid</small></button><button type="button" aria-pressed="false"><span>Hazards</span><small>Damaging tiles · current grid</small></button><button type="button" aria-pressed="false" disabled><span>Decor</span><small>Coming soon · current grid or free place</small></button></div></div>
@@ -203,34 +210,28 @@
               <div class="panel-section"><h3>Packs</h3><p class="section-kicker">Starter: core terrain materials and spawn points. Uses the current grid size.</p><div class="pack-switcher"><button class="pack-choice" type="button" aria-pressed="true"><span>Starter</span><small>Core terrain materials and spawn points</small></button><button class="pack-choice" type="button" aria-pressed="false"><span>Hazards</span><small>Damaging environmental tiles</small></button></div></div>
               <div class="panel-section"><h3>Starter assets</h3><div class="brush-grid"><button class="brush swatch-grass" type="button" aria-pressed="true">Grass</button><button class="brush swatch-dirt" type="button">Dirt</button><button class="brush swatch-stone" type="button">Stone</button><button class="brush swatch-spike" type="button">Erase</button></div></div>
             </aside>
-          </div>
-          <div class="floating-sample floating-sample--panel-shell">
-            <p class="floating-sample-label">Action panel shell</p>
+          </preview-block>
+          <preview-block label="Action panel shell" screen-class="floating-sample floating-sample--panel-shell" min-height="440px">
             <aside class="editor-overlay" aria-label="Editor action panel empty shell preview">
               <div class="overlay-head"><h2>Action Panel</h2><button class="ghost-button" type="button">Hide</button></div>
               <div class="panel-section"><h3>Selection actions</h3><p class="section-kicker">Reserved shell for contextual commands.</p></div>
               <div class="panel-section"><h3>Brush actions</h3><p class="section-kicker">Space for duplicate, rotate, mirror, and replace flows.</p></div>
               <div class="panel-section"><h3>Map actions</h3><p class="section-kicker">Space for validation and export commands.</p></div>
             </aside>
-          </div>
-          <div class="floating-sample floating-sample--controls">
-            <p class="floating-sample-label">Inactive desktop bottom-right</p>
+          </preview-block>
+          <preview-block label="Inactive desktop bottom-right" screen-class="floating-sample floating-sample--controls" min-height="440px">
             <div class="floating-view-controls" aria-label="Floating viewport controls"><button type="button">−</button><output>100%</output><button type="button">+</button><button type="button">Reset</button><button type="button">Pan</button><button class="floating-view-controls--palette-toggle" type="button" aria-expanded="false">Brush</button></div>
-          </div>
-          <div class="floating-sample floating-sample--palette">
-            <p class="floating-sample-label">Active desktop bottom-right</p>
+          </preview-block>
+          <preview-block label="Active desktop bottom-right" screen-class="floating-sample floating-sample--palette" min-height="440px">
             <div class="floating-view-controls" aria-label="Floating viewport controls with palette"><button type="button">−</button><output>100%</output><button type="button">+</button><button type="button">Reset</button><button type="button" aria-pressed="true">Pan</button><button class="floating-view-controls--palette-toggle" type="button" aria-expanded="true">Brush</button><div class="floating-palette-picker"><div class="floating-palette-picker--header"><strong>Palette</strong><span>Terrain</span></div><select aria-label="Palette pack"><option>Starter</option><option>Hazards</option></select><div class="floating-palette-picker--brushes" role="listbox" aria-label="Brush variations"><button class="floating-palette-picker--brush active" style="--swatch:#79f0c5" type="button"><span></span><small>Grass</small></button><button class="floating-palette-picker--brush" style="--swatch:#b86f3d" type="button"><span></span><small>Dirt</small></button><button class="floating-palette-picker--brush" style="--swatch:#9aa7b2" type="button"><span></span><small>Stone</small></button><button class="floating-palette-picker--brush" style="--swatch:#f0d58a" type="button"><span></span><small>Sand</small></button><button class="floating-palette-picker--brush" style="--swatch:#a78bfa" type="button"><span></span><small>Ghost</small></button><button class="floating-palette-picker--brush" style="--swatch:#ff8f8f" type="button"><span></span><small>Erase</small></button></div></div></div>
-          </div>
-          <div class="floating-sample floating-sample--controller-active">
-            <p class="floating-sample-label">Bottom-right palette preview</p>
+          </preview-block>
+          <preview-block label="Bottom-right palette preview" screen-class="floating-sample floating-sample--controller-active" min-height="440px">
             <section class="pack-wheel-hud" data-palette-size="normal" data-palette-position="bottom-right" data-picker-open aria-label="Bottom-right palette preview"><div class="pack-wheel-hud--items" aria-hidden="true"><span class="pack-wheel-hud--item is-active" style="--angle:-60deg;--swatch:#79f0c5" data-short-label="Grass"></span><span class="pack-wheel-hud--item is-committed" style="--angle:-20deg;--swatch:#b86f3d" data-short-label="Dirt"></span><span class="pack-wheel-hud--item" style="--angle:20deg;--swatch:#9aa7b2" data-short-label="Stone"></span><span class="pack-wheel-hud--item" style="--angle:60deg;--swatch:#f0d58a" data-short-label="Sand"></span><span class="pack-wheel-hud--item is-duplicate" style="--angle:100deg;--swatch:#ff8f8f" data-short-label="Erase"></span></div><div class="pack-wheel-hud--card editor-surface"><div class="pack-wheel-hud--topline"><span>Terrain</span><span>100%</span></div><div class="pack-wheel-hud--brush"><span class="pack-wheel-hud--swatch" style="--swatch:#79f0c5"></span><span class="pack-wheel-hud--copy"><strong>Grass</strong><span>Starter</span></span></div><div class="pack-wheel-hud--zoom-track"><span></span></div></div></section>
-          </div>
-          <div class="floating-sample floating-sample--controller-inactive">
-            <p class="floating-sample-label">Cursor palette preview</p>
+          </preview-block>
+          <preview-block label="Cursor palette preview" screen-class="floating-sample floating-sample--controller-inactive" min-height="440px">
             <section class="pack-wheel-hud is-awake" data-palette-size="normal" aria-label="Cursor palette preview"><div class="pack-wheel-hud--items" aria-hidden="true"><span class="pack-wheel-hud--item is-active" style="--angle:-84deg;--swatch:#ff4d7d" data-short-label="Spike"></span><span class="pack-wheel-hud--item is-committed" style="--angle:-36deg;--swatch:#7a2432" data-short-label="Lava"></span><span class="pack-wheel-hud--item" style="--angle:12deg;--swatch:#9aa7b2" data-short-label="Rock"></span><span class="pack-wheel-hud--item is-duplicate" style="--angle:60deg;--swatch:#ff8f8f" data-short-label="Erase"></span></div><div class="pack-wheel-hud--card editor-surface"><div class="pack-wheel-hud--topline"><span>Cursor</span><span>75%</span></div><div class="pack-wheel-hud--brush"><span class="pack-wheel-hud--swatch" style="--swatch:#ff4d7d"></span><span class="pack-wheel-hud--copy"><strong>Spike</strong><span>Hazards</span></span></div><div class="pack-wheel-hud--zoom-track"><span style="width:75%"></span></div></div></section>
-          </div>
-        </div>
-      </article>
+          </preview-block>
+      </div>
 
       <article class="wb-panel"><h2>Composition</h2><dl class="wb-spec"><dt>Canvas</dt><dd>Full viewport, pixelated, dark enough to support grid and terrain contrast.</dd><dt>Topbar</dt><dd>Fixed, three-part layout: main menu, tabs, preview/save actions.</dd><dt>Panel</dt><dd>Left overlay, one quiet card with internal sections.</dd><dt>Hints</dt><dd>Instructional prompts are supplied by the shared hint system, not this editor surface.</dd></dl></article>
       <article class="wb-panel"><h2>Authoring states</h2><dl class="wb-spec"><dt>Selected layer</dt><dd><code>[aria-pressed="true"]</code> gets the same filled accent treatment as production.</dd><dt>Selected pack</dt><dd>Packs sit between Layers and Pack assets, using the same switcher language.</dd><dt>Brush</dt><dd>Current brush uses a high-contrast selected chip without changing the tile swatch.</dd><dt>Save state</dt><dd><code>[data-save-state]</code> labels: saved, dirty, saving, invalid.</dd><dt>Focus</dt><dd>Controller focus uses an accent ring over the existing primitive.</dd></dl></article>
@@ -263,6 +264,7 @@
       button.addEventListener('click', () => applyGridSize(button.dataset.gridSize));
     });
   </script>
+  <script type="module" src="/src/ui/preview-block.js"></script>
   <script type="module" src="/src/ui/workbench-header.js"></script>
 </body>
 </html>
