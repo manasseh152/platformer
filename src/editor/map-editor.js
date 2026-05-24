@@ -1215,7 +1215,20 @@ function updatePan(event) {
 
 function editorInputRoute() { return inputRuntime.route(['editor', 'menu']); }
 
+function handleEditorZoomShortcut(event) {
+  if (event.type !== 'keydown') return false;
+  if (!(event.ctrlKey || event.metaKey) || event.altKey) return false;
+  const zoomIn = event.key === '+' || event.key === '=' || event.code === 'Equal' || event.code === 'NumpadAdd';
+  const zoomOut = event.key === '-' || event.code === 'Minus' || event.code === 'NumpadSubtract';
+  if (!zoomIn && !zoomOut) return false;
+  event.preventDefault();
+  setEditorInputMode('keyboard');
+  zoomBy(zoomIn ? 1.25 : 0.8);
+  return true;
+}
+
 function processEditorKeyboardEvent(event) {
+  if (handleEditorZoomShortcut(event)) return;
   setEditorInputMode('keyboard');
   const primaryModifier = event.ctrlKey || event.metaKey || event.altKey;
   if (event.type === 'keydown' && !primaryModifier && moveEditorPanelFocusForKey(event)) return;

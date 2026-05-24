@@ -178,6 +178,34 @@ test('map editor zoom controls change viewport zoom without resizing to world si
   await expect(page.locator('#zoomReadout')).toContainText('%');
 });
 
+test('map editor Ctrl/Cmd plus shortcut zooms in globally', async ({ page }) => {
+  await page.goto('/editor.html');
+  await page.getByRole('tab', { name: 'Map' }).click();
+  await page.locator('#colsInput').focus();
+  const before = Number(await page.locator('#editorCanvas').getAttribute('data-zoom'));
+
+  await page.keyboard.down('Control');
+  await page.keyboard.press('Equal');
+  await page.keyboard.up('Control');
+
+  await expect.poll(async () => Number(await page.locator('#editorCanvas').getAttribute('data-zoom'))).toBeGreaterThan(before);
+  await expect(page.locator('#zoomReadout')).toContainText('%');
+});
+
+test('map editor Ctrl/Cmd minus shortcut zooms out globally', async ({ page }) => {
+  await page.goto('/editor.html');
+  await page.getByRole('tab', { name: 'Map' }).click();
+  await page.locator('#colsInput').focus();
+  const before = Number(await page.locator('#editorCanvas').getAttribute('data-zoom'));
+
+  await page.keyboard.down('Control');
+  await page.keyboard.press('Minus');
+  await page.keyboard.up('Control');
+
+  await expect.poll(async () => Number(await page.locator('#editorCanvas').getAttribute('data-zoom'))).toBeLessThan(before);
+  await expect(page.locator('#zoomReadout')).toContainText('%');
+});
+
 test('map editor can force preview-only terrain tiles', async ({ page }) => {
   await page.goto('/editor.html');
   await createBlankMap(page);
