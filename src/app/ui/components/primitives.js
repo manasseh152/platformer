@@ -1,3 +1,6 @@
+import { renderIconLabel } from './icons.js';
+export { renderIcon, renderIconLabel } from './icons.js';
+
 export function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 }
@@ -18,8 +21,9 @@ export function renderTabList({ label, tabs, activeId, activeLayer = true, class
   return `<div class="${classes('ds-tabs', variantClass, className)}" role="tablist" aria-label="${escapeHtml(label)}"${attrs(attributes)}>${before}${tabs.map(tab => renderTab({ ...tab, selected: tab.id === activeId, tabbable: activeLayer && tab.id === activeId })).join('')}${after}</div>`;
 }
 
-export function renderTab({ id, label, selected = false, tabbable = false, className = '', attributes = {}, content }) {
-  return `<button type="button" class="${classes('ds-tab', className)}" role="tab" aria-selected="${selected ? 'true' : 'false'}" tabindex="${tabbable ? '0' : '-1'}"${attrs(attributes)}>${content ?? escapeHtml(label)}</button>`;
+export function renderTab({ id, label, icon, selected = false, tabbable = false, className = '', attributes = {}, content }) {
+  const body = content ?? (icon ? renderIconLabel(icon, label) : escapeHtml(label));
+  return `<button type="button" class="${classes('ds-tab', className)}" role="tab" aria-selected="${selected ? 'true' : 'false'}" tabindex="${tabbable ? '0' : '-1'}"${attrs(attributes)}>${body}</button>`;
 }
 
 export function renderTabPanel({ body, className = '', attributes = {} }) {

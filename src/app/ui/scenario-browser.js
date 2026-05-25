@@ -2,6 +2,7 @@ import { getCategoryById, primaryGroupCategoryFor } from '../../catalog/categori
 import { countLocalDraftRecords, listLocalDraftRecords } from '../../catalog/local-drafts/storage.js';
 import { getVisibleScenarioEntries } from '../../catalog/scenarios/registry.js';
 import { escapeHtml, renderInfoRow, renderSection, renderSettingRow, renderTabList, renderTabPanel } from './components/primitives.js';
+import { renderIconLabel } from './components/icons.js';
 import { runDOMTransition } from './transitions.js';
 
 const LEVEL_SELECT_TAB_KEY = 'chibi.level-select.active-tab';
@@ -46,6 +47,7 @@ function tilemapDefinitionIdForScenario(entry) {
 }
 
 function actionLabelFor(game, isCurrent) { return isCurrent ? 'Selected' : (game.menu.origin === 'start' ? 'Select' : 'Load'); }
+function actionIconFor(label) { return label === 'Selected' ? 'check' : label === 'Select' ? 'mousePointerClick' : 'play'; }
 
 function renderScenarioRow(game, entry, current, currentScenarioId) {
   const isCurrent = currentScenarioId ? currentScenarioId === entry.id : tilemapDefinitionIdForScenario(entry) === current.id;
@@ -57,7 +59,7 @@ function renderScenarioRow(game, entry, current, currentScenarioId) {
   return renderSettingRow({
     label: entry.name,
     description,
-    value: escapeHtml(actionLabelFor(game, isCurrent)),
+    value: renderIconLabel(actionIconFor(actionLabelFor(game, isCurrent)), actionLabelFor(game, isCurrent)),
     className: `level-select-row${isCurrent ? ' is-current' : ''}`,
     attributes: { 'data-scenario-id': entry.id, 'data-scenario-source': entry.source || '' }
   });
@@ -73,7 +75,7 @@ function renderLocalDraftRow(game, record, currentScenarioId) {
   if (!draft) return renderInfoRow({
     label: record.id || 'Unreadable local draft',
     description: `Invalid: ${record.validation?.message || 'Saved JSON is malformed.'}`,
-    value: 'Invalid',
+    value: renderIconLabel('triangleAlert', 'Invalid'),
     className: 'local-draft-row is-invalid'
   });
   const scenarioId = `local:${draft.id}`;
@@ -84,7 +86,7 @@ function renderLocalDraftRow(game, record, currentScenarioId) {
   return renderSettingRow({
     label: draft.name || draft.id,
     description: `${draft.id} // ${draft.cols}×${draft.rows} // ${formatSavedAt(draft.updatedAt)} // ${status}`,
-    value: `<button type="button" class="ds-button ds-button--secondary" data-scenario-id="${escapeHtml(scenarioId)}" data-scenario-source="local"${disabled ? ' disabled' : ''}>${escapeHtml(actionLabelFor(game, isCurrent))}</button><button type="button" class="ds-button ds-button--secondary" data-local-draft-edit="${escapeHtml(draft.id)}">Edit</button>`,
+    value: `<button type="button" class="ds-button ds-button--secondary" data-scenario-id="${escapeHtml(scenarioId)}" data-scenario-source="local"${disabled ? ' disabled' : ''}>${renderIconLabel(actionIconFor(actionLabelFor(game, isCurrent)), actionLabelFor(game, isCurrent))}</button><button type="button" class="ds-button ds-button--secondary" data-local-draft-edit="${escapeHtml(draft.id)}">${renderIconLabel('pencil', 'Edit')}</button>`,
     tag: 'div',
     className: `local-draft-row${isCurrent ? ' is-current' : ''}${disabled ? ' is-invalid' : ''}`,
     valueClassName: 'local-draft-actions',
@@ -127,8 +129,8 @@ function renderLocalTab(game, currentScenarioId) {
   const records = listLocalDraftRecords(game.runtime?.storage);
   const rows = records.map(record => renderLocalDraftRow(game, record, currentScenarioId)).join('');
   return `<section class="ds-section settings-section level-select-group" data-scenario-source="local">
-    <div class="level-select-toolbar"><h3>Local maps</h3><button type="button" class="ds-button ds-button--secondary" data-open-map-editor>Open Map Editor</button></div>
-    ${records.length ? `<div class="settings-row-list">${rows}</div>` : `<div class="ds-setting-row ds-setting-row--info"><span class="ds-setting-row--copy"><span class="ds-setting-row--label">No local maps saved yet.</span><span class="ds-setting-row--description">Create or import a map in the editor, then save it locally.</span></span><span class="ds-setting-row--value"><button type="button" class="ds-button ds-button--primary" data-open-map-editor>Open Map Editor</button></span></div>`}
+    <div class="level-select-toolbar"><h3>Local maps</h3><button type="button" class="ds-button ds-button--secondary" data-open-map-editor>${renderIconLabel('map', 'Open Map Editor')}</button></div>
+    ${records.length ? `<div class="settings-row-list">${rows}</div>` : `<div class="ds-setting-row ds-setting-row--info"><span class="ds-setting-row--copy"><span class="ds-setting-row--label">No local maps saved yet.</span><span class="ds-setting-row--description">Create or import a map in the editor, then save it locally.</span></span><span class="ds-setting-row--value"><button type="button" class="ds-button ds-button--primary" data-open-map-editor>${renderIconLabel('map', 'Open Map Editor')}</button></span></div>`}
   </section>`;
 }
 

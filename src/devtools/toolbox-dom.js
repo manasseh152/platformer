@@ -1,4 +1,5 @@
 import { isPaused, isStarted, isWon } from '../app/app-state.js';
+import { renderIcon } from '../app/ui/components/icons.js';
 
 const VALUE_REFRESH_MS = 250;
 
@@ -159,7 +160,7 @@ export function setupDevTools(game) {
     <aside id="devtoolPanel" class="devtool-panel" role="region" aria-label="Developer toolbox" tabindex="-1" hidden aria-hidden="true">
       <header class="devtool-panel--header">
         <div><span class="devtool-eyebrow">Developer</span><h2>Toolbox</h2></div>
-        <button type="button" class="devtool-close" data-devtool-close aria-label="Close developer toolbox">×</button>
+        <button type="button" class="devtool-close" data-devtool-close aria-label="Close developer toolbox">${renderIcon('x')}</button>
       </header>
       <div class="devtool-panel--body" data-devtool-body></div>
     </aside>`;

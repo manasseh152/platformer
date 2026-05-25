@@ -75,8 +75,8 @@ export function validateImportedDraft(candidate) {
   if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) throw new Error('Imported map is not a tilemap draft.');
   if (typeof candidate.id !== 'string' || !candidate.id.trim()) throw new Error('Imported map needs an id.');
   if (typeof candidate.name !== 'string' || !candidate.name.trim()) throw new Error('Imported map needs a name.');
-  if (!Number.isInteger(candidate.cols) || candidate.cols < 1 || candidate.cols > 120) throw new Error('Imported map cols must be between 1 and 120.');
-  if (!Number.isInteger(candidate.rows) || candidate.rows < 1 || candidate.rows > 80) throw new Error('Imported map rows must be between 1 and 80.');
+  if (!Number.isInteger(candidate.cols) || candidate.cols < 1) throw new Error('Imported map cols must be a positive integer.');
+  if (!Number.isInteger(candidate.rows) || candidate.rows < 1) throw new Error('Imported map rows must be a positive integer.');
   const solid = candidate.layers?.find(layer => layer.id === 'solid');
   const placedAssets = candidate.layers?.find(layer => layer.id === 'placedAssets');
   const hazards = candidate.layers?.find(layer => layer.id === 'hazards');
@@ -88,6 +88,12 @@ export function validateImportedDraft(candidate) {
 }
 
 export function draftFromSharePayload(payload) { const candidate = normalizeDraft(payload?.format === SHARE_FORMAT ? payload.draft : payload); validateImportedDraft(candidate); return cloneDraft(candidate); }
+
+export function getImportedDraftSizeWarning(draft) {
+  const candidate = normalizeDraft(draft);
+  if (!candidate || candidate.cols <= 128 && candidate.rows <= 128) return '';
+  return `Warning: imported map is ${candidate.cols}×${candidate.rows}. Maps wider or taller than 128 cells may be slow to edit or save.`;
+}
 
 export function createPreviewPayload(draft, { id, now = () => Date.now() }) {
   const normalized = normalizeDraft(draft);

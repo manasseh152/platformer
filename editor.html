@@ -121,6 +121,16 @@
             <p id="packSummary" class="section-kicker">Starter: core terrain materials, spawn points, and hazards. 16 px build grid.</p>
             <div id="brushes" class="brush-grid" role="toolbar" aria-label="Asset pack items"></div>
             <h3 id="brushSectionTitle" class="selected-brush-title">Selected: Grass</h3>
+            <label class="field brush-size-field" for="brushSize">
+              <span>Brush size</span>
+              <select id="brushSize" aria-describedby="brushSizeHint">
+                <option value="1">1×1</option>
+                <option value="2">2×2</option>
+                <option value="3">3×3</option>
+                <option value="5">5×5</option>
+              </select>
+            </label>
+            <p id="brushSizeHint" class="hint">Stamps a square area from the cursor cell.</p>
             <p id="brushLayerHint" class="hint">LB/RB changes terrain while the panel is hidden. A paints the selected cell.</p>
           </div>
           <div class="panel-section">
@@ -180,10 +190,25 @@
         <button id="floatingPaletteToggle" class="floating-view-controls--button floating-view-controls--palette-toggle" type="button" aria-expanded="false" aria-controls="floatingPalettePicker">Brush</button>
         <div id="floatingPalettePicker" class="floating-palette-picker" hidden>
           <div class="floating-palette-picker--header">
-            <strong>Palette</strong>
+            <strong>Brush Palette</strong>
             <span id="floatingPaletteLayerLabel">Terrain</span>
           </div>
-          <select id="floatingPackSelect" aria-label="Palette pack"></select>
+          <div class="floating-palette-picker--section">
+            <label class="floating-palette-picker--field" for="floatingPackSelect">
+              <span>Palette pack</span>
+              <select id="floatingPackSelect" aria-label="Palette pack"></select>
+            </label>
+            <label class="floating-palette-picker--field floating-palette-picker--size" for="floatingBrushSize">
+              <span>Brush size</span>
+              <select id="floatingBrushSize" aria-describedby="floatingBrushSizeHint">
+                <option value="1">1×1</option>
+                <option value="2">2×2</option>
+                <option value="3">3×3</option>
+                <option value="5">5×5</option>
+              </select>
+            </label>
+            <p id="floatingBrushSizeHint" class="floating-palette-picker--hint">Stamps a square area centered on the cursor.</p>
+          </div>
           <div id="floatingBrushChoices" class="floating-palette-picker--brushes" role="listbox" aria-label="Brush variations"></div>
         </div>
       </div>

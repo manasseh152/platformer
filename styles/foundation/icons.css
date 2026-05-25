@@ -1,0 +1,19 @@
+/* Shared Lucide UI icon primitives. */
+.ui-icon {
+  display: inline-block;
+  width: 1.05em;
+  height: 1.05em;
+  vertical-align: -0.15em;
+  stroke: currentColor;
+  stroke-width: 2.35;
+  flex-shrink: 0;
+}
+
+.ui-icon-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.ui-icon-label .ui-icon { flex: 0 0 auto; }

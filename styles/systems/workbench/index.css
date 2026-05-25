@@ -1,5 +1,6 @@
 @import url("/styles/foundation/reset.css");
 @import url("/styles/foundation/fonts.css");
+@import "../../foundation/icons.css";
 @import url("/styles/systems/workbench/tokens.css");
 @import url("/styles/systems/workbench/primitives.css");
 @import url("/styles/systems/workbench/components.css");

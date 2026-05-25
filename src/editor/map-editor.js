@@ -6,7 +6,7 @@ import { spikeFieldCommands } from '../render/extractors/primitive-builders.js';
 import { TERRAIN_KIND as K, terrainKindConfig } from '../core/tilemaps/terrain-layer.js';
 import { compileDraft as compileTilemapDraft, createBlankDraft, createDraftFromTilemap as draftFromTilemap, EMPTY, hasEntitySymbol, normalizeDraft, replaceChar } from './tilemap-draft.js';
 import { BRUSHES, brushesForPack, defaultPackForLayer, layerById, packsForLayer } from './edit-domain.js';
-import { createPreviewPayload, createSharePayload, draftFromSharePayload, generatedTilemapModule, readBooleanPreference, savedLocalStatus, writeBooleanPreference } from './map-editor-commands.js';
+import { createPreviewPayload, createSharePayload, draftFromSharePayload, generatedTilemapModule, getImportedDraftSizeWarning, readBooleanPreference, savedLocalStatus, writeBooleanPreference } from './map-editor-commands.js';
 import {
   applyWorldTransform,
   clearViewport,
@@ -70,6 +70,8 @@ const dom = {
   floatingPalettePicker: document.querySelector('#floatingPalettePicker'),
   floatingPaletteLayerLabel: document.querySelector('#floatingPaletteLayerLabel'),
   floatingPackSelect: document.querySelector('#floatingPackSelect'),
+  floatingBrushSize: document.querySelector('#floatingBrushSize'),
+  floatingBrushSizeHint: document.querySelector('#floatingBrushSizeHint'),
   floatingBrushChoices: document.querySelector('#floatingBrushChoices'),
   tilemapSelect: document.querySelector('#tilemapSelect'),
   nameInput: document.querySelector('#nameInput'),
@@ -99,6 +101,8 @@ const dom = {
   packChoices: document.querySelector('#packChoices'),
   brushSectionTitle: document.querySelector('#brushSectionTitle'),
   brushLayerHint: document.querySelector('#brushLayerHint'),
+  brushSize: document.querySelector('#brushSize'),
+  brushSizeHint: document.querySelector('#brushSizeHint'),
   brushes: document.querySelector('#brushes'),
   controllerBrushSensitivityInput: document.querySelector('#controllerBrushSensitivityInput'),
   controllerBrushSensitivityValue: document.querySelector('#controllerBrushSensitivityValue'),
@@ -128,6 +132,9 @@ const inputRuntime = createGameInputRuntime(loadSettings());
 const inputAdapter = createBrowserInputAdapter(inputRuntime);
 const registeredTilemaps = getAllTilemaps();
 const debug = window.__mapEditorDebug = window.__mapEditorDebug ?? { compileCount: 0, exportCount: 0, persistCount: 0, renderCount: 0, cursorRenderCount: 0 };
+const BRUSH_SIZE_DEFAULT = 1;
+const BRUSH_SIZE_OPTIONS = [1, 2, 3, 5];
+const floatingPaletteDefaultParent = dom.floatingPalettePicker?.parentElement ?? null;
 
 let brush = BRUSHES[0];
 let draft = createDraftFromTilemap(getDefaultTilemap());
@@ -137,6 +144,7 @@ let pointer = null;
 let isPainting = false;
 let panPointer = null;
 let lastPaintKey = null;
+let brushSize = BRUSH_SIZE_DEFAULT;
 let activePointers = new Map();
 let pinch = null;
 let editorSource = 'registered';
@@ -262,6 +270,10 @@ function persist({ syncMetadata = true } = {}) {
 
 function tryPersist() {
   try { return persist(); } catch (error) { setStatus(`${error.message} Fix draft ID to save locally.`, 'error'); return { ok: false, error }; }
+}
+
+function isQuotaExceededError(error) {
+  return error?.name === 'QuotaExceededError';
 }
 
 function syncDraftMetadataFromInputs() {
@@ -717,17 +729,30 @@ async function importMapFile(file) {
   try {
     history.clear();
     draft = draftFromSharePayload(JSON.parse(await file.text()));
+    const sizeWarning = getImportedDraftSizeWarning(draft);
     compiledFresh = false;
     ensureCompiled();
-    persist({ syncMetadata: false });
-    dirty = false;
+    let persistError = null;
+    try {
+      persist({ syncMetadata: false });
+      dirty = false;
+    } catch (error) {
+      persistError = error;
+      dirty = true;
+    }
     syncInputs();
     dom.tilemapSelect.value = getDefaultTilemap().id;
     resetView(viewport, worldWidth(), worldHeight());
     saveView();
     syncInputs();
     render();
-    setStatus(`Imported ${draft.name} and saved locally. Ready to preview.`, 'ok');
+    if (isQuotaExceededError(persistError)) {
+      setStatus('Imported, but could not save locally because storage quota was exceeded.', 'warning');
+      return;
+    }
+    if (persistError) throw persistError;
+    const importStatus = `Imported ${draft.name} and saved locally. Ready to preview.`;
+    setStatus(sizeWarning ? `${sizeWarning} ${importStatus}` : importStatus, sizeWarning ? 'warning' : 'ok');
   } catch (error) {
     setStatus(error.message, 'error');
   } finally {
@@ -932,9 +957,10 @@ function drawCursor(ctx, cursor, { ghost = false } = {}) {
     debug.cursorRenderCount = (debug.cursorRenderCount ?? 0) + 1;
     debug.cursor = debugCursor;
   }
-  const x = cursor.col * brush.cellSize;
-  const cursorSize = layer.objectSize ?? brush.cellSize;
-  const y = (cursor.row + 1) * brush.cellSize - cursorSize;
+  const topLeft = supportsBrushSize() ? brushTopLeftCell(cursor) : cursor;
+  const x = topLeft.col * brush.cellSize;
+  const cursorSize = supportsBrushSize() ? effectiveBrushSize() * brush.cellSize : (layer.objectSize ?? brush.cellSize);
+  const y = supportsBrushSize() ? topLeft.row * brush.cellSize : (cursor.row + 1) * brush.cellSize - cursorSize;
   const inset = 1 / viewport.camera.zoom;
   const haloWidth = (ghost ? 4 : 6) / viewport.camera.zoom;
   const lineWidth = (ghost ? 2 : 3) / viewport.camera.zoom;
@@ -1127,23 +1153,60 @@ function buildPackWheelItems() {
   updatePackWheel();
 }
 
+function worldToBrushCell(point) {
+  const cellX = point.x / brush.cellSize;
+  const cellY = point.y / brush.cellSize;
+  const size = effectiveBrushSize();
+  if (size <= 1) return { col: Math.floor(cellX), row: Math.floor(cellY) };
+  return { col: Math.round(cellX - 0.5), row: Math.round(cellY - 0.5) };
+}
+
+function brushTopLeftCell(centerCell) {
+  const size = effectiveBrushSize();
+  const offset = Math.floor(size / 2);
+  return { col: centerCell.col - offset, row: centerCell.row - offset };
+}
+
 function pointerCell(event) {
-  const point = eventToWorld(viewport, event);
-  return { col: Math.floor(point.x / brush.cellSize), row: Math.floor(point.y / brush.cellSize) };
+  return worldToBrushCell(eventToWorld(viewport, event));
+}
+
+function supportsBrushSize(targetBrush = brush) {
+  return targetBrush.layerId !== 'placedAssets';
+}
+
+function effectiveBrushSize(targetBrush = brush) {
+  return supportsBrushSize(targetBrush) ? brushSize : BRUSH_SIZE_DEFAULT;
+}
+
+function targetCellsForBrush(cell) {
+  const size = effectiveBrushSize();
+  const topLeft = brushTopLeftCell(cell);
+  const cells = [];
+  for (let row = topLeft.row; row < topLeft.row + size; row++) {
+    for (let col = topLeft.col; col < topLeft.col + size; col++) cells.push({ col, row });
+  }
+  return cells;
 }
 
 function applyBrushToCell(cell) {
   pointer = cell;
-  const key = `${brush.layerId}:${cell.col},${cell.row}:${brush.symbol ?? 'null'}`;
+  const key = `${brush.layerId}:${cell.col},${cell.row}:${brush.symbol ?? 'null'}:${effectiveBrushSize()}`;
   if (key === lastPaintKey) return;
   lastPaintKey = key;
   const layer = draft.layers.find(layer => layer.id === brush.layerId);
-  if (!layer || cell.row < 0 || cell.row >= layer.rows.length || cell.col < 0 || cell.col >= layer.rows[0].length) { scheduleRender(); return; }
-  const before = layer.rows[cell.row][cell.col];
-  if (before !== brush.symbol) {
-    if (Array.isArray(layer.rows[cell.row])) layer.rows[cell.row][cell.col] = brush.symbol;
-    else layer.rows[cell.row] = replaceChar(layer.rows[cell.row], cell.col, brush.symbol ?? EMPTY);
-    history.recordCellChange({ layerId: brush.layerId, col: cell.col, row: cell.row, before, after: brush.symbol });
+  if (!layer) { scheduleRender(); return; }
+  let changed = false;
+  for (const target of targetCellsForBrush(cell)) {
+    if (target.row < 0 || target.row >= layer.rows.length || target.col < 0 || target.col >= layer.rows[0].length) continue;
+    const before = layer.rows[target.row][target.col];
+    if (before === brush.symbol) continue;
+    if (Array.isArray(layer.rows[target.row])) layer.rows[target.row][target.col] = brush.symbol;
+    else layer.rows[target.row] = replaceChar(layer.rows[target.row], target.col, brush.symbol ?? EMPTY);
+    history.recordCellChange({ layerId: brush.layerId, col: target.col, row: target.row, before, after: brush.symbol });
+    changed = true;
+  }
+  if (changed) {
     updateHistoryControls();
     scheduleAfterEdit();
     setStatus('Editing…', '');
@@ -1452,7 +1515,7 @@ function setBrush(candidate) {
   const worldPoint = anchor ? { x: (anchor.col + 0.5) * previous.cellSize, y: (anchor.row + 0.5) * previous.cellSize } : null;
   brush = candidate;
   if (worldPoint) {
-    const nextCell = clampBrushCell({ col: Math.floor(worldPoint.x / brush.cellSize), row: Math.floor(worldPoint.y / brush.cellSize) });
+    const nextCell = clampBrushCell(worldToBrushCell(worldPoint));
     if (controllerGhostPointer) controllerGhostPointer = nextCell;
     else pointer = nextCell;
   }
@@ -1460,6 +1523,7 @@ function setBrush(candidate) {
   buildPackButtons();
   buildBrushButtons();
   buildFloatingPalette();
+  updateBrushSizeControl();
   wakePackWheel();
   render();
 }
@@ -1478,7 +1542,7 @@ function setActiveEditLayer(layerId) {
   activePackId = defaultPackForLayer(activeEditLayerId)?.id ?? null;
   const layerBrushes = brushesForActivePack();
   if (!layerBrushes.some(candidate => candidate.id === brush.id)) setBrush(layerBrushes[0]);
-  else { buildLayerButtons(); buildPackButtons(); buildBrushButtons(); buildFloatingPalette(); }
+  else { buildLayerButtons(); buildPackButtons(); buildBrushButtons(); buildFloatingPalette(); updateBrushSizeControl(); }
   setStatus(`Layer: ${activeLayerConfig().label} · ${activeLayerConfig().gridLabel}.`, '');
 }
 
@@ -1488,7 +1552,7 @@ function setActivePack(packId) {
   activePackId = pack.id;
   const packBrushes = brushesForActivePack();
   if (!packBrushes.some(candidate => candidate.id === brush.id)) setBrush(packBrushes[0]);
-  else { buildPackButtons(); buildBrushButtons(); buildFloatingPalette(); }
+  else { buildPackButtons(); buildBrushButtons(); buildFloatingPalette(); updateBrushSizeControl(); }
   setStatus(`Pack: ${pack.label}.`, '');
 }
 
@@ -1619,6 +1683,31 @@ function toggleEditorPanel() {
   } else setStatus('Pack panel shown. Press B or Y to return to canvas.', '');
 }
 
+function syncBrushSizeControls() {
+  const supported = supportsBrushSize();
+  const value = String(effectiveBrushSize());
+  const hint = supported ? 'Stamps a square area centered on the cursor.' : 'Placed assets always stamp 1×1 to avoid duplicate objects.';
+  for (const control of [dom.brushSize, dom.floatingBrushSize]) {
+    if (!control) continue;
+    control.disabled = !supported;
+    control.value = value;
+  }
+  if (dom.brushSizeHint) dom.brushSizeHint.textContent = hint;
+  if (dom.floatingBrushSizeHint) dom.floatingBrushSizeHint.textContent = hint;
+}
+
+function updateBrushSizeControl() {
+  syncBrushSizeControls();
+}
+
+function setBrushSize(nextSize) {
+  brushSize = BRUSH_SIZE_OPTIONS.includes(nextSize) ? nextSize : BRUSH_SIZE_DEFAULT;
+  lastPaintKey = null;
+  syncBrushSizeControls();
+  render();
+  setStatus(`Brush size: ${effectiveBrushSize()}×${effectiveBrushSize()}.`, '');
+}
+
 function buildLayerButtons() {
   for (const button of dom.editLayerButtons) {
     const layer = layerById(button.dataset.editLayer);
@@ -1651,6 +1740,72 @@ function buildPackButtons() {
   }
 }
 
+function resetFloatingPalettePosition() {
+  if (!dom.floatingPalettePicker) return;
+  if (floatingPaletteDefaultParent && dom.floatingPalettePicker.parentElement !== floatingPaletteDefaultParent) floatingPaletteDefaultParent.append(dom.floatingPalettePicker);
+  dom.floatingPalettePicker.style.position = '';
+  dom.floatingPalettePicker.style.left = '';
+  dom.floatingPalettePicker.style.top = '';
+  dom.floatingPalettePicker.style.right = '';
+  dom.floatingPalettePicker.style.bottom = '';
+  dom.floatingPalettePicker.style.zIndex = '';
+}
+
+function positionFloatingPaletteNearPoint(x, y) {
+  if (!dom.floatingPalettePicker) return;
+  const picker = dom.floatingPalettePicker;
+  const workspace = document.querySelector('.workspace');
+  if (picker.parentElement !== document.body) document.body.append(picker);
+  const offset = 12;
+  const padding = 8;
+  const bounds = workspace?.getBoundingClientRect() ?? {
+    left: 0,
+    top: 0,
+    right: window.innerWidth,
+    bottom: window.innerHeight,
+    width: window.innerWidth,
+    height: window.innerHeight
+  };
+  picker.style.position = 'fixed';
+  picker.style.zIndex = '20';
+  picker.style.left = `${x + offset}px`;
+  picker.style.top = `${y + offset}px`;
+  picker.style.right = 'auto';
+  picker.style.bottom = 'auto';
+  const rect = picker.getBoundingClientRect();
+  const minLeft = bounds.left + padding;
+  const minTop = bounds.top + padding;
+  const maxLeft = bounds.right - rect.width - padding;
+  const maxTop = bounds.bottom - rect.height - padding;
+  const left = Math.max(minLeft, Math.min(maxLeft, x + offset));
+  const top = Math.max(minTop, Math.min(maxTop, y + offset));
+  picker.style.left = `${left}px`;
+  picker.style.top = `${top}px`;
+}
+
+function openFloatingPalette(point) {
+  if (!dom.floatingPalettePicker || !dom.floatingPaletteToggle) return;
+  floatingPaletteOpen = true;
+  dom.floatingPalettePicker.hidden = false;
+  buildFloatingPalette();
+  if (point) positionFloatingPaletteNearPoint(point.x, point.y);
+  else resetFloatingPalettePosition();
+  dom.floatingPaletteToggle.setAttribute('aria-expanded', 'true');
+}
+
+function closeFloatingPalette() {
+  if (!dom.floatingPalettePicker || !dom.floatingPaletteToggle) return;
+  floatingPaletteOpen = false;
+  dom.floatingPalettePicker.hidden = true;
+  resetFloatingPalettePosition();
+  dom.floatingPaletteToggle.setAttribute('aria-expanded', 'false');
+}
+
+function toggleFloatingPalette(point) {
+  if (floatingPaletteOpen) closeFloatingPalette();
+  else openFloatingPalette(point);
+}
+
 function buildFloatingPalette() {
   if (!dom.floatingPackSelect || !dom.floatingBrushChoices) return;
   const layer = activeLayerConfig();
@@ -1664,6 +1819,7 @@ function buildFloatingPalette() {
     option.selected = pack.id === activePackId;
     dom.floatingPackSelect.append(option);
   }
+  syncBrushSizeControls();
   dom.floatingBrushChoices.innerHTML = '';
   for (const candidate of brushesForActivePack()) {
     const button = document.createElement('button');
@@ -1683,7 +1839,7 @@ function buildFloatingPalette() {
 function buildBrushButtons() {
   const layer = activeLayerConfig();
   const pack = activePackConfig();
-  if (dom.packSectionTitle) dom.packSectionTitle.textContent = pack ? `${pack.label} assets` : layer.packTitle;
+  if (dom.packSectionTitle) dom.packSectionTitle.textContent = layer.packTitle;
   if (dom.brushSectionTitle) dom.brushSectionTitle.textContent = `Selected: ${brush.label}`;
   if (dom.brushLayerHint) dom.brushLayerHint.textContent = layer.hint;
   dom.brushes.innerHTML = '';
@@ -1849,6 +2005,7 @@ function setup() {
   buildLayerButtons();
   buildPackButtons();
   buildBrushButtons();
+  updateBrushSizeControl();
   resizeViewport(viewport);
   compileDraft();
   loadViewOrReset();
@@ -1893,13 +2050,10 @@ function setup() {
     writeBooleanPreference(localStorage, FLOATING_CONTROLS_STORAGE_KEY, floatingControlsEnabled);
     syncPreferencesUi();
   });
-  dom.floatingPaletteToggle?.addEventListener('click', () => {
-    floatingPaletteOpen = !floatingPaletteOpen;
-    dom.floatingPalettePicker.hidden = !floatingPaletteOpen;
-    dom.floatingPaletteToggle.setAttribute('aria-expanded', floatingPaletteOpen ? 'true' : 'false');
-    if (floatingPaletteOpen) buildFloatingPalette();
-  });
+  dom.floatingPaletteToggle?.addEventListener('click', () => toggleFloatingPalette());
   dom.floatingPackSelect?.addEventListener('change', () => setActivePack(dom.floatingPackSelect.value));
+  dom.brushSize?.addEventListener('change', () => setBrushSize(Number(dom.brushSize.value)));
+  dom.floatingBrushSize?.addEventListener('change', () => setBrushSize(Number(dom.floatingBrushSize.value)));
   for (const button of dom.editLayerButtons) button.addEventListener('click', () => setActiveEditLayer(button.dataset.editLayer));
   dom.controllerBrushSensitivityInput?.addEventListener('input', () => {
     controllerBrushSettings.sensitivity = Math.round(clampNumber(dom.controllerBrushSensitivityInput.value, 1, 10, DEFAULT_CONTROLLER_BRUSH_SETTINGS.sensitivity));
@@ -1990,7 +2144,14 @@ function setup() {
     const screen = eventToScreenPoint(dom.canvas, event);
     activePointers.set(event.pointerId, screen);
     if (activePointers.size === 2) { isPainting = false; setupTouchPinch(); return; }
+    if (event.button === 2 && event.pointerType === 'mouse') {
+      setEditorInputMode('pointer');
+      toggleFloatingPalette({ x: event.clientX, y: event.clientY });
+      startPan(event);
+      return;
+    }
     if (isPanGesture(event)) { startPan(event); return; }
+    if (event.button !== 0) return;
     isPainting = true;
     lastPaintKey = null;
     history.beginAction('paint stroke');

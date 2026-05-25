@@ -4,6 +4,7 @@ import { motionStatusText } from '../transitions.js';
 import { browserRuntime } from '../../runtime/browser-runtime.js';
 import { formatRunTime, getBestTime } from '../../speedrun/speedrun.js';
 import { escapeHtml, renderActionRow, renderInfoRow, renderKeybindRow, renderSection, renderSettingRow, renderTabList, renderTabPanel } from '../components/primitives.js';
+import { renderIconLabel } from '../components/icons.js';
 
 const categoryDescriptions = {
   controls: 'Choose profiles, remap gameplay controls, review navigation, and configure devices.',
@@ -26,6 +27,7 @@ export const settingsCategories = [
   { id: 'advanced', title: 'Advanced', description: categoryDescriptions.advanced }
 ];
 
+const categoryIcon = { controls: 'gamepad2', gameplay: 'gauge', accessibility: 'accessibility', graphics: 'monitor', advanced: 'wrench' };
 const keycaps = text => text.split(' / ').map(part => `<span class="ds-keycap">${escapeHtml(part)}</span>`).join(' ');
 const controlGlyphs = parts => parts.map(part => part.icon
   ? `<img class="input-hint--icon bind-keycaps--icon" src="${escapeHtml(part.icon)}" alt="${escapeHtml(part.label)}">`
@@ -49,7 +51,7 @@ function controllerSelectionRow(game) {
   const selectedRuntimeId = game.settings.input.slots.player1.devices.gamepad.selectedRuntimeId;
   const devices = game.inputRuntime?.connectedDevices?.('gamepad') || [];
   if (!devices.length) return infoRow('Selected Controller', selectedRuntimeId || 'Auto / none connected', 'selectedControllerName');
-  const buttons = devices.map(device => `<button type="button" class="ds-button ds-button--secondary" data-controller-select="${device.runtimeId}"${device.runtimeId === selectedRuntimeId ? ' aria-pressed="true"' : ''}>${device.runtimeId === selectedRuntimeId ? 'Selected: ' : 'Select: '}${device.id || device.runtimeId}</button>`).join(' ');
+  const buttons = devices.map(device => `<button type="button" class="ds-button ds-button--secondary" data-controller-select="${device.runtimeId}"${device.runtimeId === selectedRuntimeId ? ' aria-pressed="true"' : ''}>${renderIconLabel(device.runtimeId === selectedRuntimeId ? 'check' : 'mousePointerClick', `${device.runtimeId === selectedRuntimeId ? 'Selected: ' : 'Select: '}${device.id || device.runtimeId}`)}</button>`).join(' ');
   return `<div class="ds-setting-row ds-setting-row--info">
     <span class="ds-setting-row--copy"><span class="ds-setting-row--label">Selected Controller</span><span class="ds-setting-row--description">Selection is explicit; disconnects do not silently switch to another controller.</span></span>
     <span class="ds-setting-row--value controller-select-list" id="selectedControllerName">${buttons}</span>
@@ -107,8 +109,8 @@ function bindRow(game, device, action) {
   const value = listening ? escapeHtml(prompt) : (parts.length ? controlGlyphs(parts) : keycaps(text));
   const error = game.input.bindError?.device === device && game.input.bindError?.action === action;
   const actions = renderActionRow([
-    `<button type="button" class="ds-button ds-button--secondary" data-bind-action="${escapeHtml(action)}" data-bind-device="${escapeHtml(device)}" data-bind-mode="replace">Replace</button>`,
-    `<button type="button" class="ds-button ds-button--secondary" data-bind-action="${escapeHtml(action)}" data-bind-device="${escapeHtml(device)}" data-bind-mode="add">Add</button>`
+    `<button type="button" class="ds-button ds-button--secondary" data-bind-action="${escapeHtml(action)}" data-bind-device="${escapeHtml(device)}" data-bind-mode="replace">${renderIconLabel('refreshCw', 'Replace')}</button>`,
+    `<button type="button" class="ds-button ds-button--secondary" data-bind-action="${escapeHtml(action)}" data-bind-device="${escapeHtml(device)}" data-bind-mode="add">${renderIconLabel('plus', 'Add')}</button>`
   ]);
   return renderKeybindRow({ label: bindLabel(action), value, listening, error, actions });
 }
@@ -159,7 +161,7 @@ function renderControls(game) {
   const active = game.settings.input.profiles[game.settings.input.activeProfileId];
   const header = `${controlsSubtabs(game)}${pageNote(`Active profile: ${active?.label || game.settings.input.activeProfileId} · Switching: ${game.settings.input.profileSwitching}`)}`;
   if (page === 'profiles') return `${header}${section('Profiles', profileCards(game))}${section('Switching', `<div class="settings-row-list">${valueRow({ id: 'profile-switching', label: 'Profile Switching', value: game.settings.input.profileSwitching === 'auto' ? 'Auto' : 'Locked', description: 'Auto switches profiles from the input you use; locked keeps the selected profile.', kind: 'toggle' })}</div>`)}`;
-  if (page === 'gameplay') return `${header}${pageNote('Replace swaps the current bind for this profile. Add keeps existing binds and appends another. Escape cancels keyboard/mouse listening.')}${bindSections(game, game.settings.input.activeProfileId)}<div class="settings-actions ds-action-row"><button type="button" class="secondary ds-button ds-button--secondary" data-settings-action="reset-active-profile">Reset ${active?.label || 'Profile'} Defaults</button></div>`;
+  if (page === 'gameplay') return `${header}${pageNote('Replace swaps the current bind for this profile. Add keeps existing binds and appends another. Escape cancels keyboard/mouse listening.')}${bindSections(game, game.settings.input.activeProfileId)}<div class="settings-actions ds-action-row"><button type="button" class="secondary ds-button ds-button--secondary" data-settings-action="reset-active-profile">${renderIconLabel('rotateCcw', `Reset ${active?.label || 'Profile'} Defaults`)}</button></div>`;
   if (page === 'navigation') return `${header}${pageNote('Shared menu/navigation binds are shown for overview. Editing these will come later.')}${navigationOverview(game)}`;
   if (page === 'controller') return `${header}${renderController(game)}`;
   if (page === 'touch') return `${header}${section('Touch Controls', pageNote('Touch controls are planned.'))}`;
@@ -175,7 +177,7 @@ function controllerSubpageCard(page) {
 
 function controllerSubpageHeader(game, title, note = '') {
   return `<div class="settings-subpage-header">
-    <button type="button" class="settings-back-button ds-button ds-button--secondary" data-controller-settings-back>Controller</button>
+    <button type="button" class="settings-back-button ds-button ds-button--secondary" data-controller-settings-back>${renderIconLabel('chevronLeft', 'Controller')}</button>
     <span class="settings-subpage-header--crumb">Settings / Controller / ${title}</span>
   </div>${note ? pageNote(note) : ''}`;
 }
@@ -201,7 +203,7 @@ function renderController(game) {
     </div><div id="controllerStatus" class="status-line"></div>`)}
     ${section('Diagnostics', `<div class="settings-category-list settings-subpage-list">${controllerSubpages.map(controllerSubpageCard).join('')}</div>`)}
     ${bindSections(game, 'controller')}
-    <div class="settings-actions ds-action-row"><button type="button" class="secondary ds-button ds-button--secondary" data-settings-action="reset-controller">Reset Controller Defaults</button></div>`;
+    <div class="settings-actions ds-action-row"><button type="button" class="secondary ds-button ds-button--secondary" data-settings-action="reset-controller">${renderIconLabel('rotateCcw', 'Reset Controller Defaults')}</button></div>`;
 }
 
 function renderGameplay(game) {
@@ -210,7 +212,7 @@ function renderGameplay(game) {
     ${valueRow({ id: 'speed-run-mode', label: 'Speed Run Mode', value: onOff(game.settings.speedRunMode), description: 'Shows an in-game timer and saves your best Any% time per level.', kind: 'toggle' })}
     ${infoRow('Current Level Best Any%', bestMs === null ? '--:--.---' : formatRunTime(bestMs))}
   </div>`)}
-  <div class="settings-actions ds-action-row"><button type="button" class="secondary ds-button ds-button--secondary" data-settings-action="clear-speedrun-records">Clear Speed Run Records</button></div>`;
+  <div class="settings-actions ds-action-row"><button type="button" class="secondary ds-button ds-button--secondary" data-settings-action="clear-speedrun-records">${renderIconLabel('trash2', 'Clear Speed Run Records')}</button></div>`;
 }
 
 function renderAccessibility(game) {
@@ -235,8 +237,8 @@ function renderAdvanced(game) {
   <div id="developerTools" class="advanced-tools"${game.settings.developerMode ? '' : ' hidden'}>
     ${section('Raw App Settings', `<textarea id="settingsJson" class="bind-json" spellcheck="false" placeholder="App settings JSON appears here."></textarea>
       <div class="settings-actions ds-action-row">
-        <button type="button" class="secondary ds-button ds-button--secondary" data-settings-action="dump-settings">Dump app settings</button>
-        <button type="button" class="secondary ds-button ds-button--secondary" data-settings-action="replace-settings">Replace app settings</button>
+        <button type="button" class="secondary ds-button ds-button--secondary" data-settings-action="dump-settings">${renderIconLabel('download', 'Dump app settings')}</button>
+        <button type="button" class="secondary ds-button ds-button--secondary" data-settings-action="replace-settings">${renderIconLabel('upload', 'Replace app settings')}</button>
       </div>
       <div id="settingsJsonStatus" class="status-line" aria-live="polite"></div>`)}
   </div>`;
@@ -256,7 +258,7 @@ export function renderSettingsTabs(game) {
     tabs: settingsCategories.map(category => ({
       id: category.id,
       label: category.title,
-      content: `<span class="settings-tab--label">${escapeHtml(category.title)}</span>`,
+      content: renderIconLabel(categoryIcon[category.id], category.title),
       attributes: { 'data-settings-tab': category.id }
     })),
     activeId: active,
@@ -278,7 +280,7 @@ export function renderSettingsHub(game) {
   ui.settingsRootRows.innerHTML = renderSettingsTabs(game);
   ui.settingsCategoryList.innerHTML = settingsCategories.map(category => `
     <button type="button" class="settings-category-card ds-list-card" data-settings-category="${category.id}">
-      <span class="settings-category-card--title">${category.title}</span>
+      <span class="settings-category-card--title">${renderIconLabel(categoryIcon[category.id], category.title)}</span>
       <span class="settings-category-card--description">${category.description}</span>
     </button>`).join('');
 }

@@ -151,6 +151,126 @@ test('map editor paints terrain into exported rows', async ({ page }) => {
   await expect(page.locator('#status')).toHaveClass(/ok/);
 });
 
+test('right mouse toggles floating palette near cursor without painting', async ({ page }) => {
+  await page.addInitScript(() => localStorage.removeItem('chibi.tilemap-editor.floating-controls'));
+  await page.goto('/editor.html');
+  await createBlankMap(page);
+
+  const point = await editorScreenPoint(page, 8, 8);
+  await page.mouse.click(point.x, point.y, { button: 'right' });
+
+  await expect(page.locator('#floatingPalettePicker')).toBeVisible();
+  await expect(page.locator('#exportText')).toHaveValue(/\[null, null, null, null, null, null, null, null\]/);
+
+  const placement = await page.locator('#floatingPalettePicker').evaluate((el, clickPoint) => {
+    const rect = el.getBoundingClientRect();
+    const workspace = document.querySelector('.workspace')?.getBoundingClientRect() ?? { left: 0, top: 0, right: innerWidth, bottom: innerHeight };
+    return {
+      position: getComputedStyle(el).position,
+      nearX: Math.abs(rect.left - clickPoint.x) < 360,
+      nearY: Math.abs(rect.top - clickPoint.y) < 360,
+      inside: rect.left >= workspace.left && rect.top >= workspace.top && rect.right <= workspace.right && rect.bottom <= workspace.bottom
+    };
+  }, point);
+  expect(placement.position).toBe('fixed');
+  expect(placement.nearX).toBe(true);
+  expect(placement.nearY).toBe(true);
+  expect(placement.inside).toBe(true);
+
+  await page.mouse.click(point.x + 10, point.y + 10, { button: 'right' });
+
+  await expect(page.locator('#floatingPalettePicker')).toBeHidden();
+  const reset = await page.locator('#floatingPalettePicker').evaluate(el => ({
+    position: el.style.position,
+    left: el.style.left,
+    top: el.style.top,
+    inDefaultParent: el.parentElement?.id === 'floatingViewControls'
+  }));
+  expect(reset).toEqual({ position: '', left: '', top: '', inDefaultParent: true });
+  await expect(page.locator('#exportText')).toHaveValue(/\[null, null, null, null, null, null, null, null\]/);
+});
+
+test('floating palette exposes brush controls and syncs brush size both ways', async ({ page }) => {
+  await page.addInitScript(() => localStorage.removeItem('chibi.tilemap-editor.floating-controls'));
+  await page.goto('/editor.html');
+
+  await page.locator('#floatingPaletteToggle').click();
+
+  await expect(page.locator('#floatingPalettePicker')).toBeVisible();
+  await expect(page.locator('#floatingPackSelect')).toBeVisible();
+  await expect(page.locator('#floatingBrushChoices')).toBeVisible();
+  await expect(page.locator('#floatingBrushSize')).toBeVisible();
+
+  await page.locator('#floatingBrushSize').selectOption('3');
+  await expect(page.locator('#brushSize')).toHaveValue('3');
+
+  await page.locator('#brushSize').selectOption('2');
+  await expect(page.locator('#floatingBrushSize')).toHaveValue('2');
+});
+
+test('floating palette brush size disables with placed asset brushes', async ({ page }) => {
+  await page.addInitScript(() => localStorage.removeItem('chibi.tilemap-editor.floating-controls'));
+  await page.goto('/editor.html');
+  await page.locator('#brushSize').selectOption('3');
+  await page.locator('#floatingPaletteToggle').click();
+
+  await page.getByRole('button', { name: /Placed Assets/ }).click();
+
+  await expect(page.locator('#brushSize')).toBeDisabled();
+  await expect(page.locator('#brushSize')).toHaveValue('1');
+  await expect(page.locator('#floatingBrushSize')).toBeDisabled();
+  await expect(page.locator('#floatingBrushSize')).toHaveValue('1');
+  await expect(page.locator('#floatingBrushSizeHint')).toContainText('Placed assets always stamp 1×1');
+
+  await page.getByRole('button', { name: /Solid/ }).click();
+  await page.locator('#brushSize').selectOption('1');
+});
+
+test('map editor centers an even-sized terrain brush around the cursor cell', async ({ page }) => {
+  await page.goto('/editor.html');
+  await createBlankMap(page);
+
+  await page.locator('#brushSize').selectOption('2');
+  await expect(page.locator('#brushSize')).toHaveValue('2');
+
+  const point = await editorScreenPoint(page, 40, 24);
+  await page.mouse.click(point.x, point.y);
+
+  await expect(page.locator('#exportText')).toHaveValue(/\[null, 'grass', 'grass', null, null, null, null, null\],\n\s*\[null, 'grass', 'grass', null, null, null, null, null\],\n\s*\[null, null, null, null, null, null, null, null\]/);
+});
+
+test('map editor paints terrain with a configurable square brush and undoes it as one stroke', async ({ page }) => {
+  await page.goto('/editor.html');
+  await createBlankMap(page);
+
+  await page.locator('#brushSize').selectOption('3');
+  await expect(page.locator('#brushSize')).toHaveValue('3');
+
+  const point = await editorScreenPoint(page, 24, 24);
+  await page.mouse.click(point.x, point.y);
+
+  await expect(page.locator('#exportText')).toHaveValue(/\['grass', 'grass', 'grass', null, null, null, null, null\],\n\s*\['grass', 'grass', 'grass', null, null, null, null, null\],\n\s*\['grass', 'grass', 'grass', null, null, null, null, null\],\n\s*\[null, null, null, null, null, null, null, null\]/);
+  await expect(page.getByRole('button', { name: 'Undo' })).toBeEnabled();
+
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect(page.locator('#exportText')).toHaveValue(/\[null, null, null, null, null, null, null, null\]/);
+
+  await page.getByRole('button', { name: 'Redo' }).click();
+  await expect(page.locator('#exportText')).toHaveValue(/\['grass', 'grass', 'grass', null, null, null, null, null\],\n\s*\['grass', 'grass', 'grass', null, null, null, null, null\],\n\s*\['grass', 'grass', 'grass', null, null, null, null, null\],\n\s*\[null, null, null, null, null, null, null, null\]/);
+});
+
+test('map editor keeps placed asset brushes at 1×1 when brush size is larger', async ({ page }) => {
+  await page.goto('/editor.html');
+  await createBlankMap(page);
+
+  await page.locator('#brushSize').selectOption('3');
+  await page.getByRole('button', { name: /Placed Assets/ }).click();
+
+  await expect(page.locator('#brushSize')).toBeDisabled();
+  await expect(page.locator('#brushSize')).toHaveValue('1');
+  await expect(page.locator('#brushSizeHint')).toContainText('Placed assets always stamp 1×1');
+});
+
 test('map editor uses a fixed viewport canvas for large maps', async ({ page }) => {
   await page.goto('/editor.html');
   await createBlankMap(page, '120', '80');
@@ -337,6 +457,163 @@ test('map editor exports and imports shareable map files instead of JS downloads
 
   await expect(page.locator('#status')).toHaveText('Imported Shared Play Map and saved locally. Ready to preview.');
   await expect(page.locator('#exportText')).toHaveValue(/id: 'shared-play-map'/);
+});
+
+test('map editor imports maps wider than 128 columns with a non-blocking warning', async ({ page }) => {
+  await page.goto('/editor.html');
+  await openMapPanel(page);
+
+  const cols = 129;
+  const rows = 3;
+  const brushWidth = cols * 2;
+  const brushRows = rows * 2;
+  const emptyBrushRows = Array.from({ length: brushRows }, () => Array.from({ length: brushWidth }, () => null));
+  const placedRows = Array.from({ length: brushRows }, () => '.'.repeat(brushWidth));
+  placedRows[1] = `P${'.'.repeat(brushWidth - 1)}`;
+  placedRows[brushRows - 1] = `${'.'.repeat(brushWidth - 2)}G.`;
+
+  await page.locator('#importMapInput').setInputFiles({
+    name: 'wide.chibi-map.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({
+      format: 'chibi-tilemap-draft',
+      version: 2,
+      draft: {
+        id: 'wide-import-map',
+        name: 'Wide Import Map',
+        cols,
+        rows,
+        artTileSize: 16,
+        theme: 'kenney-pixel-platformer:grass',
+        visibility: 'developer',
+        categories: ['drafts'],
+        description: 'Imported in Playwright.',
+        layers: [
+          { id: 'solid', type: 'brush-grid', cellSize: 16, rows: emptyBrushRows },
+          { id: 'placedAssets', type: 'placed-assets', cellSize: 16, objectSize: 32, rows: placedRows },
+          { id: 'hazards', type: 'brush-grid', cellSize: 16, rows: emptyBrushRows }
+        ]
+      }
+    }))
+  });
+
+  await expect(page.locator('#status')).toHaveText('Warning: imported map is 129×3. Maps wider or taller than 128 cells may be slow to edit or save. Imported Wide Import Map and saved locally. Ready to preview.');
+  await expect(page.locator('#status')).toHaveClass(/warning/);
+  await expect(page.locator('#exportText')).toHaveValue(/id: 'wide-import-map'/);
+});
+
+test('map editor imports maps taller than 128 rows with a clear non-blocking warning', async ({ page }) => {
+  await page.goto('/editor.html');
+  await openMapPanel(page);
+
+  const cols = 3;
+  const rows = 129;
+  const brushWidth = cols * 2;
+  const brushRows = rows * 2;
+  const emptyBrushRows = Array.from({ length: brushRows }, () => Array.from({ length: brushWidth }, () => null));
+  const placedRows = Array.from({ length: brushRows }, () => '.'.repeat(brushWidth));
+  placedRows[1] = `P${'.'.repeat(brushWidth - 1)}`;
+  placedRows[brushRows - 1] = `${'.'.repeat(brushWidth - 2)}G.`;
+
+  await page.locator('#importMapInput').setInputFiles({
+    name: 'tall.chibi-map.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({
+      format: 'chibi-tilemap-draft',
+      version: 2,
+      draft: {
+        id: 'tall-import-map',
+        name: 'Tall Import Map',
+        cols,
+        rows,
+        artTileSize: 16,
+        theme: 'kenney-pixel-platformer:grass',
+        visibility: 'developer',
+        categories: ['drafts'],
+        description: 'Imported in Playwright.',
+        layers: [
+          { id: 'solid', type: 'brush-grid', cellSize: 16, rows: emptyBrushRows },
+          { id: 'placedAssets', type: 'placed-assets', cellSize: 16, objectSize: 32, rows: placedRows },
+          { id: 'hazards', type: 'brush-grid', cellSize: 16, rows: emptyBrushRows }
+        ]
+      }
+    }))
+  });
+
+  await expect(page.locator('#status')).toHaveText('Warning: imported map is 3×129. Maps wider or taller than 128 cells may be slow to edit or save. Imported Tall Import Map and saved locally. Ready to preview.');
+  await expect(page.locator('#status')).toHaveClass(/warning/);
+  await expect(page.locator('#exportText')).toHaveValue(/id: 'tall-import-map'/);
+});
+
+test('map editor still loads imported map when local storage quota is exceeded', async ({ page }) => {
+  await page.addInitScript(() => {
+    const originalSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function setItemWithImportQuotaFailure(key, value) {
+      if (key === 'chibi.tilemap-editor.quota-import-map') {
+        throw new DOMException('Quota exceeded', 'QuotaExceededError');
+      }
+      return originalSetItem.call(this, key, value);
+    };
+  });
+  await page.goto('/editor.html');
+  await openMapPanel(page);
+
+  await page.locator('#importMapInput').setInputFiles({
+    name: 'quota.chibi-map.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({
+      format: 'chibi-tilemap-draft',
+      version: 2,
+      draft: {
+        id: 'quota-import-map',
+        name: 'Quota Import Map',
+        cols: 4,
+        rows: 3,
+        artTileSize: 16,
+        theme: 'kenney-pixel-platformer:grass',
+        visibility: 'developer',
+        categories: ['drafts'],
+        description: 'Imported in Playwright.',
+        layers: [
+          { id: 'solid', type: 'brush-grid', cellSize: 16, rows: Array.from({ length: 6 }, () => Array.from({ length: 8 }, () => null)) },
+          { id: 'placedAssets', type: 'placed-assets', cellSize: 16, objectSize: 32, rows: ['P.......', '........', '........', '........', '........', '......G.'] },
+          { id: 'hazards', type: 'brush-grid', cellSize: 16, rows: Array.from({ length: 6 }, () => Array.from({ length: 8 }, () => null)) }
+        ]
+      }
+    }))
+  });
+
+  await expect(page.locator('#exportText')).toHaveValue(/id: 'quota-import-map'/);
+  await expect(page.locator('#status')).toHaveText('Imported, but could not save locally because storage quota was exceeded.');
+  await expect(page.locator('#status')).toHaveClass(/warning/);
+});
+
+test('map editor rejects imported maps without positive integer dimensions', async ({ page }) => {
+  await page.goto('/editor.html');
+  await openMapPanel(page);
+
+  await page.locator('#importMapInput').setInputFiles({
+    name: 'invalid.chibi-map.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({
+      format: 'chibi-tilemap-draft',
+      version: 2,
+      draft: {
+        id: 'invalid-import-map',
+        name: 'Invalid Import Map',
+        cols: 0,
+        rows: 3,
+        layers: [
+          { id: 'solid', type: 'brush-grid', cellSize: 16, rows: Array.from({ length: 6 }, () => []) },
+          { id: 'placedAssets', type: 'placed-assets', cellSize: 16, objectSize: 32, rows: Array.from({ length: 6 }, () => '') },
+          { id: 'hazards', type: 'brush-grid', cellSize: 16, rows: Array.from({ length: 6 }, () => []) }
+        ]
+      }
+    }))
+  });
+
+  await expect(page.locator('#status')).toHaveText('Imported map cols must be a positive integer.');
+  await expect(page.locator('#status')).toHaveClass(/error/);
 });
 
 test('map editor save local timestamps draft for Level Select', async ({ page }) => {

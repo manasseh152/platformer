@@ -22,8 +22,34 @@ import { applyTilemapPreviewFromUrl } from '#/app/tilemaps/tilemap-preview.js';
 import { handleDevToolsInput, handleDevToolsKeydown, setupDevTools, syncDevTools } from '#/devtools/toolbox-dom.js';
 import { updateSpeedRun } from '#/app/speedrun/speedrun.js';
 import { applyCaptureMode } from '#/app/capture-mode.js';
+import { renderIconLabel } from '#/app/ui/components/icons.js';
 
 if (window.location.pathname === '/editor') window.location.replace('/editor.html');
+
+function hydrateGameShellIcons() {
+  const labels = [
+    ['messageNextLevelButton', 'skipForward', 'Play Next'],
+    ['messageLevelSelectButton', 'list', 'Level Select'],
+    ['messageRestartButton', 'rotateCcw', 'Restart'],
+    ['messageCloseButton', 'x', 'Close to Editor']
+  ];
+  for (const [id, icon, text] of labels) {
+    const element = document.getElementById(id);
+    if (element) element.innerHTML = renderIconLabel(icon, text);
+  }
+  const hudLabels = [
+    ['.hud-health-row .hud-label', 'heart', 'Vigor'],
+    ['.hud-objective-card .hud-label', 'target', 'Objective'],
+    ['.hud-dash-card .hud-label', 'zap', 'Skill'],
+    ['#speedRunHud .hud-label', 'timer', 'Speed Run']
+  ];
+  for (const [selector, icon, text] of hudLabels) {
+    const element = document.querySelector(selector);
+    if (element) element.innerHTML = renderIconLabel(icon, text);
+  }
+}
+
+hydrateGameShellIcons();
 
 const runtime = createRuntime();
 const ui = getUI();
